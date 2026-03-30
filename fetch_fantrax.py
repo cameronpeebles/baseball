@@ -12,10 +12,10 @@ session.headers.update({
     "Referer": f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/home",
 })
 
-# Load cookies from secrets
-session.cookies.set("cookie", os.environ["FANTRAX_COOKIE"])
-session.cookies.set("cf_clearance", os.environ["FANTRAX_CF_CLEARANCE"])
-session.cookies.set("__cf_bm", os.environ["FANTRAX_CF_BM"])
+# Set long-lived cookies
+session.cookies.set("FX_RM", os.environ["FANTRAX_FX_RM"], domain=".fantrax.com")
+session.cookies.set("cf_clearance", os.environ["FANTRAX_CF_CLEARANCE"], domain=".fantrax.com")
+session.cookies.set("ui", "xvxwu418k69yvpe7", domain=".fantrax.com")
 
 def fetch(method, data, refUrl=None):
     url = f"https://www.fantrax.com/fxpa/req?leagueId={LEAGUE_ID}"
@@ -31,9 +31,9 @@ def fetch(method, data, refUrl=None):
     r = session.post(url, json=body)
     print(f"{method}: {r.status_code}")
     result = r.json()
-    # Check if logged in
     if "WARNING_NOT_LOGGED_IN" in str(result):
         print("ERROR: Cookies have expired - please update GitHub Secrets with fresh cookies")
+        print(json.dumps(result, indent=2))
         exit(1)
     return result
 
@@ -44,6 +44,7 @@ def save(filename, data):
     print(f"Saved data/{filename}")
 
 # Fetch standings
+print("Fetching standings...")
 standings = fetch(
     "getStandings",
     {"leagueId": LEAGUE_ID},
@@ -52,14 +53,16 @@ standings = fetch(
 save("standings.json", standings)
 
 # Fetch rosters
+print("Fetching rosters...")
 rosters = fetch(
     "getRosters",
     {"leagueId": LEAGUE_ID},
-    f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/players"
+    f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/rosters"
 )
 save("rosters.json", rosters)
 
 # Fetch free agents - hitters
+print("Fetching free agent hitters...")
 fa_hitting = fetch(
     "getPlayerStats",
     {
@@ -74,6 +77,7 @@ fa_hitting = fetch(
 save("free_agents_hitting.json", fa_hitting)
 
 # Fetch free agents - pitchers
+print("Fetching free agent pitchers...")
 fa_pitching = fetch(
     "getPlayerStats",
     {
