@@ -1,0 +1,35 @@
+yamlname: Fetch Fantrax Data
+
+on:
+  schedule:
+    - cron: '0 8 * * *'  # Runs every day at 8am UTC
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Fetch Fantrax data
+        env:
+          FANTRAX_COOKIE: ${{ secrets.FANTRAX_COOKIE }}
+          FANTRAX_CF_CLEARANCE: ${{ secrets.FANTRAX_CF_CLEARANCE }}
+          FANTRAX_CF_BM: ${{ secrets.FANTRAX_CF_BM }}
+        run: python fetch_fantrax.py
+
+      - name: Commit data
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git add data/
+          git diff --staged --quiet || git commit -m "Update Fantrax data"
+          git push
