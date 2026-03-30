@@ -1,6 +1,6 @@
 {
   "data": {
-    "sDate": 1774911320491,
+    "sDate": 1774911320572,
     "adrt": 45
   },
   "roles": [
@@ -8,16 +8,14 @@
   ],
   "pageError": {
     "onScreen": false,
-    "code": "ERROR_INVALID_REQUEST",
-    "text": "Unable to find API method 'getRosters'",
+    "code": "WARNING_NOT_LOGGED_IN",
     "forceReload": false
   },
   "responses": [
     {
       "pageError": {
         "onScreen": false,
-        "code": "ERROR_INVALID_REQUEST",
-        "text": "Unable to find API method 'getRosters'",
+        "code": "WARNING_NOT_LOGGED_IN",
         "forceReload": false
       }
     }
