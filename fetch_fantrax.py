@@ -4,17 +4,41 @@ import os
 
 LEAGUE_ID = "x4rx6jlimiytz3co"
 
-cookies = {
-    "cookie": os.environ["FANTRAX_COOKIE"],
-    "cf_clearance": os.environ["FANTRAX_CF_CLEARANCE"],
-    "__cf_bm": os.environ["FANTRAX_CF_BM"],
-}
+USERNAME = os.environ["FANTRAX_USERNAME"]
+PASSWORD = os.environ["FANTRAX_PASSWORD"]
 
-headers = {
+session = requests.Session()
+
+session.headers.update({
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Referer": f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/home",
     "Content-Type": "application/json",
-}
+})
+
+# Log in to Fantrax
+def login():
+    url = "https://www.fantrax.com/fxpa/req?leagueId="
+    body = {
+        "msgs": [{"method": "login", "data": {
+            "username": USERNAME,
+            "password": PASSWORD,
+            "stayLoggedIn": True
+        }}],
+        "uiv": 3,
+        "refUrl": "",
+        "dt": 0,
+        "at": 0,
+        "tz": "America/Denver",
+        "v": "180.1.2"
+    }
+    r = session.post(url, json=body)
+    print(f"Login: {r.status_code}")
+    data = r.json()
+    if "WARNING_NOT_LOGGED_IN" in str(data):
+        print("Login failed!")
+        print(json.dumps(data, indent=2))
+        exit(1)
+    print("Login successful!")
+    return data
 
 def fetch(method, data, refUrl=None):
     url = f"https://www.fantrax.com/fxpa/req?leagueId={LEAGUE_ID}"
@@ -27,7 +51,7 @@ def fetch(method, data, refUrl=None):
         "tz": "America/Denver",
         "v": "180.1.2"
     }
-    r = requests.post(url, headers=headers, cookies=cookies, json=body)
+    r = session.post(url, json=body)
     print(f"{method}: {r.status_code}")
     return r.json()
 
@@ -36,6 +60,9 @@ def save(filename, data):
     with open(f"data/{filename}", "w") as f:
         json.dump(data, f, indent=2)
     print(f"Saved data/{filename}")
+
+# Login first
+login()
 
 # Fetch standings
 standings = fetch(
@@ -61,7 +88,6 @@ free_agents_hitting = fetch(
         "miscDisplayType": "1",
         "pageNumber": "1",
         "sortType": "SCORING_CATEGORY",
-        "scipId": "10#0170#-1",
         "statusOrTeamFilter": "FA"
     },
     f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/players"
