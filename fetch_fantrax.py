@@ -3,38 +3,39 @@ import json
 import os
 
 LEAGUE_ID = "x4rx6jlimiytz3co"
-USERNAME = os.environ["FANTRAX_USERNAME"]
-PASSWORD = os.environ["FANTRAX_PASSWORD"]
 
 session = requests.Session()
 session.headers.update({
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Content-Type": "application/json",
     "Origin": "https://www.fantrax.com",
-    "Referer": "https://www.fantrax.com/login",
+    "Referer": f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/home",
 })
 
-def fetch_all(method_list, refUrl):
+# Load cookies from secrets
+session.cookies.set("cookie", os.environ["FANTRAX_COOKIE"])
+session.cookies.set("cf_clearance", os.environ["FANTRAX_CF_CLEARANCE"])
+session.cookies.set("__cf_bm", os.environ["FANTRAX_CF_BM"])
+
+def fetch(method, data, refUrl=None):
     url = f"https://www.fantrax.com/fxpa/req?leagueId={LEAGUE_ID}"
-    msgs = [{"method": "login", "data": {
-        "username": USERNAME,
-        "password": PASSWORD,
-        "stayLoggedIn": True
-    }}]
-    for method, data in method_list:
-        msgs.append({"method": method, "data": data})
     body = {
-        "msgs": msgs,
+        "msgs": [{"method": method, "data": data}],
         "uiv": 3,
-        "refUrl": refUrl,
+        "refUrl": refUrl or f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/home",
         "dt": 0,
         "at": 0,
         "tz": "America/Denver",
         "v": "180.1.2"
     }
     r = session.post(url, json=body)
-    print(f"Status: {r.status_code}")
-    return r.json()
+    print(f"{method}: {r.status_code}")
+    result = r.json()
+    # Check if logged in
+    if "WARNING_NOT_LOGGED_IN" in str(result):
+        print("ERROR: Cookies have expired - please update GitHub Secrets with fresh cookies")
+        exit(1)
+    return result
 
 def save(filename, data):
     os.makedirs("data", exist_ok=True)
@@ -42,50 +43,48 @@ def save(filename, data):
         json.dump(data, f, indent=2)
     print(f"Saved data/{filename}")
 
-# Fetch standings + rosters in one request with login
-print("Fetching standings and rosters...")
-result = fetch_all([
-    ("getStandings", {"leagueId": LEAGUE_ID}),
-    ("getRosters", {"leagueId": LEAGUE_ID}),
-], f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/standings")
+# Fetch standings
+standings = fetch(
+    "getStandings",
+    {"leagueId": LEAGUE_ID},
+    f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/standings"
+)
+save("standings.json", standings)
 
-responses = result.get("responses", [])
-print(f"Got {len(responses)} responses")
+# Fetch rosters
+rosters = fetch(
+    "getRosters",
+    {"leagueId": LEAGUE_ID},
+    f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/players"
+)
+save("rosters.json", rosters)
 
-# responses[0] = login, [1] = standings, [2] = rosters
-if len(responses) > 1:
-    save("standings.json", responses[1])
-if len(responses) > 2:
-    save("rosters.json", responses[2])
-
-# Fetch free agents (hitters)
-print("Fetching free agent hitters...")
-fa_hit = fetch_all([
-    ("getPlayerStats", {
+# Fetch free agents - hitters
+fa_hitting = fetch(
+    "getPlayerStats",
+    {
         "positionOrGroup": "BASEBALL_HITTING",
         "miscDisplayType": "1",
         "pageNumber": "1",
         "sortType": "SCORING_CATEGORY",
         "statusOrTeamFilter": "FA"
-    }),
-], f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/players")
-fa_hit_responses = fa_hit.get("responses", [])
-if len(fa_hit_responses) > 1:
-    save("free_agents_hitting.json", fa_hit_responses[1])
+    },
+    f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/players"
+)
+save("free_agents_hitting.json", fa_hitting)
 
-# Fetch free agents (pitchers)
-print("Fetching free agent pitchers...")
-fa_pit = fetch_all([
-    ("getPlayerStats", {
+# Fetch free agents - pitchers
+fa_pitching = fetch(
+    "getPlayerStats",
+    {
         "positionOrGroup": "BASEBALL_PITCHING",
         "miscDisplayType": "1",
         "pageNumber": "1",
         "sortType": "SCORING_CATEGORY",
         "statusOrTeamFilter": "FA"
-    }),
-], f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/players")
-fa_pit_responses = fa_pit.get("responses", [])
-if len(fa_pit_responses) > 1:
-    save("free_agents_pitching.json", fa_pit_responses[1])
+    },
+    f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/players"
+)
+save("free_agents_pitching.json", fa_pitching)
 
 print("All done!")
