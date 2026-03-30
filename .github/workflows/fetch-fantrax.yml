@@ -27,6 +27,8 @@ jobs:
           FANTRAX_COOKIE: ${{ secrets.FANTRAX_COOKIE }}
           FANTRAX_CF_CLEARANCE: ${{ secrets.FANTRAX_CF_CLEARANCE }}
           FANTRAX_CF_BM: ${{ secrets.FANTRAX_CF_BM }}
+          FANTRAX_USERNAME: ${{ secrets.FANTRAX_USERNAME }}
+          FANTRAX_PASSWORD: ${{ secrets.FANTRAX_PASSWORD }}
         run: python fetch_fantrax.py
 
       - name: Commit data
