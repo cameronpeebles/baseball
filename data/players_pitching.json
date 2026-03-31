@@ -185,10 +185,34 @@
           },
           {
             "content": "WSH<br/>Tue 4:40PM",
-            "eventId": "06ixx"
+            "eventId": "06ixx",
+            "popOver": {
+              "scorer": {
+                "urlName": "pj-poulin",
+                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04pvq_96_1.png",
+                "scorerId": "04pvq",
+                "team": false,
+                "icons": [
+                  {
+                    "tooltip": "Mar 30, 8:06 PM: Poulin will open Tuesday's game against...",
+                    "typeId": "14"
+                  },
+                  {
+                    "tooltip": "LHP",
+                    "typeId": "16"
+                  }
+                ],
+                "rookie": false,
+                "minorsEligible": false,
+                "name": "PJ Poulin",
+                "shortName": "P. Poulin"
+              },
+              "header": "Probable Starter for Washington:",
+              "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b>  -  &nbsp;<b>K</b>  -  &nbsp;<b>ERA</b>  -  &nbsp;<b>WHIP</b>  -  &nbsp;"
+            }
           },
           {
-            "content": "98.95"
+            "content": "98.66"
           },
           {
             "content": "100%"
@@ -318,7 +342,7 @@
             }
           },
           {
-            "content": "97.72"
+            "content": "97.73"
           },
           {
             "content": "99%"
@@ -372,140 +396,6 @@
         "actions": [
           {
             "typeId": "4"
-          },
-          {
-            "typeId": "5"
-          },
-          {
-            "typeId": "7"
-          }
-        ]
-      },
-      {
-        "scorer": {
-          "teamName": "Texas Rangers",
-          "urlName": "tyler-alexander",
-          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs0376h_96_8.png",
-          "scorerId": "0376h",
-          "rank": 5,
-          "posIdsNoFlex": [
-            "017"
-          ],
-          "defaultPosId": "016",
-          "posShortNames": "RP",
-          "team": false,
-          "icons": [
-            {
-              "tooltip": "Mar 29, 7:22 PM: Alexander earned a save after tossing...",
-              "typeId": "9"
-            }
-          ],
-          "rookie": false,
-          "minorsEligible": false,
-          "statusId": "4",
-          "posIds": [
-            "017"
-          ],
-          "teamId": "10140",
-          "name": "Tyler Alexander",
-          "teamShortName": "TEX",
-          "shortName": "T. Alexander"
-        },
-        "cells": [
-          {
-            "content": "5"
-          },
-          {
-            "content": "FA",
-            "toolTip": "Free Agent"
-          },
-          {
-            "content": "31"
-          },
-          {
-            "content": "@BAL<br/>Tue 4:35PM",
-            "eventId": "06jmo",
-            "popOver": {
-              "scorer": {
-                "urlName": "zach-eflin",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02mwq_96_14.png",
-                "scorerId": "02mwq",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "Mar 5, 9:32 PM: Eflin (back) allowed one hit and one...",
-                    "typeId": "8"
-                  },
-                  {
-                    "tooltip": "RHP",
-                    "typeId": "17"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Zach Eflin",
-                "shortName": "Z. Eflin"
-              },
-              "header": "Probable Starter for Baltimore:",
-              "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b>  -  &nbsp;<b>K</b>  -  &nbsp;<b>ERA</b>  -  &nbsp;<b>WHIP</b>  -  &nbsp;"
-            }
-          },
-          {
-            "content": "94.59"
-          },
-          {
-            "content": "5%"
-          },
-          {
-            "gainColor": 1,
-            "content": "+2%"
-          },
-          {
-            "content": "3"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0.00"
-          },
-          {
-            "content": "0.333"
-          },
-          {
-            "content": "3"
-          },
-          {
-            "content": "2.0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "3"
-          }
-        ],
-        "actions": [
-          {
-            "typeId": "1"
           },
           {
             "typeId": "5"
@@ -586,7 +476,7 @@
             }
           },
           {
-            "content": "94.53"
+            "content": "94.6"
           },
           {
             "content": "23%"
@@ -652,11 +542,145 @@
       },
       {
         "scorer": {
+          "teamName": "Texas Rangers",
+          "urlName": "tyler-alexander",
+          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs0376h_96_8.png",
+          "scorerId": "0376h",
+          "rank": 7,
+          "posIdsNoFlex": [
+            "017"
+          ],
+          "defaultPosId": "016",
+          "posShortNames": "RP",
+          "team": false,
+          "icons": [
+            {
+              "tooltip": "Mar 29, 7:22 PM: Alexander earned a save after tossing...",
+              "typeId": "9"
+            }
+          ],
+          "rookie": false,
+          "minorsEligible": false,
+          "statusId": "4",
+          "posIds": [
+            "017"
+          ],
+          "teamId": "10140",
+          "name": "Tyler Alexander",
+          "teamShortName": "TEX",
+          "shortName": "T. Alexander"
+        },
+        "cells": [
+          {
+            "content": "7"
+          },
+          {
+            "content": "FA",
+            "toolTip": "Free Agent"
+          },
+          {
+            "content": "31"
+          },
+          {
+            "content": "@BAL<br/>Tue 4:35PM",
+            "eventId": "06jmo",
+            "popOver": {
+              "scorer": {
+                "urlName": "zach-eflin",
+                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02mwq_96_14.png",
+                "scorerId": "02mwq",
+                "team": false,
+                "icons": [
+                  {
+                    "tooltip": "Mar 5, 9:32 PM: Eflin (back) allowed one hit and one...",
+                    "typeId": "8"
+                  },
+                  {
+                    "tooltip": "RHP",
+                    "typeId": "17"
+                  }
+                ],
+                "rookie": false,
+                "minorsEligible": false,
+                "name": "Zach Eflin",
+                "shortName": "Z. Eflin"
+              },
+              "header": "Probable Starter for Baltimore:",
+              "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b>  -  &nbsp;<b>K</b>  -  &nbsp;<b>ERA</b>  -  &nbsp;<b>WHIP</b>  -  &nbsp;"
+            }
+          },
+          {
+            "content": "94.28"
+          },
+          {
+            "content": "5%"
+          },
+          {
+            "gainColor": 1,
+            "content": "+2%"
+          },
+          {
+            "content": "3"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0.00"
+          },
+          {
+            "content": "0.333"
+          },
+          {
+            "content": "3"
+          },
+          {
+            "content": "2.0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "3"
+          }
+        ],
+        "actions": [
+          {
+            "typeId": "1"
+          },
+          {
+            "typeId": "5"
+          },
+          {
+            "typeId": "7"
+          }
+        ]
+      },
+      {
+        "scorer": {
           "teamName": "Milwaukee Brewers",
           "urlName": "jacob-misiorowski",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs061yu_96_2.png",
           "scorerId": "061yu",
-          "rank": 8,
+          "rank": 9,
           "posIdsNoFlex": [
             "017"
           ],
@@ -681,7 +705,7 @@
         },
         "cells": [
           {
-            "content": "8"
+            "content": "9"
           },
           {
             "content": "BUF-FEDS",
@@ -720,7 +744,7 @@
             }
           },
           {
-            "content": "94"
+            "content": "94.1"
           },
           {
             "content": "100%"
@@ -853,7 +877,7 @@
             }
           },
           {
-            "content": "91.4"
+            "content": "91.49"
           },
           {
             "content": "100%"
@@ -986,7 +1010,7 @@
             }
           },
           {
-            "content": "91.4"
+            "content": "91.49"
           },
           {
             "content": "59%"
@@ -1120,7 +1144,7 @@
             }
           },
           {
-            "content": "91.17"
+            "content": "90.88"
           },
           {
             "content": "100%"
@@ -1182,11 +1206,145 @@
       },
       {
         "scorer": {
+          "teamName": "Milwaukee Brewers",
+          "urlName": "aaron-ashby",
+          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04ew7_96_7.png",
+          "scorerId": "04ew7",
+          "rank": 14,
+          "posIdsNoFlex": [
+            "017"
+          ],
+          "defaultPosId": "016",
+          "posShortNames": "RP",
+          "team": false,
+          "icons": [
+            {
+              "tooltip": "Mar 18, 5:08 PM: Ashby tossed two scoreless innings of...",
+              "typeId": "8"
+            }
+          ],
+          "rookie": false,
+          "minorsEligible": false,
+          "statusId": "4",
+          "posIds": [
+            "017"
+          ],
+          "teamId": "10230",
+          "name": "Aaron Ashby",
+          "teamShortName": "MIL",
+          "shortName": "A. Ashby"
+        },
+        "cells": [
+          {
+            "content": "14"
+          },
+          {
+            "content": "FA",
+            "toolTip": "Free Agent"
+          },
+          {
+            "content": "27"
+          },
+          {
+            "content": "TB<br/>Tue 5:40PM",
+            "eventId": "06jue",
+            "popOver": {
+              "scorer": {
+                "urlName": "shane-mcclanahan",
+                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04mlt_96_9.png",
+                "scorerId": "04mlt",
+                "team": false,
+                "icons": [
+                  {
+                    "tooltip": "Mar 16, 7:14 AM: McClanahan struck out seven and walked...",
+                    "typeId": "8"
+                  },
+                  {
+                    "tooltip": "LHP",
+                    "typeId": "16"
+                  }
+                ],
+                "rookie": false,
+                "minorsEligible": false,
+                "name": "Shane McClanahan",
+                "shortName": "S. McClanahan"
+              },
+              "header": "Probable Starter for Tampa Bay:",
+              "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b>  -  &nbsp;<b>K</b>  -  &nbsp;<b>ERA</b>  -  &nbsp;<b>WHIP</b>  -  &nbsp;"
+            }
+          },
+          {
+            "content": "90.72"
+          },
+          {
+            "content": "25%"
+          },
+          {
+            "gainColor": 1,
+            "content": "+9%"
+          },
+          {
+            "content": "4.2"
+          },
+          {
+            "content": "1"
+          },
+          {
+            "content": "1.93"
+          },
+          {
+            "content": "0.857"
+          },
+          {
+            "content": "9"
+          },
+          {
+            "content": "0.0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "3"
+          }
+        ],
+        "actions": [
+          {
+            "typeId": "1"
+          },
+          {
+            "typeId": "5"
+          },
+          {
+            "typeId": "7"
+          }
+        ]
+      },
+      {
+        "scorer": {
           "teamName": "Los Angeles Dodgers",
           "urlName": "edwin-diaz",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02my5_96_13.png",
           "scorerId": "02my5",
-          "rank": 14,
+          "rank": 15,
           "posIdsNoFlex": [
             "017"
           ],
@@ -1211,7 +1369,7 @@
         },
         "cells": [
           {
-            "content": "14"
+            "content": "15"
           },
           {
             "content": "G.O.A.T.",
@@ -1250,7 +1408,7 @@
             }
           },
           {
-            "content": "90.98"
+            "content": "90.69"
           },
           {
             "content": "99%"
@@ -1319,7 +1477,7 @@
           "urlName": "pete-fairbanks",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03qo0_96_9.png",
           "scorerId": "03qo0",
-          "rank": 15,
+          "rank": 16,
           "posIdsNoFlex": [
             "017"
           ],
@@ -1344,7 +1502,7 @@
         },
         "cells": [
           {
-            "content": "15"
+            "content": "16"
           },
           {
             "content": "WOO",
@@ -1383,7 +1541,7 @@
             }
           },
           {
-            "content": "90.98"
+            "content": "90.69"
           },
           {
             "content": "95%"
@@ -1449,283 +1607,11 @@
       },
       {
         "scorer": {
-          "teamName": "Chicago Cubs",
-          "urlName": "edward-cabrera",
-          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04ali_96_9.png",
-          "scorerId": "04ali",
-          "upcomingEventStatusId": "1",
-          "rank": 16,
-          "posIdsNoFlex": [
-            "017"
-          ],
-          "defaultPosId": "015",
-          "posShortNames": "SP",
-          "team": false,
-          "icons": [
-            {
-              "tooltip": "In starting lineup",
-              "typeId": "12"
-            },
-            {
-              "tooltip": "Mar 7, 7:49 AM: Cabrera is using his four-seam fastball...",
-              "typeId": "8"
-            }
-          ],
-          "rookie": false,
-          "minorsEligible": false,
-          "posIds": [
-            "017"
-          ],
-          "teamId": "10200",
-          "name": "Edward Cabrera",
-          "teamShortName": "CHC",
-          "shortName": "E. Cabrera"
-        },
-        "cells": [
-          {
-            "content": "16"
-          },
-          {
-            "content": "Coover's",
-            "toolTip": "Coover's Corner",
-            "teamId": "e3fi1sgxmiytz3cs"
-          },
-          {
-            "content": "27"
-          },
-          {
-            "content": "LAA<br/>Tue 5:40PM",
-            "eventId": "06kek",
-            "popOver": {
-              "scorer": {
-                "urlName": "jose-soriano",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04c0o_96_7.png",
-                "scorerId": "04c0o",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "Mar 26, 6:11 PM: Soriano (1-0) earned the win Thursday...",
-                    "typeId": "9"
-                  },
-                  {
-                    "tooltip": "RHP",
-                    "typeId": "17"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Jose Soriano",
-                "shortName": "J. Soriano"
-              },
-              "header": "Probable Starter for LA Angels:",
-              "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b>  -  &nbsp;<b>K</b>  -  &nbsp;<b>ERA</b>  -  &nbsp;<b>WHIP</b>  -  &nbsp;"
-            }
-          },
-          {
-            "content": "90.89"
-          },
-          {
-            "content": "98%"
-          },
-          {
-            "content": "0%"
-          },
-          {
-            "content": "6"
-          },
-          {
-            "content": "1"
-          },
-          {
-            "content": "0.00"
-          },
-          {
-            "content": "0.333"
-          },
-          {
-            "content": "5"
-          },
-          {
-            "content": "0.0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "1"
-          }
-        ],
-        "actions": [
-          {
-            "typeId": "4"
-          },
-          {
-            "typeId": "5"
-          },
-          {
-            "typeId": "7"
-          }
-        ]
-      },
-      {
-        "scorer": {
-          "teamName": "Milwaukee Brewers",
-          "urlName": "aaron-ashby",
-          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04ew7_96_7.png",
-          "scorerId": "04ew7",
-          "rank": 17,
-          "posIdsNoFlex": [
-            "017"
-          ],
-          "defaultPosId": "016",
-          "posShortNames": "RP",
-          "team": false,
-          "icons": [
-            {
-              "tooltip": "Mar 18, 5:08 PM: Ashby tossed two scoreless innings of...",
-              "typeId": "8"
-            }
-          ],
-          "rookie": false,
-          "minorsEligible": false,
-          "statusId": "4",
-          "posIds": [
-            "017"
-          ],
-          "teamId": "10230",
-          "name": "Aaron Ashby",
-          "teamShortName": "MIL",
-          "shortName": "A. Ashby"
-        },
-        "cells": [
-          {
-            "content": "17"
-          },
-          {
-            "content": "FA",
-            "toolTip": "Free Agent"
-          },
-          {
-            "content": "27"
-          },
-          {
-            "content": "TB<br/>Tue 5:40PM",
-            "eventId": "06jue",
-            "popOver": {
-              "scorer": {
-                "urlName": "shane-mcclanahan",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04mlt_96_9.png",
-                "scorerId": "04mlt",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "Mar 16, 7:14 AM: McClanahan struck out seven and walked...",
-                    "typeId": "8"
-                  },
-                  {
-                    "tooltip": "LHP",
-                    "typeId": "16"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Shane McClanahan",
-                "shortName": "S. McClanahan"
-              },
-              "header": "Probable Starter for Tampa Bay:",
-              "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b>  -  &nbsp;<b>K</b>  -  &nbsp;<b>ERA</b>  -  &nbsp;<b>WHIP</b>  -  &nbsp;"
-            }
-          },
-          {
-            "content": "90.63"
-          },
-          {
-            "content": "25%"
-          },
-          {
-            "gainColor": 1,
-            "content": "+9%"
-          },
-          {
-            "content": "4.2"
-          },
-          {
-            "content": "1"
-          },
-          {
-            "content": "1.93"
-          },
-          {
-            "content": "0.857"
-          },
-          {
-            "content": "9"
-          },
-          {
-            "content": "0.0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "3"
-          }
-        ],
-        "actions": [
-          {
-            "typeId": "1"
-          },
-          {
-            "typeId": "5"
-          },
-          {
-            "typeId": "7"
-          }
-        ]
-      },
-      {
-        "scorer": {
           "teamName": "Baltimore Orioles",
           "urlName": "rico-garcia",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04rzp_96_4.png",
           "scorerId": "04rzp",
-          "rank": 18,
+          "rank": 17,
           "posIdsNoFlex": [
             "017"
           ],
@@ -1745,7 +1631,7 @@
         },
         "cells": [
           {
-            "content": "18"
+            "content": "17"
           },
           {
             "content": "FA",
@@ -1841,6 +1727,144 @@
         "actions": [
           {
             "typeId": "1"
+          },
+          {
+            "typeId": "5"
+          },
+          {
+            "typeId": "7"
+          }
+        ]
+      },
+      {
+        "scorer": {
+          "teamName": "Chicago Cubs",
+          "urlName": "edward-cabrera",
+          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04ali_96_9.png",
+          "scorerId": "04ali",
+          "upcomingEventStatusId": "1",
+          "rank": 18,
+          "posIdsNoFlex": [
+            "017"
+          ],
+          "defaultPosId": "015",
+          "posShortNames": "SP",
+          "team": false,
+          "icons": [
+            {
+              "tooltip": "In starting lineup",
+              "typeId": "12"
+            },
+            {
+              "tooltip": "Mar 7, 7:49 AM: Cabrera is using his four-seam fastball...",
+              "typeId": "8"
+            }
+          ],
+          "rookie": false,
+          "minorsEligible": false,
+          "posIds": [
+            "017"
+          ],
+          "teamId": "10200",
+          "name": "Edward Cabrera",
+          "teamShortName": "CHC",
+          "shortName": "E. Cabrera"
+        },
+        "cells": [
+          {
+            "content": "18"
+          },
+          {
+            "content": "Coover's",
+            "toolTip": "Coover's Corner",
+            "teamId": "e3fi1sgxmiytz3cs"
+          },
+          {
+            "content": "27"
+          },
+          {
+            "content": "LAA<br/>Tue 5:40PM",
+            "eventId": "06kek",
+            "popOver": {
+              "scorer": {
+                "urlName": "jose-soriano",
+                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04c0o_96_7.png",
+                "scorerId": "04c0o",
+                "team": false,
+                "icons": [
+                  {
+                    "tooltip": "Mar 26, 6:11 PM: Soriano (1-0) earned the win Thursday...",
+                    "typeId": "9"
+                  },
+                  {
+                    "tooltip": "RHP",
+                    "typeId": "17"
+                  }
+                ],
+                "rookie": false,
+                "minorsEligible": false,
+                "name": "Jose Soriano",
+                "shortName": "J. Soriano"
+              },
+              "header": "Probable Starter for LA Angels:",
+              "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b>  -  &nbsp;<b>K</b>  -  &nbsp;<b>ERA</b>  -  &nbsp;<b>WHIP</b>  -  &nbsp;"
+            }
+          },
+          {
+            "content": "90.58"
+          },
+          {
+            "content": "98%"
+          },
+          {
+            "content": "0%"
+          },
+          {
+            "content": "6"
+          },
+          {
+            "content": "1"
+          },
+          {
+            "content": "0.00"
+          },
+          {
+            "content": "0.333"
+          },
+          {
+            "content": "5"
+          },
+          {
+            "content": "0.0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "1"
+          }
+        ],
+        "actions": [
+          {
+            "typeId": "4"
           },
           {
             "typeId": "5"
@@ -2058,7 +2082,7 @@
             }
           },
           {
-            "content": "90.12"
+            "content": "90.2"
           },
           {
             "content": "99%"
@@ -2080,139 +2104,6 @@
           },
           {
             "content": "7"
-          },
-          {
-            "content": "0.0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "0"
-          },
-          {
-            "content": "1"
-          }
-        ],
-        "actions": [
-          {
-            "typeId": "4"
-          },
-          {
-            "typeId": "5"
-          },
-          {
-            "typeId": "7"
-          }
-        ]
-      },
-      {
-        "scorer": {
-          "teamName": "Seattle Mariners",
-          "urlName": "george-kirby",
-          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04yie_96_5.png",
-          "scorerId": "04yie",
-          "rank": 22,
-          "posIdsNoFlex": [
-            "017"
-          ],
-          "defaultPosId": "015",
-          "posShortNames": "SP",
-          "team": false,
-          "icons": [
-            {
-              "tooltip": "Mar 27, 11:27 PM: Kirby (1-0) allowed one run on two hits...",
-              "typeId": "9"
-            }
-          ],
-          "rookie": false,
-          "minorsEligible": false,
-          "posIds": [
-            "017"
-          ],
-          "teamId": "10130",
-          "name": "George Kirby",
-          "teamShortName": "SEA",
-          "shortName": "G. Kirby"
-        },
-        "cells": [
-          {
-            "content": "22"
-          },
-          {
-            "content": "G.O.A.T.",
-            "toolTip": "PowerCraig5000",
-            "teamId": "corx71vmmiytz3cs"
-          },
-          {
-            "content": "28"
-          },
-          {
-            "content": "NYY<br/>Tue 7:40PM",
-            "eventId": "06jp4",
-            "popOver": {
-              "scorer": {
-                "urlName": "max-fried",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02i2j_96_14.png",
-                "scorerId": "02i2j",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "Mar 25, 9:14 PM: Fried (1-0) allowed two hits and a walk...",
-                    "typeId": "9"
-                  },
-                  {
-                    "tooltip": "LHP",
-                    "typeId": "16"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Max Fried",
-                "shortName": "M. Fried"
-              },
-              "header": "Probable Starter for NY Yankees:",
-              "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b>  -  &nbsp;<b>K</b>  -  &nbsp;<b>ERA</b>  -  &nbsp;<b>WHIP</b>  -  &nbsp;"
-            }
-          },
-          {
-            "content": "88.89"
-          },
-          {
-            "content": "100%"
-          },
-          {
-            "content": "0%"
-          },
-          {
-            "content": "6"
-          },
-          {
-            "content": "1"
-          },
-          {
-            "content": "1.50"
-          },
-          {
-            "content": "0.667"
-          },
-          {
-            "content": "6"
           },
           {
             "content": "0.0"
@@ -2324,7 +2215,7 @@
             }
           },
           {
-            "content": "88.67"
+            "content": "88.66"
           },
           {
             "content": "5%"
@@ -2452,7 +2343,7 @@
             }
           },
           {
-            "content": "88.67"
+            "content": "88.66"
           },
           {
             "content": "1%"
@@ -2506,6 +2397,139 @@
         "actions": [
           {
             "typeId": "1"
+          },
+          {
+            "typeId": "5"
+          },
+          {
+            "typeId": "7"
+          }
+        ]
+      },
+      {
+        "scorer": {
+          "teamName": "Seattle Mariners",
+          "urlName": "george-kirby",
+          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04yie_96_5.png",
+          "scorerId": "04yie",
+          "rank": 26,
+          "posIdsNoFlex": [
+            "017"
+          ],
+          "defaultPosId": "015",
+          "posShortNames": "SP",
+          "team": false,
+          "icons": [
+            {
+              "tooltip": "Mar 27, 11:27 PM: Kirby (1-0) allowed one run on two hits...",
+              "typeId": "9"
+            }
+          ],
+          "rookie": false,
+          "minorsEligible": false,
+          "posIds": [
+            "017"
+          ],
+          "teamId": "10130",
+          "name": "George Kirby",
+          "teamShortName": "SEA",
+          "shortName": "G. Kirby"
+        },
+        "cells": [
+          {
+            "content": "26"
+          },
+          {
+            "content": "G.O.A.T.",
+            "toolTip": "PowerCraig5000",
+            "teamId": "corx71vmmiytz3cs"
+          },
+          {
+            "content": "28"
+          },
+          {
+            "content": "NYY<br/>Tue 7:40PM",
+            "eventId": "06jp4",
+            "popOver": {
+              "scorer": {
+                "urlName": "max-fried",
+                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02i2j_96_14.png",
+                "scorerId": "02i2j",
+                "team": false,
+                "icons": [
+                  {
+                    "tooltip": "Mar 25, 9:14 PM: Fried (1-0) allowed two hits and a walk...",
+                    "typeId": "9"
+                  },
+                  {
+                    "tooltip": "LHP",
+                    "typeId": "16"
+                  }
+                ],
+                "rookie": false,
+                "minorsEligible": false,
+                "name": "Max Fried",
+                "shortName": "M. Fried"
+              },
+              "header": "Probable Starter for NY Yankees:",
+              "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b>  -  &nbsp;<b>K</b>  -  &nbsp;<b>ERA</b>  -  &nbsp;<b>WHIP</b>  -  &nbsp;"
+            }
+          },
+          {
+            "content": "88.62"
+          },
+          {
+            "content": "100%"
+          },
+          {
+            "content": "0%"
+          },
+          {
+            "content": "6"
+          },
+          {
+            "content": "1"
+          },
+          {
+            "content": "1.50"
+          },
+          {
+            "content": "0.667"
+          },
+          {
+            "content": "6"
+          },
+          {
+            "content": "0.0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "0"
+          },
+          {
+            "content": "1"
+          }
+        ],
+        "actions": [
+          {
+            "typeId": "4"
           },
           {
             "typeId": "5"
@@ -2585,7 +2609,7 @@
             }
           },
           {
-            "content": "88.48"
+            "content": "88.55"
           },
           {
             "content": "52%"
