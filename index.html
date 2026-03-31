@@ -38,14 +38,17 @@
     tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
     tbody tr:last-child { border-bottom: none; }
     tbody tr:hover { background: var(--bg); }
-    tbody tr.highlighted { background: var(--accent-light); }
+    tbody tr.hl { background: var(--accent-light); }
     td { padding: 9px 14px; white-space: nowrap; text-align: right; }
     td.left { text-align: left; }
-    .team-cell { display: flex; align-items: center; gap: 10px; min-width: 160px; }
+    .team-cell { display: flex; align-items: center; gap: 10px; }
     .team-logo { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); flex-shrink: 0; }
     .team-logo-ph { width: 26px; height: 26px; border-radius: 50%; background: var(--accent-light); border: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; color: var(--accent); }
+    .player-hs { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); flex-shrink: 0; }
     .rank { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; font-weight: 500; background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
     .rank.top { background: var(--accent); color: white; border-color: var(--accent); }
+    .badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 500; background: var(--accent-light); color: var(--accent); }
+    .badge.fa { background: #fef3e2; color: #b7791f; }
     .loading { text-align: center; padding: 48px; color: var(--muted); font-size: 13px; }
     .error-msg { text-align: center; padding: 48px; color: var(--danger); font-size: 13px; }
     .search-wrap { padding: 8px 20px 10px; border-bottom: 1px solid var(--border); }
@@ -59,7 +62,7 @@
     .team-btn { background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 5px 14px; font-family: var(--font-body); font-size: 12px; font-weight: 500; cursor: pointer; color: var(--muted); transition: all 0.15s; }
     .team-btn:hover { border-color: var(--accent); color: var(--accent); }
     .team-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
-    .section-sep { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent2); padding: 10px 0 0; }
+    .section-sep { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent2); padding: 16px 0 4px; }
   </style>
 </head>
 <body>
@@ -134,9 +137,14 @@
 </main>
 <script>
 const BASE = 'https://raw.githubusercontent.com/cameronpeebles/baseball/main/data/';
-const S = { teamInfo:{}, hitRows:[], pitRows:[], hitH:{fixed:[],var:[]}, pitH:{fixed:[],var:[]}, hitF:'ALL', pitF:'ALL', hitQ:'', pitQ:'', rosterRaw:null };
+const S = {
+  teamInfo:{}, hitRows:[], pitRows:[],
+  hitHeaders:[], pitHeaders:[],
+  hitF:'ALL', pitF:'ALL', hitQ:'', pitQ:'',
+  rosterRaw:null
+};
 
-async function load(f){ const r=await fetch(BASE+f+'?t='+Date.now()); if(!r.ok)throw new Error('Failed: '+f); return r.json(); }
+async function load(f){ const r=await fetch(BASE+f+'?t='+Date.now()); if(!r.ok) throw new Error('Failed: '+f); return r.json(); }
 
 function nav(name,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -163,20 +171,20 @@ async function init(){
   } catch(e) {
     console.error(e);
     ['standings-body','season-body','combined-body','hit-table','pit-table','roster-table'].forEach(id=>{
-      const el=document.getElementById(id); if(el){el.className='error-msg';el.textContent='Error: '+e.message;}
+      const el=document.getElementById(id); if(el){el.innerHTML='<div class="error-msg">Error: '+e.message+'</div>';}
     });
   }
 }
 
-// ── TABLE LIST PAGES (standings/season/combined) ──────────────
+// ── STANDINGS / SEASON / COMBINED ────────────────────────────
 function renderTableListPage(data, containerId) {
   const teamInfo = data?.data?.fantasyTeamInfo || S.teamInfo;
   const tables = data?.data?.tableList || [];
   if(!tables.length){ document.getElementById(containerId).innerHTML='<div class="error-msg">No data</div>'; return; }
-  document.getElementById(containerId).innerHTML = tables.map(t => buildTable(t, teamInfo)).join('');
+  document.getElementById(containerId).innerHTML = tables.map(t=>buildStandingsTable(t,teamInfo)).join('');
 }
 
-function buildTable(table, teamInfo) {
+function buildStandingsTable(table, teamInfo) {
   if(table.tableType==='SECTION_HEADING') return `<p class="section-sep">${table.caption||''}</p>`;
   const fh = table.fixedHeader?.cells || [];
   const vh = table.header?.cells || [];
@@ -194,7 +202,7 @@ function buildTable(table, teamInfo) {
   rows.forEach((row,i) => {
     const fc = row.fixedCells||[];
     const vc = row.cells||[];
-    html += `<tr${row.highlight?' class="highlighted"':''}>`;
+    html += `<tr${row.highlight?' class="hl"':''}>`;
     fc.forEach((cell,j)=>{
       const val = cell.content??'';
       const key = fh[j]?.key||'';
@@ -209,7 +217,7 @@ function buildTable(table, teamInfo) {
         const name=t.name||val;
         html+=`<td class="left"><div class="team-cell">${logo?`<img class="team-logo" src="${logo}" alt="" onerror="this.style.display='none'">`:`<div class="team-logo-ph">${(name||'?')[0]}</div>`}<span>${name}</span></div></td>`;
       } else {
-        html+=`<td${hname==='team'?' class="left"':''}>${val}</td>`;
+        html+=`<td class="${hname==='team'?'left':''}">${val}</td>`;
       }
     });
     vc.forEach(cell=>{ html+=`<td>${cell.content??''}</td>`; });
@@ -219,14 +227,17 @@ function buildTable(table, teamInfo) {
   return html;
 }
 
-// ── PLAYERS ───────────────────────────────────────────────────
+// ── PLAYERS (hitting & pitching) ─────────────────────────────
 function loadPlayers(data, type) {
-  const d = data?.data||{};
-  const rows = d.playerDataRows||d.rows||d.playerList||[];
-  const fh = d.fixedHeader?.cells||[];
-  const vh = d.header?.cells||[];
-  if(type==='hit'){ S.hitRows=rows; S.hitH={fixed:fh,var:vh}; }
-  else { S.pitRows=rows; S.pitH={fixed:fh,var:vh}; }
+  // Player data lives in data.statsTable[]
+  // Each entry: { scorer: { name, teamShortName, posShortNames, headshotUrl, teamId(MLB) }, cells: [...] }
+  // cells[1] has the fantasy teamId
+  const d = data?.data || {};
+  const rows = d.statsTable || [];
+  const headers = d.columnHeaders || [];
+
+  if(type==='hit'){ S.hitRows=rows; S.hitHeaders=headers; }
+  else { S.pitRows=rows; S.pitHeaders=headers; }
   drawPlayers(type);
 }
 
@@ -243,95 +254,129 @@ function doSearch(type,v){
 }
 
 function drawPlayers(type){
-  const isHit=type==='hit';
-  const rows=isHit?S.hitRows:S.pitRows;
-  const H=isHit?S.hitH:S.pitH;
-  const filter=isHit?S.hitF:S.pitF;
-  const q=isHit?S.hitQ:S.pitQ;
-  const id=isHit?'hit-table':'pit-table';
+  const isHit = type==='hit';
+  const rows = isHit?S.hitRows:S.pitRows;
+  const headers = isHit?S.hitHeaders:S.pitHeaders;
+  const filter = isHit?S.hitF:S.pitF;
+  const q = isHit?S.hitQ:S.pitQ;
+  const id = isHit?'hit-table':'pit-table';
 
-  if(!rows.length){ document.getElementById(id).innerHTML='<div class="error-msg">No player data found</div>'; return; }
+  if(!rows.length){
+    document.getElementById(id).innerHTML='<div class="error-msg">No player data found</div>';
+    return;
+  }
 
-  const filtered = rows.filter(row=>{
-    const fc=row.fixedCells||[];
-    const name=(row.name||row.playerName||fc[0]?.content||'').toLowerCase();
-    const teamId=row.teamId||row.fantasyTeamId||fc.find(c=>c.teamId)?.teamId||'';
-    if(filter==='FA'&&teamId) return false;
-    if(filter==='OWNED'&&!teamId) return false;
-    if(q&&!name.includes(q)) return false;
+  const filtered = rows.filter(row => {
+    const scorer = row.scorer || {};
+    const name = (scorer.name||'').toLowerCase();
+    // Fantasy team is in cells[1] teamId
+    const fantasyTeamId = (row.cells||[])[1]?.teamId || '';
+    if(filter==='FA' && fantasyTeamId) return false;
+    if(filter==='OWNED' && !fantasyTeamId) return false;
+    if(q && !name.includes(q)) return false;
     return true;
   });
 
-  const fh=H.fixed, vh=H.var;
-  let html='<table><thead><tr>';
-  fh.forEach(h=>{ html+=`<th class="left">${h.shortName||h.name||''}</th>`; });
-  vh.forEach(h=>{ html+=`<th>${h.shortName||h.name||''}</th>`; });
-  if(!fh.length&&!vh.length){ html+='<th class="left">Player</th><th class="left">Fantasy Team</th>'; }
-  html+='</tr></thead><tbody>';
+  // Build header row
+  // Fixed cols: Player, Pos, MLB Team, Fantasy Team, then columnHeaders
+  let html = '<table><thead><tr>';
+  html += '<th class="left">Player</th>';
+  html += '<th class="left">Pos</th>';
+  html += '<th class="left">MLB</th>';
+  html += '<th class="left">Fantasy Team</th>';
+  // Skip first 2 cells (rank + fantasy team) — show rest as stats
+  // columnHeaders maps to cells starting at index 2 typically
+  // First few cells are rank, fantasy team, then stats
+  // We'll use headers for stat cols
+  headers.forEach(h => { html+=`<th>${h.shortName||h.name||''}</th>`; });
+  html += '</tr></thead><tbody>';
 
-  filtered.forEach(row=>{
-    const fc=row.fixedCells||[];
-    const vc=row.cells||[];
-    const teamId=row.teamId||row.fantasyTeamId||fc.find(c=>c.teamId)?.teamId||'';
-    const ft=S.teamInfo[teamId]?.shortName||(teamId?'Rostered':'FA');
-    html+='<tr>';
-    if(fc.length){
-      fc.forEach((cell,j)=>{
-        const val=cell.content??'';
-        const ctid=cell.teamId||'';
-        const hname=(fh[j]?.name||'').toLowerCase();
-        if(ctid){
-          const t=S.teamInfo[ctid]||{};
-          html+=`<td class="left"><div class="team-cell">${t.logoUrl512?`<img class="team-logo" src="${t.logoUrl512}" alt="" onerror="this.style.display='none'">`:`<div class="team-logo-ph">${(t.shortName||'?')[0]}</div>`}<span>${t.shortName||ft}</span></div></td>`;
-        } else if(j===0){
-          html+=`<td class="left"><strong>${val}</strong></td>`;
-        } else {
-          html+=`<td class="${hname==='team'?'left':''}">${val}</td>`;
-        }
-      });
+  filtered.forEach(row => {
+    const scorer = row.scorer || {};
+    const cells = row.cells || [];
+    const name = scorer.name || scorer.shortName || '';
+    const pos = scorer.posShortNames || '';
+    const mlb = scorer.teamShortName || '';
+    const hs = scorer.headshotUrl || '';
+    const fantasyTeamId = cells[1]?.teamId || '';
+    const fantasyTeam = S.teamInfo[fantasyTeamId] || null;
+    const isFa = !fantasyTeamId;
+
+    html += '<tr>';
+    // Player name + headshot
+    html += `<td class="left"><div class="team-cell">${hs?`<img class="player-hs" src="${hs}" alt="" onerror="this.style.display='none'">`:''}
+      <span><strong>${name}</strong></span></div></td>`;
+    html += `<td class="left"><span style="color:var(--muted);font-size:12px">${pos}</span></td>`;
+    html += `<td class="left">${mlb}</td>`;
+    // Fantasy team
+    if(isFa){
+      html += `<td class="left"><span class="badge fa">FA</span></td>`;
+    } else if(fantasyTeam) {
+      html += `<td class="left"><div class="team-cell">${fantasyTeam.logoUrl512?`<img class="team-logo" src="${fantasyTeam.logoUrl512}" alt="" onerror="this.style.display='none'">`:`<div class="team-logo-ph">${(fantasyTeam.shortName||'?')[0]}</div>`}<span style="font-size:12px">${fantasyTeam.shortName||''}</span></div></td>`;
     } else {
-      const name=row.name||row.playerName||'';
-      html+=`<td class="left"><strong>${name}</strong></td><td class="left">${ft}</td>`;
+      html += `<td class="left"><span class="badge">Rostered</span></td>`;
     }
-    vc.forEach(cell=>{ html+=`<td>${cell.content??''}</td>`; });
-    html+='</tr>';
+    // Stat cells — skip first 2 (rank + fantasy team), then map to headers
+    // cells[0]=rank, cells[1]=fantasy team, cells[2+]=stats matching columnHeaders
+    const statCells = cells.slice(2);
+    statCells.forEach(cell => {
+      const val = cell.content ?? '';
+      // Strip HTML tags (some cells have <br/> for upcoming games)
+      const clean = val.toString().replace(/<[^>]+>/g,'');
+      html += `<td>${clean}</td>`;
+    });
+    html += '</tr>';
   });
-  html+='</tbody></table>';
-  document.getElementById(id).innerHTML=html;
+
+  html += '</tbody></table>';
+  document.getElementById(id).innerHTML = html;
 }
 
 // ── ROSTERS ───────────────────────────────────────────────────
 function buildRosterSelector(){
-  const sel=document.getElementById('team-sel');
-  const ids=Object.keys(S.teamInfo);
+  const sel = document.getElementById('team-sel');
+  const ids = Object.keys(S.teamInfo);
   if(!ids.length){ document.getElementById('roster-table').innerHTML='<div class="error-msg">No teams found</div>'; return; }
   ids.forEach((id,i)=>{
-    const t=S.teamInfo[id];
-    const btn=document.createElement('button');
-    btn.className='team-btn'+(i===0?' active':'');
-    btn.textContent=t.shortName||t.name;
-    btn.onclick=()=>{ document.querySelectorAll('.team-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); showRoster(id); };
+    const t = S.teamInfo[id];
+    const btn = document.createElement('button');
+    btn.className = 'team-btn'+(i===0?' active':'');
+    btn.textContent = t.shortName||t.name;
+    btn.onclick = () => {
+      document.querySelectorAll('.team-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      showRoster(id);
+    };
     sel.appendChild(btn);
   });
   showRoster(ids[0]);
 }
 
 function showRoster(teamId){
-  const data=S.rosterRaw;
-  const ti=S.teamInfo[teamId]||{};
-  const teams=data?.data?.fantasyTeams||data?.data?.teams||[];
-  const team=teams.find(t=>t.id===teamId||t.teamId===teamId);
-  const players=team?.roster||team?.players||team?.playerList||[];
-  const byKey=data?.data?.rosters?.[teamId]||[];
-  const all=players.length?players:(Array.isArray(byKey)?byKey:[]);
+  const data = S.rosterRaw;
+  const ti = S.teamInfo[teamId]||{};
+
+  // Try various structures
+  const teams = data?.data?.fantasyTeams||data?.data?.teams||[];
+  const team = teams.find(t=>t.id===teamId||t.teamId===teamId);
+  const players = team?.roster||team?.players||team?.playerList||[];
+  const byKey = data?.data?.rosters?.[teamId]||[];
+  const all = players.length ? players : (Array.isArray(byKey)?byKey:[]);
 
   if(!all.length){
-    document.getElementById('roster-table').innerHTML=`<div class="loading">No roster data for ${ti.name||teamId} yet.<br><small style="color:var(--muted)">Raw keys: ${Object.keys(data?.data||{}).join(', ')}</small></div>`;
+    // Show raw keys to help debug
+    const keys = JSON.stringify(Object.keys(data?.data||{}));
+    document.getElementById('roster-table').innerHTML=`<div class="loading">No roster data for <strong>${ti.name||teamId}</strong> yet.<br><small style="color:var(--muted);margin-top:8px;display:block">Data keys: ${keys}</small></div>`;
     return;
   }
-  let html='<table><thead><tr><th class="left">Player</th><th class="left">Pos</th><th class="left">MLB Team</th><th class="left">Status</th></tr></thead><tbody>';
+
+  let html = '<table><thead><tr><th class="left">Player</th><th class="left">Pos</th><th class="left">MLB Team</th><th class="left">Status</th></tr></thead><tbody>';
   all.forEach(p=>{
-    html+=`<tr><td class="left"><strong>${p.name||p.playerName||''}</strong></td><td class="left">${p.position||p.pos||''}</td><td class="left">${p.mlbTeamShortName||p.teamShortName||p.proTeam||''}</td><td class="left">${p.status||p.injuryStatus||''}</td></tr>`;
+    const name = p.name||p.playerName||'';
+    const pos = p.position||p.pos||p.eligiblePositions||'';
+    const mlb = p.mlbTeamShortName||p.teamShortName||p.proTeam||'';
+    const status = p.status||p.injuryStatus||'';
+    html+=`<tr><td class="left"><strong>${name}</strong></td><td class="left">${pos}</td><td class="left">${mlb}</td><td class="left">${status}</td></tr>`;
   });
   html+='</tbody></table>';
   document.getElementById('roster-table').innerHTML=html;
