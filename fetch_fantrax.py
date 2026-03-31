@@ -1,4 +1,14 @@
-import requests
+That's exactly what I needed! Now I have all 6 API calls. Let me summarize what we have:
+
+getStandings with view: SEASON_STATS
+getStandings with view: COMBINED
+getPlayerStats for hitting
+getPlayerStats for pitching
+getFantasyTeams for rosters
+getFantasyColumns for roster column info
+
+Now let me build the complete updated fetch_fantrax.py that pulls all of this data:
+pythonimport requests
 import json
 import os
 
@@ -9,19 +19,13 @@ PASSWORD = os.environ.get("FANTRAX_PASSWORD", "")
 FX_RM = os.environ.get("FANTRAX_FX_RM", "")
 CF_CLEARANCE = os.environ.get("FANTRAX_CF_CLEARANCE", "")
 
-print(f"FX_RM loaded: {'YES' if FX_RM else 'NO'}")
-print(f"CF_CLEARANCE loaded: {'YES' if CF_CLEARANCE else 'NO'}")
-
 session = requests.Session()
 session.headers.update({
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Content-Type": "application/json",
     "Origin": "https://www.fantrax.com",
-    "Referer": f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/standings",
     "Accept": "application/json, text/plain, */*",
     "Accept-Language": "en-US,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Connection": "keep-alive",
     "Sec-Fetch-Dest": "empty",
     "Sec-Fetch-Mode": "cors",
     "Sec-Fetch-Site": "same-origin",
@@ -30,44 +34,38 @@ session.headers.update({
     "sec-ch-ua-platform": '"Windows"',
 })
 
-# Set all available cookies
 if FX_RM:
     session.cookies.set("FX_RM", FX_RM, domain=".fantrax.com")
 if CF_CLEARANCE:
     session.cookies.set("cf_clearance", CF_CLEARANCE, domain=".fantrax.com")
 session.cookies.set("ui", "xvxwu418k69yvpe7", domain=".fantrax.com")
 
-def fetch(method, data, refUrl):
+def fetch(msgs, refUrl):
     url = f"https://www.fantrax.com/fxpa/req?leagueId={LEAGUE_ID}"
+    all_msgs = [{"method": "login", "data": {
+        "username": USERNAME,
+        "password": PASSWORD,
+        "stayLoggedIn": True
+    }}] + msgs
     body = {
-        "msgs": [
-            {"method": "login", "data": {
-                "username": USERNAME,
-                "password": PASSWORD,
-                "stayLoggedIn": True
-            }},
-            {"method": method, "data": data}
-        ],
+        "msgs": all_msgs,
         "uiv": 3,
         "refUrl": refUrl,
-        "dt": 0,
+        "dt": 1,
         "at": 0,
         "tz": "America/Denver",
         "v": "180.1.2"
     }
     r = session.post(url, json=body)
-    print(f"{method}: {r.status_code}")
     result = r.json()
     responses = result.get("responses", [])
-    if len(responses) < 2:
-        print("ERROR: Not enough responses")
-        print(json.dumps(result, indent=2))
-        exit(1)
-    if "WARNING_NOT_LOGGED_IN" in str(responses[1]):
-        print(f"ERROR: {method} not logged in")
-        print(json.dumps(responses[1], indent=2))
-        exit(1)
-    return responses[1]
+    # responses[0] is login, rest are data
+    data_responses = responses[1:]
+    for i, resp in enumerate(data_responses):
+        if "WARNING_NOT_LOGGED_IN" in str(resp):
+            print(f"ERROR: Request {i} returned not logged in")
+            exit(1)
+    return data_responses
 
 def save(filename, data):
     os.makedirs("data", exist_ok=True)
@@ -75,52 +73,53 @@ def save(filename, data):
         json.dump(data, f, indent=2)
     print(f"Saved data/{filename}")
 
-# Fetch standings
-print("Fetching standings...")
-standings = fetch(
-    "getStandings",
-    {"leagueId": LEAGUE_ID},
-    f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/standings"
-)
-save("standings.json", standings)
+# Fetch season stats standings
+print("Fetching season stats standings...")
+responses = fetch([
+    {"method": "getStandings", "data": {"leagueId": LEAGUE_ID, "view": "SEASON_STATS"}}
+], f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/standings;view=SEASON_STATS")
+save("standings_season.json", responses[0])
+
+# Fetch combined standings
+print("Fetching combined standings...")
+responses = fetch([
+    {"method": "getStandings", "data": {"leagueId": LEAGUE_ID, "view": "COMBINED"}}
+], f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/standings;view=COMBINED")
+save("standings_combined.json", responses[0])
+
+# Fetch all hitting stats
+print("Fetching hitting stats...")
+responses = fetch([
+    {"method": "getPlayerStats", "data": {
+        "statusOrTeamFilter": "ALL",
+        "pageNumber": "1",
+        "positionOrGroup": "BASEBALL_HITTING",
+        "miscDisplayType": "1"
+    }}
+], f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/players;statusOrTeamFilter=ALL;pageNumber=1;positionOrGroup=BASEBALL_HITTING;miscDisplayType=1")
+save("players_hitting.json", responses[0])
+
+# Fetch all pitching stats
+print("Fetching pitching stats...")
+responses = fetch([
+    {"method": "getPlayerStats", "data": {
+        "statusOrTeamFilter": "ALL",
+        "pageNumber": "1",
+        "positionOrGroup": "BASEBALL_PITCHING",
+        "miscDisplayType": "1"
+    }}
+], f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/players;statusOrTeamFilter=ALL;pageNumber=1;positionOrGroup=BASEBALL_PITCHING;miscDisplayType=1")
+save("players_pitching.json", responses[0])
 
 # Fetch rosters
 print("Fetching rosters...")
-rosters = fetch(
-    "getRosters",
-    {"leagueId": LEAGUE_ID},
-    f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/rosters"
-)
-save("rosters.json", rosters)
-
-# Fetch free agents - hitters
-print("Fetching free agent hitters...")
-fa_hitting = fetch(
-    "getPlayerStats",
-    {
-        "positionOrGroup": "BASEBALL_HITTING",
-        "miscDisplayType": "1",
-        "pageNumber": "1",
-        "sortType": "SCORING_CATEGORY",
-        "statusOrTeamFilter": "FA"
-    },
-    f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/players"
-)
-save("free_agents_hitting.json", fa_hitting)
-
-# Fetch free agents - pitchers
-print("Fetching free agent pitchers...")
-fa_pitching = fetch(
-    "getPlayerStats",
-    {
-        "positionOrGroup": "BASEBALL_PITCHING",
-        "miscDisplayType": "1",
-        "pageNumber": "1",
-        "sortType": "SCORING_CATEGORY",
-        "statusOrTeamFilter": "FA"
-    },
-    f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/players"
-)
-save("free_agents_pitching.json", fa_pitching)
+responses = fetch([
+    {"method": "getFantasyTeams", "data": {}},
+    {"method": "getFantasyColumns", "data": {"maxResult": 8}},
+    {"method": "getRefObject", "data": {"type": "FantasyItemStatus"}}
+], f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/team/roster;reload=2")
+save("rosters.json", responses[0])
+save("roster_columns.json", responses[1])
+save("roster_status.json", responses[2])
 
 print("All done!")
