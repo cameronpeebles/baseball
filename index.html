@@ -110,6 +110,56 @@ td.neg { color: #c0392b; font-weight: 500; }
 .mp-cat-val.win  { background: var(--accent-light); color: var(--accent); }
 .mp-cat-val.lose { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
 .mp-cat-val.tie  { background: #fef3e2; color: #b7791f; }
+/* Trade Analyzer */
+.trade-selectors { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+@media (max-width: 700px) { .trade-selectors { grid-template-columns: 1fr; } }
+.trade-team-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.trade-team-header { padding: 12px 16px; background: var(--bg); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.trade-team-select { flex: 1; border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 10px; font-family: var(--font-body); font-size: 13px; background: var(--surface); color: var(--text); outline: none; cursor: pointer; }
+.trade-team-select:focus { border-color: var(--accent); }
+.trade-roster-list { max-height: 420px; overflow-y: auto; }
+.trade-player-row { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; user-select: none; }
+.trade-player-row:last-child { border-bottom: none; }
+.trade-player-row:hover { background: var(--bg); }
+.trade-player-row.selected { background: var(--accent-light); border-left: 3px solid var(--accent); }
+.trade-player-row.selected-b { background: #fef3e2; border-left: 3px solid var(--accent2); }
+.trade-player-info { flex: 1; min-width: 0; }
+.trade-player-name { font-weight: 500; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trade-player-pos { font-size: 11px; color: var(--muted); }
+.trade-player-rating { text-align: right; flex-shrink: 0; }
+.trade-player-score { font-size: 13px; font-weight: 500; }
+.trade-player-pct { font-size: 10px; color: var(--muted); }
+.rating-bar { width: 60px; height: 4px; background: var(--border); border-radius: 2px; margin-top: 3px; margin-left: auto; }
+.rating-bar-fill { height: 100%; border-radius: 2px; }
+.trade-results { margin-top: 0; }
+.trade-result-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
+.trade-result-header { padding: 10px 16px; background: var(--accent-light); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.trade-result-header.mutual { background: var(--accent-light); }
+.trade-result-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); }
+.trade-result-score { font-size: 12px; color: var(--muted); }
+.trade-exchange { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0; }
+.trade-side { padding: 12px 16px; }
+.trade-side h4 { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 8px; }
+.trade-arrow { display: flex; align-items: center; justify-content: center; padding: 0 12px; color: var(--muted); font-size: 18px; background: var(--bg); border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+.trade-player-chip { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+.trade-chip-info { flex: 1; }
+.trade-chip-name { font-size: 13px; font-weight: 500; }
+.trade-chip-detail { font-size: 11px; color: var(--muted); }
+.trade-chip-delta { font-size: 12px; font-weight: 500; padding: 2px 7px; border-radius: 10px; }
+.trade-chip-delta.up   { background: var(--accent-light); color: var(--accent); }
+.trade-chip-delta.down { background: #fef3e2; color: #b7791f; }
+.pos-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 500; background: var(--bg); color: var(--muted); border: 1px solid var(--border); margin-right: 4px; }
+.fa-section { margin-top: 24px; }
+.fa-team-selector { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.fa-team-label { font-size: 13px; font-weight: 500; }
+.weakness-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; background: #fef3e2; color: #b7791f; margin: 2px; }
+.strength-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; background: var(--accent-light); color: var(--accent); margin: 2px; }
+.trade-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+.trade-tab { padding: 10px 20px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; background: none; border-top: none; border-left: none; border-right: none; font-family: var(--font-body); transition: all 0.15s; }
+.trade-tab:hover { color: var(--text); }
+.trade-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.trade-tab-content { display: none; }
+.trade-tab-content.active { display: block; }
 </style>
 </head>
 <body>
@@ -130,6 +180,7 @@ td.neg { color: #c0392b; font-weight: 500; }
   <button onclick="showPage('zscores',this)">Z-Scores</button>
   <button onclick="showPage('joe',this)">JOE Factor</button>
   <button onclick="showPage('matchup',this)">Match Predictions</button>
+  <button onclick="showPage('trade',this)">Trade Analyzer</button>
 </nav>
 
 <main>
@@ -262,6 +313,12 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div id="matchup-body"><div class="loading">Loading...</div></div>
   </div>
 
+  <div class="page" id="page-trade">
+    <div class="page-title">Trade Analyzer</div>
+    <div class="page-subtitle">Find mutually beneficial trades between two teams, or free agents to fill weaknesses.</div>
+    <div id="trade-body"><div class="loading">Loading...</div></div>
+  </div>
+
 </main>
 
 <script>
@@ -283,6 +340,7 @@ var analyticsBuilt = false;
 var zRendered = false;
 var joeRendered = false;
 var matchupRendered = false;
+var tradeRendered = false;
 
 function loadJSON(f) {
   return fetch(BASE + f + '?t=' + Date.now()).then(function(r) {
@@ -300,6 +358,7 @@ function showPage(name, btn) {
   if (name === 'zscores') renderZScores();
   if (name === 'joe') renderJOEFactor();
   if (name === 'matchup') renderMatchPredictions();
+  if (name === 'trade') renderTradeAnalyzer();
 }
 
 function init() {
@@ -1226,7 +1285,598 @@ window.showMPPeriod = function(period, btn) {
   document.getElementById('mp-period-body').innerHTML = html;
 };
 
-init();
+// ── Trade Analyzer ───────────────────────────────────────────────────────────
+
+var TA = {
+  players: [],      // all rostered players with ratings
+  teamA: null,      // selected team ID
+  teamB: null,      // selected team ID
+  selectedA: [],    // selected player names for team A (max 2)
+  selectedB: [],    // selected player names for team B (max 2)
+  activeTab: 'trade'
+};
+
+// Position groups
+var POS_GROUPS = {
+  'Infield':  ['C','1B','2B','3B','SS','UT','MI','CI'],
+  'Outfield': ['OF','LF','CF','RF'],
+  'SP':       ['SP'],
+  'RP':       ['RP']
+};
+
+// Stats used per player type
+var BAT_CATS = ['R','HR','RBI','SB','AVG'];
+var PIT_CATS = ['K','W','SV','ERA','WHIP'];
+var LOW_CATS = ['ERA','WHIP']; // lower is better
+
+function isPitcher(pos) {
+  return pos && (pos.indexOf('SP') !== -1 || pos.indexOf('RP') !== -1);
+}
+
+function playerGroup(pos) {
+  if (!pos) return null;
+  var parts = pos.split(',').map(function(p) { return p.trim(); });
+  for (var g in POS_GROUPS) {
+    for (var i = 0; i < POS_GROUPS[g].length; i++) {
+      if (parts.indexOf(POS_GROUPS[g][i]) !== -1) return g;
+    }
+  }
+  return null;
+}
+
+function primaryPos(pos) {
+  if (!pos) return '?';
+  return pos.split(',')[0].trim();
+}
+
+// Build stat index map from headers array
+function buildStatIdx(headers) {
+  var idx = {};
+  headers.forEach(function(h, i) {
+    if (h.key)       idx[h.key.toUpperCase()]       = i;
+    if (h.shortName) idx[h.shortName.toUpperCase()] = i;
+    if (h.name)      idx[h.name.toUpperCase()]      = i;
+  });
+  return idx;
+}
+
+function getStatVal(cells, key, idx) {
+  var i = idx[key.toUpperCase()];
+  if (i == null) return null;
+  var v = parseFloat((cells[i] || {}).content);
+  return isNaN(v) ? null : v;
+}
+
+// Percentile rank of val within array (0-1), higher = better
+// For low-is-better stats, invert
+function percentile(val, vals, lowIsBetter) {
+  if (val == null || vals.length === 0) return 0.5;
+  var below = vals.filter(function(v) { return lowIsBetter ? v > val : v < val; }).length;
+  return below / vals.length;
+}
+
+function renderTradeAnalyzer() {
+  if (tradeRendered) return;
+  tradeRendered = true;
+
+  // Wait for player data to be loaded (it loads during init)
+  // Poll briefly if needed
+  function tryBuild() {
+    if (S.hitRows.length && S.pitRows.length) {
+      buildTradeAnalyzer();
+    } else {
+      setTimeout(tryBuild, 300);
+    }
+  }
+  tryBuild();
+}
+
+function buildTradeAnalyzer() {
+  var hitIdx = buildStatIdx(S.hitHeaders);
+  var pitIdx = buildStatIdx(S.pitHeaders);
+
+  // Build full rostered player list with stats + ratings
+  var allPlayers = [];
+
+  // Process hitters
+  S.hitRows.forEach(function(row) {
+    var scorer = row.scorer || {};
+    var cells  = row.cells || [];
+    var ftId   = (cells[1] && cells[1].teamId) || '';
+    if (!ftId) return; // FA only rostered
+    var pos = scorer.posShortNames || '';
+    var stats = {};
+    BAT_CATS.forEach(function(cat) {
+      stats[cat] = getStatVal(cells, cat, hitIdx);
+    });
+    allPlayers.push({
+      name:   scorer.name || '',
+      pos:    pos,
+      group:  playerGroup(pos),
+      mlb:    scorer.teamShortName || '',
+      hs:     scorer.headshotUrl || '',
+      ftId:   ftId,
+      type:   'bat',
+      stats:  stats
+    });
+  });
+
+  // Process pitchers
+  S.pitRows.forEach(function(row) {
+    var scorer = row.scorer || {};
+    var cells  = row.cells || [];
+    var ftId   = (cells[1] && cells[1].teamId) || '';
+    if (!ftId) return;
+    var pos = scorer.posShortNames || '';
+    var stats = {};
+    PIT_CATS.forEach(function(cat) {
+      stats[cat] = getStatVal(cells, cat, pitIdx);
+    });
+    allPlayers.push({
+      name:   scorer.name || '',
+      pos:    pos,
+      group:  playerGroup(pos),
+      mlb:    scorer.teamShortName || '',
+      hs:     scorer.headshotUrl || '',
+      ftId:   ftId,
+      type:   'pit',
+      stats:  stats
+    });
+  });
+
+  // Compute per-position percentile ratings
+  // Group players by their primary position for comparison
+  var byPos = {};
+  allPlayers.forEach(function(p) {
+    var pp = primaryPos(p.pos);
+    if (!byPos[pp]) byPos[pp] = [];
+    byPos[pp].push(p);
+  });
+
+  // Also group by group (Infield, Outfield, SP, RP)
+  var byGroup = {};
+  allPlayers.forEach(function(p) {
+    if (!p.group) return;
+    if (!byGroup[p.group]) byGroup[p.group] = [];
+    byGroup[p.group].push(p);
+  });
+
+  // Rate each player: posRating (vs same primary pos) and groupRating (vs group)
+  allPlayers.forEach(function(p) {
+    var cats = p.type === 'bat' ? BAT_CATS : PIT_CATS;
+    var pp   = primaryPos(p.pos);
+    var pg   = p.group;
+
+    // Collect stat arrays for position peers and group peers
+    var posPeers   = byPos[pp] || [];
+    var groupPeers = byGroup[pg] || [];
+
+    var posScore = 0, groupScore = 0, catCount = 0;
+    cats.forEach(function(cat) {
+      if (p.stats[cat] == null) return;
+      var isLow = LOW_CATS.indexOf(cat) !== -1;
+
+      var posVals   = posPeers.map(function(q) { return q.stats[cat]; }).filter(function(v) { return v != null; });
+      var groupVals = groupPeers.map(function(q) { return q.stats[cat]; }).filter(function(v) { return v != null; });
+
+      posScore   += percentile(p.stats[cat], posVals, isLow);
+      groupScore += percentile(p.stats[cat], groupVals, isLow);
+      catCount++;
+    });
+
+    p.posRating   = catCount > 0 ? posScore / catCount : 0.5;
+    p.groupRating = catCount > 0 ? groupScore / catCount : 0.5;
+    p.overallRating = (p.posRating * 0.6) + (p.groupRating * 0.4);
+  });
+
+  TA.players = allPlayers;
+
+  // Also build FA list (from hitRows/pitRows where ftId is empty)
+  var faPlayers = [];
+  S.hitRows.forEach(function(row) {
+    var scorer = row.scorer || {};
+    var cells  = row.cells || [];
+    var ftId   = (cells[1] && cells[1].teamId) || '';
+    if (ftId) return;
+    var pos = scorer.posShortNames || '';
+    var stats = {};
+    BAT_CATS.forEach(function(cat) { stats[cat] = getStatVal(cells, cat, hitIdx); });
+    faPlayers.push({ name: scorer.name || '', pos: pos, group: playerGroup(pos), mlb: scorer.teamShortName || '', hs: scorer.headshotUrl || '', type: 'bat', stats: stats });
+  });
+  S.pitRows.forEach(function(row) {
+    var scorer = row.scorer || {};
+    var cells  = row.cells || [];
+    var ftId   = (cells[1] && cells[1].teamId) || '';
+    if (ftId) return;
+    var pos = scorer.posShortNames || '';
+    var stats = {};
+    PIT_CATS.forEach(function(cat) { stats[cat] = getStatVal(cells, cat, pitIdx); });
+    faPlayers.push({ name: scorer.name || '', pos: pos, group: playerGroup(pos), mlb: scorer.teamShortName || '', hs: scorer.headshotUrl || '', type: 'pit', stats: stats });
+  });
+  // Rate FAs vs rostered players in same position/group
+  faPlayers.forEach(function(p) {
+    var cats = p.type === 'bat' ? BAT_CATS : PIT_CATS;
+    var pp = primaryPos(p.pos);
+    var pg = p.group;
+    var posPeers   = (byPos[pp] || []).concat([p]);
+    var groupPeers = (byGroup[pg] || []).concat([p]);
+    var posScore = 0, groupScore = 0, catCount = 0;
+    cats.forEach(function(cat) {
+      if (p.stats[cat] == null) return;
+      var isLow = LOW_CATS.indexOf(cat) !== -1;
+      var posVals   = posPeers.map(function(q) { return q.stats[cat]; }).filter(function(v) { return v != null; });
+      var groupVals = groupPeers.map(function(q) { return q.stats[cat]; }).filter(function(v) { return v != null; });
+      posScore   += percentile(p.stats[cat], posVals, isLow);
+      groupScore += percentile(p.stats[cat], groupVals, isLow);
+      catCount++;
+    });
+    p.posRating   = catCount > 0 ? posScore / catCount : 0.5;
+    p.groupRating = catCount > 0 ? groupScore / catCount : 0.5;
+    p.overallRating = (p.posRating * 0.6) + (p.groupRating * 0.4);
+  });
+  TA.faPlayers = faPlayers;
+
+  // Build team options
+  var teamIds = Object.keys(S.teamInfo);
+
+  var html = '';
+
+  // Tabs
+  html += '<div class="trade-tabs">';
+  html += '<button class="trade-tab active" onclick="showTradeTab(\'trade\', this)">Trade Finder</button>';
+  html += '<button class="trade-tab" onclick="showTradeTab(\'fa\', this)">Free Agent Fixer</button>';
+  html += '</div>';
+
+  // ── Trade Finder tab ──────────────────────────────────────────────────────
+  html += '<div class="trade-tab-content active" id="trade-tab-trade">';
+
+  html += '<div class="joe-info" style="margin-bottom:20px">';
+  html += '<strong>How it works:</strong> Select up to 2 players from each team. ';
+  html += 'Each player is rated by percentile against all rostered players at the same position. ';
+  html += 'A good trade is one where both teams send a strength and receive a player who fills a weakness.';
+  html += '</div>';
+
+  // Team selectors + rosters
+  html += '<div class="trade-selectors">';
+
+  // Team A panel
+  html += '<div class="trade-team-panel">';
+  html += '<div class="trade-team-header">';
+  html += '<span style="font-size:12px;font-weight:500;color:var(--muted);white-space:nowrap">Team A</span>';
+  html += '<select class="trade-team-select" id="trade-select-a" onchange="selectTradeTeam(\'a\', this.value)">';
+  html += '<option value="">— Select team —</option>';
+  teamIds.forEach(function(id) {
+    var t = S.teamInfo[id];
+    html += '<option value="' + id + '">' + (t.name || t.shortName || id) + '</option>';
+  });
+  html += '</select></div>';
+  html += '<div class="trade-roster-list" id="trade-roster-a"><div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Select a team above</div></div>';
+  html += '</div>';
+
+  // Team B panel
+  html += '<div class="trade-team-panel">';
+  html += '<div class="trade-team-header">';
+  html += '<span style="font-size:12px;font-weight:500;color:var(--muted);white-space:nowrap">Team B</span>';
+  html += '<select class="trade-team-select" id="trade-select-b" onchange="selectTradeTeam(\'b\', this.value)">';
+  html += '<option value="">— Select team —</option>';
+  teamIds.forEach(function(id) {
+    var t = S.teamInfo[id];
+    html += '<option value="' + id + '">' + (t.name || t.shortName || id) + '</option>';
+  });
+  html += '</select></div>';
+  html += '<div class="trade-roster-list" id="trade-roster-b"><div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Select a team above</div></div>';
+  html += '</div>';
+
+  html += '</div>'; // trade-selectors
+
+  // Results area
+  html += '<div id="trade-results-area"></div>';
+  html += '</div>'; // trade tab
+
+  // ── Free Agent Fixer tab ──────────────────────────────────────────────────
+  html += '<div class="trade-tab-content" id="trade-tab-fa">';
+  html += '<div class="joe-info" style="margin-bottom:20px">';
+  html += '<strong>How it works:</strong> Select a team to see their weakest positions. ';
+  html += 'Free agents are ranked by how much they would improve those areas.';
+  html += '</div>';
+  html += '<div class="fa-team-selector">';
+  html += '<span class="fa-team-label">Select team:</span>';
+  html += '<select class="trade-team-select" style="max-width:260px" id="fa-team-select" onchange="showFAFixer(this.value)">';
+  html += '<option value="">— Select team —</option>';
+  teamIds.forEach(function(id) {
+    var t = S.teamInfo[id];
+    html += '<option value="' + id + '">' + (t.name || t.shortName || id) + '</option>';
+  });
+  html += '</select>';
+  html += '</div>';
+  html += '<div id="fa-results-area"></div>';
+  html += '</div>'; // fa tab
+
+  document.getElementById('trade-body').innerHTML = html;
+}
+
+window.showTradeTab = function(tab, btn) {
+  document.querySelectorAll('.trade-tab').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelectorAll('.trade-tab-content').forEach(function(c) { c.classList.remove('active'); });
+  btn.classList.add('active');
+  document.getElementById('trade-tab-' + tab).classList.add('active');
+  TA.activeTab = tab;
+};
+
+window.selectTradeTeam = function(side, teamId) {
+  if (side === 'a') { TA.teamA = teamId; TA.selectedA = []; }
+  else              { TA.teamB = teamId; TA.selectedB = []; }
+  renderTeamRoster(side, teamId);
+  renderTradeResults();
+};
+
+function ratingColor(r) {
+  if (r >= 0.7) return '#2d5a3d';
+  if (r >= 0.5) return '#4a9a68';
+  if (r >= 0.35) return '#b7791f';
+  return '#c0392b';
+}
+
+function renderTeamRoster(side, teamId) {
+  var el = document.getElementById('trade-roster-' + side);
+  if (!teamId) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Select a team above</div>'; return; }
+
+  var teamPlayers = TA.players
+    .filter(function(p) { return p.ftId === teamId; })
+    .sort(function(a, b) {
+      // Sort by group then by rating desc
+      var ga = a.group || 'z', gb = b.group || 'z';
+      if (ga !== gb) return ga.localeCompare(gb);
+      return b.overallRating - a.overallRating;
+    });
+
+  var selected = side === 'a' ? TA.selectedA : TA.selectedB;
+  var otherSelected = side === 'a' ? TA.selectedB : TA.selectedA;
+  var html = '';
+
+  var currentGroup = null;
+  teamPlayers.forEach(function(p) {
+    if (p.group !== currentGroup) {
+      currentGroup = p.group;
+      html += '<div style="padding:6px 14px 3px;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent2);background:var(--bg);border-bottom:1px solid var(--border)">' + (currentGroup || 'Other') + '</div>';
+    }
+
+    var isSelected = selected.indexOf(p.name) !== -1;
+    var isOtherSelected = otherSelected.indexOf(p.name) !== -1;
+    var selClass = isSelected ? (side === 'a' ? ' selected' : ' selected-b') : '';
+    var r = p.overallRating;
+    var cats = p.type === 'bat' ? BAT_CATS : PIT_CATS;
+    var statStr = cats.map(function(c) {
+      var v = p.stats[c];
+      if (v == null) return c + ':—';
+      if (c === 'AVG') return c + ':' + v.toFixed(3);
+      if (c === 'ERA' || c === 'WHIP') return c + ':' + v.toFixed(2);
+      return c + ':' + Math.round(v);
+    }).join('  ');
+
+    html += '<div class="trade-player-row' + selClass + '" onclick="togglePlayerSelect(\'' + side + '\',\'' + p.name.replace(/'/g, "\\'") + '\')" title="' + statStr + '">';
+    html += p.hs ? '<img class="player-hs" src="' + p.hs + '" alt="" onerror="this.style.display=\'none\'">' : '';
+    html += '<div class="trade-player-info">';
+    html += '<div class="trade-player-name">' + p.name + '</div>';
+    html += '<div class="trade-player-pos"><span class="pos-badge">' + primaryPos(p.pos) + '</span>' + statStr + '</div>';
+    html += '</div>';
+    html += '<div class="trade-player-rating">';
+    html += '<div class="trade-player-score" style="color:' + ratingColor(r) + '">' + Math.round(r * 100) + '</div>';
+    html += '<div class="trade-player-pct">pct</div>';
+    html += '<div class="rating-bar"><div class="rating-bar-fill" style="width:' + Math.round(r*100) + '%;background:' + ratingColor(r) + '"></div></div>';
+    html += '</div>';
+    html += '</div>';
+  });
+
+  el.innerHTML = html;
+}
+
+window.togglePlayerSelect = function(side, name) {
+  var arr = side === 'a' ? TA.selectedA : TA.selectedB;
+  var idx = arr.indexOf(name);
+  if (idx !== -1) {
+    arr.splice(idx, 1);
+  } else {
+    if (arr.length >= 2) arr.shift(); // max 2
+    arr.push(name);
+  }
+  if (side === 'a') TA.selectedA = arr; else TA.selectedB = arr;
+  renderTeamRoster(side, side === 'a' ? TA.teamA : TA.teamB);
+  renderTradeResults();
+};
+
+function renderTradeResults() {
+  var el = document.getElementById('trade-results-area');
+  if (!TA.teamA || !TA.teamB) { el.innerHTML = ''; return; }
+  if (TA.selectedA.length === 0 && TA.selectedB.length === 0) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Select players from each team to evaluate a trade</div>';
+    return;
+  }
+  if (TA.selectedA.length === 0 || TA.selectedB.length === 0) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Select at least one player from each team</div>';
+    return;
+  }
+
+  var playersA = TA.selectedA.map(function(n) { return TA.players.find(function(p) { return p.name === n; }); }).filter(Boolean);
+  var playersB = TA.selectedB.map(function(n) { return TA.players.find(function(p) { return p.name === n; }); }).filter(Boolean);
+
+  // For each player being traded, calculate the rating delta for the receiving team
+  // A player's new rating = their posRating vs their new team's positional peers
+  function ratingDelta(tradedPlayer, receivingTeamId) {
+    // Find their current rating and what they'd be rated on new team
+    // Simplified: compare their overallRating vs the average rating of same-position players on receiving team
+    var samePosOnNewTeam = TA.players.filter(function(p) {
+      return p.ftId === receivingTeamId && p.group === tradedPlayer.group;
+    });
+    if (!samePosOnNewTeam.length) return 0;
+    var avgRating = samePosOnNewTeam.reduce(function(s, p) { return s + p.overallRating; }, 0) / samePosOnNewTeam.length;
+    return tradedPlayer.overallRating - avgRating; // positive = above avg for that team
+  }
+
+  // Net benefit for Team A: rating of players coming in - rating of players going out (relative to team)
+  var aGains = playersB.map(function(p) { return ratingDelta(p, TA.teamA); });
+  var aLoses = playersA.map(function(p) { return p.overallRating; });
+  var netA = aGains.reduce(function(s,v){return s+v;},0) / aGains.length
+           - aLoses.reduce(function(s,v){return s+v;},0) / aLoses.length;
+
+  var bGains = playersA.map(function(p) { return ratingDelta(p, TA.teamB); });
+  var bLoses = playersB.map(function(p) { return p.overallRating; });
+  var netB = bGains.reduce(function(s,v){return s+v;},0) / bGains.length
+           - bLoses.reduce(function(s,v){return s+v;},0) / bLoses.length;
+
+  var isMutual = netA > 0 && netB > 0;
+  var teamAName = (S.teamInfo[TA.teamA] || {}).name || 'Team A';
+  var teamBName = (S.teamInfo[TA.teamB] || {}).name || 'Team B';
+
+  function fmtDelta(v) {
+    var sign = v >= 0 ? '+' : '';
+    return sign + Math.round(v * 100) + ' pct pts';
+  }
+
+  var html = '<div class="trade-result-card">';
+  html += '<div class="trade-result-header' + (isMutual ? ' mutual' : '') + '">';
+  html += '<span class="trade-result-label">' + (isMutual ? '✓ Mutually beneficial trade' : 'Trade evaluation') + '</span>';
+  html += '<span class="trade-result-score">';
+  html += teamAName + ': <strong style="color:' + (netA > 0 ? 'var(--accent)' : 'var(--danger)') + '">' + fmtDelta(netA) + '</strong>';
+  html += '&nbsp;&nbsp;|&nbsp;&nbsp;';
+  html += teamBName + ': <strong style="color:' + (netB > 0 ? 'var(--accent)' : 'var(--danger)') + '">' + fmtDelta(netB) + '</strong>';
+  html += '</span>';
+  html += '</div>';
+
+  html += '<div class="trade-exchange">';
+
+  // Team A gives → Team B receives
+  html += '<div class="trade-side">';
+  html += '<h4>' + teamAName + ' sends</h4>';
+  playersA.forEach(function(p, i) {
+    var delta = ratingDelta(p, TA.teamB);
+    html += '<div class="trade-player-chip">';
+    html += p.hs ? '<img class="player-hs" src="' + p.hs + '" alt="" onerror="this.style.display=\'none\'">' : '';
+    html += '<div class="trade-chip-info">';
+    html += '<div class="trade-chip-name">' + p.name + '</div>';
+    html += '<div class="trade-chip-detail"><span class="pos-badge">' + primaryPos(p.pos) + '</span>Rating: ' + Math.round(p.overallRating*100) + 'th pct</div>';
+    html += '</div>';
+    html += '<span class="trade-chip-delta ' + (delta > 0 ? 'up' : 'down') + '" title="Impact on ' + teamBName + '">' + (delta > 0 ? '+' : '') + Math.round(delta*100) + '</span>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  html += '<div class="trade-arrow">⇄</div>';
+
+  // Team B gives → Team A receives
+  html += '<div class="trade-side">';
+  html += '<h4>' + teamBName + ' sends</h4>';
+  playersB.forEach(function(p, i) {
+    var delta = ratingDelta(p, TA.teamA);
+    html += '<div class="trade-player-chip">';
+    html += p.hs ? '<img class="player-hs" src="' + p.hs + '" alt="" onerror="this.style.display=\'none\'">' : '';
+    html += '<div class="trade-chip-info">';
+    html += '<div class="trade-chip-name">' + p.name + '</div>';
+    html += '<div class="trade-chip-detail"><span class="pos-badge">' + primaryPos(p.pos) + '</span>Rating: ' + Math.round(p.overallRating*100) + 'th pct</div>';
+    html += '</div>';
+    html += '<span class="trade-chip-delta ' + (delta > 0 ? 'up' : 'down') + '" title="Impact on ' + teamAName + '">' + (delta > 0 ? '+' : '') + Math.round(delta*100) + '</span>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  html += '</div>'; // trade-exchange
+
+  // Category breakdown
+  html += '<div style="padding:12px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">';
+  html += '<strong style="color:var(--text)">Position analysis</strong><br>';
+  playersA.forEach(function(p) {
+    var peers = TA.players.filter(function(q) { return q.group === p.group; });
+    var rank = peers.filter(function(q) { return q.overallRating > p.overallRating; }).length + 1;
+    html += '<span class="' + (p.overallRating >= 0.5 ? 'strength-tag' : 'weakness-tag') + '">' + p.name + ' — ' + (p.group||p.pos) + ' #' + rank + ' of ' + peers.length + ' rostered</span>';
+  });
+  playersB.forEach(function(p) {
+    var peers = TA.players.filter(function(q) { return q.group === p.group; });
+    var rank = peers.filter(function(q) { return q.overallRating > p.overallRating; }).length + 1;
+    html += '<span class="' + (p.overallRating >= 0.5 ? 'strength-tag' : 'weakness-tag') + '">' + p.name + ' — ' + (p.group||p.pos) + ' #' + rank + ' of ' + peers.length + ' rostered</span>';
+  });
+  html += '</div>';
+
+  html += '</div>'; // trade-result-card
+  el.innerHTML = html;
+}
+
+window.showFAFixer = function(teamId) {
+  var el = document.getElementById('fa-results-area');
+  if (!teamId) { el.innerHTML = ''; return; }
+
+  var teamPlayers = TA.players.filter(function(p) { return p.ftId === teamId; });
+  var teamName    = (S.teamInfo[teamId] || {}).name || 'Team';
+
+  // Find weakest positions: average rating per group for this team
+  var groupRatings = {};
+  ['Infield','Outfield','SP','RP'].forEach(function(g) {
+    var gp = teamPlayers.filter(function(p) { return p.group === g; });
+    if (!gp.length) { groupRatings[g] = {avg: 0, count: 0, players: gp}; return; }
+    var avg = gp.reduce(function(s, p) { return s + p.overallRating; }, 0) / gp.length;
+    groupRatings[g] = {avg: avg, count: gp.length, players: gp};
+  });
+
+  var sortedGroups = Object.keys(groupRatings).sort(function(a, b) {
+    return groupRatings[a].avg - groupRatings[b].avg;
+  });
+
+  var html = '';
+
+  // Team strength/weakness overview
+  html += '<div class="card" style="margin-bottom:16px">';
+  html += '<div class="card-header"><span class="card-title">' + teamName + ' — position ratings</span></div>';
+  html += '<div class="card-body" style="padding:16px 20px">';
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">';
+  sortedGroups.forEach(function(g) {
+    var gr = groupRatings[g];
+    var r  = gr.avg;
+    html += '<div style="background:var(--bg);border-radius:var(--radius);padding:10px 14px">';
+    html += '<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px">' + g + '</div>';
+    html += '<div style="font-size:20px;font-weight:600;color:' + ratingColor(r) + '">' + Math.round(r*100) + '<span style="font-size:12px;font-weight:400">th pct</span></div>';
+    html += '<div style="font-size:11px;color:var(--muted)">' + gr.count + ' rostered</div>';
+    html += '<div class="rating-bar" style="width:100%;margin-top:6px"><div class="rating-bar-fill" style="width:' + Math.round(r*100) + '%;background:' + ratingColor(r) + '"></div></div>';
+    html += '</div>';
+  });
+  html += '</div></div></div>';
+
+  // FA recommendations per weak group
+  sortedGroups.slice(0, 2).forEach(function(g) {
+    var gr = groupRatings[g];
+    var topFAs = (TA.faPlayers || [])
+      .filter(function(p) { return p.group === g; })
+      .sort(function(a, b) { return b.overallRating - a.overallRating; })
+      .slice(0, 8);
+
+    if (!topFAs.length) return;
+
+    html += '<div class="card" style="margin-bottom:16px">';
+    html += '<div class="card-header"><span class="card-title">Top free agents — ' + g + '</span><span class="weakness-tag">Team avg: ' + Math.round(gr.avg*100) + 'th pct</span></div>';
+    html += '<div class="table-wrap"><table>';
+    html += '<thead><tr><th class="left">Player</th><th class="left">Pos</th><th class="left">MLB</th>';
+    var cats = g === 'SP' || g === 'RP' ? PIT_CATS : BAT_CATS;
+    cats.forEach(function(c) { html += '<th>' + c + '</th>'; });
+    html += '<th>Rating</th></tr></thead><tbody>';
+
+    topFAs.forEach(function(p) {
+      var r = p.overallRating;
+      html += '<tr>';
+      html += '<td class="left"><div class="team-cell">' + (p.hs ? '<img class="player-hs" src="' + p.hs + '" alt="" onerror="this.style.display=\'none\'">' : '') + '<span><strong>' + p.name + '</strong></span></div></td>';
+      html += '<td class="left"><span class="pos-badge">' + primaryPos(p.pos) + '</span></td>';
+      html += '<td class="left">' + p.mlb + '</td>';
+      cats.forEach(function(c) {
+        var v = p.stats[c];
+        var str = v == null ? '—' : (c === 'AVG' ? v.toFixed(3) : (c === 'ERA' || c === 'WHIP') ? v.toFixed(2) : Math.round(v));
+        html += '<td>' + str + '</td>';
+      });
+      html += '<td><strong style="color:' + ratingColor(r) + '">' + Math.round(r*100) + '</strong></td>';
+      html += '</tr>';
+    });
+
+    html += '</tbody></table></div></div>';
+  });
+
+  el.innerHTML = html;
+};
 </script>
 </body>
 </html>
