@@ -591,15 +591,33 @@ function computeZScores() {
     if ((tables[i].caption || '').toLowerCase().indexOf('point total') !== -1) { ptTable = tables[i]; break; }
   }
   if (!ptTable) { console.warn('Point totals table not found'); return; }
-  var rows = ptTable.rows || [];
+
+  // Build a key→index map from the table headers instead of using hardcoded indices
+  var varHeaders = (ptTable.header && ptTable.header.cells) || [];
+  var hIdx = {};
+  varHeaders.forEach(function(h, i) {
+    if (h.key)       hIdx[h.key.toUpperCase()]       = i;
+    if (h.shortName) hIdx[h.shortName.toUpperCase()] = i;
+    if (h.name)      hIdx[h.name.toUpperCase()]      = i;
+  });
+
+  // Map each stat to its column index dynamically
+  // Fallback to hardcoded idx if key not found in headers
   var allStats = BAT_STATS.concat(PIT_STATS);
+  allStats.forEach(function(stat) {
+    var dynIdx = hIdx[stat.key.toUpperCase()];
+    if (dynIdx != null) stat.resolvedIdx = dynIdx;
+    else stat.resolvedIdx = stat.idx; // fallback
+  });
+
+  var rows = ptTable.rows || [];
   var rawData = rows.map(function(row) {
     var fc = row.fixedCells || [], cells = row.cells || [];
     var teamId = (fc[1] && fc[1].teamId) || '';
     var teamName = (S.teamInfo[teamId] && S.teamInfo[teamId].shortName) || (fc[1] && fc[1].content) || '?';
     var obj = {teamId: teamId, teamName: teamName};
     allStats.forEach(function(stat) {
-      var val = parseFloat(cells[stat.idx] && cells[stat.idx].content);
+      var val = parseFloat(cells[stat.resolvedIdx] && cells[stat.resolvedIdx].content);
       obj[stat.key] = isNaN(val) ? null : val;
     });
     return obj;
@@ -787,18 +805,41 @@ function renderAnalytics() {
     if ((tables[i].caption || '').toLowerCase().indexOf('point total') !== -1) { ptTable = tables[i]; break; }
   }
   if (!ptTable) return;
+
+  // Build header index map
+  var varHeaders = (ptTable.header && ptTable.header.cells) || [];
+  var hIdx = {};
+  varHeaders.forEach(function(h, i) {
+    if (h.key)       hIdx[h.key.toUpperCase()]       = i;
+    if (h.shortName) hIdx[h.shortName.toUpperCase()] = i;
+  });
+
+  // Batting stat keys, pitching stat keys
+  var batKeys = ['R','HR','RBI','SB','AVG'];
+  var pitKeys = ['K','W','SVH3','SV','ERA','WHIP'];
+
   var rows = ptTable.rows || [];
   var teamInfo = S.teamInfo;
   var palette = ['#2d5a3d','#3a7a52','#4a9a68','#5ab880','#6dd494','#1e4a30','#88c4a0','#b0dcc0','#c8a96e','#e8c88a'];
   var teams = [], totalPts = [], hitPts = [], pitPts = [], colors = [];
+
+  // Find the Pts column — usually key 'pts' or first variable column
+  var ptsIdx = hIdx['PTS'] != null ? hIdx['PTS'] : hIdx['POINTS'] != null ? hIdx['POINTS'] : 0;
+
   rows.forEach(function(row, i) {
     var fc = row.fixedCells || [], cells = row.cells || [];
     var teamId = (fc[1] && fc[1].teamId) || '';
     var teamName = (teamInfo[teamId] && teamInfo[teamId].shortName) || (fc[1] && fc[1].content) || ('Team ' + (i+1));
-    var pts = parseFloat(cells[0] && cells[0].content) || 0;
+    var pts = parseFloat(cells[ptsIdx] && cells[ptsIdx].content) || 0;
     var hP = 0, pP = 0;
-    for (var j = 4; j <= 10; j++) { var v = parseFloat(cells[j] && cells[j].content); if (!isNaN(v)) hP += v; }
-    for (var j = 11; j <= 16; j++) { var v = parseFloat(cells[j] && cells[j].content); if (!isNaN(v)) pP += v; }
+    batKeys.forEach(function(k) {
+      var idx = hIdx[k]; if (idx == null) return;
+      var v = parseFloat(cells[idx] && cells[idx].content); if (!isNaN(v)) hP += v;
+    });
+    pitKeys.forEach(function(k) {
+      var idx = hIdx[k]; if (idx == null) return;
+      var v = parseFloat(cells[idx] && cells[idx].content); if (!isNaN(v)) pP += v;
+    });
     teams.push(teamName); totalPts.push(pts); hitPts.push(parseFloat(hP.toFixed(1))); pitPts.push(parseFloat(pP.toFixed(1))); colors.push(palette[i % palette.length]);
   });
   var sorted = teams.map(function(t,i) { return {t:t, pts:totalPts[i], hPts:hitPts[i], pPts:pitPts[i], color:colors[i]}; }).sort(function(a,b) { return b.pts-a.pts; });
