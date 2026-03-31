@@ -7,6 +7,7 @@
   <title>Bluebonnet Baseball</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -32,6 +33,8 @@
     .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 24px; overflow: hidden; }
     .card-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
     .card-title { font-weight: 500; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+    .card-body { padding: 24px; }
+    .chart-wrap { position: relative; width: 100%; height: 360px; }
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     thead th { background: var(--bg); padding: 9px 14px; text-align: right; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
@@ -69,6 +72,8 @@
     .team-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
     .section-sep { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent2); padding: 16px 0 4px; }
     .roster-section-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 10px 14px 6px; background: var(--bg); border-bottom: 1px solid var(--border); }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -83,6 +88,7 @@
   <button onclick="nav('hitting',this)">Hitting</button>
   <button onclick="nav('pitching',this)">Pitching</button>
   <button onclick="nav('rosters',this)">Rosters</button>
+  <button onclick="nav('analytics',this)">Analytics</button>
 </nav>
 <main>
   <div class="page active" id="page-standings">
@@ -140,15 +146,60 @@
       <div id="roster-body"><div class="loading">Select a team above</div></div>
     </div>
   </div>
+
+  <!-- ANALYTICS PAGE -->
+  <div class="page" id="page-analytics">
+    <div class="page-title">Analytics</div>
+    <div class="page-subtitle">Charts and metrics for the 2026 Bluebonnet Baseball season</div>
+
+    <!-- Point Totals Bar Chart -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Season Point Totals</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap">
+          <canvas id="chart-points"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hitting vs Pitching Points -->
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Hitting Points by Team</span></div>
+        <div class="card-body">
+          <div class="chart-wrap" style="height:280px">
+            <canvas id="chart-hit-pts"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Pitching Points by Team</span></div>
+        <div class="card-body">
+          <div class="chart-wrap" style="height:280px">
+            <canvas id="chart-pit-pts"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </main>
+
 <script>
 const BASE = 'https://raw.githubusercontent.com/cameronpeebles/baseball/main/data/';
 const S = {
   teamInfo:{}, hitRows:[], pitRows:[],
   hitHeaders:[], pitHeaders:[],
   hitF:'ALL', pitF:'ALL', hitQ:'', pitQ:'',
-  rosterRaw:null
+  rosterRaw:null, seasonData:null
 };
+
+// Chart.js global defaults
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.color = '#8a8479';
 
 async function load(f){ const r=await fetch(BASE+f+'?t='+Date.now()); if(!r.ok) throw new Error('Failed: '+f); return r.json(); }
 
@@ -157,6 +208,7 @@ function nav(name,btn){
   document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   btn.classList.add('active');
+  if(name==='analytics') renderAnalytics();
 }
 
 async function init(){
@@ -166,6 +218,7 @@ async function init(){
       load('players_hitting.json'), load('players_pitching.json'), load('rosters.json')
     ]);
     S.teamInfo = standings?.data?.fantasyTeamInfo || season?.data?.fantasyTeamInfo || {};
+    S.seasonData = season;
     document.getElementById('ts').textContent = 'Updated ' + new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
     renderTableListPage(standings, 'standings-body');
     renderTableListPage(season, 'season-body');
@@ -180,6 +233,161 @@ async function init(){
       const el=document.getElementById(id); if(el){el.innerHTML='<div class="error-msg">Error: '+e.message+'</div>';}
     });
   }
+}
+
+// ── ANALYTICS ─────────────────────────────────────────────────
+let chartsBuilt = false;
+
+function renderAnalytics() {
+  if(chartsBuilt) return;
+  if(!S.seasonData) return;
+  chartsBuilt = true;
+
+  const teamInfo = S.teamInfo;
+  const tables = S.seasonData?.data?.tableList || [];
+
+  // Find the Point Totals table
+  const ptTable = tables.find(t => (t.caption||'').toLowerCase().includes('point total'));
+  if(!ptTable){ console.warn('Point totals table not found'); return; }
+
+  const rows = ptTable.rows || [];
+
+  // Extract data
+  const teams = [], totalPts = [], hitPts = [], pitPts = [], colors = [], borderColors = [];
+
+  // Generate a palette of greens/teals for bars
+  const palette = [
+    '#2d5a3d','#3a7a52','#4a9a68','#5ab880','#6dd494',
+    '#1e4a30','#88c4a0','#b0dcc0','#c8a96e','#e8c88a'
+  ];
+
+  rows.forEach((row, i) => {
+    const fc = row.fixedCells || [];
+    const cells = row.cells || [];
+    const teamId = fc[1]?.teamId || '';
+    const teamName = teamInfo[teamId]?.shortName || fc[1]?.content || `Team ${i+1}`;
+    const pts = parseFloat(cells[0]?.content) || 0;
+
+    // Calculate hitting pts (cols 4-10) and pitching pts (cols 10-16)
+    // Header structure: Pts, +/-, WW, GP, [hit stats x7], [pit stats x6]
+    // Hitting point cols are indices 4-10, pitching are 11-16
+    let hPts = 0, pPts = 0;
+    for(let j=4; j<=10; j++){
+      const v = parseFloat(cells[j]?.content);
+      if(!isNaN(v)) hPts += v;
+    }
+    for(let j=11; j<=16; j++){
+      const v = parseFloat(cells[j]?.content);
+      if(!isNaN(v)) pPts += v;
+    }
+
+    teams.push(teamName);
+    totalPts.push(pts);
+    hitPts.push(parseFloat(hPts.toFixed(1)));
+    pitPts.push(parseFloat(pPts.toFixed(1)));
+    colors.push(palette[i % palette.length]);
+    borderColors.push(palette[i % palette.length]);
+  });
+
+  // Sort by total points descending
+  const sorted = teams.map((t,i)=>({t, pts:totalPts[i], hPts:hitPts[i], pPts:pitPts[i], color:colors[i]}))
+    .sort((a,b)=>b.pts-a.pts);
+
+  const sortedTeams = sorted.map(s=>s.t);
+  const sortedPts = sorted.map(s=>s.pts);
+  const sortedHit = sorted.map(s=>s.hPts);
+  const sortedPit = sorted.map(s=>s.pPts);
+  const sortedColors = sorted.map(s=>s.color);
+
+  // ── Total Points Bar Chart
+  new Chart(document.getElementById('chart-points'), {
+    type: 'bar',
+    data: {
+      labels: sortedTeams,
+      datasets: [{
+        label: 'Total Points',
+        data: sortedPts,
+        backgroundColor: sortedColors,
+        borderColor: sortedColors,
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.parsed.y} pts`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 12 } }
+        },
+        y: {
+          beginAtZero: false,
+          grid: { color: '#e4e0d8' },
+          ticks: { font: { size: 11 } },
+          title: { display: true, text: 'Points', font: { size: 11 } }
+        }
+      }
+    }
+  });
+
+  // ── Hitting Points Bar Chart
+  new Chart(document.getElementById('chart-hit-pts'), {
+    type: 'bar',
+    data: {
+      labels: sortedTeams,
+      datasets: [{
+        label: 'Hitting Points',
+        data: sortedHit,
+        backgroundColor: '#3a7a52',
+        borderColor: '#3a7a52',
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: { beginAtZero: false, grid: { color: '#e4e0d8' }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+
+  // ── Pitching Points Bar Chart
+  new Chart(document.getElementById('chart-pit-pts'), {
+    type: 'bar',
+    data: {
+      labels: sortedTeams,
+      datasets: [{
+        label: 'Pitching Points',
+        data: sortedPit,
+        backgroundColor: '#c8a96e',
+        borderColor: '#c8a96e',
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: { beginAtZero: false, grid: { color: '#e4e0d8' }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
 }
 
 // ── STANDINGS / SEASON / COMBINED ────────────────────────────
@@ -338,22 +546,12 @@ function buildRosterSelector(){
 function showRoster(teamId){
   const rosterData = S.rosterRaw?.data?.rosters?.[teamId];
   const ti = S.teamInfo[teamId] || {};
+  if(!rosterData){ document.getElementById('roster-body').innerHTML=`<div class="loading">No roster data for <strong>${ti.name||teamId}</strong></div>`; return; }
 
-  if(!rosterData){
-    document.getElementById('roster-body').innerHTML=`<div class="loading">No roster data for <strong>${ti.name||teamId}</strong></div>`;
-    return;
-  }
-
-  // tables[] contains hitting and pitching sections
   const tables = rosterData?.data?.tables || [];
-  if(!tables.length){
-    document.getElementById('roster-body').innerHTML=`<div class="loading">No tables found for ${ti.name}</div>`;
-    return;
-  }
+  if(!tables.length){ document.getElementById('roster-body').innerHTML=`<div class="loading">No tables found for ${ti.name}</div>`; return; }
 
-  // Status labels
   const statusLabels = { '1': 'Active', '2': 'Reserve', '3': 'IR' };
-
   let html = '';
 
   tables.forEach(table => {
@@ -365,7 +563,6 @@ function showRoster(teamId){
     html += `<div class="roster-section-label">${sectionLabel}</div>`;
     html += '<div class="table-wrap"><table><thead><tr>';
     html += '<th class="left">Player</th><th class="left">Pos</th><th class="left">MLB Team</th><th class="left">Status</th>';
-    // Show key stat headers (skip Age and Opponent cols)
     const statHeaders = headers.filter(h => !['age','opponent'].includes(h.key||''));
     statHeaders.forEach(h => { html+=`<th>${h.shortName||h.name||''}</th>`; });
     html += '</tr></thead><tbody>';
@@ -386,8 +583,6 @@ function showRoster(teamId){
       html += `<td class="left"><span style="color:var(--muted);font-size:12px">${pos}</span></td>`;
       html += `<td class="left">${mlb}</td>`;
       html += `<td class="left"><span class="status-badge status-${statusId}">${statusLabel}</span></td>`;
-
-      // cells: [age, opponent, ...stats] — skip age(0) and opponent(1)
       const statCells = cells.slice(2);
       statCells.forEach(cell => {
         const val = (cell.content??'').toString().replace(/<[^>]+>/g,'');
@@ -395,7 +590,6 @@ function showRoster(teamId){
       });
       html += '</tr>';
     });
-
     html += '</tbody></table></div>';
   });
 
