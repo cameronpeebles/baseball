@@ -439,6 +439,53 @@ function computeZScores(){
   const rows = ptTable.rows||[];
   const allStats = [...BAT_STATS, ...PIT_STATS];
 
+  const rawData = rows.map(row=>{
+    const fc=row.fixedCells||[], cells=row.cells||[];
+    const teamId=fc[1]?.teamId||'';
+    const teamName=S.teamInfo[teamId]?.shortName||fc[1]?.content||'?';
+    const obj={teamId, teamName};
+    allStats.forEach(stat=>{
+      const val=parseFloat(cells[stat.idx]?.content);
+      obj[stat.key]=isNaN(val)?null:val;
+    });
+    return obj;
+  });
+
+  const statParams={};
+  allStats.forEach(stat=>{
+    const vals=rawData.map(r=>r[stat.key]).filter(v=>v!==null);
+    const mean=vals.reduce((a,b)=>a+b,0)/vals.length;
+    const variance=vals.reduce((a,b)=>a+(b-mean)**2,0)/vals.length;
+    statParams[stat.key]={mean, std:Math.sqrt(variance)};
+  });
+
+  const zData = rawData.map(row=>{
+    const z={teamId:row.teamId, teamName:row.teamName, raw:{}, batZ:{}, pitZ:{}};
+    BAT_STATS.forEach(stat=>{
+      z.raw[stat.key]=row[stat.key];
+      const val=row[stat.key];
+      const {mean,std}=statParams[stat.key];
+      z.batZ[stat.key]=(val!==null&&std>0)?parseFloat(((val-mean)/std).toFixed(2)):0;
+    });
+    PIT_STATS.forEach(stat=>{
+      z.raw[stat.key]=row[stat.key];
+      const val=row[stat.key];
+      const {mean,std}=statParams[stat.key];
+      // No flip — higher points always better
+      z.pitZ[stat.key]=(val!==null&&std>0)?parseFloat(((val-mean)/std).toFixed(2)):0;
+    });
+    z.totalBatZ=parseFloat(Object.values(z.batZ).reduce((a,b)=>a+b,0).toFixed(2));
+    z.totalPitZ=parseFloat(Object.values(z.pitZ).reduce((a,b)=>a+b,0).toFixed(2));
+    z.totalZ=parseFloat((z.totalBatZ+z.totalPitZ).toFixed(2));
+    return z;
+  });
+
+  S.zData=zData;
+}
+
+  const rows = ptTable.rows||[];
+  const allStats = [...BAT_STATS, ...PIT_STATS];
+
   // Extract raw values
   const rawData = rows.map(row=>{
     const fc=row.fixedCells||[], cells=row.cells||[];
