@@ -1,0 +1,1709 @@
+{
+  "data": {
+    "goBackDays": [
+      1,
+      7,
+      14,
+      30,
+      60
+    ],
+    "fantasyTeamInfo": {
+      "huopotx1miytz3cs": {
+        "name": "Team Fluck",
+        "logoUrl512": "https://fantraximg.com/logos/wja/tmLogo_wja53a1akq3aa2cm_512.jpg",
+        "shortName": "Team Flu"
+      },
+      "xuv2jl3cmiytz3cs": {
+        "name": "Not Just a MiLB Team",
+        "logoUrl512": "https://fantraximg.com/logos/tud/tmLogo_tudt6cc9mavj9hwb_512.webp",
+        "shortName": "MLB?"
+      },
+      "38pp2hphmiytz3cs": {
+        "name": "Little Elm Big Bats",
+        "logoUrl512": "https://fantraximg.com/logos/xjc/tmLogo_xjctcbtrltovpap9_512.jpg",
+        "shortName": "BATS"
+      },
+      "t3dy3k9imiytz3cs": {
+        "name": "William Street Wendy",
+        "logoUrl512": "https://fantraximg.com/logos/knw/tmLogo_knwiwuqqklzs1qng_512.jpg",
+        "shortName": "WSW"
+      },
+      "r7wbtddcmiytz3cs": {
+        "name": "The Ronnie Woo-Woos",
+        "logoUrl512": "https://fantraximg.com/logos/p9w/tmLogo_p9wwq35tkmcb7jpe_512.jpg",
+        "shortName": "WOO"
+      },
+      "aax8gerpmiytz3cs": {
+        "name": "Chew-Bock-a",
+        "logoUrl512": "https://fantraximg.com/logos/h7u/tmLogo_h7ur9x9om7whvw59_512.webp",
+        "shortName": "TBS"
+      },
+      "e3fi1sgxmiytz3cs": {
+        "name": "Coover's Corner",
+        "logoUrl512": "https://fantraximg.com/assets/images/icons/fantasyteams/baseball/helmet/yellow_green_256.webp",
+        "shortName": "Coover's"
+      },
+      "2rfp1oakmiytz3cs": {
+        "name": "Buffalo Blues",
+        "logoUrl512": "https://fantraximg.com/logos/b83/tmLogo_b83kwwmelsbatq67_512.jpg",
+        "shortName": "BUF-FEDS"
+      },
+      "corx71vmmiytz3cs": {
+        "name": "PowerCraig5000",
+        "logoUrl512": "https://fantraximg.com/logos/vul/tmLogo_vul6oczwmm9mtbjx_512.webp",
+        "shortName": "G.O.A.T."
+      },
+      "7owlmroxmiytz3cs": {
+        "name": "REL REL",
+        "logoUrl512": "https://fantraximg.com/logos/ggu/tmLogo_gguskiqfklzbuakn_512.jpg",
+        "shortName": "REL"
+      }
+    },
+    "matchupIdsPerTeam": {
+      "huopotx1miytz3cs": {
+        "aax8gerpmiytz3cs_huopotx1miytz3cs": true
+      },
+      "xuv2jl3cmiytz3cs": {
+        "xuv2jl3cmiytz3cs_38pp2hphmiytz3cs": true
+      },
+      "t3dy3k9imiytz3cs": {
+        "t3dy3k9imiytz3cs_r7wbtddcmiytz3cs": true
+      },
+      "38pp2hphmiytz3cs": {
+        "xuv2jl3cmiytz3cs_38pp2hphmiytz3cs": true
+      },
+      "r7wbtddcmiytz3cs": {
+        "t3dy3k9imiytz3cs_r7wbtddcmiytz3cs": true
+      },
+      "aax8gerpmiytz3cs": {
+        "aax8gerpmiytz3cs_huopotx1miytz3cs": true
+      },
+      "e3fi1sgxmiytz3cs": {
+        "corx71vmmiytz3cs_e3fi1sgxmiytz3cs": true
+      },
+      "2rfp1oakmiytz3cs": {
+        "7owlmroxmiytz3cs_2rfp1oakmiytz3cs": true
+      },
+      "7owlmroxmiytz3cs": {
+        "7owlmroxmiytz3cs_2rfp1oakmiytz3cs": true
+      },
+      "corx71vmmiytz3cs": {
+        "corx71vmmiytz3cs_e3fi1sgxmiytz3cs": true
+      }
+    },
+    "displayedSelections": {
+      "projectionsAvailable": true,
+      "period": 1,
+      "timeStartType": "PERIOD_ONLY",
+      "view": "COMBINED",
+      "optimal": false,
+      "showTabs": true,
+      "hideGoBackDays": true,
+      "timeframeType": "YEAR_TO_DATE",
+      "proj": false,
+      "displayedStartDate": 1774411200000,
+      "displayedEndDate": 1774843200000
+    },
+    "miscData": {
+      "displayedMinDate": 1774411200000,
+      "showLogos": true,
+      "heading": "2026 Fantasy Baseball Federation ",
+      "displayedMaxDate": 1790567999000
+    },
+    "tableList": [
+      {
+        "fixedRows": true,
+        "tableType": "H2hRotisserie1",
+        "fixedHeader": {
+          "cells": [
+            {
+              "sortDirection": 1,
+              "name": "Rank",
+              "shortName": "Rank",
+              "key": "rank"
+            },
+            {
+              "align": "LEFT",
+              "sortDirection": 1,
+              "name": "Team",
+              "shortName": "Team",
+              "key": "team"
+            }
+          ]
+        },
+        "caption": "Standings",
+        "subCaption": "COMBINED",
+        "header": {
+          "cells": [
+            {
+              "sortDirection": 1,
+              "name": "Wins",
+              "shortName": "W",
+              "key": "win"
+            },
+            {
+              "sortDirection": 1,
+              "name": "Losses",
+              "shortName": "L",
+              "key": "loss"
+            },
+            {
+              "sortDirection": 1,
+              "name": "Ties",
+              "shortName": "T",
+              "key": "tie"
+            },
+            {
+              "sortDirection": 1,
+              "name": "Win Percentage",
+              "shortName": "Win%",
+              "key": "winpc"
+            },
+            {
+              "sortDirection": 1,
+              "name": "Division Record (W-L-T)",
+              "shortName": "Div",
+              "key": "div"
+            },
+            {
+              "sortDirection": 1,
+              "name": "Games Back",
+              "shortName": "GB",
+              "key": "gb"
+            },
+            {
+              "sortDirection": 1,
+              "name": "Waiver Wire Claim Order",
+              "shortName": "WW",
+              "key": "wwOrder"
+            },
+            {
+              "sortDirection": 1,
+              "name": "Total season Category Points for",
+              "shortName": "PtsF",
+              "key": "cpf"
+            },
+            {
+              "sortDirection": 1,
+              "name": "Total season Category Points against",
+              "shortName": "PtsA",
+              "key": "cpa"
+            }
+          ]
+        },
+        "rows": [
+          {
+            "cells": [
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "-"
+              },
+              {
+                "content": "0-0-0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "10"
+              },
+              {
+                "content": "1.5",
+                "toolTip": "1.5"
+              },
+              {
+                "content": "8.5",
+                "toolTip": "8.5"
+              }
+            ],
+            "fixedCells": [
+              {
+                "content": "1"
+              },
+              {
+                "content": "Buffalo Blues",
+                "leagueId": "x4rx6jlimiytz3co",
+                "id": "x4rx6jlimiytz3co",
+                "teamId": "2rfp1oakmiytz3cs"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "-"
+              },
+              {
+                "content": "0-0-0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "9"
+              },
+              {
+                "content": "3",
+                "toolTip": "3"
+              },
+              {
+                "content": "7",
+                "toolTip": "7"
+              }
+            ],
+            "fixedCells": [
+              {
+                "content": "2"
+              },
+              {
+                "content": "Chew-Bock-a",
+                "leagueId": "x4rx6jlimiytz3co",
+                "id": "x4rx6jlimiytz3co",
+                "teamId": "aax8gerpmiytz3cs"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "-"
+              },
+              {
+                "content": "0-0-0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "8"
+              },
+              {
+                "content": "8",
+                "toolTip": "8"
+              },
+              {
+                "content": "2",
+                "toolTip": "2"
+              }
+            ],
+            "fixedCells": [
+              {
+                "content": "3"
+              },
+              {
+                "content": "Coover's Corner",
+                "leagueId": "x4rx6jlimiytz3co",
+                "id": "x4rx6jlimiytz3co",
+                "teamId": "e3fi1sgxmiytz3cs"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "-"
+              },
+              {
+                "content": "0-0-0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "7"
+              },
+              {
+                "content": "5.5",
+                "toolTip": "5.5"
+              },
+              {
+                "content": "4.5",
+                "toolTip": "4.5"
+              }
+            ],
+            "fixedCells": [
+              {
+                "content": "4"
+              },
+              {
+                "content": "Little Elm Big Bats",
+                "leagueId": "x4rx6jlimiytz3co",
+                "id": "x4rx6jlimiytz3co",
+                "teamId": "38pp2hphmiytz3cs"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "-"
+              },
+              {
+                "content": "0-0-0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "6"
+              },
+              {
+                "content": "4.5",
+                "toolTip": "4.5"
+              },
+              {
+                "content": "5.5",
+                "toolTip": "5.5"
+              }
+            ],
+            "fixedCells": [
+              {
+                "content": "5"
+              },
+              {
+                "content": "Not Just a MiLB Team",
+                "leagueId": "x4rx6jlimiytz3co",
+                "id": "x4rx6jlimiytz3co",
+                "teamId": "xuv2jl3cmiytz3cs"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "-"
+              },
+              {
+                "content": "0-0-0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "5"
+              },
+              {
+                "content": "2",
+                "toolTip": "2"
+              },
+              {
+                "content": "8",
+                "toolTip": "8"
+              }
+            ],
+            "fixedCells": [
+              {
+                "content": "6"
+              },
+              {
+                "content": "PowerCraig5000",
+                "leagueId": "x4rx6jlimiytz3co",
+                "id": "x4rx6jlimiytz3co",
+                "teamId": "corx71vmmiytz3cs"
+              }
+            ]
+          },
+          {
+            "highlight": true,
+            "cells": [
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "-"
+              },
+              {
+                "content": "0-0-0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "4"
+              },
+              {
+                "content": "8.5",
+                "toolTip": "8.5"
+              },
+              {
+                "content": "1.5",
+                "toolTip": "1.5"
+              }
+            ],
+            "fixedCells": [
+              {
+                "content": "7"
+              },
+              {
+                "content": "REL REL",
+                "leagueId": "x4rx6jlimiytz3co",
+                "id": "x4rx6jlimiytz3co",
+                "teamId": "7owlmroxmiytz3cs"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "-"
+              },
+              {
+                "content": "0-0-0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "3"
+              },
+              {
+                "content": "7",
+                "toolTip": "7"
+              },
+              {
+                "content": "3",
+                "toolTip": "3"
+              }
+            ],
+            "fixedCells": [
+              {
+                "content": "8"
+              },
+              {
+                "content": "Team Fluck",
+                "leagueId": "x4rx6jlimiytz3co",
+                "id": "x4rx6jlimiytz3co",
+                "teamId": "huopotx1miytz3cs"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "-"
+              },
+              {
+                "content": "0-0-0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "2"
+              },
+              {
+                "content": "3",
+                "toolTip": "3"
+              },
+              {
+                "content": "7",
+                "toolTip": "7"
+              }
+            ],
+            "fixedCells": [
+              {
+                "content": "9"
+              },
+              {
+                "content": "The Ronnie Woo-Woos",
+                "leagueId": "x4rx6jlimiytz3co",
+                "id": "x4rx6jlimiytz3co",
+                "teamId": "r7wbtddcmiytz3cs"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "-"
+              },
+              {
+                "content": "0-0-0"
+              },
+              {
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "content": "1"
+              },
+              {
+                "content": "7",
+                "toolTip": "7"
+              },
+              {
+                "content": "3",
+                "toolTip": "3"
+              }
+            ],
+            "fixedCells": [
+              {
+                "content": "10"
+              },
+              {
+                "content": "William Street Wendy",
+                "leagueId": "x4rx6jlimiytz3co",
+                "id": "x4rx6jlimiytz3co",
+                "teamId": "t3dy3k9imiytz3cs"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "fixedRows": true,
+        "tableType": "H2hRotisserie2",
+        "fixedHeader": {
+          "cells": [
+            {
+              "align": "LEFT",
+              "sortDirection": 1,
+              "name": "Team (Top=Away, Bottom=Home)",
+              "shortName": "Team (Top=Away, Bottom=Home)",
+              "key": "team"
+            }
+          ]
+        },
+        "caption": "Scoring Period:  1",
+        "subCaption": "(Wed Mar 25, 2026 - Sun Apr 5, 2026)",
+        "header": {
+          "cells": [
+            {
+              "sortDirection": 1,
+              "name": "Category Wins",
+              "shortName": "W",
+              "key": "win"
+            },
+            {
+              "sortDirection": 1,
+              "name": "Category Losses",
+              "shortName": "L",
+              "key": "loss"
+            },
+            {
+              "sortDirection": 1,
+              "name": "Category Ties",
+              "shortName": "T",
+              "key": "tie"
+            },
+            {
+              "sortDirection": 1,
+              "name": "Category points",
+              "shortName": "Pts",
+              "key": "cp"
+            },
+            {
+              "sortDirection": 1,
+              "name": "Runs Scored",
+              "shortName": "R",
+              "key": "scip"
+            },
+            {
+              "sortDirection": 1,
+              "name": "Home Runs",
+              "shortName": "HR",
+              "key": "scip"
+            },
+            {
+              "sortDirection": 1,
+              "name": "RBI",
+              "shortName": "RBI",
+              "key": "scip"
+            },
+            {
+              "sortDirection": 1,
+              "name": "Stolen Bases",
+              "shortName": "SB",
+              "key": "scip"
+            },
+            {
+              "sortDirection": 1,
+              "name": "Batting Average",
+              "shortName": "AVG",
+              "key": "scip"
+            },
+            {
+              "sortDirection": 1,
+              "name": "Wins",
+              "shortName": "W",
+              "key": "scip"
+            },
+            {
+              "sortDirection": 1,
+              "name": "Strikeouts Pitched",
+              "shortName": "K",
+              "key": "scip"
+            },
+            {
+              "sortDirection": 1,
+              "name": "Earned Run Average",
+              "shortName": "ERA",
+              "key": "scip"
+            },
+            {
+              "sortDirection": 1,
+              "name": "WHIP Ratio",
+              "shortName": "WHIP",
+              "key": "scip"
+            },
+            {
+              "sortDirection": 1,
+              "name": "Saves + Holds 3",
+              "shortName": "SVH3",
+              "key": "scip"
+            }
+          ]
+        },
+        "rows": [
+          {
+            "cells": [
+              {
+                "content": "4"
+              },
+              {
+                "content": "5"
+              },
+              {
+                "content": "1"
+              },
+              {
+                "content": "4.5"
+              },
+              {
+                "gainColor": -1,
+                "content": "29",
+                "toolTip": "29"
+              },
+              {
+                "gainColor": 1,
+                "content": "8",
+                "toolTip": "8"
+              },
+              {
+                "gainColor": -1,
+                "content": "23",
+                "toolTip": "23"
+              },
+              {
+                "gainColor": 0,
+                "content": "6",
+                "toolTip": "6"
+              },
+              {
+                "gainColor": 1,
+                "content": ".241",
+                "toolTip": "0.240964"
+              },
+              {
+                "gainColor": -1,
+                "content": "2",
+                "toolTip": "2"
+              },
+              {
+                "gainColor": -1,
+                "content": "16",
+                "toolTip": "16"
+              },
+              {
+                "gainColor": 1,
+                "content": "2.60",
+                "toolTip": "2.596154"
+              },
+              {
+                "gainColor": 1,
+                "content": "1.038",
+                "toolTip": "1.038462"
+              },
+              {
+                "gainColor": -1,
+                "content": "0.0",
+                "toolTip": "0"
+              }
+            ],
+            "matchupId": "xuv2jl3cmiytz3cs_38pp2hphmiytz3cs",
+            "fixedCells": [
+              {
+                "content": "Not Just a MiLB Team",
+                "leagueId": "x4rx6jlimiytz3co",
+                "id": "x4rx6jlimiytz3co",
+                "teamId": "xuv2jl3cmiytz3cs"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "5"
+              },
+              {
+                "content": "4"
+              },
+              {
+                "content": "1"
+              },
+              {
+                "content": "5.5"
+              },
+              {
+                "gainColor": 1,
+                "content": "30",
+                "toolTip": "30"
+              },
+              {
+                "gainColor": -1,
+                "content": "6",
+                "toolTip": "6"
+              },
+              {
+                "gainColor": 1,
+                "content": "26",
+                "toolTip": "26"
+              },
+              {
+                "gainColor": 0,
+                "content": "6",
+                "toolTip": "6"
+              },
+              {
+                "gainColor": -1,
+                "content": ".241",
+                "toolTip": "0.240566"
+              },
+              {
+                "gainColor": 1,
+                "content": "4",
+                "toolTip": "4"
+              },
+              {
+                "gainColor": 1,
+                "content": "55",
+                "toolTip": "55"
+              },
+              {
+                "gainColor": -1,
+                "content": "3.79",
+                "toolTip": "3.786585"
+              },
+              {
+                "gainColor": -1,
+                "content": "1.171",
+                "toolTip": "1.170732"
+              },
+              {
+                "gainColor": 1,
+                "content": "0.5",
+                "toolTip": "0.5"
+              }
+            ],
+            "matchupId": "xuv2jl3cmiytz3cs_38pp2hphmiytz3cs",
+            "fixedCells": [
+              {
+                "content": "Little Elm Big Bats",
+                "leagueId": "x4rx6jlimiytz3co",
+                "id": "x4rx6jlimiytz3co",
+                "teamId": "38pp2hphmiytz3cs"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "2"
+              },
+              {
+                "content": "8"
+              },
+              {
+                "content": "0"
+              },
+              {
+                "content": "2"
+              },
+              {
+                "gainColor": -1,
+                "content": "28",
+                "toolTip": "28"
+              },
+              {
+                "gainColor": -1,
+                "content": "8",
+                "toolTip": "8"
+              },
+              {
+                "gainColor": -1,
+                "content": "17",
+                "toolTip": "17"
+              },
+              {
+                "gainColor": -1,
+                "content": "3",
+                "toolTip": "3"
+              },
+              {
+                "gainColor": -1,
+                "content": ".224",
+                "toolTip": "0.223958"
+              },
+              {
+                "gainColor": -1,
+                "content": "3",
+                "toolTip": "3"
+              },
+              {
+                "gainColor": 1,
+                "content": "83",
+                "toolTip": "83"
+              },
+              {
+                "gainColor": -1,
+                "content": "3.84",
+                "toolTip": "3.838235"
+              },
+              {
+                "gainColor": -1,
+                "content": "1.191",
+                "toolTip": "1.191176"
+              },
+              {
+                "gainColor": 1,
+                "content": "5.0",
+                "toolTip": "5"
+              }
+            ],
+            "matchupId": "corx71vmmiytz3cs_e3fi1sgxmiytz3cs",
+            "fixedCells": [
+              {
+                "content": "PowerCraig5000",
+                "leagueId": "x4rx6jlimiytz3co",
+                "id": "x4rx6jlimiytz3co",
+                "teamId": "corx71vmmiytz3cs"
+              }
+            ],
+            "disabled": true
+          },
+          {
+            "cells": [
+              {
+                "content": "8"
+              },
+              {
+                "content": "2"
+              },
+              {
+                "content": "0"
+              },
+              {
+                "content": "8"
+              },
+              {
+                "gainColor": 1,
+                "content": "30",
+                "toolTip": "30"
+              },
+              {
+                "gainColor": 1,
+                "content": "9",
+                "toolTip": "9"
+              },
+              {
+                "gainColor": 1,
+                "content": "35",
+                "toolTip": "35"
+              },
+              {
+                "gainColor": 1,
+                "content": "6",
+                "toolTip": "6"
+              },
+              {
+                "gainColor": 1,
+                "content": ".270",
+                "toolTip": "0.27"
+              },
+              {
+                "gainColor": 1,
+                "content": "4",
+                "toolTip": "4"
+              },
+              {
+                "gainColor": -1,
+                "content": "55",
+                "toolTip": "55"
+              },
+              {
+                "gainColor": 1,
+                "content": "1.76",
+                "toolTip": "1.757396"
+              },
+              {
+                "gainColor": 1,
+                "content": "0.994",
+                "toolTip": "0.994083"
+              },
+              {
+                "gainColor": -1,
+                "content": "3.0",
+                "toolTip": "3"
+              }
+            ],
+            "matchupId": "corx71vmmiytz3cs_e3fi1sgxmiytz3cs",
+            "fixedCells": [
+              {
+                "content": "Coover's Corner",
+                "leagueId": "x4rx6jlimiytz3co",
+                "id": "x4rx6jlimiytz3co",
+                "teamId": "e3fi1sgxmiytz3cs"
+              }
+            ],
+            "disabled": true
+          },
+          {
+            "cells": [
+              {
+                "content": "7"
+              },
+              {
+                "content": "3"
+              },
+              {
+                "content": "0"
+              },
+              {
+                "content": "7"
+              },
+              {
+                "gainColor": 1,
+                "content": "36",
+                "toolTip": "36"
+              },
+              {
+                "gainColor": -1,
+                "content": "6",
+                "toolTip": "6"
+              },
+              {
+                "gainColor": -1,
+                "content": "19",
+                "toolTip": "19"
+              },
+              {
+                "gainColor": -1,
+                "content": "4",
+                "toolTip": "4"
+              },
+              {
+                "gainColor": 1,
+                "content": ".256",
+                "toolTip": "0.255605"
+              },
+              {
+                "gainColor": 1,
+                "content": "3",
+                "toolTip": "3"
+              },
+              {
+                "gainColor": 1,
+                "content": "66",
+                "toolTip": "66"
+              },
+              {
+                "gainColor": 1,
+                "content": "3.12",
+                "toolTip": "3.115385"
+              },
+              {
+                "gainColor": 1,
+                "content": "1.096",
+                "toolTip": "1.096154"
+              },
+              {
+                "gainColor": 1,
+                "content": "5.5",
+                "toolTip": "5.5"
+              }
+            ],
+            "matchupId": "t3dy3k9imiytz3cs_r7wbtddcmiytz3cs",
+            "fixedCells": [
+              {
+                "content": "William Street Wendy",
+                "leagueId": "x4rx6jlimiytz3co",
+                "id": "x4rx6jlimiytz3co",
+                "teamId": "t3dy3k9imiytz3cs"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "3"
+              },
+              {
+                "content": "7"
+              },
+              {
+                "content": "0"
+              },
+              {
+                "content": "3"
+              },
+              {
+                "gainColor": -1,
+                "content": "29",
+                "toolTip": "29"
+              },
+              {
+                "gainColor": 1,
+                "content": "8",
+                "toolTip": "8"
+              },
+              {
+                "gainColor": 1,
+                "content": "25",
+                "toolTip": "25"
+              },
+              {
+                "gainColor": 1,
+                "content": "5",
+                "toolTip": "5"
+              },
+              {
+                "gainColor": -1,
+                "content": ".188",
+                "toolTip": "0.1875"
+              },
+              {
+                "gainColor": -1,
+                "content": "2",
+                "toolTip": "2"
+              },
+              {
+                "gainColor": -1,
+                "content": "57",
+                "toolTip": "57"
+              },
+              {
+                "gainColor": -1,
+                "content": "3.42",
+                "toolTip": "3.422535"
+              },
+              {
+                "gainColor": -1,
+                "content": "1.268",
+                "toolTip": "1.267606"
+              },
+              {
+                "gainColor": -1,
+                "content": "3.5",
+                "toolTip": "3.5"
+              }
+            ],
+            "matchupId": "t3dy3k9imiytz3cs_r7wbtddcmiytz3cs",
+            "fixedCells": [
+              {
+                "content": "The Ronnie Woo-Woos",
+                "leagueId": "x4rx6jlimiytz3co",
+                "id": "x4rx6jlimiytz3co",
+                "teamId": "r7wbtddcmiytz3cs"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "3"
+              },
+              {
+                "content": "7"
+              },
+              {
+                "content": "0"
+              },
+              {
+                "content": "3"
+              },
+              {
+                "gainColor": -1,
+                "content": "24",
+                "toolTip": "24"
+              },
+              {
+                "gainColor": -1,
+                "content": "7",
+                "toolTip": "7"
+              },
+              {
+                "gainColor": 1,
+                "content": "29",
+                "toolTip": "29"
+              },
+              {
+                "gainColor": 1,
+                "content": "4",
+                "toolTip": "4"
+              },
+              {
+                "gainColor": -1,
+                "content": ".210",
+                "toolTip": "0.209756"
+              },
+              {
+                "gainColor": 1,
+                "content": "2",
+                "toolTip": "2"
+              },
+              {
+                "gainColor": -1,
+                "content": "34",
+                "toolTip": "34"
+              },
+              {
+                "gainColor": -1,
+                "content": "6.29",
+                "toolTip": "6.291262"
+              },
+              {
+                "gainColor": -1,
+                "content": "1.456",
+                "toolTip": "1.456311"
+              },
+              {
+                "gainColor": -1,
+                "content": "1.0",
+                "toolTip": "1"
+              }
+            ],
+            "matchupId": "aax8gerpmiytz3cs_huopotx1miytz3cs",
+            "fixedCells": [
+              {
+                "content": "Chew-Bock-a",
+                "leagueId": "x4rx6jlimiytz3co",
+                "id": "x4rx6jlimiytz3co",
+                "teamId": "aax8gerpmiytz3cs"
+              }
+            ],
+            "disabled": true
+          },
+          {
+            "cells": [
+              {
+                "content": "7"
+              },
+              {
+                "content": "3"
+              },
+              {
+                "content": "0"
+              },
+              {
+                "content": "7"
+              },
+              {
+                "gainColor": 1,
+                "content": "26",
+                "toolTip": "26"
+              },
+              {
+                "gainColor": 1,
+                "content": "8",
+                "toolTip": "8"
+              },
+              {
+                "gainColor": -1,
+                "content": "25",
+                "toolTip": "25"
+              },
+              {
+                "gainColor": -1,
+                "content": "3",
+                "toolTip": "3"
+              },
+              {
+                "gainColor": 1,
+                "content": ".231",
+                "toolTip": "0.231156"
+              },
+              {
+                "gainColor": -1,
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "gainColor": 1,
+                "content": "50",
+                "toolTip": "50"
+              },
+              {
+                "gainColor": 1,
+                "content": "4.46",
+                "toolTip": "4.464567"
+              },
+              {
+                "gainColor": 1,
+                "content": "1.394",
+                "toolTip": "1.393701"
+              },
+              {
+                "gainColor": 1,
+                "content": "3.5",
+                "toolTip": "3.5"
+              }
+            ],
+            "matchupId": "aax8gerpmiytz3cs_huopotx1miytz3cs",
+            "fixedCells": [
+              {
+                "content": "Team Fluck",
+                "leagueId": "x4rx6jlimiytz3co",
+                "id": "x4rx6jlimiytz3co",
+                "teamId": "huopotx1miytz3cs"
+              }
+            ],
+            "disabled": true
+          },
+          {
+            "highlight": true,
+            "cells": [
+              {
+                "content": "8"
+              },
+              {
+                "content": "1"
+              },
+              {
+                "content": "1"
+              },
+              {
+                "content": "8.5"
+              },
+              {
+                "gainColor": 1,
+                "content": "27",
+                "toolTip": "27"
+              },
+              {
+                "gainColor": 1,
+                "content": "10",
+                "toolTip": "10"
+              },
+              {
+                "gainColor": 1,
+                "content": "34",
+                "toolTip": "34"
+              },
+              {
+                "gainColor": 1,
+                "content": "3",
+                "toolTip": "3"
+              },
+              {
+                "gainColor": 1,
+                "content": ".269",
+                "toolTip": "0.268657"
+              },
+              {
+                "gainColor": 0,
+                "content": "3",
+                "toolTip": "3"
+              },
+              {
+                "gainColor": -1,
+                "content": "47",
+                "toolTip": "47"
+              },
+              {
+                "gainColor": 1,
+                "content": "3.99",
+                "toolTip": "3.986577"
+              },
+              {
+                "gainColor": 1,
+                "content": "1.128",
+                "toolTip": "1.127517"
+              },
+              {
+                "gainColor": 1,
+                "content": "2.5",
+                "toolTip": "2.5"
+              }
+            ],
+            "matchupId": "7owlmroxmiytz3cs_2rfp1oakmiytz3cs",
+            "fixedCells": [
+              {
+                "content": "REL REL",
+                "leagueId": "x4rx6jlimiytz3co",
+                "id": "x4rx6jlimiytz3co",
+                "teamId": "7owlmroxmiytz3cs"
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": "1"
+              },
+              {
+                "content": "8"
+              },
+              {
+                "content": "1"
+              },
+              {
+                "content": "1.5"
+              },
+              {
+                "gainColor": -1,
+                "content": "19",
+                "toolTip": "19"
+              },
+              {
+                "gainColor": -1,
+                "content": "2",
+                "toolTip": "2"
+              },
+              {
+                "gainColor": -1,
+                "content": "14",
+                "toolTip": "14"
+              },
+              {
+                "gainColor": -1,
+                "content": "2",
+                "toolTip": "2"
+              },
+              {
+                "gainColor": -1,
+                "content": ".186",
+                "toolTip": "0.185792"
+              },
+              {
+                "gainColor": 0,
+                "content": "3",
+                "toolTip": "3"
+              },
+              {
+                "gainColor": 1,
+                "content": "63",
+                "toolTip": "63"
+              },
+              {
+                "gainColor": -1,
+                "content": "5.04",
+                "toolTip": "5.04"
+              },
+              {
+                "gainColor": -1,
+                "content": "1.440",
+                "toolTip": "1.44"
+              },
+              {
+                "gainColor": -1,
+                "content": "2.0",
+                "toolTip": "2"
+              }
+            ],
+            "matchupId": "7owlmroxmiytz3cs_2rfp1oakmiytz3cs",
+            "fixedCells": [
+              {
+                "content": "Buffalo Blues",
+                "leagueId": "x4rx6jlimiytz3co",
+                "id": "x4rx6jlimiytz3co",
+                "teamId": "2rfp1oakmiytz3cs"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "displayedLists": {
+      "goBackDays": [
+        1,
+        7,
+        14,
+        30,
+        60
+      ],
+      "pagination": {
+        "startPageNum": 0,
+        "numTeamsPerPage": 25,
+        "endPageNum": 0,
+        "pageNum": 1
+      },
+      "tabs": [
+        {
+          "name": "Division One",
+          "id": "_s6ta2r13miytz3co"
+        },
+        {
+          "name": "Division Two",
+          "id": "_7khsvt8wmm8k5d3q"
+        },
+        {
+          "name": "All",
+          "id": "ALL"
+        },
+        {
+          "name": "Combined",
+          "id": "COMBINED"
+        },
+        {
+          "name": "Results",
+          "id": "SCHEDULE"
+        },
+        {
+          "name": "Season Stats",
+          "id": "SEASON_STATS"
+        },
+        {
+          "name": "Playoffs",
+          "id": "PLAYOFFS"
+        }
+      ],
+      "periods": [
+        {
+          "object2": "1 (Mar 25 - Apr 5)",
+          "object1": 1
+        },
+        {
+          "object2": "2 (Apr 6 - Apr 12)",
+          "object1": 2
+        },
+        {
+          "object2": "3 (Apr 13 - Apr 19)",
+          "object1": 3
+        },
+        {
+          "object2": "4 (Apr 20 - Apr 26)",
+          "object1": 4
+        },
+        {
+          "object2": "5 (Apr 27 - May 3)",
+          "object1": 5
+        },
+        {
+          "object2": "6 (May 4 - May 10)",
+          "object1": 6
+        },
+        {
+          "object2": "7 (May 11 - May 17)",
+          "object1": 7
+        },
+        {
+          "object2": "8 (May 18 - May 24)",
+          "object1": 8
+        },
+        {
+          "object2": "9 (May 25 - May 31)",
+          "object1": 9
+        },
+        {
+          "object2": "10 (Jun 1 - Jun 7)",
+          "object1": 10
+        },
+        {
+          "object2": "11 (Jun 8 - Jun 14)",
+          "object1": 11
+        },
+        {
+          "object2": "12 (Jun 15 - Jun 21)",
+          "object1": 12
+        },
+        {
+          "object2": "13 (Jun 22 - Jun 28)",
+          "object1": 13
+        },
+        {
+          "object2": "14 (Jun 29 - Jul 5)",
+          "object1": 14
+        },
+        {
+          "object2": "15 (Jul 6 - Jul 12)",
+          "object1": 15
+        },
+        {
+          "object2": "16 (Jul 13 - Jul 26)",
+          "object1": 16
+        },
+        {
+          "object2": "17 (Jul 27 - Aug 2)",
+          "object1": 17
+        },
+        {
+          "object2": "18 (Aug 3 - Aug 9)",
+          "object1": 18
+        },
+        {
+          "object2": "19 (Aug 10 - Aug 16)",
+          "object1": 19
+        },
+        {
+          "object2": "20 (Aug 17 - Aug 23)",
+          "object1": 20
+        },
+        {
+          "object2": "21 (Aug 24 - Aug 30)",
+          "object1": 21
+        },
+        {
+          "object2": "22 (Aug 31 - Sep 6)",
+          "object1": 22
+        },
+        {
+          "object2": "23 (Sep 7 - Sep 13)",
+          "object1": 23
+        },
+        {
+          "object2": "24 (Sep 14 - Sep 20)",
+          "object1": 24
+        },
+        {
+          "object2": "25 (Sep 21 - Sep 27)",
+          "object1": 25
+        }
+      ],
+      "timeframeTypes": [
+        {
+          "name": "YTD",
+          "id": "YEAR_TO_DATE"
+        },
+        {
+          "name": "By Period",
+          "id": "BY_PERIOD"
+        }
+      ],
+      "timeStartTypes": [
+        {
+          "object2": "Period Only",
+          "object1": "PERIOD_ONLY"
+        },
+        {
+          "object2": "From Start Of Season",
+          "object1": "FROM_SEASON_START"
+        }
+      ]
+    }
+  }
+}
