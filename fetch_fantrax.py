@@ -1,6 +1,4 @@
-Login works perfectly but the session cookie isn't carrying over. I can see exactly what's happening — Fantrax sets a session cookie after login that we need to capture and reuse. Let me print the cookies after login to see what we get.
-Replace fetch_fantrax.py with this:
-pythonimport requests
+import requests
 import json
 import os
 
