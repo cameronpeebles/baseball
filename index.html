@@ -50,6 +50,10 @@
     .rank.top { background: var(--accent); color: white; border-color: var(--accent); }
     .badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 500; background: var(--accent-light); color: var(--accent); }
     .badge.fa { background: #fef3e2; color: #b7791f; }
+    .status-badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 500; }
+    .status-1 { background: var(--accent-light); color: var(--accent); }
+    .status-2 { background: #f0f0f0; color: #666; }
+    .status-3 { background: #fef3e2; color: #b7791f; }
     .loading { text-align: center; padding: 48px; color: var(--muted); font-size: 13px; }
     .error-msg { text-align: center; padding: 48px; color: var(--danger); font-size: 13px; }
     .search-wrap { padding: 8px 20px 10px; border-bottom: 1px solid var(--border); }
@@ -64,6 +68,7 @@
     .team-btn:hover { border-color: var(--accent); color: var(--accent); }
     .team-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
     .section-sep { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent2); padding: 16px 0 4px; }
+    .roster-section-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 10px 14px 6px; background: var(--bg); border-bottom: 1px solid var(--border); }
   </style>
 </head>
 <body>
@@ -132,7 +137,7 @@
     <div class="page-subtitle">Players by team</div>
     <div class="card">
       <div class="team-selector" id="team-sel"></div>
-      <div class="table-wrap" id="roster-table"><div class="loading">Select a team above</div></div>
+      <div id="roster-body"><div class="loading">Select a team above</div></div>
     </div>
   </div>
 </main>
@@ -171,7 +176,7 @@ async function init(){
     buildRosterSelector();
   } catch(e) {
     console.error(e);
-    ['standings-body','season-body','combined-body','hit-table','pit-table','roster-table'].forEach(id=>{
+    ['standings-body','season-body','combined-body','hit-table','pit-table','roster-body'].forEach(id=>{
       const el=document.getElementById(id); if(el){el.innerHTML='<div class="error-msg">Error: '+e.message+'</div>';}
     });
   }
@@ -232,9 +237,7 @@ function buildStandingsTable(table, teamInfo) {
 function loadPlayers(data, type) {
   const d = data?.data || {};
   const rows = d.statsTable || [];
-  // FIXED: headers are in tableHeader.cells not columnHeaders
   const headers = d.tableHeader?.cells || d.columnHeaders || [];
-
   if(type==='hit'){ S.hitRows=rows; S.hitHeaders=headers; }
   else { S.pitRows=rows; S.pitHeaders=headers; }
   drawPlayers(type);
@@ -260,10 +263,7 @@ function drawPlayers(type){
   const q = isHit?S.hitQ:S.pitQ;
   const id = isHit?'hit-table':'pit-table';
 
-  if(!rows.length){
-    document.getElementById(id).innerHTML='<div class="error-msg">No player data found</div>';
-    return;
-  }
+  if(!rows.length){ document.getElementById(id).innerHTML='<div class="error-msg">No player data found</div>'; return; }
 
   const filtered = rows.filter(row => {
     const scorer = row.scorer || {};
@@ -276,10 +276,7 @@ function drawPlayers(type){
   });
 
   let html = '<table><thead><tr>';
-  html += '<th class="left">Player</th>';
-  html += '<th class="left">Pos</th>';
-  html += '<th class="left">MLB</th>';
-  html += '<th class="left">Fantasy Team</th>';
+  html += '<th class="left">Player</th><th class="left">Pos</th><th class="left">MLB</th><th class="left">Fantasy Team</th>';
   headers.forEach(h => { html+=`<th>${h.shortName||h.name||''}</th>`; });
   html += '</tr></thead><tbody>';
 
@@ -306,7 +303,6 @@ function drawPlayers(type){
     } else {
       html += `<td class="left"><span class="badge">Rostered</span></td>`;
     }
-    // cells[0]=rank, cells[1]=fantasy team, cells[2+]=stats
     const statCells = cells.slice(2);
     statCells.forEach(cell => {
       const val = (cell.content??'').toString().replace(/<[^>]+>/g,'');
@@ -323,7 +319,7 @@ function drawPlayers(type){
 function buildRosterSelector(){
   const sel = document.getElementById('team-sel');
   const ids = Object.keys(S.teamInfo);
-  if(!ids.length){ document.getElementById('roster-table').innerHTML='<div class="error-msg">No teams found</div>'; return; }
+  if(!ids.length){ document.getElementById('roster-body').innerHTML='<div class="error-msg">No teams found</div>'; return; }
   ids.forEach((id,i)=>{
     const t = S.teamInfo[id];
     const btn = document.createElement('button');
@@ -340,26 +336,70 @@ function buildRosterSelector(){
 }
 
 function showRoster(teamId){
-  const data = S.rosterRaw;
-  const ti = S.teamInfo[teamId]||{};
-  const teams = data?.data?.fantasyTeams||data?.data?.teams||[];
-  const team = teams.find(t=>t.id===teamId||t.teamId===teamId);
-  const players = team?.roster||team?.players||team?.playerList||[];
-  const byKey = data?.data?.rosters?.[teamId]||[];
-  const all = players.length ? players : (Array.isArray(byKey)?byKey:[]);
+  const rosterData = S.rosterRaw?.data?.rosters?.[teamId];
+  const ti = S.teamInfo[teamId] || {};
 
-  if(!all.length){
-    const keys = JSON.stringify(Object.keys(data?.data||{}));
-    document.getElementById('roster-table').innerHTML=`<div class="loading">No roster data for <strong>${ti.name||teamId}</strong> yet.<br><small style="color:var(--muted);margin-top:8px;display:block">Data keys: ${keys}</small></div>`;
+  if(!rosterData){
+    document.getElementById('roster-body').innerHTML=`<div class="loading">No roster data for <strong>${ti.name||teamId}</strong></div>`;
     return;
   }
 
-  let html = '<table><thead><tr><th class="left">Player</th><th class="left">Pos</th><th class="left">MLB Team</th><th class="left">Status</th></tr></thead><tbody>';
-  all.forEach(p=>{
-    html+=`<tr><td class="left"><strong>${p.name||p.playerName||''}</strong></td><td class="left">${p.position||p.pos||''}</td><td class="left">${p.mlbTeamShortName||p.teamShortName||p.proTeam||''}</td><td class="left">${p.status||p.injuryStatus||''}</td></tr>`;
+  // tables[] contains hitting and pitching sections
+  const tables = rosterData?.data?.tables || [];
+  if(!tables.length){
+    document.getElementById('roster-body').innerHTML=`<div class="loading">No tables found for ${ti.name}</div>`;
+    return;
+  }
+
+  // Status labels
+  const statusLabels = { '1': 'Active', '2': 'Reserve', '3': 'IR' };
+
+  let html = '';
+
+  tables.forEach(table => {
+    const sectionLabel = table.scGroupScorerHeader || '';
+    const headers = table.header?.cells || [];
+    const rows = table.rows || [];
+    if(!rows.length) return;
+
+    html += `<div class="roster-section-label">${sectionLabel}</div>`;
+    html += '<div class="table-wrap"><table><thead><tr>';
+    html += '<th class="left">Player</th><th class="left">Pos</th><th class="left">MLB Team</th><th class="left">Status</th>';
+    // Show key stat headers (skip Age and Opponent cols)
+    const statHeaders = headers.filter(h => !['age','opponent'].includes(h.key||''));
+    statHeaders.forEach(h => { html+=`<th>${h.shortName||h.name||''}</th>`; });
+    html += '</tr></thead><tbody>';
+
+    rows.forEach(row => {
+      const scorer = row.scorer || {};
+      const cells = row.cells || [];
+      const name = scorer.name || scorer.shortName || '';
+      const pos = scorer.posShortNames || '';
+      const mlb = scorer.teamShortName || '';
+      const hs = scorer.headshotUrl || '';
+      const statusId = row.statusId || '1';
+      const statusLabel = statusLabels[statusId] || '';
+
+      html += '<tr>';
+      html += `<td class="left"><div class="team-cell">${hs?`<img class="player-hs" src="${hs}" alt="" onerror="this.style.display='none'">`:''}
+        <span><strong>${name}</strong></span></div></td>`;
+      html += `<td class="left"><span style="color:var(--muted);font-size:12px">${pos}</span></td>`;
+      html += `<td class="left">${mlb}</td>`;
+      html += `<td class="left"><span class="status-badge status-${statusId}">${statusLabel}</span></td>`;
+
+      // cells: [age, opponent, ...stats] — skip age(0) and opponent(1)
+      const statCells = cells.slice(2);
+      statCells.forEach(cell => {
+        const val = (cell.content??'').toString().replace(/<[^>]+>/g,'');
+        html += `<td>${val}</td>`;
+      });
+      html += '</tr>';
+    });
+
+    html += '</tbody></table></div>';
   });
-  html+='</tbody></table>';
-  document.getElementById('roster-table').innerHTML=html;
+
+  document.getElementById('roster-body').innerHTML = html;
 }
 
 init();
