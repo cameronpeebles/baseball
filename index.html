@@ -34,8 +34,9 @@
     .card-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
     .card-title { font-weight: 500; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
     .card-body { padding: 24px; }
-    .chart-wrap { position: relative; width: 100%; height: 360px; }
+    .chart-wrap { position: relative; width: 100%; height: 380px; }
     .chart-wrap-sm { position: relative; width: 100%; height: 260px; }
+    .chart-wrap-lg { position: relative; width: 100%; height: 480px; }
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     thead th { background: var(--bg); padding: 9px 14px; text-align: right; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
@@ -77,10 +78,7 @@
     .roster-section-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 10px 14px 6px; background: var(--bg); border-bottom: 1px solid var(--border); }
     .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
     @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
-    .zscore-legend { display: flex; gap: 20px; font-size: 12px; color: var(--muted); padding: 0 0 16px; }
-    .zscore-legend span { display: flex; align-items: center; gap: 6px; }
-    .zscore-legend .dot { width: 10px; height: 10px; border-radius: 50%; }
-    .team-select-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+    .zscore-note { font-size: 11px; color: var(--muted); margin-bottom: 16px; }
   </style>
 </head>
 <body>
@@ -96,7 +94,7 @@
   <button onclick="nav('pitching',this)">Pitching</button>
   <button onclick="nav('rosters',this)">Rosters</button>
   <button onclick="nav('analytics',this)">Analytics</button>
-  <button onclick="nav('zscores',this)">Batting Z-Scores</button>
+  <button onclick="nav('zscores',this)">Z-Scores</button>
 </nav>
 <main>
   <div class="page active" id="page-standings">
@@ -172,41 +170,53 @@
       </div>
     </div>
   </div>
+
+  <!-- Z-SCORES PAGE -->
   <div class="page" id="page-zscores">
-    <div class="page-title">Batting Z-Scores</div>
-    <div class="page-subtitle">Standardized batting performance across R, HR, RBI, SB, AVG — positive = above average, negative = below average</div>
+    <div class="page-title">Z-Scores</div>
+    <div class="page-subtitle">Standardized performance across batting & pitching categories. Positive = above league average, negative = below.</div>
+
+    <!-- Batting grouped bar -->
     <div class="card">
-      <div class="card-header">
-        <span class="card-title">All Teams — Z-Score by Category</span>
-        <div class="pill-group" id="cat-pills">
-          <button class="pill active" onclick="setCat('R',this)">R</button>
-          <button class="pill" onclick="setCat('HR',this)">HR</button>
-          <button class="pill" onclick="setCat('RBI',this)">RBI</button>
-          <button class="pill" onclick="setCat('SB',this)">SB</button>
-          <button class="pill" onclick="setCat('AVG',this)">AVG</button>
-        </div>
-      </div>
+      <div class="card-header"><span class="card-title">Batting Z-Scores by Team</span></div>
       <div class="card-body">
-        <div class="zscore-legend">
-          <span><div class="dot" style="background:#2d5a3d"></div>Above average</span>
-          <span><div class="dot" style="background:#c0392b"></div>Below average</span>
-        </div>
-        <div class="chart-wrap"><canvas id="chart-zcat"></canvas></div>
+        <p class="zscore-note">Categories: R, HR, RBI, SB, AVG — higher is better for all</p>
+        <div class="chart-wrap"><canvas id="chart-bat-grouped"></canvas></div>
       </div>
     </div>
+
+    <!-- Pitching grouped bar -->
     <div class="card">
-      <div class="card-header"><span class="card-title">Team Profile — All Categories</span></div>
+      <div class="card-header"><span class="card-title">Pitching Z-Scores by Team</span></div>
       <div class="card-body">
-        <div class="team-select-grid" id="z-team-btns"></div>
-        <div class="chart-wrap"><canvas id="chart-zteam"></canvas></div>
+        <p class="zscore-note">Categories: K, W, SVH3, ERA, WHIP — ERA & WHIP flipped so positive = better</p>
+        <div class="chart-wrap"><canvas id="chart-pit-grouped"></canvas></div>
       </div>
     </div>
+
+    <!-- Scatter: Bat Z vs Pit Z -->
     <div class="card">
-      <div class="card-header"><span class="card-title">Z-Score Summary Table</span></div>
-      <div class="table-wrap" id="z-table"></div>
+      <div class="card-header"><span class="card-title">Total Z-Scores — Batting vs Pitching</span></div>
+      <div class="card-body">
+        <p class="zscore-note">X = total batting Z-score, Y = total pitching Z-score, bubble size = combined total Z</p>
+        <div class="chart-wrap-lg"><canvas id="chart-scatter"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Summary tables -->
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Batting Z-Score Table</span></div>
+        <div class="table-wrap" id="z-bat-table"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Pitching Z-Score Table</span></div>
+        <div class="table-wrap" id="z-pit-table"></div>
+      </div>
     </div>
   </div>
 </main>
+
 <script>
 const BASE = 'https://raw.githubusercontent.com/cameronpeebles/baseball/main/data/';
 const S = {
@@ -303,8 +313,7 @@ function loadPlayers(data, type) {
 function setF(type,f,btn){
   if(type==='hit') S.hitF=f; else S.pitF=f;
   document.getElementById(type+'-pills').querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
-  btn.classList.add('active');
-  drawPlayers(type);
+  btn.classList.add('active'); drawPlayers(type);
 }
 
 function doSearch(type,v){
@@ -313,77 +322,39 @@ function doSearch(type,v){
 }
 
 function drawPlayers(type){
-  const isHit = type==='hit';
-  const rows = isHit?S.hitRows:S.pitRows;
-  const headers = isHit?S.hitHeaders:S.pitHeaders;
-  const filter = isHit?S.hitF:S.pitF;
-  const q = isHit?S.hitQ:S.pitQ;
-  const id = isHit?'hit-table':'pit-table';
-
+  const isHit=type==='hit', rows=isHit?S.hitRows:S.pitRows, headers=isHit?S.hitHeaders:S.pitHeaders;
+  const filter=isHit?S.hitF:S.pitF, q=isHit?S.hitQ:S.pitQ, id=isHit?'hit-table':'pit-table';
   if(!rows.length){ document.getElementById(id).innerHTML='<div class="error-msg">No player data found</div>'; return; }
-
-  const filtered = rows.filter(row => {
-    const name = (row.scorer?.name||'').toLowerCase();
-    // cells[1] holds fantasy team id
-    const ftId = (row.cells||[])[1]?.teamId || '';
-    if(filter==='FA' && ftId) return false;
-    if(filter==='OWNED' && !ftId) return false;
-    if(q && !name.includes(q)) return false;
-    return true;
+  const filtered=rows.filter(row=>{
+    const name=(row.scorer?.name||'').toLowerCase(), ftId=(row.cells||[])[1]?.teamId||'';
+    if(filter==='FA'&&ftId)return false; if(filter==='OWNED'&&!ftId)return false;
+    if(q&&!name.includes(q))return false; return true;
   });
-
-  // Build header row: Player, Pos, MLB Team, then all 15 headers
-  let html = '<table><thead><tr>';
-  html += '<th class="left">Player</th>';
-  html += '<th class="left">Pos</th>';
-  html += '<th class="left">MLB</th>';
-  // All headers map 1:1 with cells
-  headers.forEach(h => {
-    html += `<th>${h.shortName||h.name||''}</th>`;
-  });
-  html += '</tr></thead><tbody>';
-
-  filtered.forEach(row => {
-    const scorer = row.scorer || {};
-    const cells = row.cells || [];
-    const name = scorer.name || scorer.shortName || '';
-    const pos = scorer.posShortNames || '';
-    const mlb = scorer.teamShortName || '';
-    const hs = scorer.headshotUrl || '';
-    // Fantasy team is in cells[1]
-    const ftId = cells[1]?.teamId || '';
-    const ft = S.teamInfo[ftId] || null;
-    const isFa = !ftId;
-
-    html += '<tr>';
-    // Player name + headshot
-    html += `<td class="left"><div class="team-cell">${hs?`<img class="player-hs" src="${hs}" alt="" onerror="this.style.display='none'">`:''}
+  let html='<table><thead><tr><th class="left">Player</th><th class="left">Pos</th><th class="left">MLB</th>';
+  headers.forEach(h=>{html+=`<th>${h.shortName||h.name||''}</th>`;});
+  html+='</tr></thead><tbody>';
+  filtered.forEach(row=>{
+    const scorer=row.scorer||{}, cells=row.cells||[];
+    const name=scorer.name||scorer.shortName||'', pos=scorer.posShortNames||'', mlb=scorer.teamShortName||'', hs=scorer.headshotUrl||'';
+    const ftId=cells[1]?.teamId||'', ft=S.teamInfo[ftId]||null, isFa=!ftId;
+    html+='<tr>';
+    html+=`<td class="left"><div class="team-cell">${hs?`<img class="player-hs" src="${hs}" alt="" onerror="this.style.display='none'">`:''}
       <span><strong>${name}</strong></span></div></td>`;
-    html += `<td class="left"><span style="color:var(--muted);font-size:12px">${pos}</span></td>`;
-    html += `<td class="left">${mlb}</td>`;
-
-    // All 15 cells map 1:1 to headers
-    cells.forEach((cell, j) => {
-      if(j === 1) {
-        // Fantasy team cell — render as logo + name
-        if(isFa){
-          html += `<td class="left"><span class="badge fa">FA</span></td>`;
-        } else if(ft){
-          html += `<td class="left"><div class="team-cell">${ft.logoUrl512?`<img class="team-logo" src="${ft.logoUrl512}" alt="" onerror="this.style.display='none'">`:`<div class="team-logo-ph">${(ft.shortName||'?')[0]}</div>`}<span style="font-size:12px">${ft.shortName||''}</span></div></td>`;
-        } else {
-          html += `<td class="left"><span class="badge">Rostered</span></td>`;
-        }
+    html+=`<td class="left"><span style="color:var(--muted);font-size:12px">${pos}</span></td>`;
+    html+=`<td class="left">${mlb}</td>`;
+    cells.forEach((cell,j)=>{
+      if(j===1){
+        if(isFa){html+=`<td class="left"><span class="badge fa">FA</span></td>`;}
+        else if(ft){html+=`<td class="left"><div class="team-cell">${ft.logoUrl512?`<img class="team-logo" src="${ft.logoUrl512}" alt="" onerror="this.style.display='none'">`:`<div class="team-logo-ph">${(ft.shortName||'?')[0]}</div>`}<span style="font-size:12px">${ft.shortName||''}</span></div></td>`;}
+        else{html+=`<td class="left"><span class="badge">Rostered</span></td>`;}
       } else {
-        const val = (cell.content??'').toString().replace(/<[^>]+>/g,'');
-        html += `<td>${val}</td>`;
+        html+=`<td>${(cell.content??'').toString().replace(/<[^>]+>/g,'')}</td>`;
       }
     });
-
-    html += '</tr>';
+    html+='</tr>';
   });
-
-  html += '</tbody></table>';
-  document.getElementById(id).innerHTML = html;
+  html+='</tbody></table>';
+  document.getElementById(id).innerHTML=html;
 }
 
 // ── ROSTERS ───────────────────────────────────────────────────
@@ -431,16 +402,34 @@ function showRoster(teamId){
 }
 
 // ── Z-SCORE ENGINE ────────────────────────────────────────────
-// Point Totals table header order:
-// fixedCells: [rank, team]
-// cells: [0:Pts, 1:+/-, 2:WW, 3:GP, 4:AB, 5:H, 6:R, 7:HR, 8:RBI, 9:SB, 10:AVG, 11:IP, 12:W, 13:ERA, 14:WHIP, 15:K, 16:SVH3]
-const BATTING_STATS = [
-  { key:'R',   label:'R',   idx:6  },
-  { key:'HR',  label:'HR',  idx:7  },
-  { key:'RBI', label:'RBI', idx:8  },
-  { key:'SB',  label:'SB',  idx:9  },
-  { key:'AVG', label:'AVG', idx:10 },
+const BAT_STATS = [
+  { key:'R',   label:'R',   idx:6,  flip:false },
+  { key:'HR',  label:'HR',  idx:7,  flip:false },
+  { key:'RBI', label:'RBI', idx:8,  flip:false },
+  { key:'SB',  label:'SB',  idx:9,  flip:false },
+  { key:'AVG', label:'AVG', idx:10, flip:false },
 ];
+
+const PIT_STATS = [
+  { key:'K',    label:'K',    idx:15, flip:false },
+  { key:'W',    label:'W',    idx:12, flip:false },
+  { key:'SVH3', label:'SVH3', idx:16, flip:false },
+  { key:'ERA',  label:'ERA',  idx:13, flip:true  },
+  { key:'WHIP', label:'WHIP', idx:14, flip:true  },
+];
+
+function zScore(val, mean, std, flip){
+  if(val === null || std === 0) return 0;
+  const z = (val - mean) / std;
+  return parseFloat((flip ? -z : z).toFixed(2));
+}
+
+function computeStats(values){
+  const valid = values.filter(v => v !== null);
+  const mean = valid.reduce((a,b)=>a+b,0) / valid.length;
+  const variance = valid.reduce((a,b)=>a+(b-mean)**2,0) / valid.length;
+  return { mean, std: Math.sqrt(variance) };
+}
 
 function computeZScores(){
   const tables = S.seasonData?.data?.tableList||[];
@@ -448,127 +437,212 @@ function computeZScores(){
   if(!ptTable){ console.warn('Point totals table not found'); return; }
 
   const rows = ptTable.rows||[];
+  const allStats = [...BAT_STATS, ...PIT_STATS];
 
+  // Extract raw values
   const rawData = rows.map(row=>{
     const fc=row.fixedCells||[], cells=row.cells||[];
     const teamId=fc[1]?.teamId||'';
     const teamName=S.teamInfo[teamId]?.shortName||fc[1]?.content||'?';
-    const obj={teamId,teamName};
-    BATTING_STATS.forEach(stat=>{
+    const obj={teamId, teamName};
+    allStats.forEach(stat=>{
       const val=parseFloat(cells[stat.idx]?.content);
       obj[stat.key]=isNaN(val)?null:val;
     });
     return obj;
   });
 
-  const stats={};
-  BATTING_STATS.forEach(stat=>{
-    const vals=rawData.map(r=>r[stat.key]).filter(v=>v!==null);
-    const mean=vals.reduce((a,b)=>a+b,0)/vals.length;
-    const variance=vals.reduce((a,b)=>a+(b-mean)**2,0)/vals.length;
-    stats[stat.key]={mean,std:Math.sqrt(variance)};
+  // Compute mean/std per stat
+  const statParams={};
+  allStats.forEach(stat=>{
+    statParams[stat.key] = computeStats(rawData.map(r=>r[stat.key]));
   });
 
-  const zData=rawData.map(row=>{
-    const z={teamId:row.teamId,teamName:row.teamName,raw:{},z:{}};
-    BATTING_STATS.forEach(stat=>{
-      const raw=row[stat.key];
-      z.raw[stat.key]=raw;
-      z.z[stat.key]=(raw!==null&&stats[stat.key].std>0)?parseFloat(((raw-stats[stat.key].mean)/stats[stat.key].std).toFixed(2)):0;
+  // Compute Z scores
+  const zData = rawData.map(row=>{
+    const z={teamId:row.teamId, teamName:row.teamName, raw:{}, batZ:{}, pitZ:{}};
+    BAT_STATS.forEach(stat=>{
+      z.raw[stat.key]=row[stat.key];
+      z.batZ[stat.key]=zScore(row[stat.key], statParams[stat.key].mean, statParams[stat.key].std, stat.flip);
     });
-    z.totalZ=parseFloat(Object.values(z.z).reduce((a,b)=>a+b,0).toFixed(2));
+    PIT_STATS.forEach(stat=>{
+      z.raw[stat.key]=row[stat.key];
+      z.pitZ[stat.key]=zScore(row[stat.key], statParams[stat.key].mean, statParams[stat.key].std, stat.flip);
+    });
+    z.totalBatZ = parseFloat(Object.values(z.batZ).reduce((a,b)=>a+b,0).toFixed(2));
+    z.totalPitZ = parseFloat(Object.values(z.pitZ).reduce((a,b)=>a+b,0).toFixed(2));
+    z.totalZ    = parseFloat((z.totalBatZ + z.totalPitZ).toFixed(2));
     return z;
   });
 
-  zData.sort((a,b)=>b.totalZ-a.totalZ);
-  S.zData=zData;
+  S.zData = zData;
 }
 
 // ── Z-SCORE RENDERING ─────────────────────────────────────────
-let zCatKey='R', zTeamIdx=0;
+let zRendered = false;
 
 function renderZScores(){
+  if(zRendered) return;
   if(!S.zData) return;
-  buildZTeamButtons();
-  drawZCatChart(zCatKey);
-  drawZTeamChart(zTeamIdx);
-  drawZTable();
+  zRendered = true;
+
+  drawGroupedBar('chart-bat-grouped', BAT_STATS, 'batZ', 'Batting Z-Score');
+  drawGroupedBar('chart-pit-grouped', PIT_STATS, 'pitZ', 'Pitching Z-Score');
+  drawScatter();
+  drawZSummaryTable('z-bat-table', BAT_STATS, 'batZ', 'totalBatZ');
+  drawZSummaryTable('z-pit-table', PIT_STATS, 'pitZ', 'totalPitZ');
 }
 
-function setCat(key,btn){
-  zCatKey=key;
-  document.getElementById('cat-pills').querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
-  btn.classList.add('active');
-  drawZCatChart(key);
-}
+// Palette for teams
+const TEAM_COLORS = [
+  '#2d5a3d','#c8a96e','#3a7a52','#c0392b','#4a9a68',
+  '#8e44ad','#2980b9','#e67e22','#1abc9c','#e74c3c'
+];
 
-function buildZTeamButtons(){
-  const container=document.getElementById('z-team-btns');
-  if(container.children.length) return;
-  S.zData.forEach((team,i)=>{
-    const btn=document.createElement('button');
-    btn.className='team-btn'+(i===0?' active':'');
-    btn.textContent=team.teamName;
-    btn.onclick=()=>{
-      document.querySelectorAll('#z-team-btns .team-btn').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active'); zTeamIdx=i; drawZTeamChart(i);
+function drawGroupedBar(canvasId, stats, zKey, yLabel){
+  const data = S.zData;
+  const labels = data.map(d=>d.teamName);
+  const catLabels = stats.map(s=>s.label);
+
+  // One dataset per category, one bar per team
+  const datasets = stats.map((stat, si) => {
+    const values = data.map(d => d[zKey][stat.key]);
+    // Use a consistent color per category
+    const catColors = ['#2d5a3d','#3a7a52','#c8a96e','#c0392b','#2980b9'];
+    return {
+      label: stat.label,
+      data: values,
+      backgroundColor: catColors[si % catColors.length],
+      borderColor: catColors[si % catColors.length],
+      borderWidth: 1,
+      borderRadius: 3,
     };
-    container.appendChild(btn);
   });
-}
 
-function drawZCatChart(catKey){
-  const data=S.zData;
-  const labels=data.map(d=>d.teamName);
-  const values=data.map(d=>d.z[catKey]);
-  const colors=values.map(v=>v>=0?'#2d5a3d':'#c0392b');
-  destroyChart('zcat');
-  chartInstances['zcat']=new Chart(document.getElementById('chart-zcat'),{
-    type:'bar',
-    data:{labels,datasets:[{label:`Z-Score (${catKey})`,data:values,backgroundColor:colors,borderColor:colors,borderWidth:1,borderRadius:4}]},
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>[`Z-Score: ${ctx.parsed.y}`,`Raw ${catKey}: ${data[ctx.dataIndex].raw[catKey]}`]}}},
-      scales:{x:{grid:{display:false}},y:{grid:{color:'#e4e0d8'},title:{display:true,text:'Z-Score',font:{size:11}}}}
+  destroyChart(canvasId);
+  chartInstances[canvasId] = new Chart(document.getElementById(canvasId), {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 12, padding: 16 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const stat = stats[ctx.datasetIndex];
+              const team = data[ctx.dataIndex];
+              return `${stat.label}: Z=${ctx.parsed.y} (raw: ${team.raw[stat.key]})`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: {
+          grid: { color: '#e4e0d8' },
+          title: { display: true, text: yLabel, font: { size: 11 } },
+        }
+      }
     }
   });
 }
 
-function drawZTeamChart(idx){
-  const team=S.zData[idx]; if(!team) return;
-  const labels=BATTING_STATS.map(s=>s.label);
-  const values=BATTING_STATS.map(s=>team.z[s.key]);
-  const colors=values.map(v=>v>=0?'#2d5a3d':'#c0392b');
-  destroyChart('zteam');
-  chartInstances['zteam']=new Chart(document.getElementById('chart-zteam'),{
-    type:'bar',
-    data:{labels,datasets:[{label:team.teamName,data:values,backgroundColor:colors,borderColor:colors,borderWidth:1,borderRadius:4}]},
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>[`Z-Score: ${ctx.parsed.y}`,`Raw: ${team.raw[BATTING_STATS[ctx.dataIndex].key]}`]}}},
-      scales:{x:{grid:{display:false}},y:{grid:{color:'#e4e0d8'},title:{display:true,text:'Z-Score',font:{size:11}}}}
-    }
+function drawScatter(){
+  const data = S.zData;
+
+  // Bubble chart: x=batZ total, y=pitZ total, r=bubble size from totalZ magnitude
+  const minR = 8, maxR = 28;
+  const allTotals = data.map(d=>Math.abs(d.totalZ));
+  const maxTotal = Math.max(...allTotals) || 1;
+
+  const datasets = data.map((team, i) => {
+    const r = minR + (Math.abs(team.totalZ) / maxTotal) * (maxR - minR);
+    const color = TEAM_COLORS[i % TEAM_COLORS.length];
+    return {
+      label: team.teamName,
+      data: [{ x: team.totalBatZ, y: team.totalPitZ, r }],
+      backgroundColor: color + 'aa',
+      borderColor: color,
+      borderWidth: 1.5,
+    };
+  });
+
+  destroyChart('scatter');
+  chartInstances['scatter'] = new Chart(document.getElementById('chart-scatter'), {
+    type: 'bubble',
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const team = data.find(d=>d.teamName===ctx.dataset.label);
+              return [
+                team.teamName,
+                `Bat Z: ${team.totalBatZ}`,
+                `Pit Z: ${team.totalPitZ}`,
+                `Total Z: ${team.totalZ}`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#e4e0d8' },
+          title: { display: true, text: 'Total Batting Z-Score', font: { size: 12 } },
+        },
+        y: {
+          grid: { color: '#e4e0d8' },
+          title: { display: true, text: 'Total Pitching Z-Score', font: { size: 12 } },
+        }
+      }
+    },
+    plugins: [{
+      // Draw team name labels on bubbles
+      afterDatasetsDraw(chart) {
+        const ctx = chart.ctx;
+        ctx.save();
+        chart.data.datasets.forEach((ds, i) => {
+          const meta = chart.getDatasetMeta(i);
+          if(!meta.hidden && meta.data[0]) {
+            const pt = meta.data[0];
+            ctx.font = 'bold 11px DM Sans, sans-serif';
+            ctx.fillStyle = '#1a1814';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(data[i].teamName, pt.x, pt.y);
+          }
+        });
+        ctx.restore();
+      }
+    }]
   });
 }
 
-function drawZTable(){
-  const data=S.zData;
+function drawZSummaryTable(containerId, stats, zKey, totalKey){
+  const sorted = [...S.zData].sort((a,b)=>b[totalKey]-a[totalKey]);
   let html='<table><thead><tr><th class="left">Team</th>';
-  BATTING_STATS.forEach(s=>{html+=`<th>${s.label} (raw)</th><th>${s.label} (Z)</th>`;});
-  html+='<th>Total Z</th></tr></thead><tbody>';
-  data.forEach((team,i)=>{
+  stats.forEach(s=>{html+=`<th>${s.label}</th>`;});
+  html+=`<th>Total Z</th></tr></thead><tbody>`;
+  sorted.forEach((team,i)=>{
     const ti=S.teamInfo[team.teamId]||{}, logo=ti.logoUrl512||'';
     html+=`<tr${i===0?' class="hl"':''}>`;
     html+=`<td class="left"><div class="team-cell">${logo?`<img class="team-logo" src="${logo}" alt="" onerror="this.style.display='none'">`:`<div class="team-logo-ph">${(team.teamName||'?')[0]}</div>`}<span>${team.teamName}</span></div></td>`;
-    BATTING_STATS.forEach(s=>{
-      const raw=team.raw[s.key]??'-', z=team.z[s.key], cls=z>0?'pos':z<0?'neg':'';
-      html+=`<td>${raw}</td><td class="${cls}">${z>0?'+':''}${z}</td>`;
+    stats.forEach(s=>{
+      const z=team[zKey][s.key], cls=z>0?'pos':z<0?'neg':'';
+      html+=`<td class="${cls}">${z>0?'+':''}${z}</td>`;
     });
-    const tcls=team.totalZ>0?'pos':team.totalZ<0?'neg':'';
-    html+=`<td class="${tcls}">${team.totalZ>0?'+':''}${team.totalZ}</td></tr>`;
+    const tot=team[totalKey], tcls=tot>0?'pos':tot<0?'neg':'';
+    html+=`<td class="${tcls}">${tot>0?'+':''}${tot}</td></tr>`;
   });
   html+='</tbody></table>';
-  document.getElementById('z-table').innerHTML=html;
+  document.getElementById(containerId).innerHTML=html;
 }
 
 function destroyChart(key){
