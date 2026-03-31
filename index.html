@@ -1654,7 +1654,8 @@ function renderTeamRoster(side, teamId) {
       return c + ':' + Math.round(v);
     }).join('  ');
 
-    html += '<div class="trade-player-row' + selClass + '" onclick="togglePlayerSelect(\'' + side + '\',\'' + p.name.replace(/'/g, "\\'") + '\')" title="' + statStr + '">';
+    var safeName = p.name.split("'").join("\\'");
+    html += '<div class="trade-player-row' + selClass + '" onclick="togglePlayerSelect(\'' + side + '\',\'' + safeName + '\')" title="' + statStr + '">';
     html += p.hs ? '<img class="player-hs" src="' + p.hs + '" alt="" onerror="this.style.display=\'none\'">' : '';
     html += '<div class="trade-player-info">';
     html += '<div class="trade-player-name">' + p.name + '</div>';
