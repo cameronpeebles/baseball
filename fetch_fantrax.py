@@ -6,6 +6,11 @@ LEAGUE_ID = "x4rx6jlimiytz3co"
 
 USERNAME = os.environ.get("FANTRAX_USERNAME", "")
 PASSWORD = os.environ.get("FANTRAX_PASSWORD", "")
+FX_RM = os.environ.get("FANTRAX_FX_RM", "")
+CF_CLEARANCE = os.environ.get("FANTRAX_CF_CLEARANCE", "")
+
+print(f"FX_RM loaded: {'YES' if FX_RM else 'NO'}")
+print(f"CF_CLEARANCE loaded: {'YES' if CF_CLEARANCE else 'NO'}")
 
 session = requests.Session()
 session.headers.update({
@@ -13,9 +18,26 @@ session.headers.update({
     "Content-Type": "application/json",
     "Origin": "https://www.fantrax.com",
     "Referer": f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/standings",
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-origin",
+    "sec-ch-ua": '"Chromium";v="120", "Google Chrome";v="120"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"Windows"',
 })
 
-def fetch_with_login(method, data, refUrl):
+# Set all available cookies
+if FX_RM:
+    session.cookies.set("FX_RM", FX_RM, domain=".fantrax.com")
+if CF_CLEARANCE:
+    session.cookies.set("cf_clearance", CF_CLEARANCE, domain=".fantrax.com")
+session.cookies.set("ui", "xvxwu418k69yvpe7", domain=".fantrax.com")
+
+def fetch(method, data, refUrl):
     url = f"https://www.fantrax.com/fxpa/req?leagueId={LEAGUE_ID}"
     body = {
         "msgs": [
@@ -36,13 +58,14 @@ def fetch_with_login(method, data, refUrl):
     r = session.post(url, json=body)
     print(f"{method}: {r.status_code}")
     result = r.json()
-    print(json.dumps(result, indent=2))
     responses = result.get("responses", [])
     if len(responses) < 2:
-        print("ERROR: Not enough responses returned")
+        print("ERROR: Not enough responses")
+        print(json.dumps(result, indent=2))
         exit(1)
     if "WARNING_NOT_LOGGED_IN" in str(responses[1]):
-        print(f"ERROR: {method} returned not logged in")
+        print(f"ERROR: {method} not logged in")
+        print(json.dumps(responses[1], indent=2))
         exit(1)
     return responses[1]
 
@@ -54,7 +77,7 @@ def save(filename, data):
 
 # Fetch standings
 print("Fetching standings...")
-standings = fetch_with_login(
+standings = fetch(
     "getStandings",
     {"leagueId": LEAGUE_ID},
     f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/standings"
@@ -63,7 +86,7 @@ save("standings.json", standings)
 
 # Fetch rosters
 print("Fetching rosters...")
-rosters = fetch_with_login(
+rosters = fetch(
     "getRosters",
     {"leagueId": LEAGUE_ID},
     f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/rosters"
@@ -72,7 +95,7 @@ save("rosters.json", rosters)
 
 # Fetch free agents - hitters
 print("Fetching free agent hitters...")
-fa_hitting = fetch_with_login(
+fa_hitting = fetch(
     "getPlayerStats",
     {
         "positionOrGroup": "BASEBALL_HITTING",
@@ -87,7 +110,7 @@ save("free_agents_hitting.json", fa_hitting)
 
 # Fetch free agents - pitchers
 print("Fetching free agent pitchers...")
-fa_pitching = fetch_with_login(
+fa_pitching = fetch(
     "getPlayerStats",
     {
         "positionOrGroup": "BASEBALL_PITCHING",
