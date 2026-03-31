@@ -1,10 +1,733 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Baseball Dashboard</title>
-  </head>
-  <body>
-    <h1>Fantasy Baseball Dashboard</h1>
-    <p>Coming soon...</p>
-  </body>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bluebonnet Baseball</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f7f5f0;
+      --surface: #ffffff;
+      --border: #e4e0d8;
+      --text: #1a1814;
+      --muted: #8a8479;
+      --accent: #2d5a3d;
+      --accent-light: #e8f0eb;
+      --accent2: #c8a96e;
+      --danger: #c0392b;
+      --radius: 6px;
+      --font-display: 'DM Serif Display', serif;
+      --font-body: 'DM Sans', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    header {
+      background: var(--accent);
+      color: white;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      font-family: var(--font-display);
+      font-size: 22px;
+      letter-spacing: 0.01em;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent2);
+      border-radius: 50%;
+    }
+
+    .updated {
+      font-size: 11px;
+      color: rgba(255,255,255,0.55);
+      font-weight: 300;
+    }
+
+    /* Nav */
+    nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+    }
+
+    nav button {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 14px 20px;
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    nav button:hover { color: var(--text); }
+    nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* Main */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 26px;
+      margin-bottom: 4px;
+    }
+
+    .page-subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 24px;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title {
+      font-weight: 500;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead th {
+      background: var(--bg);
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 500;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    thead th:hover { color: var(--text); }
+    thead th.sort-asc::after { content: ' ↑'; }
+    thead th.sort-desc::after { content: ' ↓'; }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--bg); }
+
+    td {
+      padding: 10px 14px;
+      white-space: nowrap;
+    }
+
+    td.team-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 160px;
+    }
+
+    .team-logo {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .team-logo-placeholder {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent-light);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--accent);
+    }
+
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--bg);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .rank-badge.top { background: var(--accent); color: white; border-color: var(--accent); }
+
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+    /* Loading / error */
+    .loading {
+      text-align: center;
+      padding: 48px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .error-msg {
+      text-align: center;
+      padding: 48px;
+      color: var(--danger);
+      font-size: 13px;
+    }
+
+    /* Search */
+    .search-bar {
+      padding: 8px 20px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .search-bar input {
+      width: 100%;
+      max-width: 320px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 7px 12px;
+      font-family: var(--font-body);
+      font-size: 13px;
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+    }
+
+    .search-bar input:focus { border-color: var(--accent); }
+
+    /* Team selector */
+    .team-selector {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .team-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-family: var(--font-body);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--muted);
+      transition: all 0.15s;
+    }
+
+    .team-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .team-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+    /* Tab pills */
+    .tab-pills {
+      display: flex;
+      gap: 6px;
+    }
+
+    .pill {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--muted);
+      transition: all 0.15s;
+    }
+
+    .pill:hover { border-color: var(--accent); color: var(--accent); }
+    .pill.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent2);
+      padding: 10px 14px 6px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    Bluebonnet Baseball
+  </div>
+  <div class="updated" id="updated-time">Loading...</div>
+</header>
+
+<nav>
+  <button class="active" onclick="showPage('standings')">Standings</button>
+  <button onclick="showPage('season-stats')">Season Stats</button>
+  <button onclick="showPage('combined')">Combined</button>
+  <button onclick="showPage('hitting')">Hitting</button>
+  <button onclick="showPage('pitching')">Pitching</button>
+  <button onclick="showPage('rosters')">Rosters</button>
+</nav>
+
+<main>
+
+  <!-- STANDINGS -->
+  <div class="page active" id="page-standings">
+    <div class="page-title">Standings</div>
+    <div class="page-subtitle">Overall league standings</div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">League Standings</span></div>
+      <div class="table-wrap" id="standings-table"><div class="loading">Loading standings...</div></div>
+    </div>
+  </div>
+
+  <!-- SEASON STATS -->
+  <div class="page" id="page-season-stats">
+    <div class="page-title">Season Stats</div>
+    <div class="page-subtitle">Cumulative batting & pitching stats by team</div>
+    <div class="card" id="season-hitting-card">
+      <div class="card-header"><span class="card-title">Hitting</span></div>
+      <div class="table-wrap" id="season-hitting-table"><div class="loading">Loading...</div></div>
+    </div>
+    <div class="card" id="season-pitching-card">
+      <div class="card-header"><span class="card-title">Pitching</span></div>
+      <div class="table-wrap" id="season-pitching-table"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- COMBINED -->
+  <div class="page" id="page-combined">
+    <div class="page-title">Combined</div>
+    <div class="page-subtitle">Weekly batting & pitching stats by team</div>
+    <div class="card" id="combined-hitting-card">
+      <div class="card-header"><span class="card-title">Hitting</span></div>
+      <div class="table-wrap" id="combined-hitting-table"><div class="loading">Loading...</div></div>
+    </div>
+    <div class="card" id="combined-pitching-card">
+      <div class="card-header"><span class="card-title">Pitching</span></div>
+      <div class="table-wrap" id="combined-pitching-table"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- HITTING -->
+  <div class="page" id="page-hitting">
+    <div class="page-title">Hitting</div>
+    <div class="page-subtitle">All players — batting stats</div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">All Hitters</span>
+        <div class="tab-pills">
+          <span class="pill active" onclick="filterHitters('ALL', this)">All</span>
+          <span class="pill" onclick="filterHitters('FA', this)">Free Agents</span>
+          <span class="pill" onclick="filterHitters('ROSTERED', this)">Rostered</span>
+        </div>
+      </div>
+      <div class="search-bar"><input type="text" id="hitting-search" placeholder="Search players..." oninput="searchTable('hitting-rows', this.value)" /></div>
+      <div class="table-wrap" id="hitting-table"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- PITCHING -->
+  <div class="page" id="page-pitching">
+    <div class="page-title">Pitching</div>
+    <div class="page-subtitle">All players — pitching stats</div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">All Pitchers</span>
+        <div class="tab-pills">
+          <span class="pill active" onclick="filterPitchers('ALL', this)">All</span>
+          <span class="pill" onclick="filterPitchers('FA', this)">Free Agents</span>
+          <span class="pill" onclick="filterPitchers('ROSTERED', this)">Rostered</span>
+        </div>
+      </div>
+      <div class="search-bar"><input type="text" id="pitching-search" placeholder="Search players..." oninput="searchTable('pitching-rows', this.value)" /></div>
+      <div class="table-wrap" id="pitching-table"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- ROSTERS -->
+  <div class="page" id="page-rosters">
+    <div class="page-title">Rosters</div>
+    <div class="page-subtitle">Players by team</div>
+    <div class="card">
+      <div class="team-selector" id="team-selector"></div>
+      <div class="table-wrap" id="roster-table"><div class="loading">Select a team above</div></div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const BASE = 'https://raw.githubusercontent.com/cameronpeebles/baseball/main/data/';
+let allData = {};
+let hitterFilter = 'ALL';
+let pitcherFilter = 'ALL';
+let allHitterRows = [];
+let allPitcherRows = [];
+
+async function loadJSON(file) {
+  const r = await fetch(BASE + file + '?t=' + Date.now());
+  if (!r.ok) throw new Error('Failed to load ' + file);
+  return r.json();
+}
+
+async function init() {
+  try {
+    const [standings, season, combined, hitting, pitching, rosters] = await Promise.all([
+      loadJSON('standings.json'),
+      loadJSON('standings_season.json'),
+      loadJSON('standings_combined.json'),
+      loadJSON('players_hitting.json'),
+      loadJSON('players_pitching.json'),
+      loadJSON('rosters.json'),
+    ]);
+    allData = { standings, season, combined, hitting, pitching, rosters };
+
+    // Update timestamp
+    const now = new Date();
+    document.getElementById('updated-time').textContent = 'Updated ' + now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+    renderStandings(standings);
+    renderSeasonStats(season);
+    renderCombined(combined);
+    renderHitting(hitting);
+    renderPitching(pitching);
+    renderRosters(rosters, season);
+  } catch(e) {
+    console.error(e);
+    document.querySelectorAll('.loading').forEach(el => {
+      el.className = 'error-msg';
+      el.textContent = 'Error loading data. ' + e.message;
+    });
+  }
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ---- STANDINGS ----
+function renderStandings(data) {
+  const teamInfo = data.data?.fantasyTeamInfo || {};
+  const tables = data.data?.tableList || [];
+  const mainTable = tables.find(t => t.tableType === 'Rotisserie' && t.fixedHeader);
+  if (!mainTable) { document.getElementById('standings-table').innerHTML = '<div class="error-msg">No standings data found</div>'; return; }
+
+  const headers = mainTable.fixedHeader?.cells || [];
+  const rows = mainTable.rows || [];
+
+  let html = '<table><thead><tr>';
+  headers.forEach(h => { html += `<th>${h.shortName || h.name || ''}</th>`; });
+  html += '</tr></thead><tbody>';
+
+  rows.forEach((row, i) => {
+    const cells = row.cells || [];
+    const teamId = row.teamId || '';
+    const team = teamInfo[teamId] || {};
+    html += '<tr>';
+    cells.forEach((cell, j) => {
+      const val = cell.content ?? cell.score ?? cell.formattedContent ?? '';
+      if (j === 0) {
+        const rank = parseInt(val) || (i + 1);
+        const isTop = rank <= 3;
+        html += `<td><span class="rank-badge ${isTop ? 'top' : ''}">${rank}</span></td>`;
+      } else if (headers[j]?.name === 'Team' || headers[j]?.shortName === 'Team') {
+        const logo = team.logoUrl512 || '';
+        const name = team.name || val;
+        html += `<td><div class="team-cell">${logo ? `<img class="team-logo" src="${logo}" alt="" />` : `<div class="team-logo-placeholder">${(name||'?')[0]}</div>`}<span>${name}</span></div></td>`;
+      } else {
+        html += `<td class="num">${val}</td>`;
+      }
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('standings-table').innerHTML = html;
+}
+
+// ---- SEASON STATS ----
+function renderSeasonStats(data) {
+  const teamInfo = data.data?.fantasyTeamInfo || {};
+  const tables = data.data?.tableList || [];
+  renderStatTables(tables, teamInfo, 'season-hitting-table', 'season-pitching-table', 'Hitting', 'Pitching');
+}
+
+// ---- COMBINED ----
+function renderCombined(data) {
+  const teamInfo = data.data?.fantasyTeamInfo || {};
+  const tables = data.data?.tableList || [];
+  renderStatTables(tables, teamInfo, 'combined-hitting-table', 'combined-pitching-table', 'Hitting', 'Pitching');
+}
+
+function renderStatTables(tables, teamInfo, hitId, pitId, hitLabel, pitLabel) {
+  const hitting = tables.find(t => t.tableType !== 'SECTION_HEADING' && t.rows?.length && JSON.stringify(t).toLowerCase().includes('batting') || (t.tableType !== 'SECTION_HEADING' && t.rows?.length && t.fixedHeader?.cells?.some(c => (c.name||'').match(/HR|RBI|AVG|R\b|SB/i))));
+  const pitching = tables.find(t => t.tableType !== 'SECTION_HEADING' && t.rows?.length && t.fixedHeader?.cells?.some(c => (c.name||'').match(/ERA|WHIP|K|SV|W\b/i)));
+
+  [{ table: hitting, id: hitId }, { table: pitching, id: pitId }].forEach(({ table, id }) => {
+    if (!table) {
+      // fallback: render first two non-empty non-heading tables
+      const validTables = tables.filter(t => t.tableType !== 'SECTION_HEADING' && t.rows?.length);
+      const idx = id.includes('hitting') || id.includes('hit') ? 0 : 1;
+      renderGenericTable(validTables[idx], teamInfo, id);
+      return;
+    }
+    renderGenericTable(table, teamInfo, id);
+  });
+}
+
+function renderGenericTable(table, teamInfo, containerId) {
+  if (!table) { document.getElementById(containerId).innerHTML = '<div class="error-msg">No data available</div>'; return; }
+  const headers = table.fixedHeader?.cells || [];
+  const rows = table.rows || [];
+  let html = '<table><thead><tr>';
+  headers.forEach(h => { html += `<th>${h.shortName || h.name || ''}</th>`; });
+  html += '</tr></thead><tbody>';
+  rows.forEach((row, i) => {
+    const cells = row.cells || [];
+    const teamId = row.teamId || '';
+    const team = teamInfo[teamId] || {};
+    html += '<tr>';
+    cells.forEach((cell, j) => {
+      const val = cell.content ?? cell.score ?? cell.formattedContent ?? '';
+      const hname = (headers[j]?.name || headers[j]?.shortName || '').toLowerCase();
+      if (hname === 'team' || hname === 'fantasy team') {
+        const logo = team.logoUrl512 || '';
+        const name = team.name || val;
+        html += `<td><div class="team-cell">${logo ? `<img class="team-logo" src="${logo}" alt="" />` : `<div class="team-logo-placeholder">${(name||'?')[0]}</div>`}<span>${name}</span></div></td>`;
+      } else if (j === 0 && !isNaN(parseInt(val))) {
+        const rank = parseInt(val) || (i+1);
+        html += `<td><span class="rank-badge ${rank <= 3 ? 'top' : ''}">${rank}</span></td>`;
+      } else {
+        html += `<td class="num">${val}</td>`;
+      }
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById(containerId).innerHTML = html;
+}
+
+// ---- HITTING ----
+function renderHitting(data) {
+  const rows = data.data?.playerDataRows || data.data?.rows || [];
+  const headers = data.data?.fixedHeader?.cells || data.data?.header?.cells || [];
+  allHitterRows = rows;
+  buildPlayerTable('hitting-table', 'hitting-rows', headers, rows, hitterFilter);
+}
+
+function filterHitters(filter, el) {
+  hitterFilter = filter;
+  document.querySelectorAll('#page-hitting .pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  const headers = allData.hitting?.data?.fixedHeader?.cells || allData.hitting?.data?.header?.cells || [];
+  buildPlayerTable('hitting-table', 'hitting-rows', headers, allHitterRows, filter);
+}
+
+// ---- PITCHING ----
+function renderPitching(data) {
+  const rows = data.data?.playerDataRows || data.data?.rows || [];
+  const headers = data.data?.fixedHeader?.cells || data.data?.header?.cells || [];
+  allPitcherRows = rows;
+  buildPlayerTable('pitching-table', 'pitching-rows', headers, rows, pitcherFilter);
+}
+
+function filterPitchers(filter, el) {
+  pitcherFilter = filter;
+  document.querySelectorAll('#page-pitching .pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  const headers = allData.pitching?.data?.fixedHeader?.cells || allData.pitching?.data?.header?.cells || [];
+  buildPlayerTable('pitching-table', 'pitching-rows', headers, allPitcherRows, filter);
+}
+
+function buildPlayerTable(containerId, rowsId, headers, rows, filter) {
+  if (!rows.length) { document.getElementById(containerId).innerHTML = '<div class="error-msg">No player data found</div>'; return; }
+
+  let filtered = rows;
+  if (filter === 'FA') filtered = rows.filter(r => !r.teamId || r.teamId === '' || r.status === 'FA');
+  if (filter === 'ROSTERED') filtered = rows.filter(r => r.teamId && r.teamId !== '');
+
+  let html = `<table><thead><tr>`;
+  if (headers.length) {
+    headers.forEach(h => { html += `<th>${h.shortName || h.name || ''}</th>`; });
+  } else {
+    html += '<th>Player</th><th>Team</th><th>Pos</th>';
+  }
+  html += `</tr></thead><tbody id="${rowsId}">`;
+
+  filtered.forEach(row => {
+    const cells = row.cells || [];
+    const name = row.name || row.playerName || (cells[0]?.content ?? '');
+    const mlbTeam = row.mlbTeamShortName || row.teamShortName || '';
+    const pos = row.position || row.pos || '';
+    const fantasyTeam = row.teamId ? (allData.standings?.data?.fantasyTeamInfo?.[row.teamId]?.shortName || 'Rostered') : 'FA';
+
+    html += `<tr data-name="${name.toLowerCase()}" data-status="${row.teamId ? 'rostered' : 'fa'}">`;
+    if (headers.length && cells.length) {
+      cells.forEach((cell, j) => {
+        const val = cell.content ?? cell.formattedContent ?? '';
+        const hname = (headers[j]?.name || '').toLowerCase();
+        if (j === 0) {
+          html += `<td><strong>${name}</strong></td>`;
+        } else if (hname.includes('team') || hname.includes('fantasy')) {
+          html += `<td>${fantasyTeam}</td>`;
+        } else {
+          html += `<td class="num">${val}</td>`;
+        }
+      });
+    } else {
+      html += `<td><strong>${name}</strong></td><td>${mlbTeam}</td><td>${pos}</td>`;
+    }
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  document.getElementById(containerId).innerHTML = html;
+}
+
+function searchTable(rowsId, query) {
+  const tbody = document.getElementById(rowsId);
+  if (!tbody) return;
+  const q = query.toLowerCase();
+  tbody.querySelectorAll('tr').forEach(tr => {
+    const name = tr.dataset.name || tr.textContent.toLowerCase();
+    tr.style.display = name.includes(q) ? '' : 'none';
+  });
+}
+
+// ---- ROSTERS ----
+function renderRosters(data, seasonData) {
+  const teamInfo = seasonData?.data?.fantasyTeamInfo || data.data?.fantasyTeamInfo || {};
+  const teams = data.data?.fantasyTeams || data.data?.teams || [];
+
+  if (!Object.keys(teamInfo).length && !teams.length) {
+    document.getElementById('roster-table').innerHTML = '<div class="error-msg">No roster data available</div>';
+    return;
+  }
+
+  const selector = document.getElementById('team-selector');
+  const teamIds = Object.keys(teamInfo);
+
+  teamIds.forEach((id, i) => {
+    const team = teamInfo[id];
+    const btn = document.createElement('button');
+    btn.className = 'team-btn' + (i === 0 ? ' active' : '');
+    btn.textContent = team.shortName || team.name;
+    btn.onclick = () => {
+      document.querySelectorAll('.team-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      showRoster(id, teamInfo, teams);
+    };
+    selector.appendChild(btn);
+  });
+
+  if (teamIds.length) showRoster(teamIds[0], teamInfo, teams);
+}
+
+function showRoster(teamId, teamInfo, teams) {
+  const team = teamInfo[teamId] || {};
+  const fantasyTeam = teams.find(t => t.id === teamId || t.teamId === teamId);
+  const players = fantasyTeam?.roster || fantasyTeam?.players || [];
+
+  if (!players.length) {
+    document.getElementById('roster-table').innerHTML = '<div class="loading">No roster data for this team yet</div>';
+    return;
+  }
+
+  let html = '<table><thead><tr><th>Player</th><th>Position</th><th>MLB Team</th><th>Status</th></tr></thead><tbody>';
+  players.forEach(p => {
+    const name = p.name || p.playerName || '';
+    const pos = p.position || p.pos || '';
+    const mlb = p.mlbTeamShortName || p.teamShortName || '';
+    const status = p.status || '';
+    html += `<tr><td><strong>${name}</strong></td><td>${pos}</td><td>${mlb}</td><td>${status}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('roster-table').innerHTML = html;
+}
+
+init();
+</script>
+</body>
 </html>
