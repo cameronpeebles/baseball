@@ -29,6 +29,7 @@ jobs:
           FANTRAX_CF_BM: ${{ secrets.FANTRAX_CF_BM }}
           FANTRAX_USERNAME: ${{ secrets.FANTRAX_USERNAME }}
           FANTRAX_PASSWORD: ${{ secrets.FANTRAX_PASSWORD }}
+          FANTRAX_FX_RM: ${{ secrets.FANTRAX_FX_RM }}
         run: python fetch_fantrax.py
 
       - name: Commit data
