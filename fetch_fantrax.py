@@ -114,17 +114,17 @@ def fetch_players(position_group, max_players=1000):
         rows = data.get("statsTable") or []
 
         if not rows:
-            print(f"  No more rows on page {page}, stopping.")
+            print(f"  No rows on page {page}, stopping.")
             break
 
         if base_data is None:
-            # Keep headers and metadata from first page
             base_data = resp
 
         all_rows.extend(rows)
 
-        # Stop if this page returned fewer rows than expected (last page)
-        if len(rows) < 25:
+        # Use Fantrax's own pagination flag to know when to stop
+        if not data.get("nextSchedPageAllowed", False):
+            print(f"  nextSchedPageAllowed is false — no more pages.")
             break
 
         page += 1
@@ -134,7 +134,6 @@ def fetch_players(position_group, max_players=1000):
     if base_data is None:
         return {}
 
-    # Merge all rows back into the first page's structure
     result = dict(base_data)
     result["data"] = dict(base_data.get("data") or {})
     result["data"]["statsTable"] = all_rows[:max_players]
