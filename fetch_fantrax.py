@@ -151,7 +151,7 @@ team_info = (standings_data.get("data") or {}).get("fantasyTeamInfo") or {}
 joe_stats = []    # one entry per team per week: {team, week, R, HR, ...}
 schedule  = []    # one entry per matchup: {week, away, home}
 
-MAX_PERIODS = 30
+MAX_PERIODS = 20
 
 for period in range(1, MAX_PERIODS + 1):
     r = fetch(
