@@ -13,8 +13,14 @@ session.headers.update({
 })
 
 # Set long-lived cookies
-session.cookies.set("FX_RM", os.environ["FANTRAX_FX_RM"], domain=".fantrax.com")
-session.cookies.set("cf_clearance", os.environ["FANTRAX_CF_CLEARANCE"], domain=".fantrax.com")
+fx_rm = os.environ.get("FANTRAX_FX_RM", "")
+cf_clearance = os.environ.get("FANTRAX_CF_CLEARANCE", "")
+
+print(f"FX_RM loaded: {'YES' if fx_rm else 'NO'}")
+print(f"CF_CLEARANCE loaded: {'YES' if cf_clearance else 'NO'}")
+
+session.cookies.set("FX_RM", fx_rm, domain=".fantrax.com")
+session.cookies.set("cf_clearance", cf_clearance, domain=".fantrax.com")
 session.cookies.set("ui", "xvxwu418k69yvpe7", domain=".fantrax.com")
 
 def fetch(method, data, refUrl=None):
