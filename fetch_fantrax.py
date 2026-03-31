@@ -3,11 +3,23 @@ import json
 import os
 
 LEAGUE_ID = "x4rx6jlimiytz3co"
-
 USERNAME = os.environ.get("FANTRAX_USERNAME", "")
 PASSWORD = os.environ.get("FANTRAX_PASSWORD", "")
 FX_RM = os.environ.get("FANTRAX_FX_RM", "")
 CF_CLEARANCE = os.environ.get("FANTRAX_CF_CLEARANCE", "")
+
+TEAM_IDS = [
+    "huopotx1miytz3cs",
+    "xuv2jl3cmiytz3cs",
+    "38pp2hphmiytz3cs",
+    "t3dy3k9imiytz3cs",
+    "r7wbtddcmiytz3cs",
+    "aax8gerpmiytz3cs",
+    "e3fi1sgxmiytz3cs",
+    "2rfp1oakmiytz3cs",
+    "corx71vmmiytz3cs",
+    "7owlmroxmiytz3cs"
+]
 
 session = requests.Session()
 session.headers.update({
@@ -49,11 +61,10 @@ def fetch(msgs, refUrl):
     r = session.post(url, json=body)
     result = r.json()
     responses = result.get("responses", [])
-    # responses[0] is login, rest are data
     data_responses = responses[1:]
-    for i, resp in enumerate(data_responses):
+    for resp in data_responses:
         if "WARNING_NOT_LOGGED_IN" in str(resp):
-            print(f"ERROR: Request {i} returned not logged in")
+            print("ERROR: Not logged in")
             exit(1)
     return data_responses
 
@@ -63,53 +74,57 @@ def save(filename, data):
         json.dump(data, f, indent=2)
     print(f"Saved data/{filename}")
 
-# Fetch season stats standings
-print("Fetching season stats standings...")
-responses = fetch([
-    {"method": "getStandings", "data": {"leagueId": LEAGUE_ID, "view": "SEASON_STATS"}}
-], f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/standings;view=SEASON_STATS")
-save("standings_season.json", responses[0])
+# Fetch standings
+print("Fetching standings...")
+r = fetch([{"method": "getStandings", "data": {"leagueId": LEAGUE_ID}}],
+    f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/standings")
+save("standings.json", r[0])
+
+# Fetch season stats
+print("Fetching season stats...")
+r = fetch([{"method": "getStandings", "data": {"leagueId": LEAGUE_ID, "view": "SEASON_STATS"}}],
+    f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/standings;view=SEASON_STATS")
+save("standings_season.json", r[0])
 
 # Fetch combined standings
 print("Fetching combined standings...")
-responses = fetch([
-    {"method": "getStandings", "data": {"leagueId": LEAGUE_ID, "view": "COMBINED"}}
-], f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/standings;view=COMBINED")
-save("standings_combined.json", responses[0])
+r = fetch([{"method": "getStandings", "data": {"leagueId": LEAGUE_ID, "view": "COMBINED"}}],
+    f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/standings;view=COMBINED")
+save("standings_combined.json", r[0])
 
-# Fetch all hitting stats
+# Fetch hitting stats
 print("Fetching hitting stats...")
-responses = fetch([
-    {"method": "getPlayerStats", "data": {
-        "statusOrTeamFilter": "ALL",
-        "pageNumber": "1",
-        "positionOrGroup": "BASEBALL_HITTING",
-        "miscDisplayType": "1"
-    }}
-], f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/players;statusOrTeamFilter=ALL;pageNumber=1;positionOrGroup=BASEBALL_HITTING;miscDisplayType=1")
-save("players_hitting.json", responses[0])
+r = fetch([{"method": "getPlayerStats", "data": {
+    "statusOrTeamFilter": "ALL",
+    "pageNumber": "1",
+    "positionOrGroup": "BASEBALL_HITTING",
+    "miscDisplayType": "1"
+}}], f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/players;statusOrTeamFilter=ALL;pageNumber=1;positionOrGroup=BASEBALL_HITTING;miscDisplayType=1")
+save("players_hitting.json", r[0])
 
-# Fetch all pitching stats
+# Fetch pitching stats
 print("Fetching pitching stats...")
-responses = fetch([
-    {"method": "getPlayerStats", "data": {
-        "statusOrTeamFilter": "ALL",
-        "pageNumber": "1",
-        "positionOrGroup": "BASEBALL_PITCHING",
-        "miscDisplayType": "1"
-    }}
-], f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/players;statusOrTeamFilter=ALL;pageNumber=1;positionOrGroup=BASEBALL_PITCHING;miscDisplayType=1")
-save("players_pitching.json", responses[0])
+r = fetch([{"method": "getPlayerStats", "data": {
+    "statusOrTeamFilter": "ALL",
+    "pageNumber": "1",
+    "positionOrGroup": "BASEBALL_PITCHING",
+    "miscDisplayType": "1"
+}}], f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/players;statusOrTeamFilter=ALL;pageNumber=1;positionOrGroup=BASEBALL_PITCHING;miscDisplayType=1")
+save("players_pitching.json", r[0])
 
-# Fetch rosters
+# Fetch each team's roster individually
 print("Fetching rosters...")
-responses = fetch([
-    {"method": "getFantasyTeams", "data": {}},
-    {"method": "getFantasyColumns", "data": {"maxResult": 8}},
-    {"method": "getRefObject", "data": {"type": "FantasyItemStatus"}}
-], f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/team/roster;reload=2")
-save("rosters.json", responses[0])
-save("roster_columns.json", responses[1])
-save("roster_status.json", responses[2])
+all_rosters = {}
+for team_id in TEAM_IDS:
+    print(f"  Fetching roster for {team_id}...")
+    r = fetch([{"method": "getTeamRosterInfo", "data": {
+        "leagueId": LEAGUE_ID,
+        "teamId": team_id,
+        "sortType": "SCORING_CATEGORY",
+        "scipId": "10#0010#-1"
+    }}], f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/team/roster;teamId={team_id}")
+    all_rosters[team_id] = r[0]
+
+save("rosters.json", {"data": {"rosters": all_rosters}})
 
 print("All done!")
