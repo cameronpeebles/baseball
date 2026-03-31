@@ -724,60 +724,11 @@ function renderJOEFactor() {
   joeRendered = true;
 
   Promise.all([
-    loadJSON('standings_combined.json'),
+    loadJSON('joe_stats.json'),
     loadJSON('schedule.json')
   ]).then(function(results) {
-    var combined = results[0];
-    var scheduleData = results[1];
-
-    var tables = (combined.data && combined.data.tableList) || [];
-    var teamInfo = S.teamInfo;
-    var stats = [];
-
-    tables.forEach(function(table) {
-      var caption = table.caption || '';
-      var weekMatch = caption.match(/(?:week|period|wk)\s*(\d+)/i);
-      if (!weekMatch) return;
-      var week = parseInt(weekMatch[1]);
-
-      var rows = table.rows || [];
-      var varHeaders = (table.header && table.header.cells) || [];
-
-      var idx = {};
-      varHeaders.forEach(function(h, i) {
-        if (h.key) idx[h.key.toUpperCase()] = i;
-        if (h.name) idx[h.name.toUpperCase()] = i;
-      });
-
-      rows.forEach(function(row) {
-        var fc = row.fixedCells || [];
-        var cells = row.cells || [];
-        var teamName = '';
-        for (var j = 0; j < fc.length; j++) {
-          if (fc[j].teamId) {
-            var ti = teamInfo[fc[j].teamId] || {};
-            teamName = ti.name || fc[j].content || '';
-            break;
-          }
-        }
-        if (!teamName) return;
-
-        function getStat(key) {
-          var i = idx[key.toUpperCase()];
-          if (i == null) return 0;
-          var val = parseFloat(cells[i] && cells[i].content);
-          return isNaN(val) ? 0 : val;
-        }
-
-        stats.push({
-          team: teamName, week: week,
-          R: getStat('R'), HR: getStat('HR'), RBI: getStat('RBI'),
-          SB: getStat('SB'), AVG: getStat('AVG'), K: getStat('K'),
-          W: getStat('W'), SV: getStat('SV') || getStat('SVH3'),
-          ERA: getStat('ERA'), WHIP: getStat('WHIP')
-        });
-      });
-    });
+    var stats = results[0];        // already a flat array of {team, week, R, HR, ...}
+    var scheduleData = results[1]; // flat array of {week, away, home}
 
     var result = JOEFactor.calculateJOEFactor(stats, scheduleData);
     buildJOEPage(result);
