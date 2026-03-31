@@ -1,90 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bluebonnet Baseball</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg: #f7f5f0; --surface: #ffffff; --border: #e4e0d8;
-      --text: #1a1814; --muted: #8a8479; --accent: #2d5a3d;
-      --accent-light: #e8f0eb; --accent2: #c8a96e; --danger: #c0392b;
-      --radius: 6px; --font-display: 'DM Serif Display', serif; --font-body: 'DM Sans', sans-serif;
-    }
-    body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 14px; line-height: 1.5; min-height: 100vh; }
-    header { background: var(--accent); color: white; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
-    .logo { font-family: var(--font-display); font-size: 22px; color: white; display: flex; align-items: center; gap: 10px; }
-    .logo-dot { width: 8px; height: 8px; background: var(--accent2); border-radius: 50%; }
-    .updated { font-size: 11px; color: rgba(255,255,255,0.55); font-weight: 300; }
-    nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 32px; display: flex; overflow-x: auto; }
-    nav button { background: none; border: none; border-bottom: 2px solid transparent; padding: 14px 20px; font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; white-space: nowrap; transition: color 0.15s, border-color 0.15s; }
-    nav button:hover { color: var(--text); }
-    nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
-    main { max-width: 1280px; margin: 0 auto; padding: 32px 24px; }
-    .page { display: none; }
-    .page.active { display: block; }
-    .page-title { font-family: var(--font-display); font-size: 26px; margin-bottom: 4px; }
-    .page-subtitle { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 24px; overflow: hidden; }
-    .card-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-    .card-title { font-weight: 500; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
-    .card-body { padding: 24px; }
-    .chart-wrap { position: relative; width: 100%; height: 380px; }
-    .chart-wrap-sm { position: relative; width: 100%; height: 260px; }
-    .chart-wrap-lg { position: relative; width: 100%; height: 480px; }
-    .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    thead th { background: var(--bg); padding: 9px 14px; text-align: right; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
-    thead th.left { text-align: left; }
-    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
-    tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: var(--bg); }
-    tbody tr.hl { background: var(--accent-light); }
-    td { padding: 9px 14px; white-space: nowrap; text-align: right; }
-    td.left { text-align: left; }
-    td.pos { color: #2d5a3d; font-weight: 500; }
-    td.neg { color: #c0392b; font-weight: 500; }
-    .team-cell { display: flex; align-items: center; gap: 10px; }
-    .team-logo { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); flex-shrink: 0; }
-    .team-logo-ph { width: 26px; height: 26px; border-radius: 50%; background: var(--accent-light); border: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; color: var(--accent); }
-    .player-hs { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); flex-shrink: 0; }
-    .rank { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; font-weight: 500; background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
-    .rank.top { background: var(--accent); color: white; border-color: var(--accent); }
-    .badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 500; background: var(--accent-light); color: var(--accent); }
-    .badge.fa { background: #fef3e2; color: #b7791f; }
-    .status-badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 500; }
-    .status-1 { background: var(--accent-light); color: var(--accent); }
-    .status-2 { background: #f0f0f0; color: #666; }
-    .status-3 { background: #fef3e2; color: #b7791f; }
-    .loading { text-align: center; padding: 48px; color: var(--muted); font-size: 13px; }
-    .error-msg { text-align: center; padding: 48px; color: var(--danger); font-size: 13px; }
-    .search-wrap { padding: 8px 20px 10px; border-bottom: 1px solid var(--border); }
-    .search-wrap input { width: 100%; max-width: 280px; border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 12px; font-family: var(--font-body); font-size: 13px; background: var(--bg); color: var(--text); outline: none; }
-    .search-wrap input:focus { border-color: var(--accent); }
-    .pill-group { display: flex; gap: 6px; flex-wrap: wrap; }
-    .pill { background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 11px; font-weight: 500; cursor: pointer; color: var(--muted); transition: all 0.15s; font-family: var(--font-body); }
-    .pill:hover { border-color: var(--accent); color: var(--accent); }
-    .pill.active { background: var(--accent); border-color: var(--accent); color: white; }
-    .team-selector { padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 8px; }
-    .team-btn { background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 5px 14px; font-family: var(--font-body); font-size: 12px; font-weight: 500; cursor: pointer; color: var(--muted); transition: all 0.15s; }
-    .team-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .team-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
-    .section-sep { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent2); padding: 16px 0 4px; }
-    .roster-section-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 10px 14px 6px; background: var(--bg); border-bottom: 1px solid var(--border); }
-    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-    @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
-    .zscore-note { font-size: 11px; color: var(--muted); margin-bottom: 16px; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bluebonnet Baseball</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="joe-factor.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f7f5f0; --surface: #ffffff; --border: #e4e0d8;
+  --text: #1a1814; --muted: #8a8479; --accent: #2d5a3d;
+  --accent-light: #e8f0eb; --accent2: #c8a96e; --danger: #c0392b;
+  --radius: 6px; --font-display: 'DM Serif Display', serif; --font-body: 'DM Sans', sans-serif;
+}
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 14px; line-height: 1.5; min-height: 100vh; }
+header { background: var(--accent); color: white; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
+.logo { font-family: var(--font-display); font-size: 22px; color: white; display: flex; align-items: center; gap: 10px; }
+.logo-dot { width: 8px; height: 8px; background: var(--accent2); border-radius: 50%; }
+.updated { font-size: 11px; color: rgba(255,255,255,0.55); font-weight: 300; }
+nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 32px; display: flex; overflow-x: auto; }
+nav button { background: none; border: none; border-bottom: 2px solid transparent; padding: 14px 20px; font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; white-space: nowrap; transition: color 0.15s, border-color 0.15s; }
+nav button:hover { color: var(--text); }
+nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
+main { max-width: 1280px; margin: 0 auto; padding: 32px 24px; }
+.page { display: none; }
+.page.active { display: block; }
+.page-title { font-family: var(--font-display); font-size: 26px; margin-bottom: 4px; }
+.page-subtitle { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 24px; overflow: hidden; }
+.card-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.card-title { font-weight: 500; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.card-body { padding: 24px; }
+.chart-wrap { position: relative; width: 100%; height: 380px; }
+.chart-wrap-sm { position: relative; width: 100%; height: 260px; }
+.chart-wrap-lg { position: relative; width: 100%; height: 480px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th { background: var(--bg); padding: 9px 14px; text-align: right; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+thead th.left { text-align: left; }
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--bg); }
+tbody tr.hl { background: var(--accent-light); }
+td { padding: 9px 14px; white-space: nowrap; text-align: right; }
+td.left { text-align: left; }
+td.pos { color: #2d5a3d; font-weight: 500; }
+td.neg { color: #c0392b; font-weight: 500; }
+.team-cell { display: flex; align-items: center; gap: 10px; }
+.team-logo { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); flex-shrink: 0; }
+.team-logo-ph { width: 26px; height: 26px; border-radius: 50%; background: var(--accent-light); border: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; color: var(--accent); }
+.player-hs { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); flex-shrink: 0; }
+.rank { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; font-weight: 500; background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+.rank.top { background: var(--accent); color: white; border-color: var(--accent); }
+.badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 500; background: var(--accent-light); color: var(--accent); }
+.badge.fa { background: #fef3e2; color: #b7791f; }
+.status-badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 500; }
+.status-1 { background: var(--accent-light); color: var(--accent); }
+.status-2 { background: #f0f0f0; color: #666; }
+.status-3 { background: #fef3e2; color: #b7791f; }
+.loading { text-align: center; padding: 48px; color: var(--muted); font-size: 13px; }
+.error-msg { text-align: center; padding: 48px; color: var(--danger); font-size: 13px; }
+.search-wrap { padding: 8px 20px 10px; border-bottom: 1px solid var(--border); }
+.search-wrap input { width: 100%; max-width: 280px; border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 12px; font-family: var(--font-body); font-size: 13px; background: var(--bg); color: var(--text); outline: none; }
+.search-wrap input:focus { border-color: var(--accent); }
+.pill-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.pill { background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 11px; font-weight: 500; cursor: pointer; color: var(--muted); transition: all 0.15s; font-family: var(--font-body); }
+.pill:hover { border-color: var(--accent); color: var(--accent); }
+.pill.active { background: var(--accent); border-color: var(--accent); color: white; }
+.team-selector { padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 8px; }
+.team-btn { background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 5px 14px; font-family: var(--font-body); font-size: 12px; font-weight: 500; cursor: pointer; color: var(--muted); transition: all 0.15s; }
+.team-btn:hover { border-color: var(--accent); color: var(--accent); }
+.team-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+.section-sep { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent2); padding: 16px 0 4px; }
+.roster-section-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 10px 14px 6px; background: var(--bg); border-bottom: 1px solid var(--border); }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+.zscore-note { font-size: 11px; color: var(--muted); margin-bottom: 16px; }
+.joe-info { background: var(--accent-light); border: 1px solid #c8ddd0; border-radius: var(--radius); padding: 12px 16px; font-size: 12px; color: #2d5a3d; line-height: 1.7; margin-bottom: 20px; }
+.joe-info strong { font-weight: 500; }
+</style>
 </head>
 <body>
+
 <header>
   <div class="logo"><div class="logo-dot"></div>Bluebonnet Baseball</div>
   <div class="updated" id="ts">Loading...</div>
 </header>
+
 <nav>
   <button class="active" onclick="showPage('standings',this)">Standings</button>
   <button onclick="showPage('season',this)">Season Stats</button>
@@ -94,23 +99,29 @@
   <button onclick="showPage('rosters',this)">Rosters</button>
   <button onclick="showPage('analytics',this)">Analytics</button>
   <button onclick="showPage('zscores',this)">Z-Scores</button>
+  <button onclick="showPage('joe',this)">JOE Factor</button>
 </nav>
+
 <main>
+
   <div class="page active" id="page-standings">
     <div class="page-title">Standings</div>
     <div class="page-subtitle">Overall league standings</div>
     <div id="standings-body"><div class="loading">Loading...</div></div>
   </div>
+
   <div class="page" id="page-season">
     <div class="page-title">Season Stats</div>
     <div class="page-subtitle">Cumulative batting and pitching stats by team</div>
     <div id="season-body"><div class="loading">Loading...</div></div>
   </div>
+
   <div class="page" id="page-combined">
     <div class="page-title">Combined</div>
     <div class="page-subtitle">Weekly batting and pitching stats by team</div>
     <div id="combined-body"><div class="loading">Loading...</div></div>
   </div>
+
   <div class="page" id="page-hitting">
     <div class="page-title">Hitting</div>
     <div class="page-subtitle">All players — batting stats</div>
@@ -127,6 +138,7 @@
       <div class="table-wrap" id="hit-table"><div class="loading">Loading...</div></div>
     </div>
   </div>
+
   <div class="page" id="page-pitching">
     <div class="page-title">Pitching</div>
     <div class="page-subtitle">All players — pitching stats</div>
@@ -143,6 +155,7 @@
       <div class="table-wrap" id="pit-table"><div class="loading">Loading...</div></div>
     </div>
   </div>
+
   <div class="page" id="page-rosters">
     <div class="page-title">Rosters</div>
     <div class="page-subtitle">Players by team</div>
@@ -151,6 +164,7 @@
       <div id="roster-body"><div class="loading">Select a team above</div></div>
     </div>
   </div>
+
   <div class="page" id="page-analytics">
     <div class="page-title">Analytics</div>
     <div class="page-subtitle">Charts and metrics for the 2026 Bluebonnet Baseball season</div>
@@ -169,6 +183,7 @@
       </div>
     </div>
   </div>
+
   <div class="page" id="page-zscores">
     <div class="page-title">Z-Scores</div>
     <div class="page-subtitle">Standardized performance across batting and pitching. Positive = above league average, negative = below.</div>
@@ -204,9 +219,18 @@
       </div>
     </div>
   </div>
+
+  <div class="page" id="page-joe">
+    <div class="page-title">JOE Factor</div>
+    <div class="page-subtitle">Scheduling luck — how each team's actual weekly win% compares to if they'd played every opponent.</div>
+    <div id="joe-body"><div class="loading">Loading...</div></div>
+  </div>
+
 </main>
+
 <script>
 var BASE = 'https://raw.githubusercontent.com/cameronpeebles/baseball/main/data/';
+
 var S = {
   teamInfo: {}, hitRows: [], pitRows: [],
   hitHeaders: [], pitHeaders: [],
@@ -221,6 +245,7 @@ Chart.defaults.color = '#8a8479';
 var chartInstances = {};
 var analyticsBuilt = false;
 var zRendered = false;
+var joeRendered = false;
 
 function loadJSON(f) {
   return fetch(BASE + f + '?t=' + Date.now()).then(function(r) {
@@ -236,6 +261,7 @@ function showPage(name, btn) {
   btn.classList.add('active');
   if (name === 'analytics') renderAnalytics();
   if (name === 'zscores') renderZScores();
+  if (name === 'joe') renderJOEFactor();
 }
 
 function init() {
@@ -446,18 +472,18 @@ function showRoster(teamId) {
 }
 
 var BAT_STATS = [
-  {key:'R',   label:'R',   idx:6},
-  {key:'HR',  label:'HR',  idx:7},
+  {key:'R', label:'R', idx:6},
+  {key:'HR', label:'HR', idx:7},
   {key:'RBI', label:'RBI', idx:8},
-  {key:'SB',  label:'SB',  idx:9},
+  {key:'SB', label:'SB', idx:9},
   {key:'AVG', label:'AVG', idx:10}
 ];
 
 var PIT_STATS = [
-  {key:'K',    label:'K',    idx:15},
-  {key:'W',    label:'W',    idx:12},
+  {key:'K', label:'K', idx:15},
+  {key:'W', label:'W', idx:12},
   {key:'SVH3', label:'SVH3', idx:16},
-  {key:'ERA',  label:'ERA',  idx:13},
+  {key:'ERA', label:'ERA', idx:13},
   {key:'WHIP', label:'WHIP', idx:14}
 ];
 
@@ -468,10 +494,8 @@ function computeZScores() {
     if ((tables[i].caption || '').toLowerCase().indexOf('point total') !== -1) { ptTable = tables[i]; break; }
   }
   if (!ptTable) { console.warn('Point totals table not found'); return; }
-
   var rows = ptTable.rows || [];
   var allStats = BAT_STATS.concat(PIT_STATS);
-
   var rawData = rows.map(function(row) {
     var fc = row.fixedCells || [], cells = row.cells || [];
     var teamId = (fc[1] && fc[1].teamId) || '';
@@ -483,7 +507,6 @@ function computeZScores() {
     });
     return obj;
   });
-
   var statParams = {};
   allStats.forEach(function(stat) {
     var vals = rawData.map(function(r) { return r[stat.key]; }).filter(function(v) { return v !== null; });
@@ -491,7 +514,6 @@ function computeZScores() {
     var variance = vals.reduce(function(a,b) { return a + (b-mean)*(b-mean); }, 0) / vals.length;
     statParams[stat.key] = {mean: mean, std: Math.sqrt(variance)};
   });
-
   var zData = rawData.map(function(row) {
     var z = {teamId: row.teamId, teamName: row.teamName, raw: {}, batZ: {}, pitZ: {}};
     BAT_STATS.forEach(function(stat) {
@@ -513,7 +535,6 @@ function computeZScores() {
     z.totalZ = parseFloat((z.totalBatZ + z.totalPitZ).toFixed(2));
     return z;
   });
-
   S.zData = zData;
 }
 
@@ -529,7 +550,7 @@ function renderZScores() {
 }
 
 var TEAM_COLORS = ['#2d5a3d','#c8a96e','#3a7a52','#c0392b','#4a9a68','#8e44ad','#2980b9','#e67e22','#1abc9c','#e74c3c'];
-var CAT_COLORS = ['#2d5a3d','#3a7a52','#c8a96e','#c0392b','#2980b9'];
+var CAT_COLORS  = ['#2d5a3d','#3a7a52','#c8a96e','#c0392b','#2980b9'];
 
 function drawGroupedBar(canvasId, stats, zKey, yLabel) {
   var data = S.zData;
@@ -688,6 +709,221 @@ function renderAnalytics() {
   new Chart(document.getElementById('chart-hit-pts'), {type:'bar', data:{labels:sorted.map(function(s){return s.t;}), datasets:[{label:'Hitting Points', data:sorted.map(function(s){return s.hPts;}), backgroundColor:'#3a7a52', borderRadius:4}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{display:false}}, y:{beginAtZero:false, grid:{color:'#e4e0d8'}}}}});
   new Chart(document.getElementById('chart-pit-pts'), {type:'bar', data:{labels:sorted.map(function(s){return s.t;}), datasets:[{label:'Pitching Points', data:sorted.map(function(s){return s.pPts;}), backgroundColor:'#c8a96e', borderRadius:4}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{display:false}}, y:{beginAtZero:false, grid:{color:'#e4e0d8'}}}}});
 }
+
+// ── JOE Factor ──────────────────────────────────────────────────────────────
+
+function renderJOEFactor() {
+  if (joeRendered) return;
+  joeRendered = true;
+
+  Promise.all([
+    loadJSON('standings_combined.json'),
+    loadJSON('schedule.json')
+  ]).then(function(results) {
+    var combined = results[0];
+    var scheduleData = results[1];
+
+    var tables = (combined.data && combined.data.tableList) || [];
+    var teamInfo = S.teamInfo;
+    var stats = [];
+
+    tables.forEach(function(table) {
+      var caption = table.caption || '';
+      var weekMatch = caption.match(/(?:week|period|wk)\s*(\d+)/i);
+      if (!weekMatch) return;
+      var week = parseInt(weekMatch[1]);
+
+      var rows = table.rows || [];
+      var varHeaders = (table.header && table.header.cells) || [];
+
+      // Build key → column-index map
+      var idx = {};
+      varHeaders.forEach(function(h, i) {
+        if (h.key) idx[h.key.toUpperCase()] = i;
+        if (h.name) idx[h.name.toUpperCase()] = i;
+      });
+
+      rows.forEach(function(row) {
+        var fc = row.fixedCells || [];
+        var cells = row.cells || [];
+
+        var teamName = '';
+        for (var j = 0; j < fc.length; j++) {
+          if (fc[j].teamId) {
+            var ti = teamInfo[fc[j].teamId] || {};
+            teamName = ti.name || fc[j].content || '';
+            break;
+          }
+        }
+        if (!teamName) return;
+
+        function getStat(key) {
+          var i = idx[key.toUpperCase()];
+          if (i == null) return 0;
+          var val = parseFloat(cells[i] && cells[i].content);
+          return isNaN(val) ? 0 : val;
+        }
+
+        stats.push({
+          team: teamName,
+          week: week,
+          R:    getStat('R'),
+          HR:   getStat('HR'),
+          RBI:  getStat('RBI'),
+          SB:   getStat('SB'),
+          AVG:  getStat('AVG'),
+          K:    getStat('K'),
+          W:    getStat('W'),
+          SV:   getStat('SV') || getStat('SVH3'),
+          ERA:  getStat('ERA'),
+          WHIP: getStat('WHIP')
+        });
+      });
+    });
+
+    var result = JOEFactor.calculateJOEFactor(stats, scheduleData);
+    buildJOEPage(result);
+
+  }).catch(function(e) {
+    document.getElementById('joe-body').innerHTML =
+      '<div class="error-msg">Error loading JOE Factor data: ' + e.message + '</div>';
+  });
+}
+
+function buildJOEPage(result) {
+  var season = result.season;
+  var byTeamWeek = result.byTeamWeek;
+
+  var weeks = [];
+  byTeamWeek.forEach(function(r) {
+    if (r.actual != null && weeks.indexOf(r.week) === -1) weeks.push(r.week);
+  });
+  weeks.sort(function(a, b) { return a - b; });
+
+  var html = '';
+
+  // Info blurb
+  html += '<div class="joe-info">';
+  html += '<strong>How it works:</strong> Each week, every team\'s 10 stat categories ';
+  html += '(R, HR, RBI, SB, AVG, K, W, SV, ERA, WHIP) are compared head-to-head against ';
+  html += 'every other team. The <strong>Average Case</strong> is what their win% would have been ';
+  html += 'if they\'d played everyone that week. <strong>Luck = Actual &minus; Average Case.</strong> ';
+  html += 'Positive = schedule favoured them. Negative = they got a tough draw.';
+  html += '</div>';
+
+  // Season summary table
+  html += '<div class="card">';
+  html += '<div class="card-header"><span class="card-title">Season luck index</span></div>';
+  html += '<div class="table-wrap"><table>';
+  html += '<thead><tr>';
+  html += '<th class="left">Team</th>';
+  html += '<th>Best case</th>';
+  html += '<th>Avg case</th>';
+  html += '<th>Actual</th>';
+  html += '<th>Luck</th>';
+  html += '</tr></thead><tbody>';
+
+  season.forEach(function(s) {
+    var luck = s.luck || 0;
+    var luckClass = luck > 0.04 ? 'pos' : luck < -0.04 ? 'neg' : '';
+    var sign = luck >= 0 ? '+' : '';
+
+    var ti = {};
+    Object.keys(S.teamInfo).forEach(function(id) {
+      if ((S.teamInfo[id].name || '') === s.team) ti = S.teamInfo[id];
+    });
+    var logo = ti.logoUrl512 || '';
+
+    html += '<tr>';
+    html += '<td class="left"><div class="team-cell">';
+    if (logo) {
+      html += '<img class="team-logo" src="' + logo + '" alt="" onerror="this.style.display=\'none\'">';
+    } else {
+      html += '<div class="team-logo-ph">' + ((s.team || '?')[0]) + '</div>';
+    }
+    html += '<span>' + s.team + '</span></div></td>';
+    html += '<td>' + (s.avgBestCase * 100).toFixed(1) + '%</td>';
+    html += '<td>' + (s.avgCase * 100).toFixed(1) + '%</td>';
+    html += '<td><strong>' + (s.avgActual * 100).toFixed(1) + '%</strong></td>';
+    html += '<td class="' + luckClass + '">' + sign + luck.toFixed(3) + '</td>';
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div></div>';
+
+  // Weekly breakdown with week pills
+  html += '<div class="card">';
+  html += '<div class="card-header">';
+  html += '<span class="card-title">Weekly breakdown</span>';
+  html += '<div class="pill-group" id="joe-week-pills">';
+  weeks.forEach(function(w, i) {
+    html += '<button class="pill' + (i === 0 ? ' active' : '') + '" ';
+    html += 'onclick="showJOEWeek(' + w + ', this)">Wk ' + w + '</button>';
+  });
+  html += '</div></div>';
+  html += '<div id="joe-week-body"></div>';
+  html += '</div>';
+
+  document.getElementById('joe-body').innerHTML = html;
+  window._joeByTeamWeek = byTeamWeek;
+
+  if (weeks.length > 0) {
+    showJOEWeek(weeks[0], document.querySelector('#joe-week-pills .pill'));
+  }
+}
+
+window.showJOEWeek = function(week, btn) {
+  document.querySelectorAll('#joe-week-pills .pill').forEach(function(p) {
+    p.classList.remove('active');
+  });
+  if (btn) btn.classList.add('active');
+
+  var rows = (window._joeByTeamWeek || [])
+    .filter(function(r) { return r.week === week && r.actual != null; })
+    .sort(function(a, b) { return b.luck - a.luck; });
+
+  var html = '<div class="table-wrap"><table>';
+  html += '<thead><tr>';
+  html += '<th class="left">Team</th>';
+  html += '<th class="left">Opponent</th>';
+  html += '<th>Actual</th>';
+  html += '<th>Avg case</th>';
+  html += '<th>Best case</th>';
+  html += '<th>Worst case</th>';
+  html += '<th>Luck</th>';
+  html += '</tr></thead><tbody>';
+
+  rows.forEach(function(r) {
+    var luck = r.luck || 0;
+    var luckClass = luck > 0.04 ? 'pos' : luck < -0.04 ? 'neg' : '';
+    var sign = luck >= 0 ? '+' : '';
+
+    var ti = {};
+    Object.keys(S.teamInfo).forEach(function(id) {
+      if ((S.teamInfo[id].name || '') === r.team) ti = S.teamInfo[id];
+    });
+    var logo = ti.logoUrl512 || '';
+
+    html += '<tr>';
+    html += '<td class="left"><div class="team-cell">';
+    if (logo) {
+      html += '<img class="team-logo" src="' + logo + '" alt="" onerror="this.style.display=\'none\'">';
+    } else {
+      html += '<div class="team-logo-ph">' + ((r.team || '?')[0]) + '</div>';
+    }
+    html += '<span>' + r.team + '</span></div></td>';
+    html += '<td class="left" style="color:var(--muted)">' + (r.opponent || '—') + '</td>';
+    html += '<td><strong>' + (r.actual * 100).toFixed(1) + '%</strong></td>';
+    html += '<td>' + (r.avgCase * 100).toFixed(1) + '%</td>';
+    html += '<td>' + (r.bestCase * 100).toFixed(1) + '%</td>';
+    html += '<td>' + (r.worstCase * 100).toFixed(1) + '%</td>';
+    html += '<td class="' + luckClass + '">' + sign + luck.toFixed(3) + '</td>';
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  document.getElementById('joe-week-body').innerHTML = html;
+};
 
 init();
 </script>
