@@ -6983,8 +6983,8 @@
                         "typeId": "24"
                       },
                       {
-                        "tooltip": "Mar 5, 10:51 PM: Merrill went 3-for-4 with a home run, a...",
-                        "typeId": "8"
+                        "tooltip": "Mar 30, 11:04 PM: Merrill went 1-for-4 with a two-run...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -7841,7 +7841,7 @@
                       "content": "1"
                     },
                     {
-                      "content": "0"
+                      "content": "1"
                     },
                     {
                       "content": ".300"
@@ -25319,6 +25319,121 @@
                 },
                 {
                   "scorer": {
+                    "teamName": "Detroit Tigers",
+                    "urlName": "spencer-torkelson",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04yk2_96_5.png",
+                    "scorerId": "04yk2",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "002"
+                    ],
+                    "defaultPosId": "002",
+                    "posShortNames": "1B",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 5",
+                        "typeId": "25"
+                      },
+                      {
+                        "tooltip": "Mar 12, 7:11 AM: Torkelson (forearm) will start at first...",
+                        "typeId": "8"
+                      },
+                      {
+                        "tooltip": "Bats Right",
+                        "typeId": "17"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "002",
+                      "006",
+                      "014"
+                    ],
+                    "teamId": "10080",
+                    "name": "Spencer Torkelson",
+                    "teamShortName": "DET",
+                    "shortName": "S. Torkelson"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "002",
+                  "cells": [
+                    {
+                      "content": "26"
+                    },
+                    {
+                      "content": "@ARI<br/>Tue 7:40PM",
+                      "eventId": "06jxr",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "brandon-pfaadt",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05lg3_96_5.png",
+                          "scorerId": "05lg3",
+                          "upcomingEventStatusId": "1",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "In starting lineup",
+                              "typeId": "12"
+                            },
+                            {
+                              "tooltip": "RHP",
+                              "typeId": "17"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "Brandon Pfaadt",
+                          "shortName": "B. Pfaadt"
+                        },
+                        "header": "Probable Starter for Arizona:",
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b>  -  &nbsp;<b>K</b>  -  &nbsp;<b>ERA</b>  -  &nbsp;<b>WHIP</b>  -  &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "16"
+                    },
+                    {
+                      "content": "3"
+                    },
+                    {
+                      "content": "2"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "3"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": ".188"
+                    },
+                    {
+                      "content": "4"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "002",
+                    "014",
+                    "006"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
                     "teamName": "San Francisco Giants",
                     "urlName": "willy-adames",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03atq_96_14.png",
@@ -25425,121 +25540,6 @@
                     "014",
                     "005",
                     "007"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
-                    "teamName": "Detroit Tigers",
-                    "urlName": "spencer-torkelson",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04yk2_96_5.png",
-                    "scorerId": "04yk2",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "002"
-                    ],
-                    "defaultPosId": "002",
-                    "posShortNames": "1B",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 5",
-                        "typeId": "25"
-                      },
-                      {
-                        "tooltip": "Mar 12, 7:11 AM: Torkelson (forearm) will start at first...",
-                        "typeId": "8"
-                      },
-                      {
-                        "tooltip": "Bats Right",
-                        "typeId": "17"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "002",
-                      "006",
-                      "014"
-                    ],
-                    "teamId": "10080",
-                    "name": "Spencer Torkelson",
-                    "teamShortName": "DET",
-                    "shortName": "S. Torkelson"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "002",
-                  "cells": [
-                    {
-                      "content": "26"
-                    },
-                    {
-                      "content": "@ARI<br/>Tue 7:40PM",
-                      "eventId": "06jxr",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "brandon-pfaadt",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05lg3_96_5.png",
-                          "scorerId": "05lg3",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Brandon Pfaadt",
-                          "shortName": "B. Pfaadt"
-                        },
-                        "header": "Probable Starter for Arizona:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b>  -  &nbsp;<b>K</b>  -  &nbsp;<b>ERA</b>  -  &nbsp;<b>WHIP</b>  -  &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "15"
-                    },
-                    {
-                      "content": "3"
-                    },
-                    {
-                      "content": "2"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": "3"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": ".200"
-                    },
-                    {
-                      "content": "4"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "002",
-                    "014",
-                    "006"
                   ],
                   "actions": [
                     {
@@ -32059,7 +32059,7 @@
                       }
                     },
                     {
-                      "content": "16"
+                      "content": "17"
                     },
                     {
                       "content": "3"
@@ -32077,7 +32077,7 @@
                       "content": "0"
                     },
                     {
-                      "content": ".188"
+                      "content": ".176"
                     },
                     {
                       "content": "4"
@@ -41613,7 +41613,7 @@
                       }
                     },
                     {
-                      "content": "0.1"
+                      "content": "1.1"
                     },
                     {
                       "content": "0"
@@ -41625,34 +41625,34 @@
                       "content": "0.000"
                     },
                     {
-                      "content": "0"
-                    },
-                    {
-                      "content": "0.0"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
                       "content": "1"
+                    },
+                    {
+                      "content": "1.0"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "2"
                     }
                   ],
                   "statusId": "1",
@@ -52979,8 +52979,8 @@
                         "typeId": "12"
                       },
                       {
-                        "tooltip": "Mar 21, 10:39 AM: Messick will begin the regular season...",
-                        "typeId": "8"
+                        "tooltip": "Mar 30, 11:13 PM: Messick (1-0) earned the win over the...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
