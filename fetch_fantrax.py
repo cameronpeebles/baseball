@@ -165,32 +165,34 @@ for period in range(1, MAX_PERIODS + 1):
     sp_data = r[0]
     tables = (sp_data.get("data") or {}).get("tableList") or []
 
-    # Find the main stats table for this period (skip SECTION_HEADING rows)
-    stat_table = None
+    # Collect ALL non-heading tables — Fantrax sometimes splits the 10 teams
+    # across multiple tables (e.g. two groups of 5). We need every table.
+    stat_tables = []
     for t in tables:
         if t.get("tableType") == "SECTION_HEADING":
             continue
-        rows = t.get("rows") or []
-        if rows:
-            stat_table = t
-            break
+        if t.get("rows"):
+            stat_tables.append(t)
 
-    if not stat_table:
+    if not stat_tables:
         print(f"  Period {period}: no data, stopping.")
         break
 
-    rows        = stat_table.get("rows") or []
-    var_headers = (stat_table.get("header") or {}).get("cells") or []
+    # Use headers from the first table (all tables share the same header shape)
+    var_headers = (stat_tables[0].get("header") or {}).get("cells") or []
+    all_rows = []
+    for t in stat_tables:
+        all_rows.extend(t.get("rows") or [])
 
-    if not rows:
+    if not all_rows:
         print(f"  Period {period}: empty rows, stopping.")
         break
 
     # Build key → column-index map from headers
     idx = {}
     for i, h in enumerate(var_headers):
-        if h.get("key"):  idx[h["key"].upper()]          = i
-        if h.get("name"): idx[h["name"].upper()]         = i
+        if h.get("key"):       idx[h["key"].upper()]       = i
+        if h.get("name"):      idx[h["name"].upper()]      = i
         if h.get("shortName"): idx[h["shortName"].upper()] = i
 
     def get_stat(cells, key, default=0):
@@ -205,7 +207,7 @@ for period in range(1, MAX_PERIODS + 1):
 
     period_teams = []   # collect for schedule derivation
 
-    for row in rows:
+    for row in all_rows:
         fc    = row.get("fixedCells") or []
         cells = row.get("cells") or []
 
@@ -256,7 +258,7 @@ for period in range(1, MAX_PERIODS + 1):
                 paired.add(b["team"])
                 break
 
-    print(f"  Period {period}: {len(period_teams)} teams, {len(period_teams)//2} matchups")
+    print(f"  Period {period}: {len(period_teams)} teams across {len(stat_tables)} table(s), {len(period_teams)//2} matchups")
 
 joe_stats.sort(key=lambda x: (x["week"], x["team"]))
 schedule.sort(key=lambda x: (x["week"], x["away"]))
