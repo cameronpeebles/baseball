@@ -1,14 +1,4 @@
-That's exactly what I needed! Now I have all 6 API calls. Let me summarize what we have:
-
-getStandings with view: SEASON_STATS
-getStandings with view: COMBINED
-getPlayerStats for hitting
-getPlayerStats for pitching
-getFantasyTeams for rosters
-getFantasyColumns for roster column info
-
-Now let me build the complete updated fetch_fantrax.py that pulls all of this data:
-pythonimport requests
+import requests
 import json
 import os
 
