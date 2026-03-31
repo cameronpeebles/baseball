@@ -93,25 +93,60 @@ r = fetch([{"method": "getStandings", "data": {"leagueId": LEAGUE_ID, "view": "C
           f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/standings;view=COMBINED")
 save("standings_combined.json", r[0])
 
-# Fetch hitting stats
+# Fetch hitting stats — paginate until we have 1000 players or run out of pages
 print("Fetching hitting stats...")
-r = fetch([{"method": "getPlayerStats", "data": {
-    "statusOrTeamFilter": "ALL",
-    "pageNumber": "1",
-    "positionOrGroup": "BASEBALL_HITTING",
-    "miscDisplayType": "1"
-}}], f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/players;statusOrTeamFilter=ALL;pageNumber=1;positionOrGroup=BASEBALL_HITTING;miscDisplayType=1")
-save("players_hitting.json", r[0])
+
+def fetch_players(position_group, max_players=1000):
+    all_rows = []
+    base_data = None
+    page = 1
+    while len(all_rows) < max_players:
+        print(f"  Page {page} ({len(all_rows)} players so far)...")
+        r = fetch([{"method": "getPlayerStats", "data": {
+            "statusOrTeamFilter": "ALL",
+            "pageNumber": str(page),
+            "positionOrGroup": position_group,
+            "miscDisplayType": "1"
+        }}], f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/players;statusOrTeamFilter=ALL;pageNumber={page};positionOrGroup={position_group};miscDisplayType=1")
+
+        resp = r[0]
+        data = resp.get("data") or {}
+        rows = data.get("statsTable") or []
+
+        if not rows:
+            print(f"  No more rows on page {page}, stopping.")
+            break
+
+        if base_data is None:
+            # Keep headers and metadata from first page
+            base_data = resp
+
+        all_rows.extend(rows)
+
+        # Stop if this page returned fewer rows than expected (last page)
+        if len(rows) < 25:
+            break
+
+        page += 1
+
+    print(f"  Total: {len(all_rows)} players fetched.")
+
+    if base_data is None:
+        return {}
+
+    # Merge all rows back into the first page's structure
+    result = dict(base_data)
+    result["data"] = dict(base_data.get("data") or {})
+    result["data"]["statsTable"] = all_rows[:max_players]
+    return result
+
+hitting_data = fetch_players("BASEBALL_HITTING", max_players=1000)
+save("players_hitting.json", hitting_data)
 
 # Fetch pitching stats
 print("Fetching pitching stats...")
-r = fetch([{"method": "getPlayerStats", "data": {
-    "statusOrTeamFilter": "ALL",
-    "pageNumber": "1",
-    "positionOrGroup": "BASEBALL_PITCHING",
-    "miscDisplayType": "1"
-}}], f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/players;statusOrTeamFilter=ALL;pageNumber=1;positionOrGroup=BASEBALL_PITCHING;miscDisplayType=1")
-save("players_pitching.json", r[0])
+pitching_data = fetch_players("BASEBALL_PITCHING", max_players=1000)
+save("players_pitching.json", pitching_data)
 
 # Fetch each team's roster individually
 print("Fetching rosters...")
