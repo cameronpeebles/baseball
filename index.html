@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -228,14 +227,12 @@ function buildStandingsTable(table, teamInfo) {
   return html;
 }
 
-// ── PLAYERS (hitting & pitching) ─────────────────────────────
+// ── PLAYERS ───────────────────────────────────────────────────
 function loadPlayers(data, type) {
-  // Player data lives in data.statsTable[]
-  // Each entry: { scorer: { name, teamShortName, posShortNames, headshotUrl, teamId(MLB) }, cells: [...] }
-  // cells[1] has the fantasy teamId
   const d = data?.data || {};
   const rows = d.statsTable || [];
-  const headers = d.columnHeaders || [];
+  // FIXED: headers are in tableHeader.cells not columnHeaders
+  const headers = d.tableHeader?.cells || d.columnHeaders || [];
 
   if(type==='hit'){ S.hitRows=rows; S.hitHeaders=headers; }
   else { S.pitRows=rows; S.pitHeaders=headers; }
@@ -270,7 +267,6 @@ function drawPlayers(type){
   const filtered = rows.filter(row => {
     const scorer = row.scorer || {};
     const name = (scorer.name||'').toLowerCase();
-    // Fantasy team is in cells[1] teamId
     const fantasyTeamId = (row.cells||[])[1]?.teamId || '';
     if(filter==='FA' && fantasyTeamId) return false;
     if(filter==='OWNED' && !fantasyTeamId) return false;
@@ -278,17 +274,11 @@ function drawPlayers(type){
     return true;
   });
 
-  // Build header row
-  // Fixed cols: Player, Pos, MLB Team, Fantasy Team, then columnHeaders
   let html = '<table><thead><tr>';
   html += '<th class="left">Player</th>';
   html += '<th class="left">Pos</th>';
   html += '<th class="left">MLB</th>';
   html += '<th class="left">Fantasy Team</th>';
-  // Skip first 2 cells (rank + fantasy team) — show rest as stats
-  // columnHeaders maps to cells starting at index 2 typically
-  // First few cells are rank, fantasy team, then stats
-  // We'll use headers for stat cols
   headers.forEach(h => { html+=`<th>${h.shortName||h.name||''}</th>`; });
   html += '</tr></thead><tbody>';
 
@@ -304,27 +294,22 @@ function drawPlayers(type){
     const isFa = !fantasyTeamId;
 
     html += '<tr>';
-    // Player name + headshot
     html += `<td class="left"><div class="team-cell">${hs?`<img class="player-hs" src="${hs}" alt="" onerror="this.style.display='none'">`:''}
       <span><strong>${name}</strong></span></div></td>`;
     html += `<td class="left"><span style="color:var(--muted);font-size:12px">${pos}</span></td>`;
     html += `<td class="left">${mlb}</td>`;
-    // Fantasy team
     if(isFa){
       html += `<td class="left"><span class="badge fa">FA</span></td>`;
-    } else if(fantasyTeam) {
+    } else if(fantasyTeam){
       html += `<td class="left"><div class="team-cell">${fantasyTeam.logoUrl512?`<img class="team-logo" src="${fantasyTeam.logoUrl512}" alt="" onerror="this.style.display='none'">`:`<div class="team-logo-ph">${(fantasyTeam.shortName||'?')[0]}</div>`}<span style="font-size:12px">${fantasyTeam.shortName||''}</span></div></td>`;
     } else {
       html += `<td class="left"><span class="badge">Rostered</span></td>`;
     }
-    // Stat cells — skip first 2 (rank + fantasy team), then map to headers
-    // cells[0]=rank, cells[1]=fantasy team, cells[2+]=stats matching columnHeaders
+    // cells[0]=rank, cells[1]=fantasy team, cells[2+]=stats
     const statCells = cells.slice(2);
     statCells.forEach(cell => {
-      const val = cell.content ?? '';
-      // Strip HTML tags (some cells have <br/> for upcoming games)
-      const clean = val.toString().replace(/<[^>]+>/g,'');
-      html += `<td>${clean}</td>`;
+      const val = (cell.content??'').toString().replace(/<[^>]+>/g,'');
+      html += `<td>${val}</td>`;
     });
     html += '</tr>';
   });
@@ -356,8 +341,6 @@ function buildRosterSelector(){
 function showRoster(teamId){
   const data = S.rosterRaw;
   const ti = S.teamInfo[teamId]||{};
-
-  // Try various structures
   const teams = data?.data?.fantasyTeams||data?.data?.teams||[];
   const team = teams.find(t=>t.id===teamId||t.teamId===teamId);
   const players = team?.roster||team?.players||team?.playerList||[];
@@ -365,7 +348,6 @@ function showRoster(teamId){
   const all = players.length ? players : (Array.isArray(byKey)?byKey:[]);
 
   if(!all.length){
-    // Show raw keys to help debug
     const keys = JSON.stringify(Object.keys(data?.data||{}));
     document.getElementById('roster-table').innerHTML=`<div class="loading">No roster data for <strong>${ti.name||teamId}</strong> yet.<br><small style="color:var(--muted);margin-top:8px;display:block">Data keys: ${keys}</small></div>`;
     return;
@@ -373,11 +355,7 @@ function showRoster(teamId){
 
   let html = '<table><thead><tr><th class="left">Player</th><th class="left">Pos</th><th class="left">MLB Team</th><th class="left">Status</th></tr></thead><tbody>';
   all.forEach(p=>{
-    const name = p.name||p.playerName||'';
-    const pos = p.position||p.pos||p.eligiblePositions||'';
-    const mlb = p.mlbTeamShortName||p.teamShortName||p.proTeam||'';
-    const status = p.status||p.injuryStatus||'';
-    html+=`<tr><td class="left"><strong>${name}</strong></td><td class="left">${pos}</td><td class="left">${mlb}</td><td class="left">${status}</td></tr>`;
+    html+=`<tr><td class="left"><strong>${p.name||p.playerName||''}</strong></td><td class="left">${p.position||p.pos||''}</td><td class="left">${p.mlbTeamShortName||p.teamShortName||p.proTeam||''}</td><td class="left">${p.status||p.injuryStatus||''}</td></tr>`;
   });
   html+='</tbody></table>';
   document.getElementById('roster-table').innerHTML=html;
