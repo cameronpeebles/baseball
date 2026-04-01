@@ -2509,32 +2509,80 @@ function assembleDashboard(teamId, el) {
   var standingsRow = null;
   var allTeamRows  = [];
   var tables = (S.seasonData && S.seasonData.data && S.seasonData.data.tableList) || [];
-  var ptTable = null;
+
+  // Find season stats table — look for one that has actual batting/pitching values
+  // Try several caption patterns Fantrax uses
+  var statTable = null;
+  var ptTable   = null;
   for (var i = 0; i < tables.length; i++) {
-    if ((tables[i].caption || '').toLowerCase().indexOf('point total') !== -1) { ptTable = tables[i]; break; }
+    var cap = (tables[i].caption || '').toLowerCase();
+    if (cap.indexOf('point total') !== -1)                              ptTable   = tables[i];
+    if (cap.indexOf('stat total') !== -1 || cap.indexOf('season stat') !== -1 || cap === 'standings') statTable = tables[i];
   }
+  // Fallback: use the first non-heading, non-point table that has rows
+  if (!statTable) {
+    for (var i = 0; i < tables.length; i++) {
+      if (tables[i].tableType === 'SECTION_HEADING') continue;
+      if ((tables[i].caption||'').toLowerCase().indexOf('point') !== -1) continue;
+      if ((tables[i].rows||[]).length > 0) { statTable = tables[i]; break; }
+    }
+  }
+
+  // Use stat table for category values, point table for pts/rank
+  var ptsById = {};
   if (ptTable) {
-    var varHeaders = (ptTable.header && ptTable.header.cells) || [];
-    var hIdx = {};
-    varHeaders.forEach(function(h, i) {
-      if (h.key) hIdx[h.key.toUpperCase()] = i;
-      if (h.shortName) hIdx[h.shortName.toUpperCase()] = i;
+    var phIdx = {};
+    ((ptTable.header && ptTable.header.cells) || []).forEach(function(h,i) {
+      if (h.key) phIdx[h.key.toUpperCase()] = i;
+      if (h.shortName) phIdx[h.shortName.toUpperCase()] = i;
     });
-    var ptsIdx = hIdx['PTS'] != null ? hIdx['PTS'] : 0;
+    var ptsIdx = phIdx['PTS'] != null ? phIdx['PTS'] : phIdx['POINTS'] != null ? phIdx['POINTS'] : 0;
     (ptTable.rows || []).forEach(function(row, rank) {
       var fc = row.fixedCells || [], cells = row.cells || [];
       var id = (fc[1] && fc[1].teamId) || '';
+      var pts = parseFloat(cells[ptsIdx] && cells[ptsIdx].content) || 0;
+      ptsById[id] = { pts: pts, rank: rank + 1 };
+    });
+  }
+
+  var sourceTable = statTable || ptTable;
+  if (sourceTable) {
+    var varHeaders = (sourceTable.header && sourceTable.header.cells) || [];
+    var hIdx = {};
+    varHeaders.forEach(function(h, i) {
+      if (h.key)       hIdx[h.key.toUpperCase()]       = i;
+      if (h.shortName) hIdx[h.shortName.toUpperCase()] = i;
+      if (h.name)      hIdx[h.name.toUpperCase()]      = i;
+    });
+
+    // Detect if this table has real AVG (should be 0.200–0.350 range) or fantasy pts
+    // by checking first row's AVG value
+    var avgIdx = hIdx['AVG'];
+    var isRealStats = true;
+    if (avgIdx != null) {
+      var firstCells = ((sourceTable.rows||[])[0] || {}).cells || [];
+      var testAvg = parseFloat((firstCells[avgIdx]||{}).content);
+      if (!isNaN(testAvg) && testAvg > 2) isRealStats = false; // fantasy pts, not real avg
+    }
+
+    var BAT_CATS_D = ['R','HR','RBI','SB','AVG'];
+    var PIT_CATS_D = ['K','W','SV','ERA','WHIP'];
+    // Try SVH3 if SV not found
+    if (hIdx['SV'] == null && hIdx['SVH3'] != null) PIT_CATS_D[2] = 'SVH3';
+
+    (sourceTable.rows || []).forEach(function(row, rank) {
+      var fc = row.fixedCells || [], cells = row.cells || [];
+      var id = (fc[1] && fc[1].teamId) || '';
+      if (!id) return;
       var name = (S.teamInfo[id] && S.teamInfo[id].shortName) || (fc[1] && fc[1].content) || '';
-      var pts  = parseFloat(cells[ptsIdx] && cells[ptsIdx].content) || 0;
-      var BAT_CATS_D = ['R','HR','RBI','SB','AVG'];
-      var PIT_CATS_D = ['K','W','SVH3','SV','ERA','WHIP'];
+      var ptsInfo = ptsById[id] || { pts: 0, rank: rank + 1 };
       var catVals = {};
       BAT_CATS_D.concat(PIT_CATS_D).forEach(function(k) {
         var ci = hIdx[k]; if (ci == null) return;
         var v = parseFloat(cells[ci] && cells[ci].content);
         if (!isNaN(v)) catVals[k] = v;
       });
-      var rowObj = { id: id, name: name, pts: pts, rank: rank+1, catVals: catVals };
+      var rowObj = { id: id, name: name, pts: ptsInfo.pts, rank: ptsInfo.rank, catVals: catVals };
       allTeamRows.push(rowObj);
       if (id === teamId) standingsRow = rowObj;
     });
@@ -2578,6 +2626,10 @@ function assembleDashboard(teamId, el) {
     {k:'ERA', label:'ERA',  hi:false},
     {k:'WHIP',label:'WHIP', hi:false}
   ];
+  // Use SVH3 if SV has no data
+  if (allTeamRows.length && allTeamRows[0].catVals['SV'] == null && allTeamRows[0].catVals['SVH3'] != null) {
+    CAT_DISPLAY[7] = {k:'SVH3', label:'SVH3', hi:true};
+  }
   var catLeagueAvg = {};
   CAT_DISPLAY.forEach(function(c) {
     var vals = allTeamRows.map(function(r){return r.catVals[c.k];}).filter(function(v){return v!=null;});
