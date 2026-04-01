@@ -1565,6 +1565,7 @@ function buildTradeAnalyzer() {
   // Tabs
   html += '<div class="trade-tabs">';
   html += '<button class="trade-tab active" onclick="showTradeTab(\'trade\', this)">Trade Finder</button>';
+  html += '<button class="trade-tab" onclick="showTradeTab(\'suggestions\', this)">Trade Suggestions</button>';
   html += '<button class="trade-tab" onclick="showTradeTab(\'fa\', this)">Free Agent Fixer</button>';
   html += '</div>';
 
@@ -1632,6 +1633,26 @@ function buildTradeAnalyzer() {
   html += '</div>';
   html += '<div id="fa-results-area"></div>';
   html += '</div>'; // fa tab
+
+  // ── Trade Suggestions tab ─────────────────────────────────────────────────
+  html += '<div class="trade-tab-content" id="trade-tab-suggestions">';
+  html += '<div class="joe-info" style="margin-bottom:20px">';
+  html += '<strong>How it works:</strong> Select your team. The analyzer finds your weakest and strongest positions, ';
+  html += 'then scans every other team for players who fill your weaknesses — but only suggests trades where ';
+  html += 'the other team also benefits from what you\'re offering. Top 3 suggestions per opponent.';
+  html += '</div>';
+  html += '<div class="fa-team-selector">';
+  html += '<span class="fa-team-label">Your team:</span>';
+  html += '<select class="trade-team-select" style="max-width:260px" id="suggest-team-select" onchange="showTradeSuggestions(this.value)">';
+  html += '<option value="">— Select your team —</option>';
+  teamIds.forEach(function(id) {
+    var t = S.teamInfo[id];
+    html += '<option value="' + id + '">' + (t.name || t.shortName || id) + '</option>';
+  });
+  html += '</select>';
+  html += '</div>';
+  html += '<div id="suggestions-results-area"></div>';
+  html += '</div>'; // suggestions tab
 
   document.getElementById('trade-body').innerHTML = html;
 }
@@ -1915,6 +1936,222 @@ window.showFAFixer = function(teamId) {
     });
 
     html += '</tbody></table></div></div>';
+  });
+
+  el.innerHTML = html;
+};
+
+window.showTradeSuggestions = function(myTeamId) {
+  var el = document.getElementById('suggestions-results-area');
+  if (!myTeamId) { el.innerHTML = ''; return; }
+
+  var myName = (S.teamInfo[myTeamId] || {}).name || 'Your team';
+  var myPlayers = TA.players.filter(function(p) { return p.ftId === myTeamId; });
+
+  // Compute my team's average rating per group
+  var myGroupAvg = {};
+  ['Infield','Outfield','SP','RP'].forEach(function(g) {
+    var gp = myPlayers.filter(function(p) { return p.group === g; });
+    myGroupAvg[g] = gp.length ? gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length : 0.5;
+  });
+
+  // My weakest groups (below league average) — sorted weakest first
+  var leagueGroupAvg = {};
+  ['Infield','Outfield','SP','RP'].forEach(function(g) {
+    var gp = TA.players.filter(function(p) { return p.group === g; });
+    leagueGroupAvg[g] = gp.length ? gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length : 0.5;
+  });
+
+  var myWeakGroups  = ['Infield','Outfield','SP','RP']
+    .map(function(g) { return {g:g, gap: leagueGroupAvg[g] - myGroupAvg[g]}; })
+    .sort(function(a,b) { return b.gap - a.gap; })
+    .filter(function(x) { return x.gap > 0; })
+    .map(function(x) { return x.g; });
+
+  var myStrongGroups = ['Infield','Outfield','SP','RP']
+    .map(function(g) { return {g:g, surplus: myGroupAvg[g] - leagueGroupAvg[g]}; })
+    .sort(function(a,b) { return b.surplus - a.surplus; })
+    .filter(function(x) { return x.surplus > 0; })
+    .map(function(x) { return x.g; });
+
+  // My best players in strong groups — candidates to offer
+  var myOfferCandidates = myPlayers
+    .filter(function(p) { return myStrongGroups.indexOf(p.group) !== -1; })
+    .sort(function(a,b) { return b.overallRating - a.overallRating; })
+    .slice(0, 10);
+
+  if (!myWeakGroups.length) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Your team has no clear weaknesses vs league average — well balanced!</div>';
+    return;
+  }
+
+  // Scan every other team
+  var otherTeamIds = Object.keys(S.teamInfo).filter(function(id) { return id !== myTeamId; });
+
+  var allSuggestions = []; // {oppTeamId, oppTeamName, receive, send, myNet, theirNet, mutualScore}
+
+  otherTeamIds.forEach(function(oppId) {
+    var oppName    = (S.teamInfo[oppId] || {}).name || oppId;
+    var oppPlayers = TA.players.filter(function(p) { return p.ftId === oppId; });
+
+    // Their group averages
+    var oppGroupAvg = {};
+    ['Infield','Outfield','SP','RP'].forEach(function(g) {
+      var gp = oppPlayers.filter(function(p) { return p.group === g; });
+      oppGroupAvg[g] = gp.length ? gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length : 0.5;
+    });
+
+    // Their weak groups (where they're below league avg)
+    var oppWeakGroups = ['Infield','Outfield','SP','RP']
+      .filter(function(g) { return oppGroupAvg[g] < leagueGroupAvg[g]; });
+
+    // For each of my weak groups, find their best player there
+    myWeakGroups.forEach(function(weakGroup) {
+      var candidates = oppPlayers
+        .filter(function(p) { return p.group === weakGroup && p.overallRating > myGroupAvg[weakGroup]; })
+        .sort(function(a,b) { return b.overallRating - a.overallRating; });
+
+      if (!candidates.length) return;
+      var receive = candidates[0]; // best player they have in my weak group
+
+      // Find best player I can offer that fills one of THEIR weak groups
+      var bestSend = null;
+      var bestSendScore = -Infinity;
+
+      myOfferCandidates.forEach(function(offered) {
+        if (oppWeakGroups.indexOf(offered.group) === -1) return; // they don't need this group
+        // How much does this player help them?
+        var theirDelta = offered.overallRating - oppGroupAvg[offered.group];
+        if (theirDelta > bestSendScore) {
+          bestSendScore = theirDelta;
+          bestSend = offered;
+        }
+      });
+
+      if (!bestSend) return; // nothing to offer that helps them
+
+      // Calculate net benefit for both sides
+      var myNet    = receive.overallRating - myGroupAvg[weakGroup]       // I gain above my avg
+                   - (bestSend.overallRating - myGroupAvg[bestSend.group]); // I lose above my avg
+      var theirNet = bestSend.overallRating - oppGroupAvg[bestSend.group]  // they gain above their avg
+                   - (receive.overallRating - oppGroupAvg[weakGroup]);       // they lose above their avg
+
+      var mutualScore = myNet + theirNet; // higher = better for both sides combined
+
+      allSuggestions.push({
+        oppTeamId:   oppId,
+        oppTeamName: oppName,
+        receive:     receive,
+        send:        bestSend,
+        myNet:       myNet,
+        theirNet:    theirNet,
+        mutualScore: mutualScore,
+        weakGroup:   weakGroup
+      });
+    });
+  });
+
+  if (!allSuggestions.length) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No mutually beneficial trades found. Try improving your roster depth first.</div>';
+    return;
+  }
+
+  // Group by opposing team, take top 3 per team by mutualScore
+  var byTeam = {};
+  allSuggestions.forEach(function(s) {
+    if (!byTeam[s.oppTeamId]) byTeam[s.oppTeamId] = [];
+    byTeam[s.oppTeamId].push(s);
+  });
+
+  // Sort each team's suggestions by mutual score desc, take top 3
+  // Then sort teams by their best suggestion's mutual score
+  var teamSuggestions = Object.keys(byTeam).map(function(id) {
+    var sorted = byTeam[id].sort(function(a,b) { return b.mutualScore - a.mutualScore; });
+    return { oppTeamId: id, suggestions: sorted.slice(0,3), bestScore: sorted[0].mutualScore };
+  }).sort(function(a,b) { return b.bestScore - a.bestScore; });
+
+  // My weak/strong summary
+  var html = '<div class="card" style="margin-bottom:16px">';
+  html += '<div class="card-header"><span class="card-title">' + myName + ' — profile</span></div>';
+  html += '<div class="card-body" style="padding:14px 20px;display:flex;gap:24px;flex-wrap:wrap">';
+  html += '<div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Weaknesses (need to improve)</div>';
+  myWeakGroups.slice(0,3).forEach(function(g) {
+    var gap = Math.round((leagueGroupAvg[g] - myGroupAvg[g]) * 100);
+    html += '<span class="weakness-tag">' + g + ' (' + Math.round(myGroupAvg[g]*100) + 'th pct, −' + gap + ' vs league)</span>';
+  });
+  html += '</div>';
+  html += '<div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Strengths (can offer)</div>';
+  myStrongGroups.slice(0,3).forEach(function(g) {
+    var surplus = Math.round((myGroupAvg[g] - leagueGroupAvg[g]) * 100);
+    html += '<span class="strength-tag">' + g + ' (' + Math.round(myGroupAvg[g]*100) + 'th pct, +' + surplus + ' vs league)</span>';
+  });
+  html += '</div></div></div>';
+
+  // Suggestions per team
+  teamSuggestions.forEach(function(ts) {
+    html += '<div class="card" style="margin-bottom:16px">';
+    html += '<div class="card-header">';
+    html += '<div class="team-cell">' + joeTeamLogo(ts.suggestions[0].oppTeamName) + '<span style="font-weight:500">' + ts.suggestions[0].oppTeamName + '</span></div>';
+    html += '</div>';
+
+    ts.suggestions.forEach(function(s, si) {
+      var isMutual = s.myNet > 0 && s.theirNet > 0;
+      var signMy    = s.myNet >= 0 ? '+' : '';
+      var signTheir = s.theirNet >= 0 ? '+' : '';
+
+      html += '<div style="' + (si > 0 ? 'border-top:1px solid var(--border);' : '') + 'padding:12px 16px">';
+
+      // Mutual badge + net scores
+      html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">';
+      if (isMutual) {
+        html += '<span style="background:var(--accent-light);color:var(--accent);font-size:11px;font-weight:500;padding:2px 8px;border-radius:10px">✓ Mutually beneficial</span>';
+      } else {
+        html += '<span style="background:var(--bg);color:var(--muted);font-size:11px;font-weight:500;padding:2px 8px;border-radius:10px;border:1px solid var(--border)">One-sided</span>';
+      }
+      html += '<span style="font-size:12px;color:var(--muted)">';
+      html += myName + ': <strong style="color:' + (s.myNet>0?'var(--accent)':'var(--danger)') + '">' + signMy + Math.round(s.myNet*100) + ' pct pts</strong>';
+      html += '&nbsp;·&nbsp;';
+      html += s.oppTeamName + ': <strong style="color:' + (s.theirNet>0?'var(--accent)':'var(--danger)') + '">' + signTheir + Math.round(s.theirNet*100) + ' pct pts</strong>';
+      html += '</span></div>';
+
+      // Trade layout
+      html += '<div class="trade-exchange">';
+
+      // You receive
+      html += '<div class="trade-side">';
+      html += '<h4>You receive</h4>';
+      html += '<div class="trade-player-chip">';
+      html += s.receive.hs ? '<img class="player-hs" src="' + s.receive.hs + '" alt="" onerror="this.style.display=\'none\'">' : '';
+      html += '<div class="trade-chip-info">';
+      html += '<div class="trade-chip-name">' + s.receive.name + '</div>';
+      html += '<div class="trade-chip-detail"><span class="pos-badge">' + primaryPos(s.receive.pos) + '</span>';
+      html += s.weakGroup + ' · ' + Math.round(s.receive.overallRating*100) + 'th pct</div>';
+      html += '</div>';
+      var receiveImpact = Math.round((s.receive.overallRating - myGroupAvg[s.weakGroup]) * 100);
+      html += '<span class="trade-chip-delta ' + (receiveImpact>=0?'up':'down') + '">' + (receiveImpact>=0?'+':'') + receiveImpact + '</span>';
+      html += '</div></div>';
+
+      html += '<div class="trade-arrow">⇄</div>';
+
+      // You send
+      html += '<div class="trade-side">';
+      html += '<h4>You send</h4>';
+      html += '<div class="trade-player-chip">';
+      html += s.send.hs ? '<img class="player-hs" src="' + s.send.hs + '" alt="" onerror="this.style.display=\'none\'">' : '';
+      html += '<div class="trade-chip-info">';
+      html += '<div class="trade-chip-name">' + s.send.name + '</div>';
+      html += '<div class="trade-chip-detail"><span class="pos-badge">' + primaryPos(s.send.pos) + '</span>';
+      html += s.send.group + ' · ' + Math.round(s.send.overallRating*100) + 'th pct</div>';
+      html += '</div>';
+      var sendImpact = Math.round((s.send.overallRating - (byTeam[s.oppTeamId] ? oppGroupAvg : leagueGroupAvg)[s.send.group]) * 100);
+      html += '<span class="trade-chip-delta up">+' + Math.max(0, Math.round(s.theirNet*100)) + '</span>';
+      html += '</div></div>';
+
+      html += '</div>'; // trade-exchange
+      html += '</div>'; // suggestion row
+    });
+
+    html += '</div>'; // card
   });
 
   el.innerHTML = html;
