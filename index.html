@@ -206,7 +206,7 @@ td.neg { color: #c0392b; font-weight: 500; }
   <button class="active" onclick="showPage('dashboard',this)">Dashboard</button>
   <button onclick="showPage('standings',this)">Standings</button>
   <button onclick="showPage('season',this)">Season Stats</button>
-  <button onclick="showPage('combined',this)">Combined</button>
+  <button onclick="showPage('combined',this)">League Stats</button>
   <button onclick="showPage('hitting',this)">Hitting</button>
   <button onclick="showPage('pitching',this)">Pitching</button>
   <button onclick="showPage('rosters',this)">Rosters</button>
@@ -238,8 +238,13 @@ td.neg { color: #c0392b; font-weight: 500; }
   </div>
 
   <div class="page" id="page-combined">
-    <div class="page-title">Combined</div>
-    <div class="page-subtitle">Weekly batting and pitching stats by team</div>
+    <div class="page-title">League Stats</div>
+    <div class="page-subtitle">Weekly stats, head-to-head results, and matchup history.</div>
+    <div class="trade-tabs" id="combined-tabs">
+      <button class="trade-tab active" onclick="showCombinedTab('weekly',this)">Week-by-Week Stats</button>
+      <button class="trade-tab" onclick="showCombinedTab('h2h',this)">Head-to-Head Results</button>
+      <button class="trade-tab" onclick="showCombinedTab('matchup-history',this)">Matchup History</button>
+    </div>
     <div id="combined-body"><div class="loading">Loading...</div></div>
   </div>
 
@@ -389,6 +394,8 @@ var joeRendered = false;
 var matchupRendered = false;
 var tradeRendered = false;
 var dashboardBuilt = false;
+var combinedRendered = false;
+var h2hRendered = false;
 
 function loadJSON(f) {
   return fetch(BASE + f + '?t=' + Date.now()).then(function(r) {
@@ -403,6 +410,7 @@ function showPage(name, btn) {
   document.getElementById('page-' + name).classList.add('active');
   btn.classList.add('active');
   if (name === 'dashboard') renderDashboard();
+  if (name === 'combined') renderCombinedPage();
   if (name === 'analytics') renderAnalytics();
   if (name === 'zscores') renderZScores();
   if (name === 'joe') renderJOEFactor();
@@ -424,12 +432,12 @@ function init() {
 
     S.teamInfo = (standings.data && standings.data.fantasyTeamInfo) || (season.data && season.data.fantasyTeamInfo) || {};
     S.seasonData = season;
+    S.combinedData = combined;
 
     document.getElementById('ts').textContent = 'Updated ' + new Date().toLocaleString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
 
     renderTableListPage(standings, 'standings-body');
     renderTableListPage(season, 'season-body');
-    renderTableListPage(combined, 'combined-body');
     loadPlayers(hitting, 'hit');
     loadPlayers(pitching, 'pit');
     S.rosterRaw = rosters;
@@ -2439,6 +2447,241 @@ window.showTradeSuggestions = function(myTeamId) {
   }
 };
 
+// ── Head-to-Head ─────────────────────────────────────────────────────────────
+
+var h2hRendered = false;
+
+function renderH2H() {
+  if (h2hRendered) return;
+  h2hRendered = true;
+
+  var el = document.getElementById('combined-body');
+  el.innerHTML = '<div class="loading">Loading matchup data...</div>';
+
+  Promise.all([
+    loadJSON('schedule.json'),
+    loadJSON('joe_stats.json')
+  ]).then(function(results) {
+    var schedule  = results[0]; // [{week, away, home}]
+    var joeStats  = results[1]; // [{team, week, R, HR, ...}]
+    buildH2H(schedule, joeStats, el);
+  }).catch(function(e) {
+    el.innerHTML = '<div class="error-msg">Error loading data: ' + e.message + '</div>';
+  });
+}
+
+function buildH2H(schedule, joeStats, el) {
+  // Build lookup: week → team → stats
+  var statsByTeamWeek = {};
+  joeStats.forEach(function(s) {
+    if (!statsByTeamWeek[s.week]) statsByTeamWeek[s.week] = {};
+    statsByTeamWeek[s.week][s.team] = s;
+  });
+
+  var ALL_CATS_H = ['R','HR','RBI','SB','AVG','K','W','SV','ERA','WHIP'];
+  var LOW_CATS_H = ['ERA','WHIP'];
+
+  // Score one matchup — returns {awayW, awayL, awayT, homeW, homeL, homeT}
+  function scoreMatchup(awayStats, homeStats) {
+    var awayW = 0, homeW = 0, ties = 0;
+    ALL_CATS_H.forEach(function(cat) {
+      var a = awayStats[cat], h = homeStats[cat];
+      if (a == null || h == null) return;
+      var isLow = LOW_CATS_H.indexOf(cat) !== -1;
+      if (isLow) {
+        if (a < h) awayW++; else if (h < a) homeW++; else ties++;
+      } else {
+        if (a > h) awayW++; else if (h > a) homeW++; else ties++;
+      }
+    });
+    return { awayW: awayW, awayL: homeW, awayT: ties,
+             homeW: homeW, homeL: awayW, homeT: ties };
+  }
+
+  // Build per-matchup results
+  var matchResults = []; // {week, away, home, awayW, awayL, awayT, homeW, homeL, homeT, winner}
+  schedule.forEach(function(m) {
+    var weekStats = statsByTeamWeek[m.week] || {};
+    var awayStats = weekStats[m.away];
+    var homeStats = weekStats[m.home];
+    if (!awayStats || !homeStats) return;
+    var sc = scoreMatchup(awayStats, homeStats);
+    var winner = sc.awayW > sc.homeW ? m.away : sc.homeW > sc.awayW ? m.home : 'tie';
+    matchResults.push({
+      week: m.week, away: m.away, home: m.home,
+      awayW: sc.awayW, awayL: sc.awayL, awayT: sc.awayT,
+      homeW: sc.homeW, homeL: sc.homeL, homeT: sc.homeT,
+      winner: winner
+    });
+  });
+
+  // Get all teams
+  var teams = [];
+  matchResults.forEach(function(m) {
+    if (teams.indexOf(m.away) === -1) teams.push(m.away);
+    if (teams.indexOf(m.home) === -1) teams.push(m.home);
+  });
+
+  // Build H2H record per team pair: h2hRecord[teamA][teamB] = {W,L,T,catW,catL,catT}
+  var h2hRecord = {};
+  teams.forEach(function(t) { h2hRecord[t] = {}; });
+  matchResults.forEach(function(m) {
+    if (!h2hRecord[m.away][m.home]) h2hRecord[m.away][m.home] = {W:0,L:0,T:0,catW:0,catL:0,catT:0};
+    if (!h2hRecord[m.home][m.away]) h2hRecord[m.home][m.away] = {W:0,L:0,T:0,catW:0,catL:0,catT:0};
+    // Away team
+    if (m.winner === m.away)       { h2hRecord[m.away][m.home].W++; h2hRecord[m.home][m.away].L++; }
+    else if (m.winner === m.home)  { h2hRecord[m.away][m.home].L++; h2hRecord[m.home][m.away].W++; }
+    else                           { h2hRecord[m.away][m.home].T++; h2hRecord[m.home][m.away].T++; }
+    h2hRecord[m.away][m.home].catW += m.awayW; h2hRecord[m.away][m.home].catL += m.awayL; h2hRecord[m.away][m.home].catT += m.awayT;
+    h2hRecord[m.home][m.away].catW += m.homeW; h2hRecord[m.home][m.away].catL += m.homeL; h2hRecord[m.home][m.away].catT += m.homeT;
+  });
+
+  // Season record per team
+  var seasonRecord = {};
+  teams.forEach(function(t) {
+    var W=0,L=0,T=0,pts=0;
+    Object.values(h2hRecord[t]).forEach(function(r) { W+=r.W; L+=r.L; T+=r.T; pts += r.W*8 + r.T*4; });
+    seasonRecord[t] = {W:W,L:L,T:T,pts:pts};
+  });
+
+  // Sort teams by pts desc
+  teams.sort(function(a,b) { return seasonRecord[b].pts - seasonRecord[a].pts; });
+
+  // ── Build HTML ─────────────────────────────────────────────────────────────
+  var html = '';
+
+  // Season summary table
+  html += '<div class="card" style="margin-bottom:20px">';
+  html += '<div class="card-header"><span class="card-title">Season results</span></div>';
+  html += '<div class="table-wrap"><table>';
+  html += '<thead><tr><th class="left">#</th><th class="left">Team</th><th>W</th><th>L</th><th>T</th><th>Pts</th></tr></thead><tbody>';
+  teams.forEach(function(t, i) {
+    var r = seasonRecord[t];
+    var ti = {};
+    Object.keys(S.teamInfo).forEach(function(id) { if ((S.teamInfo[id].name||'')===t) ti=S.teamInfo[id]; });
+    var logo = ti.logoUrl512 || '';
+    html += '<tr' + (i===0?' class="hl"':'') + '>';
+    html += '<td class="left"><span class="rank' + (i<3?' top':'') + '">' + (i+1) + '</span></td>';
+    html += '<td class="left"><div class="team-cell">';
+    if (logo) html += '<img class="team-logo" src="' + logo + '" alt="" onerror="this.style.display=\'none\'">';
+    else html += '<div class="team-logo-ph">' + (t[0]||'?') + '</div>';
+    html += '<span>' + t + '</span></div></td>';
+    html += '<td>' + r.W + '</td><td>' + r.L + '</td><td>' + r.T + '</td>';
+    html += '<td><strong>' + r.pts + '</strong></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div></div>';
+
+  // H2H grid
+  html += '<div class="card">';
+  html += '<div class="card-header"><span class="card-title">Head-to-head grid</span>';
+  html += '<span style="font-size:12px;color:var(--muted)">Each cell shows match record (W-L-T) and category wins</span></div>';
+  html += '<div style="overflow-x:auto;padding:4px">';
+  html += '<table style="border-collapse:separate;border-spacing:2px;font-size:12px">';
+
+  // Short names for column headers
+  var shortNames = {};
+  teams.forEach(function(t) {
+    var ti = {};
+    Object.keys(S.teamInfo).forEach(function(id) { if ((S.teamInfo[id].name||'')===t) ti=S.teamInfo[id]; });
+    shortNames[t] = ti.shortName || t.split(' ').map(function(w){return w[0];}).join('').toUpperCase();
+  });
+
+  // Header row
+  html += '<thead><tr>';
+  html += '<th style="background:none;border:none;min-width:130px;padding:4px 8px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:0.04em">Team</th>';
+  teams.forEach(function(t) {
+    html += '<th style="background:none;border:none;padding:4px 6px;text-align:center;font-size:11px;color:var(--muted);font-weight:500;white-space:nowrap;min-width:68px" title="' + t + '">' + shortNames[t] + '</th>';
+  });
+  html += '<th style="background:none;border:none;padding:4px 8px;text-align:center;font-size:11px;color:var(--muted);font-weight:500">Record</th>';
+  html += '</tr></thead><tbody>';
+
+  teams.forEach(function(teamA) {
+    var tiA = {};
+    Object.keys(S.teamInfo).forEach(function(id) { if ((S.teamInfo[id].name||'')===teamA) tiA=S.teamInfo[id]; });
+    var logoA = tiA.logoUrl512 || '';
+    var recA  = seasonRecord[teamA];
+
+    html += '<tr>';
+    // Row header
+    html += '<td style="border:none;padding:3px 8px;white-space:nowrap">';
+    html += '<div style="display:flex;align-items:center;gap:6px">';
+    if (logoA) html += '<img class="team-logo" src="' + logoA + '" alt="" onerror="this.style.display=\'none\'">';
+    else html += '<div class="team-logo-ph">' + (teamA[0]||'?') + '</div>';
+    html += '<span style="font-size:12px;font-weight:500">' + teamA + '</span></div></td>';
+
+    teams.forEach(function(teamB) {
+      if (teamA === teamB) {
+        html += '<td style="border:none;padding:3px;text-align:center"><div style="background:var(--bg);border-radius:4px;padding:8px 6px;color:var(--muted);font-size:16px">—</div></td>';
+        return;
+      }
+      var rec = h2hRecord[teamA][teamB];
+      if (!rec || (rec.W === 0 && rec.L === 0 && rec.T === 0)) {
+        html += '<td style="border:none;padding:3px;text-align:center"><div style="background:var(--bg);border-radius:4px;padding:8px 6px;color:var(--muted);font-size:11px">—</div></td>';
+        return;
+      }
+      var isWin  = rec.W > rec.L;
+      var isLose = rec.L > rec.W;
+      var bg  = isWin ? '#e8f0eb' : isLose ? '#fce8e8' : '#fef3e2';
+      var fg  = isWin ? '#2d5a3d' : isLose ? '#c0392b' : '#b7791f';
+      var record = rec.W + '-' + rec.L + (rec.T ? '-' + rec.T : '');
+      html += '<td style="border:none;padding:3px;text-align:center">';
+      html += '<div style="background:' + bg + ';color:' + fg + ';border-radius:4px;padding:6px 4px">';
+      html += '<div style="font-size:13px;font-weight:600">' + record + '</div>';
+      html += '<div style="font-size:10px;opacity:0.8">' + rec.catW + '-' + rec.catL + '</div>';
+      html += '</div></td>';
+    });
+
+    // Season record summary cell
+    var recBg = recA.W >= recA.L ? 'var(--accent-light)' : 'var(--bg)';
+    var recFg = recA.W >= recA.L ? 'var(--accent)' : 'var(--muted)';
+    html += '<td style="border:none;padding:3px;text-align:center">';
+    html += '<div style="background:' + recBg + ';color:' + recFg + ';border-radius:4px;padding:6px 8px;font-weight:600;font-size:13px">';
+    html += recA.W + '-' + recA.L + (recA.T ? '-' + recA.T : '');
+    html += '</div></td>';
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+
+  // Legend
+  html += '<div style="display:flex;gap:14px;padding:10px 16px;font-size:11px;color:var(--muted);border-top:1px solid var(--border)">';
+  html += '<span><span style="display:inline-block;width:10px;height:10px;background:#e8f0eb;border-radius:2px;margin-right:4px"></span>Win</span>';
+  html += '<span><span style="display:inline-block;width:10px;height:10px;background:#fce8e8;border-radius:2px;margin-right:4px"></span>Loss</span>';
+  html += '<span><span style="display:inline-block;width:10px;height:10px;background:#fef3e2;border-radius:2px;margin-right:4px"></span>Tie</span>';
+  html += '<span style="margin-left:8px">Cell shows match record (W-L-T) and category wins-losses</span>';
+  html += '</div></div>';
+
+  // Per-week matchup detail
+  html += '<div class="card" style="margin-top:20px">';
+  html += '<div class="card-header"><span class="card-title">Period-by-period results</span></div>';
+  html += '<div class="table-wrap"><table>';
+  html += '<thead><tr><th class="left">Period</th><th class="left">Away</th><th>Score</th><th class="left">Home</th><th>Score</th><th class="left">Winner</th></tr></thead><tbody>';
+
+  matchResults.sort(function(a,b){return a.week-b.week;}).forEach(function(m) {
+    var winnerCell = m.winner === 'tie'
+      ? '<span style="color:var(--muted)">Tie</span>'
+      : '<div class="team-cell">' + (function(){
+          var ti={};Object.keys(S.teamInfo).forEach(function(id){if((S.teamInfo[id].name||'')===m.winner)ti=S.teamInfo[id];});
+          var logo=ti.logoUrl512||'';
+          return (logo?'<img class="team-logo" src="'+logo+'" alt="" onerror="this.style.display=\'none\'">':'<div class="team-logo-ph">'+(m.winner[0]||'?')+'</div>')+'<span>'+m.winner+'</span>';
+        })() + '</div>';
+    var awayWon = m.winner === m.away;
+    var homeWon = m.winner === m.home;
+    html += '<tr>';
+    html += '<td class="left" style="color:var(--muted)">P' + m.week + '</td>';
+    html += '<td class="left" style="font-weight:' + (awayWon?'600':'400') + '">' + m.away + '</td>';
+    html += '<td style="font-weight:' + (awayWon?'600':'400') + ';color:' + (awayWon?'var(--accent)':m.winner==='tie'?'var(--muted)':'var(--danger)') + '">' + m.awayW + '-' + m.awayL + '</td>';
+    html += '<td class="left" style="font-weight:' + (homeWon?'600':'400') + '">' + m.home + '</td>';
+    html += '<td style="font-weight:' + (homeWon?'600':'400') + ';color:' + (homeWon?'var(--accent)':m.winner==='tie'?'var(--muted)':'var(--danger)') + '">' + m.homeW + '-' + m.homeL + '</td>';
+    html += '<td class="left">' + winnerCell + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div></div>';
+
+  el.innerHTML = html;
+}
+
 // ── Dashboard ────────────────────────────────────────────────────────────────
 
 var DB = { teamId: null };
@@ -2851,6 +3094,299 @@ function posHeatColorDash(pct) {
   if (pct >= 0.30) return { bg: '#f5c4b3', fg: '#6b2a1a' };
   return               { bg: '#c0392b',  fg: '#ffffff' };
 }
+
+// ── League Stats (Combined) ──────────────────────────────────────────────────
+
+var currentCombinedTab = 'weekly';
+
+function renderCombinedPage() {
+  if (!combinedRendered) {
+    combinedRendered = true;
+    showCombinedTab('weekly', document.querySelector('#combined-tabs .trade-tab'));
+  }
+}
+
+window.showCombinedTab = function(tab, btn) {
+  currentCombinedTab = tab;
+  document.querySelectorAll('#combined-tabs .trade-tab').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+
+  var el = document.getElementById('combined-body');
+  if (tab === 'weekly')          renderWeeklyStats(el);
+  if (tab === 'h2h')             renderH2HMatrix(el);
+  if (tab === 'matchup-history') renderMatchupHistory(el);
+};
+
+// ── Tab 1: Week-by-week stats ────────────────────────────────────────────────
+function renderWeeklyStats(el) {
+  function tryRender() {
+    var stats = window._joeStats;
+    if (!stats || !stats.length) {
+      // Load joe_stats.json if not already loaded
+      if (!window._joeStatsLoading) {
+        window._joeStatsLoading = true;
+        loadJSON('joe_stats.json').then(function(data) {
+          window._joeStats = data;
+          renderWeeklyStats(el);
+        }).catch(function(e) {
+          el.innerHTML = '<div class="error-msg">Error loading weekly stats: ' + e.message + '</div>';
+        });
+      }
+      return;
+    }
+
+    // Group by week
+    var weeks = [];
+    stats.forEach(function(r) { if (weeks.indexOf(r.week) === -1) weeks.push(r.week); });
+    weeks.sort(function(a,b){return a-b;});
+
+    var teams = [];
+    stats.forEach(function(r) { if (teams.indexOf(r.team) === -1) teams.push(r.team); });
+    teams.sort();
+
+    var CATS = ['R','HR','RBI','SB','AVG','K','W','SV','ERA','WHIP'];
+
+    // Week selector pills
+    var html = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px" id="weekly-pills">';
+    weeks.forEach(function(w, i) {
+      html += '<button class="pill' + (i===0?' active':'') + '" onclick="showWeekStats(' + w + ',this)">Wk ' + w + '</button>';
+    });
+    html += '</div><div id="weekly-table"></div>';
+    el.innerHTML = html;
+
+    window._joeWeekStats = {};
+    stats.forEach(function(r) {
+      if (!window._joeWeekStats[r.week]) window._joeWeekStats[r.week] = {};
+      window._joeWeekStats[r.week][r.team] = r;
+    });
+
+    showWeekStats(weeks[0], document.querySelector('#weekly-pills .pill'));
+  }
+  tryRender();
+}
+
+window.showWeekStats = function(week, btn) {
+  document.querySelectorAll('#weekly-pills .pill').forEach(function(p){p.classList.remove('active');});
+  if (btn) btn.classList.add('active');
+
+  var weekData = (window._joeWeekStats||{})[week] || {};
+  var teams = Object.keys(weekData).sort();
+  var CATS  = ['R','HR','RBI','SB','AVG','K','W','SV','ERA','WHIP'];
+
+  // Find league max/min per cat for color scale
+  var catMax = {}, catMin = {};
+  CATS.forEach(function(c) {
+    var vals = teams.map(function(t){return weekData[t][c];}).filter(function(v){return v!=null;});
+    if (!vals.length) return;
+    catMax[c] = Math.max.apply(null,vals);
+    catMin[c] = Math.min.apply(null,vals);
+  });
+
+  var html = '<div class="card"><div class="table-wrap"><table>';
+  html += '<thead><tr><th class="left">Team</th>';
+  CATS.forEach(function(c){ html += '<th>' + c + '</th>'; });
+  html += '</tr></thead><tbody>';
+
+  teams.forEach(function(team) {
+    var row = weekData[team] || {};
+    html += '<tr><td class="left" style="font-weight:500">' + team + '</td>';
+    CATS.forEach(function(c) {
+      var v = row[c];
+      if (v == null) { html += '<td style="color:var(--muted)">—</td>'; return; }
+      var isLow = c==='ERA'||c==='WHIP';
+      var range = (catMax[c]||1) - (catMin[c]||0);
+      var pct   = range > 0 ? (isLow ? (catMax[c]-v)/range : (v-catMin[c])/range) : 0.5;
+      var col   = pct>=0.7?'#2d5a3d':pct>=0.5?'#4a9a68':pct>=0.35?'#b7791f':'#c0392b';
+      var disp  = c==='AVG'?v.toFixed(3):(c==='ERA'||c==='WHIP')?v.toFixed(2):Math.round(v);
+      html += '<td style="font-weight:500;color:' + col + '">' + disp + '</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div></div>';
+  document.getElementById('weekly-table').innerHTML = html;
+};
+
+// ── Tab 2: Head-to-head matrix ───────────────────────────────────────────────
+function renderH2HMatrix(el) {
+  var schedule = window._scheduleData;
+  var joeData  = window._joeByTeamWeek;
+
+  function tryRender() {
+    if (!schedule || !joeData || !joeData.length) {
+      if (!schedule) {
+        loadJSON('schedule.json').then(function(d) {
+          window._scheduleData = d;
+          tryRender();
+        }).catch(function(){});
+        return;
+      }
+      if (!joeData || !joeData.length) {
+        if (!joeRendered) renderJOEFactor();
+        setTimeout(tryRender, 500); return;
+      }
+    }
+    buildH2HMatrix(el, schedule, joeData);
+  }
+  tryRender();
+}
+
+function buildH2HMatrix(el, schedule, joeData) {
+  // Build W/L record for each team vs each other team
+  var teams = [];
+  schedule.forEach(function(m) {
+    if (teams.indexOf(m.away) === -1) teams.push(m.away);
+    if (teams.indexOf(m.home) === -1) teams.push(m.home);
+  });
+  teams.sort();
+
+  // Map week-team to actual result
+  var resultMap = {};
+  joeData.forEach(function(r) {
+    if (r.actual != null) resultMap[r.week + '|' + r.team] = r;
+  });
+
+  // For each played matchup, determine W/L
+  var h2h = {};
+  teams.forEach(function(t) { h2h[t] = {}; teams.forEach(function(o){ h2h[t][o] = {w:0,l:0,t:0}; }); });
+
+  schedule.forEach(function(m) {
+    var awayRes = resultMap[m.week + '|' + m.away];
+    var homeRes = resultMap[m.week + '|' + m.home];
+    if (!awayRes || !homeRes) return;
+    var awayPts = awayRes.actual * 10;
+    var homePts = homeRes.actual * 10;
+    if (awayPts > homePts)      { h2h[m.away][m.home].w++; h2h[m.home][m.away].l++; }
+    else if (homePts > awayPts) { h2h[m.home][m.away].w++; h2h[m.away][m.home].l++; }
+    else                        { h2h[m.away][m.home].t++; h2h[m.home][m.away].t++; }
+  });
+
+  var html = '<div class="card"><div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:12px">';
+  html += '<thead><tr><th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:130px">Team</th>';
+  teams.forEach(function(t) {
+    var short = t.length > 10 ? t.substring(0,10)+'…' : t;
+    html += '<th style="padding:6px 8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;white-space:nowrap" title="' + t + '">' + short + '</th>';
+  });
+  html += '<th style="padding:6px 8px;text-align:center;border-bottom:1px solid var(--border);font-weight:600">Overall</th>';
+  html += '</tr></thead><tbody>';
+
+  // Sort teams by overall W-L record
+  var teamTotals = {};
+  teams.forEach(function(t) {
+    var w=0,l=0,ti=0;
+    teams.forEach(function(o){ if(o===t)return; w+=h2h[t][o].w; l+=h2h[t][o].l; ti+=h2h[t][o].t; });
+    teamTotals[t] = {w:w,l:l,t:ti};
+  });
+  var sortedTeams = teams.slice().sort(function(a,b){ return (teamTotals[b].w+teamTotals[b].t*0.5)-(teamTotals[a].w+teamTotals[a].t*0.5); });
+
+  sortedTeams.forEach(function(team) {
+    html += '<tr>';
+    html += '<td style="padding:7px 10px;font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">' + team + '</td>';
+    sortedTeams.forEach(function(opp) {
+      if (opp === team) {
+        html += '<td style="padding:6px 8px;text-align:center;border-bottom:1px solid var(--border);background:var(--bg);color:var(--muted)">—</td>';
+        return;
+      }
+      var rec = h2h[team][opp];
+      if (rec.w===0 && rec.l===0 && rec.t===0) {
+        html += '<td style="padding:6px 8px;text-align:center;border-bottom:1px solid var(--border);color:var(--muted)">—</td>';
+        return;
+      }
+      var bg  = rec.w > rec.l ? 'var(--accent-light)' : rec.l > rec.w ? '#fef3e2' : 'var(--bg)';
+      var col = rec.w > rec.l ? 'var(--accent)' : rec.l > rec.w ? '#b7791f' : 'var(--muted)';
+      html += '<td style="padding:6px 8px;text-align:center;border-bottom:1px solid var(--border);background:' + bg + ';color:' + col + ';font-weight:500">';
+      html += rec.w + '-' + rec.l + (rec.t?'-'+rec.t:'') + '</td>';
+    });
+    var tot = teamTotals[team];
+    var totCol = tot.w>tot.l?'var(--accent)':tot.l>tot.w?'#c0392b':'var(--muted)';
+    html += '<td style="padding:6px 8px;text-align:center;border-bottom:1px solid var(--border);font-weight:600;color:' + totCol + '">' + tot.w + '-' + tot.l + (tot.t?'-'+tot.t:'') + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div><div style="padding:10px 16px;font-size:11px;color:var(--muted)">Each cell shows W-L record for the row team vs the column team. Green = winning record, tan = losing record.</div></div>';
+  el.innerHTML = html;
+}
+
+// ── Tab 3: Matchup history ───────────────────────────────────────────────────
+function renderMatchupHistory(el) {
+  var schedule = window._scheduleData;
+  var joeData  = window._joeByTeamWeek;
+
+  function tryRender() {
+    if (!schedule) {
+      loadJSON('schedule.json').then(function(d) { window._scheduleData = d; tryRender(); }).catch(function(){});
+      return;
+    }
+    if (!joeData || !joeData.length) {
+      if (!joeRendered) renderJOEFactor();
+      setTimeout(tryRender, 500); return;
+    }
+    buildMatchupHistory(el, schedule, joeData);
+  }
+  tryRender();
+}
+
+function buildMatchupHistory(el, schedule, joeData) {
+  var resultMap = {};
+  joeData.forEach(function(r) { if (r.actual!=null) resultMap[r.week+'|'+r.team]=r; });
+
+  // Get all teams for filter
+  var teams = [];
+  schedule.forEach(function(m){
+    if (teams.indexOf(m.away)===-1) teams.push(m.away);
+    if (teams.indexOf(m.home)===-1) teams.push(m.home);
+  });
+  teams.sort();
+
+  var html = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">';
+  html += '<span style="font-size:13px;font-weight:500;color:var(--muted)">Filter by team:</span>';
+  html += '<select class="trade-team-select" style="max-width:240px" onchange="filterMatchupHistory(this.value)">';
+  html += '<option value="">All matchups</option>';
+  teams.forEach(function(t){ html += '<option value="' + t + '">' + t + '</option>'; });
+  html += '</select></div>';
+  html += '<div id="matchup-history-list"></div>';
+  el.innerHTML = html;
+
+  window._matchupHistorySchedule = schedule;
+  window._matchupHistoryResultMap = resultMap;
+  filterMatchupHistory('');
+}
+
+window.filterMatchupHistory = function(filterTeam) {
+  var schedule   = window._matchupHistorySchedule || [];
+  var resultMap  = window._matchupHistoryResultMap || {};
+  var played     = schedule.filter(function(m) {
+    var awayR = resultMap[m.week+'|'+m.away];
+    var homeR = resultMap[m.week+'|'+m.home];
+    if (!awayR || !homeR) return false;
+    if (filterTeam && m.away !== filterTeam && m.home !== filterTeam) return false;
+    return true;
+  }).sort(function(a,b){return b.week-a.week;});
+
+  var html = '<div class="card"><div class="table-wrap"><table>';
+  html += '<thead><tr><th class="left">Period</th><th class="left">Away</th><th>Score</th><th class="left">Home</th><th>Score</th><th class="left">Winner</th></tr></thead><tbody>';
+
+  played.forEach(function(m) {
+    var awayR = resultMap[m.week+'|'+m.away];
+    var homeR = resultMap[m.week+'|'+m.home];
+    var awayPts = (awayR.actual*10).toFixed(1);
+    var homePts = (homeR.actual*10).toFixed(1);
+    var awayWin = parseFloat(awayPts) > parseFloat(homePts);
+    var homeWin = parseFloat(homePts) > parseFloat(awayPts);
+    var tie     = !awayWin && !homeWin;
+    var winner  = awayWin ? m.away : homeWin ? m.home : 'Tie';
+    var winCol  = awayWin||homeWin ? 'var(--accent)' : 'var(--muted)';
+
+    html += '<tr>';
+    html += '<td class="left" style="color:var(--muted);font-size:12px">P' + m.week + '</td>';
+    html += '<td class="left"' + (awayWin?' style="font-weight:500"':'') + '>' + m.away + '</td>';
+    html += '<td style="font-weight:600;color:' + (awayWin?'var(--accent)':'var(--muted)') + '">' + awayPts + '</td>';
+    html += '<td class="left"' + (homeWin?' style="font-weight:500"':'') + '>' + m.home + '</td>';
+    html += '<td style="font-weight:600;color:' + (homeWin?'var(--accent)':'var(--muted)') + '">' + homePts + '</td>';
+    html += '<td class="left" style="color:' + winCol + ';font-weight:500">' + winner + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div></div>';
+  document.getElementById('matchup-history-list').innerHTML = html;
+};
 
 init();
 </script>
