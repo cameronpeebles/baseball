@@ -3263,6 +3263,9 @@ function assembleDashboard(teamId, el) {
 
   // ── 8. Top 5 hitters and pitchers by fWAR ───────────────────────────────
   var hasFWAR = FWAR.hitResults && FWAR.hitResults.length > 0;
+
+  html += '</div>'; // dash-two-col (trade/waiver)
+
   if (hasFWAR) {
     var myHittersFWAR = FWAR.hitResults
       .filter(function(p) { return p.ftId === teamId && p.fWAR != null; })
@@ -3277,45 +3280,81 @@ function assembleDashboard(teamId, el) {
       return v >= 2 ? '#1e6b3a' : v >= 0.5 ? '#4a9a68' : v >= -0.5 ? '#b7791f' : '#c0392b';
     }
 
-    function fwarCard(players, label) {
-      var h = '<div class="card"><div class="card-header"><span class="card-title">' + label + '</span>';
-      h += '<span style="font-size:11px;color:var(--muted)">fWAR · totalZ · slot</span></div>';
+    var hitCats  = ['R','HR','RBI','SB','AVG'];
+    var pitCats  = ['W','SV','K','ERA','WHIP'];
+
+    function fwarTable(players, label, cats) {
+      var h = '<div style="flex:1;min-width:0">';
+      h += '<div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:12px 16px 8px;border-bottom:1px solid var(--border)">' + label + '</div>';
+      h += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
+      h += '<thead><tr>';
+      h += '<th style="text-align:left;padding:7px 8px 7px 16px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);white-space:nowrap">Player</th>';
+      h += '<th style="padding:7px 8px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--accent);white-space:nowrap">fWAR</th>';
+      h += '<th style="padding:7px 8px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);white-space:nowrap">z</th>';
+      cats.forEach(function(c) {
+        h += '<th style="padding:7px 8px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);text-align:right;white-space:nowrap">' + c + '</th>';
+      });
+      h += '</tr></thead><tbody>';
+
       if (!players.length) {
-        h += '<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px">Run fWAR calculation first</div>';
+        h += '<tr><td colspan="' + (3 + cats.length) + '" style="padding:16px;text-align:center;color:var(--muted)">No data</td></tr>';
       } else {
         players.forEach(function(p, i) {
-          var fc = fwarColor(p.fWAR);
+          var fc   = fwarColor(p.fWAR);
           var sign = p.fWAR >= 0 ? '+' : '';
-          h += '<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--border)">';
-          h += '<span style="font-size:12px;font-weight:600;color:var(--muted);width:16px">' + (i+1) + '</span>';
+          var isOdd = i % 2 === 1;
+          h += '<tr style="' + (isOdd ? 'background:var(--bg)' : '') + ';border-bottom:1px solid var(--border)">';
+
+          // Player cell
+          h += '<td style="padding:8px 8px 8px 16px;text-align:left;white-space:nowrap">';
+          h += '<div style="display:flex;align-items:center;gap:7px">';
+          h += '<span style="font-size:11px;font-weight:600;color:var(--muted);width:14px;flex-shrink:0">' + (i+1) + '</span>';
           h += p.hs ? '<img class="player-hs" src="' + p.hs + '" alt="" onerror="this.style.display=\'none\'">' : '';
-          h += '<div style="flex:1;min-width:0">';
-          h += '<div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + p.name + '</div>';
-          h += '<div style="font-size:11px;color:var(--muted)">';
-          h += '<span class="pos-badge">' + (p.assignedSlot || primaryPos(p.pos)) + '</span> ';
-          h += 'z=' + (p.totalZ != null ? p.totalZ.toFixed(2) : '—');
-          h += '</div></div>';
-          h += '<div style="text-align:right;flex-shrink:0">';
-          h += '<div style="font-size:15px;font-weight:700;color:' + fc + '">' + sign + p.fWAR.toFixed(2) + '</div>';
-          h += '<div style="font-size:10px;color:var(--muted)">fWAR</div>';
-          h += '</div></div>';
+          h += '<div>';
+          h += '<div style="font-size:13px;font-weight:500">' + p.name + '</div>';
+          h += '<div style="font-size:10px;color:var(--muted)"><span class="pos-badge">' + (p.assignedSlot || primaryPos(p.pos)) + '</span> ' + p.mlb + '</div>';
+          h += '</div></div></td>';
+
+          // fWAR
+          h += '<td style="padding:8px;text-align:center;white-space:nowrap">';
+          h += '<span style="font-size:14px;font-weight:700;color:' + fc + '">' + sign + p.fWAR.toFixed(2) + '</span>';
+          h += '</td>';
+
+          // totalZ
+          h += '<td style="padding:8px;text-align:center;color:var(--muted);font-size:11px;white-space:nowrap">' + (p.totalZ != null ? p.totalZ.toFixed(2) : '—') + '</td>';
+
+          // Stat columns
+          cats.forEach(function(c) {
+            var v = p.raw ? p.raw[c] : null;
+            var str = '—';
+            if (v != null) {
+              if (c === 'AVG')  str = v.toFixed(3);
+              else if (c === 'ERA' || c === 'WHIP') str = v.toFixed(2);
+              else str = Math.round(v).toString();
+            }
+            h += '<td style="padding:8px;text-align:right;white-space:nowrap;font-size:12px">' + str + '</td>';
+          });
+
+          h += '</tr>';
         });
       }
-      h += '</div>';
+      h += '</tbody></table></div></div>';
       return h;
     }
 
-    html += '<div class="dash-two-col">';
-    html += fwarCard(myHittersFWAR, 'Top 5 hitters by fWAR');
-    html += fwarCard(myPitchersFWAR, 'Top 5 pitchers by fWAR');
-    html += '</div>';
+    html += '<div class="card" style="margin-bottom:20px">';
+    html += '<div class="card-header"><span class="card-title">Top 5 by fWAR</span>';
+    html += '<span style="font-size:11px;color:var(--muted)">Based on current fWAR model settings</span></div>';
+    html += '<div style="display:flex;gap:0;flex-wrap:wrap">';
+    html += fwarTable(myHittersFWAR, 'Hitters', hitCats);
+    html += '<div style="width:1px;background:var(--border);flex-shrink:0"></div>';
+    html += fwarTable(myPitchersFWAR, 'Pitchers', pitCats);
+    html += '</div></div>';
   } else {
     html += '<div class="card" style="margin-bottom:20px"><div class="card-body" style="padding:16px 20px;text-align:center;color:var(--muted);font-size:13px">';
-    html += '🔢 Visit the <strong>fWAR</strong> page and click <strong>Recalculate</strong> to see top players by fWAR here.';
+    html += 'Visit the <strong>fWAR</strong> page and click <strong>Recalculate</strong> to see top players by fWAR here.';
     html += '</div></div>';
   }
-
-  html += '</div>'; // dash-two-col
 
   el.innerHTML = html;
 }
