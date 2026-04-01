@@ -1397,7 +1397,7 @@ window.showJOEWeek = function(week, btn) {
 
 // ── Match Predictions ────────────────────────────────────────────────────────
 
-var CATS_HIGH = ['R','HR','RBI','SB','AVG','K','W','SV'];
+var CATS_HIGH = ['R','HR','RBI','SB','AVG','K','W','SVH3'];
 var CATS_LOW  = ['ERA','WHIP'];
 var ALL_CATS  = CATS_HIGH.concat(CATS_LOW);
 
@@ -1625,7 +1625,7 @@ var POS_GROUPS = {
 
 // Stats used per player type
 var BAT_CATS = ['R','HR','RBI','SB','AVG'];
-var PIT_CATS = ['K','W','SV','ERA','WHIP'];
+var PIT_CATS = ['K','W','SVH3','ERA','WHIP'];
 var LOW_CATS = ['ERA','WHIP']; // lower is better
 
 function isPitcher(pos) {
@@ -2657,7 +2657,7 @@ function buildH2H(schedule, joeStats, el) {
     statsByTeamWeek[s.week][s.team] = s;
   });
 
-  var ALL_CATS_H = ['R','HR','RBI','SB','AVG','K','W','SV','ERA','WHIP'];
+  var ALL_CATS_H = ['R','HR','RBI','SB','AVG','K','W','SVH3','ERA','WHIP'];
   var LOW_CATS_H = ['ERA','WHIP'];
 
   // Score one matchup — returns {awayW, awayL, awayT, homeW, homeL, homeT}
@@ -2988,7 +2988,7 @@ function assembleDashboard(teamId, el) {
     }
 
     var BAT_CATS_D = ['R','HR','RBI','SB','AVG'];
-    var PIT_CATS_D = ['K','W','SV','ERA','WHIP'];
+    var PIT_CATS_D = ['K','W','SVH3','ERA','WHIP'];
     // Try SVH3 if SV not found
     if (hIdx['SV'] == null && hIdx['SVH3'] != null) PIT_CATS_D[2] = 'SVH3';
 
@@ -3044,7 +3044,7 @@ function assembleDashboard(teamId, el) {
     {k:'AVG', label:'AVG',  hi:true},
     {k:'K',   label:'K',    hi:true},
     {k:'W',   label:'W',    hi:true},
-    {k:'SV',  label:'SV',   hi:true},
+    {k:'SVH3', label:'SVH3', hi:true},
     {k:'ERA', label:'ERA',  hi:false},
     {k:'WHIP',label:'WHIP', hi:false}
   ];
@@ -3281,7 +3281,7 @@ function assembleDashboard(teamId, el) {
     }
 
     var hitCats  = ['R','HR','RBI','SB','AVG'];
-    var pitCats  = ['W','SV','K','ERA','WHIP'];
+    var pitCats  = ['W','SVH3','K','ERA','WHIP'];
 
     function fwarTable(players, label, cats) {
       var h = '<div style="flex:1;min-width:0">';
@@ -3416,7 +3416,7 @@ function renderWeeklyStats(el) {
     stats.forEach(function(r) { if (teams.indexOf(r.team) === -1) teams.push(r.team); });
     teams.sort();
 
-    var CATS = ['R','HR','RBI','SB','AVG','K','W','SV','ERA','WHIP'];
+    var CATS = ['R','HR','RBI','SB','AVG','K','W','SVH3','ERA','WHIP'];
 
     // Week selector pills
     var html = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px" id="weekly-pills">';
@@ -3443,7 +3443,7 @@ window.showWeekStats = function(week, btn) {
 
   var weekData = (window._joeWeekStats||{})[week] || {};
   var teams = Object.keys(weekData).sort();
-  var CATS  = ['R','HR','RBI','SB','AVG','K','W','SV','ERA','WHIP'];
+  var CATS  = ['R','HR','RBI','SB','AVG','K','W','SVH3','ERA','WHIP'];
 
   // Find league max/min per cat for color scale
   var catMax = {}, catMin = {};
@@ -3722,7 +3722,7 @@ function buildCorrelations(el) {
   }
 
   // Stat totals per team
-  var CATS = ['R','HR','RBI','SB','AVG','K','W','SV','ERA','WHIP'];
+  var CATS = ['R','HR','RBI','SB','AVG','K','W','SVH3','ERA','WHIP'];
   var teamStats = {}; // teamId → {cat: value}
   var srcTable = statTable || ptTable;
   var srcIdx   = statTable ? stIdx : ptIdx;
@@ -3753,7 +3753,7 @@ function buildCorrelations(el) {
     // Try SVH3 if SV missing
     if (sv['SV'] == null && srcIdx['SVH3'] != null) {
       var v = parseFloat(cells[srcIdx['SVH3']] && cells[srcIdx['SVH3']].content);
-      if (!isNaN(v)) sv['SV'] = v;
+      if (!isNaN(v)) sv['SVH3'] = v;
     }
     teamStats[id] = sv;
     if (!teamPts[id] && ptIdx['PTS'] == null) {
@@ -4180,7 +4180,7 @@ function buildCorrelations(el) {
 var FWAR_DEFAULTS = {
   repRanks: { C:18, '1B':20, '2B':18, '3B':18, SS:18, CI:24, MI:24, OF:75, UT:140, P:140 },
   hitWeights: { R:1, HR:1, RBI:1, SB:1, AVG:1 },
-  pitWeights: { W:1, SV:1, K:1, ERA:1, WHIP:1 }
+  pitWeights: { W:1, SVH3:1, K:1, ERA:1, WHIP:1 }
 };
 
 // Current model state (mutated by inputs)
@@ -4368,7 +4368,7 @@ window.recalculateFWAR = function() {
     var ip     = getVal(cells, 'IP',   pitIdx) || 0;
     var era    = getVal(cells, 'ERA',  pitIdx);
     var whip   = getVal(cells, 'WHIP', pitIdx);
-    var sv     = getVal(cells, 'SV',   pitIdx);
+    var sv     = getVal(cells, 'SVH3', pitIdx);
     var svh    = getVal(cells, 'SVH3', pitIdx);
     return {
       name: scorer.name || '',
@@ -4379,7 +4379,7 @@ window.recalculateFWAR = function() {
       cells: cells,
       raw: {
         W:    getVal(cells, 'W',  pitIdx),
-        SV:   sv != null ? sv : svh,
+        SVH3: sv != null ? sv : svh,
         K:    getVal(cells, 'K',  pitIdx),
         ERA:  era,
         WHIP: whip,
@@ -4391,7 +4391,7 @@ window.recalculateFWAR = function() {
   });
 
   // ── Compute z-scores for pitchers ────────────────────────────────────────
-  var pitCats = ['W','SV','K'];
+  var pitCats = ['W','SVH3','K'];
   var pitZParams = {};
   pitCats.forEach(function(cat) {
     var vals = allPitchers.map(function(p){ return p.raw[cat]; }).filter(function(v){return v!=null;});
