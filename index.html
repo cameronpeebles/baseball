@@ -871,10 +871,10 @@ function renderPosHeatmap() {
 
   var groups = ['Infield','Outfield','SP','RP'];
 
-  // League average per group
+  // League average per group — use bestGroup so each player counts in their best group only
   var leagueAvg = {};
   groups.forEach(function(g) {
-    var gp = TA.players.filter(function(p) { return p.group === g; });
+    var gp = TA.players.filter(function(p) { return p.bestGroup === g; });
     leagueAvg[g] = gp.length ? gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length : 0.5;
   });
 
@@ -886,7 +886,8 @@ function renderPosHeatmap() {
     var logo = ti.logoUrl512 || '';
     var groupData = {};
     groups.forEach(function(g) {
-      var gp  = TA.players.filter(function(p) { return p.ftId === id && p.group === g; });
+      // Use bestGroup: each player counts only in the group where they rank highest
+      var gp  = TA.players.filter(function(p) { return p.ftId === id && p.bestGroup === g; });
       var avg = gp.length ? gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length : null;
       groupData[g] = { avg: avg, count: gp.length };
     });
@@ -1487,6 +1488,22 @@ function playerGroup(pos) {
   return null;
 }
 
+// Returns ALL groups a player is eligible for (e.g. ['Infield','Outfield'] for 1B,OF)
+function playerAllGroups(pos) {
+  if (!pos) return [];
+  var parts = pos.split(',').map(function(p) { return p.trim(); });
+  var groups = [];
+  for (var g in POS_GROUPS) {
+    for (var i = 0; i < POS_GROUPS[g].length; i++) {
+      if (parts.indexOf(POS_GROUPS[g][i]) !== -1) {
+        if (groups.indexOf(g) === -1) groups.push(g);
+        break;
+      }
+    }
+  }
+  return groups;
+}
+
 function primaryPos(pos) {
   if (!pos) return '?';
   return pos.split(',')[0].trim();
@@ -1553,14 +1570,15 @@ function buildTradeAnalyzer() {
       stats[cat] = getStatVal(cells, cat, hitIdx);
     });
     allPlayers.push({
-      name:   scorer.name || '',
-      pos:    pos,
-      group:  playerGroup(pos),
-      mlb:    scorer.teamShortName || '',
-      hs:     scorer.headshotUrl || '',
-      ftId:   ftId,
-      type:   'bat',
-      stats:  stats
+      name:      scorer.name || '',
+      pos:       pos,
+      group:     playerGroup(pos),
+      allGroups: playerAllGroups(pos),
+      mlb:       scorer.teamShortName || '',
+      hs:        scorer.headshotUrl || '',
+      ftId:      ftId,
+      type:      'bat',
+      stats:     stats
     });
   });
 
@@ -1576,19 +1594,29 @@ function buildTradeAnalyzer() {
       stats[cat] = getStatVal(cells, cat, pitIdx);
     });
     allPlayers.push({
-      name:   scorer.name || '',
-      pos:    pos,
-      group:  playerGroup(pos),
-      mlb:    scorer.teamShortName || '',
-      hs:     scorer.headshotUrl || '',
-      ftId:   ftId,
-      type:   'pit',
-      stats:  stats
+      name:      scorer.name || '',
+      pos:       pos,
+      group:     playerGroup(pos),
+      allGroups: playerAllGroups(pos),
+      mlb:       scorer.teamShortName || '',
+      hs:        scorer.headshotUrl || '',
+      ftId:      ftId,
+      type:      'pit',
+      stats:     stats
     });
   });
 
-  // Compute per-position percentile ratings
-  // Group players by their primary position for comparison
+  // Build byGroup index including ALL eligible groups for multi-position players
+  var byGroup = {};
+  allPlayers.forEach(function(p) {
+    (p.allGroups || [p.group]).forEach(function(g) {
+      if (!g) return;
+      if (!byGroup[g]) byGroup[g] = [];
+      byGroup[g].push(p);
+    });
+  });
+
+  // Also index by primary position for fine-grained comparison
   var byPos = {};
   allPlayers.forEach(function(p) {
     var pp = primaryPos(p.pos);
@@ -1596,40 +1624,55 @@ function buildTradeAnalyzer() {
     byPos[pp].push(p);
   });
 
-  // Also group by group (Infield, Outfield, SP, RP)
-  var byGroup = {};
+  // Rate each player in EVERY eligible group, store groupRatings map
+  // overallRating = best rating across all eligible groups (used for trade value)
+  // bestGroup = the group where they rate highest (used for team positional ratings)
   allPlayers.forEach(function(p) {
-    if (!p.group) return;
-    if (!byGroup[p.group]) byGroup[p.group] = [];
-    byGroup[p.group].push(p);
-  });
+    var cats   = p.type === 'bat' ? BAT_CATS : PIT_CATS;
+    var pp     = primaryPos(p.pos);
+    var groups = (p.allGroups && p.allGroups.length) ? p.allGroups : (p.group ? [p.group] : []);
 
-  // Rate each player: posRating (vs same primary pos) and groupRating (vs group)
-  allPlayers.forEach(function(p) {
-    var cats = p.type === 'bat' ? BAT_CATS : PIT_CATS;
-    var pp   = primaryPos(p.pos);
-    var pg   = p.group;
+    p.groupRatings = {}; // rating per group
 
-    // Collect stat arrays for position peers and group peers
-    var posPeers   = byPos[pp] || [];
-    var groupPeers = byGroup[pg] || [];
+    groups.forEach(function(g) {
+      var groupPeers = byGroup[g] || [];
+      var score = 0, count = 0;
+      cats.forEach(function(cat) {
+        if (p.stats[cat] == null) return;
+        var isLow = LOW_CATS.indexOf(cat) !== -1;
+        var vals  = groupPeers.map(function(q) { return q.stats[cat]; }).filter(function(v) { return v != null; });
+        score += percentile(p.stats[cat], vals, isLow);
+        count++;
+      });
+      p.groupRatings[g] = count > 0 ? score / count : 0.5;
+    });
 
-    var posScore = 0, groupScore = 0, catCount = 0;
+    // posRating: vs exact same primary position
+    var posPeers = byPos[pp] || [];
+    var posScore = 0, posCount = 0;
     cats.forEach(function(cat) {
       if (p.stats[cat] == null) return;
       var isLow = LOW_CATS.indexOf(cat) !== -1;
+      var vals  = posPeers.map(function(q) { return q.stats[cat]; }).filter(function(v) { return v != null; });
+      posScore += percentile(p.stats[cat], vals, isLow);
+      posCount++;
+    });
+    p.posRating = posCount > 0 ? posScore / posCount : 0.5;
 
-      var posVals   = posPeers.map(function(q) { return q.stats[cat]; }).filter(function(v) { return v != null; });
-      var groupVals = groupPeers.map(function(q) { return q.stats[cat]; }).filter(function(v) { return v != null; });
-
-      posScore   += percentile(p.stats[cat], posVals, isLow);
-      groupScore += percentile(p.stats[cat], groupVals, isLow);
-      catCount++;
+    // Best group rating across all eligible groups
+    var bestGroupRating = 0;
+    var bestGroup = p.group;
+    groups.forEach(function(g) {
+      if (p.groupRatings[g] > bestGroupRating) {
+        bestGroupRating = p.groupRatings[g];
+        bestGroup = g;
+      }
     });
 
-    p.posRating   = catCount > 0 ? posScore / catCount : 0.5;
-    p.groupRating = catCount > 0 ? groupScore / catCount : 0.5;
-    p.overallRating = (p.posRating * 0.6) + (p.groupRating * 0.4);
+    p.bestGroup     = bestGroup;       // group where they rank highest
+    p.overallRating = (p.posRating * 0.6) + (bestGroupRating * 0.4);
+
+    // Keep p.group as primary group for display, but use bestGroup for team ratings
   });
 
   TA.players = allPlayers;
@@ -1644,7 +1687,7 @@ function buildTradeAnalyzer() {
     var pos = scorer.posShortNames || '';
     var stats = {};
     BAT_CATS.forEach(function(cat) { stats[cat] = getStatVal(cells, cat, hitIdx); });
-    faPlayers.push({ name: scorer.name || '', pos: pos, group: playerGroup(pos), mlb: scorer.teamShortName || '', hs: scorer.headshotUrl || '', type: 'bat', stats: stats });
+    faPlayers.push({ name: scorer.name || '', pos: pos, group: playerGroup(pos), allGroups: playerAllGroups(pos), mlb: scorer.teamShortName || '', hs: scorer.headshotUrl || '', type: 'bat', stats: stats });
   });
   S.pitRows.forEach(function(row) {
     var scorer = row.scorer || {};
@@ -1654,28 +1697,45 @@ function buildTradeAnalyzer() {
     var pos = scorer.posShortNames || '';
     var stats = {};
     PIT_CATS.forEach(function(cat) { stats[cat] = getStatVal(cells, cat, pitIdx); });
-    faPlayers.push({ name: scorer.name || '', pos: pos, group: playerGroup(pos), mlb: scorer.teamShortName || '', hs: scorer.headshotUrl || '', type: 'pit', stats: stats });
+    faPlayers.push({ name: scorer.name || '', pos: pos, group: playerGroup(pos), allGroups: playerAllGroups(pos), mlb: scorer.teamShortName || '', hs: scorer.headshotUrl || '', type: 'pit', stats: stats });
   });
-  // Rate FAs vs rostered players in same position/group
+  // Rate FAs vs rostered players in same groups
   faPlayers.forEach(function(p) {
-    var cats = p.type === 'bat' ? BAT_CATS : PIT_CATS;
-    var pp = primaryPos(p.pos);
-    var pg = p.group;
-    var posPeers   = (byPos[pp] || []).concat([p]);
-    var groupPeers = (byGroup[pg] || []).concat([p]);
-    var posScore = 0, groupScore = 0, catCount = 0;
+    var cats   = p.type === 'bat' ? BAT_CATS : PIT_CATS;
+    var pp     = primaryPos(p.pos);
+    var groups = (p.allGroups && p.allGroups.length) ? p.allGroups : (p.group ? [p.group] : []);
+
+    p.groupRatings = {};
+    groups.forEach(function(g) {
+      var groupPeers = (byGroup[g] || []).concat([p]);
+      var score = 0, count = 0;
+      cats.forEach(function(cat) {
+        if (p.stats[cat] == null) return;
+        var isLow = LOW_CATS.indexOf(cat) !== -1;
+        var vals  = groupPeers.map(function(q) { return q.stats[cat]; }).filter(function(v) { return v != null; });
+        score += percentile(p.stats[cat], vals, isLow);
+        count++;
+      });
+      p.groupRatings[g] = count > 0 ? score / count : 0.5;
+    });
+
+    var posPeers = (byPos[pp] || []).concat([p]);
+    var posScore = 0, posCount = 0;
     cats.forEach(function(cat) {
       if (p.stats[cat] == null) return;
       var isLow = LOW_CATS.indexOf(cat) !== -1;
-      var posVals   = posPeers.map(function(q) { return q.stats[cat]; }).filter(function(v) { return v != null; });
-      var groupVals = groupPeers.map(function(q) { return q.stats[cat]; }).filter(function(v) { return v != null; });
-      posScore   += percentile(p.stats[cat], posVals, isLow);
-      groupScore += percentile(p.stats[cat], groupVals, isLow);
-      catCount++;
+      var vals  = posPeers.map(function(q) { return q.stats[cat]; }).filter(function(v) { return v != null; });
+      posScore += percentile(p.stats[cat], vals, isLow);
+      posCount++;
     });
-    p.posRating   = catCount > 0 ? posScore / catCount : 0.5;
-    p.groupRating = catCount > 0 ? groupScore / catCount : 0.5;
-    p.overallRating = (p.posRating * 0.6) + (p.groupRating * 0.4);
+    p.posRating = posCount > 0 ? posScore / posCount : 0.5;
+
+    var bestGroupRating = 0, bestGroup = p.group;
+    groups.forEach(function(g) {
+      if (p.groupRatings[g] > bestGroupRating) { bestGroupRating = p.groupRatings[g]; bestGroup = g; }
+    });
+    p.bestGroup     = bestGroup;
+    p.overallRating = (p.posRating * 0.6) + (bestGroupRating * 0.4);
   });
   TA.faPlayers = faPlayers;
 
@@ -1807,7 +1867,7 @@ function renderPositionalRankings(side, teamId) {
   // League average per group
   var leagueAvg = {};
   groups.forEach(function(g) {
-    var gp = TA.players.filter(function(p) { return p.group === g; });
+    var gp = TA.players.filter(function(p) { return p.bestGroup === g; });
     leagueAvg[g] = gp.length ? gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length : 0.5;
   });
 
@@ -1816,7 +1876,7 @@ function renderPositionalRankings(side, teamId) {
   var html = '<div style="display:flex;gap:6px;padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap">';
 
   groups.forEach(function(g) {
-    var gp = teamPlayers.filter(function(p) { return p.group === g; });
+    var gp = teamPlayers.filter(function(p) { return p.bestGroup === g; });
     if (!gp.length) return;
     var avg = gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length;
     var diff = avg - leagueAvg[g];
@@ -1943,7 +2003,7 @@ function renderTradeResults() {
     // Find their current rating and what they'd be rated on new team
     // Simplified: compare their overallRating vs the average rating of same-position players on receiving team
     var samePosOnNewTeam = TA.players.filter(function(p) {
-      return p.ftId === receivingTeamId && p.group === tradedPlayer.group;
+      return p.ftId === receivingTeamId && p.bestGroup === tradedPlayer.bestGroup;
     });
     if (!samePosOnNewTeam.length) return 0;
     var avgRating = samePosOnNewTeam.reduce(function(s, p) { return s + p.overallRating; }, 0) / samePosOnNewTeam.length;
@@ -2022,14 +2082,14 @@ function renderTradeResults() {
   html += '<div style="padding:12px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">';
   html += '<strong style="color:var(--text)">Position analysis</strong><br>';
   playersA.forEach(function(p) {
-    var peers = TA.players.filter(function(q) { return q.group === p.group; });
+    var peers = TA.players.filter(function(q) { return q.bestGroup === p.bestGroup; });
     var rank = peers.filter(function(q) { return q.overallRating > p.overallRating; }).length + 1;
-    html += '<span class="' + (p.overallRating >= 0.5 ? 'strength-tag' : 'weakness-tag') + '">' + p.name + ' — ' + (p.group||p.pos) + ' #' + rank + ' of ' + peers.length + ' rostered</span>';
+    html += '<span class="' + (p.overallRating >= 0.5 ? 'strength-tag' : 'weakness-tag') + '">' + p.name + ' — ' + (p.bestGroup||p.pos) + ' #' + rank + ' of ' + peers.length + ' rostered</span>';
   });
   playersB.forEach(function(p) {
-    var peers = TA.players.filter(function(q) { return q.group === p.group; });
+    var peers = TA.players.filter(function(q) { return q.bestGroup === p.bestGroup; });
     var rank = peers.filter(function(q) { return q.overallRating > p.overallRating; }).length + 1;
-    html += '<span class="' + (p.overallRating >= 0.5 ? 'strength-tag' : 'weakness-tag') + '">' + p.name + ' — ' + (p.group||p.pos) + ' #' + rank + ' of ' + peers.length + ' rostered</span>';
+    html += '<span class="' + (p.overallRating >= 0.5 ? 'strength-tag' : 'weakness-tag') + '">' + p.name + ' — ' + (p.bestGroup||p.pos) + ' #' + rank + ' of ' + peers.length + ' rostered</span>';
   });
   html += '</div>';
 
@@ -2047,7 +2107,7 @@ window.showFAFixer = function(teamId) {
   // Find weakest positions: average rating per group for this team
   var groupRatings = {};
   ['Infield','Outfield','SP','RP'].forEach(function(g) {
-    var gp = teamPlayers.filter(function(p) { return p.group === g; });
+    var gp = teamPlayers.filter(function(p) { return p.bestGroup === g; });
     if (!gp.length) { groupRatings[g] = {avg: 0, count: 0, players: gp}; return; }
     var avg = gp.reduce(function(s, p) { return s + p.overallRating; }, 0) / gp.length;
     groupRatings[g] = {avg: avg, count: gp.length, players: gp};
@@ -2080,7 +2140,7 @@ window.showFAFixer = function(teamId) {
   sortedGroups.slice(0, 2).forEach(function(g) {
     var gr = groupRatings[g];
     var topFAs = (TA.faPlayers || [])
-      .filter(function(p) { return p.group === g; })
+      .filter(function(p) { return p.bestGroup === g; })
       .sort(function(a, b) { return b.overallRating - a.overallRating; })
       .slice(0, 8);
 
@@ -2126,14 +2186,14 @@ window.showTradeSuggestions = function(myTeamId) {
   // Compute my team's average rating per group
   var myGroupAvg = {};
   ['Infield','Outfield','SP','RP'].forEach(function(g) {
-    var gp = myPlayers.filter(function(p) { return p.group === g; });
+    var gp = myPlayers.filter(function(p) { return p.bestGroup === g; });
     myGroupAvg[g] = gp.length ? gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length : 0.5;
   });
 
   // My weakest groups (below league average) — sorted weakest first
   var leagueGroupAvg = {};
   ['Infield','Outfield','SP','RP'].forEach(function(g) {
-    var gp = TA.players.filter(function(p) { return p.group === g; });
+    var gp = TA.players.filter(function(p) { return p.bestGroup === g; });
     leagueGroupAvg[g] = gp.length ? gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length : 0.5;
   });
 
@@ -2172,7 +2232,7 @@ window.showTradeSuggestions = function(myTeamId) {
     // Their group averages
     var oppGroupAvg = {};
     ['Infield','Outfield','SP','RP'].forEach(function(g) {
-      var gp = oppPlayers.filter(function(p) { return p.group === g; });
+      var gp = oppPlayers.filter(function(p) { return p.bestGroup === g; });
       oppGroupAvg[g] = gp.length ? gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length : 0.5;
     });
 
@@ -2183,7 +2243,7 @@ window.showTradeSuggestions = function(myTeamId) {
     // For each of my weak groups, find their best player there
     myWeakGroups.forEach(function(weakGroup) {
       var candidates = oppPlayers
-        .filter(function(p) { return p.group === weakGroup && p.overallRating > myGroupAvg[weakGroup]; })
+        .filter(function(p) { return p.bestGroup === weakGroup && p.overallRating > myGroupAvg[weakGroup]; })
         .sort(function(a,b) { return b.overallRating - a.overallRating; });
 
       if (!candidates.length) return;
