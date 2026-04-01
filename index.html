@@ -180,7 +180,7 @@ td.neg { color: #c0392b; font-weight: 500; }
   <button onclick="showPage('zscores',this)">Z-Scores</button>
   <button onclick="showPage('joe',this)">JOE Factor</button>
   <button onclick="showPage('matchup',this)">Match Predictions</button>
-  <button onclick="showPage('trade',this)">Trade Analyzer</button>
+  <button onclick="showPage('trade',this)">Player Trade &amp; Market</button>
 </nav>
 
 <main>
@@ -314,7 +314,7 @@ td.neg { color: #c0392b; font-weight: 500; }
   </div>
 
   <div class="page" id="page-trade">
-    <div class="page-title">Trade Analyzer</div>
+    <div class="page-title">Player Trade &amp; Market</div>
     <div class="page-subtitle">Find mutually beneficial trades between two teams, or free agents to fill weaknesses.</div>
     <div id="trade-body"><div class="loading">Loading...</div></div>
   </div>
@@ -1592,6 +1592,7 @@ function buildTradeAnalyzer() {
     html += '<option value="' + id + '">' + (t.name || t.shortName || id) + '</option>';
   });
   html += '</select></div>';
+  html += '<div id="trade-pos-a"></div>';
   html += '<div class="trade-roster-list" id="trade-roster-a"><div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Select a team above</div></div>';
   html += '</div>';
 
@@ -1606,6 +1607,7 @@ function buildTradeAnalyzer() {
     html += '<option value="' + id + '">' + (t.name || t.shortName || id) + '</option>';
   });
   html += '</select></div>';
+  html += '<div id="trade-pos-b"></div>';
   html += '<div class="trade-roster-list" id="trade-roster-b"><div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Select a team above</div></div>';
   html += '</div>';
 
@@ -1668,9 +1670,51 @@ window.showTradeTab = function(tab, btn) {
 window.selectTradeTeam = function(side, teamId) {
   if (side === 'a') { TA.teamA = teamId; TA.selectedA = []; }
   else              { TA.teamB = teamId; TA.selectedB = []; }
+  renderPositionalRankings(side, teamId);
   renderTeamRoster(side, teamId);
   renderTradeResults();
 };
+
+function renderPositionalRankings(side, teamId) {
+  var el = document.getElementById('trade-pos-' + side);
+  if (!el) return;
+  if (!teamId) { el.innerHTML = ''; return; }
+
+  var groups = ['Infield','Outfield','SP','RP'];
+
+  // League average per group
+  var leagueAvg = {};
+  groups.forEach(function(g) {
+    var gp = TA.players.filter(function(p) { return p.group === g; });
+    leagueAvg[g] = gp.length ? gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length : 0.5;
+  });
+
+  // This team's average per group
+  var teamPlayers = TA.players.filter(function(p) { return p.ftId === teamId; });
+  var html = '<div style="display:flex;gap:6px;padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap">';
+
+  groups.forEach(function(g) {
+    var gp = teamPlayers.filter(function(p) { return p.group === g; });
+    if (!gp.length) return;
+    var avg = gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length;
+    var diff = avg - leagueAvg[g];
+    var pct  = Math.round(avg * 100);
+    var col  = ratingColor(avg);
+    var sign = diff >= 0 ? '+' : '';
+    var diffRounded = Math.round(diff * 100);
+
+    html += '<div style="display:flex;flex-direction:column;align-items:center;min-width:52px">';
+    html += '<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:2px">' + g + '</div>';
+    html += '<div style="font-size:14px;font-weight:600;color:' + col + '">' + pct + '</div>';
+    html += '<div style="font-size:10px;color:' + (diff>=0?'var(--accent)':'var(--danger)') + '">' + sign + diffRounded + '</div>';
+    html += '<div style="width:44px;height:3px;background:var(--border);border-radius:2px;margin-top:2px">';
+    html += '<div style="width:' + pct + '%;height:100%;border-radius:2px;background:' + col + '"></div></div>';
+    html += '</div>';
+  });
+
+  html += '</div>';
+  el.innerHTML = html;
+}
 
 function ratingColor(r) {
   if (r >= 0.7) return '#2d5a3d';
@@ -1700,7 +1744,15 @@ function renderTeamRoster(side, teamId) {
   teamPlayers.forEach(function(p) {
     if (p.group !== currentGroup) {
       currentGroup = p.group;
-      html += '<div style="padding:6px 14px 3px;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent2);background:var(--bg);border-bottom:1px solid var(--border)">' + (currentGroup || 'Other') + '</div>';
+      // Group avg for this team
+      var groupPeers = teamPlayers.filter(function(q) { return q.group === currentGroup; });
+      var groupAvg   = groupPeers.reduce(function(s,q){return s+q.overallRating;},0)/groupPeers.length;
+      var groupPct   = Math.round(groupAvg*100);
+      var gc         = ratingColor(groupAvg);
+      html += '<div style="padding:5px 14px;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent2);background:var(--bg);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">';
+      html += '<span>' + (currentGroup || 'Other') + '</span>';
+      html += '<span style="font-weight:600;color:' + gc + '">' + groupPct + 'th pct avg</span>';
+      html += '</div>';
     }
 
     var isSelected = selected.indexOf(p.name) !== -1;
