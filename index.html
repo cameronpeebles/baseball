@@ -82,6 +82,39 @@ td.neg { color: #c0392b; font-weight: 500; }
 .joe-info { background: var(--accent-light); border: 1px solid #c8ddd0; border-radius: var(--radius); padding: 12px 16px; font-size: 12px; color: #2d5a3d; line-height: 1.7; margin-bottom: 20px; }
 .joe-info strong { font-weight: 500; }
 .joe-heatmap { overflow-x: auto; padding: 4px 0; }
+/* Dashboard */
+.dash-team-select { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+.dash-select { border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 14px; font-family: var(--font-body); font-size: 14px; font-weight: 500; background: var(--surface); color: var(--text); outline: none; cursor: pointer; min-width: 220px; }
+.dash-select:focus { border-color: var(--accent); }
+.dash-metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 20px; }
+@media (max-width: 700px) { .dash-metric-grid { grid-template-columns: repeat(2,1fr); } }
+.dash-metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.dash-metric-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 6px; }
+.dash-metric-value { font-size: 26px; font-weight: 600; line-height: 1; }
+.dash-metric-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.dash-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+@media (max-width: 900px) { .dash-two-col { grid-template-columns: 1fr; } }
+.dash-pos-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; padding: 16px; }
+@media (max-width: 700px) { .dash-pos-grid { grid-template-columns: repeat(2,1fr); } }
+.dash-pos-card { border-radius: var(--radius); padding: 12px 14px; text-align: center; }
+.dash-pos-card .pos-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; opacity: 0.8; }
+.dash-pos-card .pos-pct { font-size: 28px; font-weight: 700; line-height: 1; }
+.dash-pos-card .pos-diff { font-size: 11px; margin-top: 3px; opacity: 0.85; }
+.dash-pos-card .pos-count { font-size: 10px; margin-top: 2px; opacity: 0.65; }
+.dash-cat-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+.dash-cat-row:last-child { border-bottom: none; }
+.dash-cat-name { font-size: 12px; font-weight: 500; width: 44px; flex-shrink: 0; }
+.dash-cat-bar-wrap { flex: 1; height: 6px; background: var(--border); border-radius: 3px; position: relative; }
+.dash-cat-bar { height: 100%; border-radius: 3px; }
+.dash-cat-val { font-size: 12px; font-weight: 500; width: 54px; text-align: right; flex-shrink: 0; }
+.dash-cat-rank { font-size: 11px; color: var(--muted); width: 36px; text-align: right; flex-shrink: 0; }
+.dash-schedule-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.dash-schedule-row:last-child { border-bottom: none; }
+.dash-opp { font-weight: 500; }
+.dash-pred { font-size: 12px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+.dash-pred.win  { background: var(--accent-light); color: var(--accent); }
+.dash-pred.lose { background: #fef3e2; color: #b7791f; }
+.dash-pred.even { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
 .joe-heatmap table { border-collapse: separate; border-spacing: 3px; font-size: 12px; }
 .joe-heatmap th { background: none; border: none; padding: 5px 8px; font-size: 11px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
 .joe-heatmap th.left { text-align: left; min-width: 130px; }
@@ -170,7 +203,8 @@ td.neg { color: #c0392b; font-weight: 500; }
 </header>
 
 <nav>
-  <button class="active" onclick="showPage('standings',this)">Standings</button>
+  <button class="active" onclick="showPage('dashboard',this)">Dashboard</button>
+  <button onclick="showPage('standings',this)">Standings</button>
   <button onclick="showPage('season',this)">Season Stats</button>
   <button onclick="showPage('combined',this)">Combined</button>
   <button onclick="showPage('hitting',this)">Hitting</button>
@@ -185,7 +219,13 @@ td.neg { color: #c0392b; font-weight: 500; }
 
 <main>
 
-  <div class="page active" id="page-standings">
+  <div class="page active" id="page-dashboard">
+    <div class="page-title">Dashboard</div>
+    <div class="page-subtitle">Your team at a glance — select your team to get started.</div>
+    <div id="dashboard-body"><div class="loading">Loading...</div></div>
+  </div>
+
+  <div class="page" id="page-standings">
     <div class="page-title">Standings</div>
     <div class="page-subtitle">Overall league standings</div>
     <div id="standings-body"><div class="loading">Loading...</div></div>
@@ -348,6 +388,7 @@ var zRendered = false;
 var joeRendered = false;
 var matchupRendered = false;
 var tradeRendered = false;
+var dashboardBuilt = false;
 
 function loadJSON(f) {
   return fetch(BASE + f + '?t=' + Date.now()).then(function(r) {
@@ -361,6 +402,7 @@ function showPage(name, btn) {
   document.querySelectorAll('nav button').forEach(function(b) { b.classList.remove('active'); });
   document.getElementById('page-' + name).classList.add('active');
   btn.classList.add('active');
+  if (name === 'dashboard') renderDashboard();
   if (name === 'analytics') renderAnalytics();
   if (name === 'zscores') renderZScores();
   if (name === 'joe') renderJOEFactor();
@@ -393,6 +435,7 @@ function init() {
     S.rosterRaw = rosters;
     buildRosterSelector();
     computeZScores();
+    renderDashboard();
   }).catch(function(e) {
     console.error(e);
     ['standings-body','season-body','combined-body','hit-table','pit-table','roster-body'].forEach(function(id) {
@@ -1912,8 +1955,7 @@ function renderTeamRoster(side, teamId) {
   var teamPlayers = TA.players
     .filter(function(p) { return p.ftId === teamId; })
     .sort(function(a, b) {
-      // Sort by group then by rating desc
-      var ga = a.group || 'z', gb = b.group || 'z';
+      var ga = a.bestGroup || a.group || 'z', gb = b.bestGroup || b.group || 'z';
       if (ga !== gb) return ga.localeCompare(gb);
       return b.overallRating - a.overallRating;
     });
@@ -1924,10 +1966,11 @@ function renderTeamRoster(side, teamId) {
 
   var currentGroup = null;
   teamPlayers.forEach(function(p) {
-    if (p.group !== currentGroup) {
-      currentGroup = p.group;
-      // Group avg for this team
-      var groupPeers = teamPlayers.filter(function(q) { return q.group === currentGroup; });
+    var pGroup = p.bestGroup || p.group;
+    if (pGroup !== currentGroup) {
+      currentGroup = pGroup;
+      // Group avg for this team using bestGroup
+      var groupPeers = teamPlayers.filter(function(q) { return (q.bestGroup||q.group) === currentGroup; });
       var groupAvg   = groupPeers.reduce(function(s,q){return s+q.overallRating;},0)/groupPeers.length;
       var groupPct   = Math.round(groupAvg*100);
       var gc         = ratingColor(groupAvg);
@@ -2211,7 +2254,7 @@ window.showTradeSuggestions = function(myTeamId) {
 
   // My best players in strong groups — candidates to offer
   var myOfferCandidates = myPlayers
-    .filter(function(p) { return myStrongGroups.indexOf(p.group) !== -1; })
+    .filter(function(p) { return myStrongGroups.indexOf(p.bestGroup) !== -1; })
     .sort(function(a,b) { return b.overallRating - a.overallRating; })
     .slice(0, 10);
 
@@ -2254,9 +2297,8 @@ window.showTradeSuggestions = function(myTeamId) {
       var bestSendScore = -Infinity;
 
       myOfferCandidates.forEach(function(offered) {
-        if (oppWeakGroups.indexOf(offered.group) === -1) return; // they don't need this group
-        // How much does this player help them?
-        var theirDelta = offered.overallRating - oppGroupAvg[offered.group];
+        if (oppWeakGroups.indexOf(offered.bestGroup) === -1) return; // they don't need this group
+        var theirDelta = offered.overallRating - oppGroupAvg[offered.bestGroup];
         if (theirDelta > bestSendScore) {
           bestSendScore = theirDelta;
           bestSend = offered;
@@ -2266,10 +2308,10 @@ window.showTradeSuggestions = function(myTeamId) {
       if (!bestSend) return; // nothing to offer that helps them
 
       // Calculate net benefit for both sides
-      var myNet    = receive.overallRating - myGroupAvg[weakGroup]       // I gain above my avg
-                   - (bestSend.overallRating - myGroupAvg[bestSend.group]); // I lose above my avg
-      var theirNet = bestSend.overallRating - oppGroupAvg[bestSend.group]  // they gain above their avg
-                   - (receive.overallRating - oppGroupAvg[weakGroup]);       // they lose above their avg
+      var myNet    = receive.overallRating - myGroupAvg[weakGroup]
+                   - (bestSend.overallRating - myGroupAvg[bestSend.bestGroup]);
+      var theirNet = bestSend.overallRating - oppGroupAvg[bestSend.bestGroup]
+                   - (receive.overallRating - oppGroupAvg[weakGroup]);
 
       var mutualScore = myNet + theirNet; // higher = better for both sides combined
 
@@ -2396,6 +2438,367 @@ window.showTradeSuggestions = function(myTeamId) {
     console.error('showTradeSuggestions error:', e);
   }
 };
+
+// ── Dashboard ────────────────────────────────────────────────────────────────
+
+var DB = { teamId: null };
+
+function renderDashboard() {
+  var el = document.getElementById('dashboard-body');
+  if (!el) return;
+
+  var teamIds = Object.keys(S.teamInfo);
+  if (!teamIds.length) {
+    el.innerHTML = '<div class="loading">Loading...</div>';
+    return;
+  }
+
+  // Build team selector
+  var html = '<div class="dash-team-select">';
+  html += '<span style="font-size:13px;font-weight:500;color:var(--muted)">Select your team:</span>';
+  html += '<select class="dash-select" id="dash-team-sel" onchange="buildDashboard(this.value)">';
+  html += '<option value="">— Choose your team —</option>';
+  teamIds.forEach(function(id) {
+    var t = S.teamInfo[id];
+    html += '<option value="' + id + '"' + (DB.teamId === id ? ' selected' : '') + '>' + (t.name || t.shortName || id) + '</option>';
+  });
+  html += '</select></div>';
+  html += '<div id="dashboard-content"></div>';
+  el.innerHTML = html;
+
+  if (DB.teamId) buildDashboard(DB.teamId);
+}
+
+window.buildDashboard = function(teamId) {
+  DB.teamId = teamId;
+  var el = document.getElementById('dashboard-content');
+  if (!el || !teamId) return;
+  el.innerHTML = '<div class="loading">Building dashboard...</div>';
+
+  // Wait for all data sources to be ready
+  function tryBuild() {
+    var hasPlayers = TA.players && TA.players.length > 0;
+    var hasJOE     = window._joeByTeamWeek && window._joeByTeamWeek.length > 0;
+    var hasMatch   = window._mpPredictions && window._mpPredictions.length > 0;
+
+    if (!hasPlayers) {
+      // Trigger trade analyzer data load if not done
+      if (!tradeRendered) { tradeRendered = true; buildTradeAnalyzer(); }
+      setTimeout(tryBuild, 400); return;
+    }
+    if (!hasJOE) {
+      if (!joeRendered) renderJOEFactor();
+      setTimeout(tryBuild, 400); return;
+    }
+    if (!hasMatch) {
+      if (!matchupRendered) renderMatchPredictions();
+      setTimeout(tryBuild, 400); return;
+    }
+    assembleDashboard(teamId, el);
+  }
+  tryBuild();
+};
+
+function assembleDashboard(teamId, el) {
+  var ti        = S.teamInfo[teamId] || {};
+  var teamName  = ti.name || ti.shortName || 'Your Team';
+  var logo      = ti.logoUrl512 || '';
+  var groups    = ['Infield','Outfield','SP','RP'];
+
+  // ── 1. Standings data ────────────────────────────────────────────────────
+  var standingsRow = null;
+  var allTeamRows  = [];
+  var tables = (S.seasonData && S.seasonData.data && S.seasonData.data.tableList) || [];
+  var ptTable = null;
+  for (var i = 0; i < tables.length; i++) {
+    if ((tables[i].caption || '').toLowerCase().indexOf('point total') !== -1) { ptTable = tables[i]; break; }
+  }
+  if (ptTable) {
+    var varHeaders = (ptTable.header && ptTable.header.cells) || [];
+    var hIdx = {};
+    varHeaders.forEach(function(h, i) {
+      if (h.key) hIdx[h.key.toUpperCase()] = i;
+      if (h.shortName) hIdx[h.shortName.toUpperCase()] = i;
+    });
+    var ptsIdx = hIdx['PTS'] != null ? hIdx['PTS'] : 0;
+    (ptTable.rows || []).forEach(function(row, rank) {
+      var fc = row.fixedCells || [], cells = row.cells || [];
+      var id = (fc[1] && fc[1].teamId) || '';
+      var name = (S.teamInfo[id] && S.teamInfo[id].shortName) || (fc[1] && fc[1].content) || '';
+      var pts  = parseFloat(cells[ptsIdx] && cells[ptsIdx].content) || 0;
+      var BAT_CATS_D = ['R','HR','RBI','SB','AVG'];
+      var PIT_CATS_D = ['K','W','SVH3','SV','ERA','WHIP'];
+      var catVals = {};
+      BAT_CATS_D.concat(PIT_CATS_D).forEach(function(k) {
+        var ci = hIdx[k]; if (ci == null) return;
+        var v = parseFloat(cells[ci] && cells[ci].content);
+        if (!isNaN(v)) catVals[k] = v;
+      });
+      var rowObj = { id: id, name: name, pts: pts, rank: rank+1, catVals: catVals };
+      allTeamRows.push(rowObj);
+      if (id === teamId) standingsRow = rowObj;
+    });
+  }
+
+  // ── 2. Positional ratings ────────────────────────────────────────────────
+  var leagueAvg = {};
+  groups.forEach(function(g) {
+    var gp = TA.players.filter(function(p) { return p.bestGroup === g; });
+    leagueAvg[g] = gp.length ? gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length : 0.5;
+  });
+  var myPlayers = TA.players.filter(function(p) { return p.ftId === teamId; });
+  var posData = {};
+  groups.forEach(function(g) {
+    var gp  = myPlayers.filter(function(p) { return (p.bestGroup||p.group) === g; });
+    var avg = gp.length ? gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length : null;
+    posData[g] = { avg: avg, count: gp.length, diff: avg != null ? avg - leagueAvg[g] : null };
+  });
+
+  // ── 3. JOE Factor luck ───────────────────────────────────────────────────
+  var myJOEWeeks = (window._joeByTeamWeek || []).filter(function(r) { return r.team === teamName && r.actual != null; });
+  var avgLuck = myJOEWeeks.length ? myJOEWeeks.reduce(function(s,r){return s+(r.luck||0);},0)/myJOEWeeks.length : null;
+  var avgActual = myJOEWeeks.length ? myJOEWeeks.reduce(function(s,r){return s+r.actual;},0)/myJOEWeeks.length : null;
+  var avgCase   = myJOEWeeks.length ? myJOEWeeks.reduce(function(s,r){return s+r.avgCase;},0)/myJOEWeeks.length : null;
+
+  // ── 4. Upcoming schedule ─────────────────────────────────────────────────
+  var upcomingMatches = (window._mpPredictions || []).filter(function(m) {
+    return (m.away === teamName || m.home === teamName);
+  }).sort(function(a,b){return a.period - b.period;}).slice(0, 5);
+
+  // ── 5. Category breakdown vs league avg ─────────────────────────────────
+  var CAT_DISPLAY = [
+    {k:'R',   label:'R',    hi:true},
+    {k:'HR',  label:'HR',   hi:true},
+    {k:'RBI', label:'RBI',  hi:true},
+    {k:'SB',  label:'SB',   hi:true},
+    {k:'AVG', label:'AVG',  hi:true},
+    {k:'K',   label:'K',    hi:true},
+    {k:'W',   label:'W',    hi:true},
+    {k:'SV',  label:'SV',   hi:true},
+    {k:'ERA', label:'ERA',  hi:false},
+    {k:'WHIP',label:'WHIP', hi:false}
+  ];
+  var catLeagueAvg = {};
+  CAT_DISPLAY.forEach(function(c) {
+    var vals = allTeamRows.map(function(r){return r.catVals[c.k];}).filter(function(v){return v!=null;});
+    catLeagueAvg[c.k] = vals.length ? vals.reduce(function(a,b){return a+b;})/vals.length : 0;
+  });
+  var myCatVals = standingsRow ? standingsRow.catVals : {};
+  var catRanks = {};
+  CAT_DISPLAY.forEach(function(c) {
+    if (myCatVals[c.k] == null) return;
+    var sorted = allTeamRows.filter(function(r){return r.catVals[c.k]!=null;})
+      .sort(function(a,b){ return c.hi ? b.catVals[c.k]-a.catVals[c.k] : a.catVals[c.k]-b.catVals[c.k]; });
+    catRanks[c.k] = sorted.findIndex(function(r){return r.id===teamId;}) + 1;
+  });
+
+  // ── 6. Trade suggestions (top 3 overall) ────────────────────────────────
+  var myGroupAvg = {};
+  groups.forEach(function(g) {
+    var gp = myPlayers.filter(function(p) { return (p.bestGroup||p.group) === g; });
+    myGroupAvg[g] = gp.length ? gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length : 0.5;
+  });
+  var myWeakGroups = groups.filter(function(g){ return posData[g].avg != null && posData[g].avg < leagueAvg[g]; })
+    .sort(function(a,b){ return (posData[a].avg||0)-(posData[b].avg||0); });
+  var myStrongGroups = groups.filter(function(g){ return posData[g].avg != null && posData[g].avg >= leagueAvg[g]; });
+  var myOffers = myPlayers.filter(function(p){ return myStrongGroups.indexOf(p.bestGroup||p.group)!==-1; })
+    .sort(function(a,b){return b.overallRating-a.overallRating;}).slice(0,8);
+
+  var tradeSuggestions = [];
+  Object.keys(S.teamInfo).forEach(function(oppId) {
+    if (oppId === teamId) return;
+    var oppName = (S.teamInfo[oppId]||{}).name || oppId;
+    var oppPlayers = TA.players.filter(function(p){return p.ftId===oppId;});
+    var oppGroupAvg = {};
+    groups.forEach(function(g){
+      var gp = oppPlayers.filter(function(p){return (p.bestGroup||p.group)===g;});
+      oppGroupAvg[g] = gp.length ? gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length : 0.5;
+    });
+    var oppWeak = groups.filter(function(g){return oppGroupAvg[g]<leagueAvg[g];});
+    myWeakGroups.forEach(function(wg) {
+      var candidates = oppPlayers.filter(function(p){return (p.bestGroup||p.group)===wg&&p.overallRating>myGroupAvg[wg];})
+        .sort(function(a,b){return b.overallRating-a.overallRating;});
+      if (!candidates.length) return;
+      var receive = candidates[0];
+      var bestSend = null, bestScore = -Infinity;
+      myOffers.forEach(function(off){
+        if (oppWeak.indexOf(off.bestGroup||off.group)===-1) return;
+        var d = off.overallRating-(oppGroupAvg[off.bestGroup||off.group]||0);
+        if (d>bestScore){bestScore=d;bestSend=off;}
+      });
+      if (!bestSend) return;
+      var myNet    = (receive.overallRating-myGroupAvg[wg]) - (bestSend.overallRating-myGroupAvg[bestSend.bestGroup||bestSend.group]);
+      var theirNet = (bestSend.overallRating-oppGroupAvg[bestSend.bestGroup||bestSend.group]) - (receive.overallRating-oppGroupAvg[wg]);
+      tradeSuggestions.push({oppName:oppName,receive:receive,send:bestSend,myNet:myNet,theirNet:theirNet,mutual:myNet>0&&theirNet>0,weakGroup:wg});
+    });
+  });
+  tradeSuggestions.sort(function(a,b){return (b.myNet+b.theirNet)-(a.myNet+a.theirNet);});
+
+  // ── 7. Top waiver targets ────────────────────────────────────────────────
+  var waiverTargets = (TA.faPlayers||[]).filter(function(p){
+    return myWeakGroups.indexOf(p.bestGroup||p.group)!==-1;
+  }).sort(function(a,b){return b.overallRating-a.overallRating;}).slice(0,5);
+
+  // ── BUILD HTML ───────────────────────────────────────────────────────────
+  var html = '';
+
+  // Team header
+  html += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">';
+  if (logo) html += '<img src="' + logo + '" style="width:52px;height:52px;border-radius:50%;border:1px solid var(--border)" alt="" onerror="this.style.display=\'none\'">';
+  html += '<div>';
+  html += '<div style="font-family:var(--font-display);font-size:22px">' + teamName + '</div>';
+  if (standingsRow) html += '<div style="color:var(--muted);font-size:13px">#' + standingsRow.rank + ' in league · ' + standingsRow.pts + ' pts</div>';
+  html += '</div></div>';
+
+  // Key metrics row
+  var luckStr = avgLuck != null ? (avgLuck >= 0 ? '+' : '') + avgLuck.toFixed(3) : '—';
+  var luckCol = avgLuck == null ? 'var(--text)' : avgLuck > 0.04 ? '#2d5a3d' : avgLuck < -0.04 ? '#c0392b' : 'var(--muted)';
+  var luckLabel = avgLuck == null ? '—' : avgLuck > 0.04 ? 'Lucky' : avgLuck < -0.04 ? 'Unlucky' : 'Even';
+  html += '<div class="dash-metric-grid">';
+  if (standingsRow) {
+    html += '<div class="dash-metric"><div class="dash-metric-label">Record</div><div class="dash-metric-value" style="font-size:18px">' + (standingsRow.pts||'—') + ' pts</div><div class="dash-metric-sub">Rank #' + standingsRow.rank + ' of ' + allTeamRows.length + '</div></div>';
+  }
+  html += '<div class="dash-metric"><div class="dash-metric-label">JOE Factor luck</div><div class="dash-metric-value" style="color:' + luckCol + ';font-size:20px">' + luckStr + '</div><div class="dash-metric-sub">' + luckLabel + ' · ' + myJOEWeeks.length + ' weeks</div></div>';
+  html += '<div class="dash-metric"><div class="dash-metric-label">Avg win%</div><div class="dash-metric-value" style="font-size:20px">' + (avgActual!=null?(avgActual*100).toFixed(1)+'%':'—') + '</div><div class="dash-metric-sub">Expected: ' + (avgCase!=null?(avgCase*100).toFixed(1)+'%':'—') + '</div></div>';
+  var overallPos = groups.map(function(g){return posData[g].avg||0;}).filter(function(v){return v>0;});
+  var overallAvg = overallPos.length ? overallPos.reduce(function(s,v){return s+v;})/overallPos.length : 0;
+  html += '<div class="dash-metric"><div class="dash-metric-label">Overall roster</div><div class="dash-metric-value" style="color:' + ratingColor(overallAvg) + ';font-size:20px">' + Math.round(overallAvg*100) + 'th pct</div><div class="dash-metric-sub">Across all positions</div></div>';
+  html += '</div>';
+
+  // Positional strength cards
+  html += '<div class="card" style="margin-bottom:20px">';
+  html += '<div class="card-header"><span class="card-title">Positional strength</span></div>';
+  html += '<div class="dash-pos-grid">';
+  groups.forEach(function(g) {
+    var d = posData[g];
+    if (d.avg == null) return;
+    var c = posHeatColorDash(d.avg);
+    var sign = d.diff >= 0 ? '+' : '';
+    html += '<div class="dash-pos-card" style="background:' + c.bg + ';color:' + c.fg + '">';
+    html += '<div class="pos-label">' + g + '</div>';
+    html += '<div class="pos-pct">' + Math.round(d.avg*100) + '</div>';
+    html += '<div class="pos-diff">' + sign + Math.round(d.diff*100) + ' vs league</div>';
+    html += '<div class="pos-count">' + d.count + ' rostered</div>';
+    html += '</div>';
+  });
+  html += '</div></div>';
+
+  html += '<div class="dash-two-col">';
+
+  // Category breakdown
+  html += '<div class="card"><div class="card-header"><span class="card-title">Category breakdown vs league avg</span></div><div class="card-body" style="padding:12px 20px">';
+  var maxCatVal = {};
+  CAT_DISPLAY.forEach(function(c) {
+    var vals = allTeamRows.map(function(r){return r.catVals[c.k];}).filter(function(v){return v!=null;});
+    maxCatVal[c.k] = vals.length ? Math.max.apply(null,vals) : 1;
+  });
+  CAT_DISPLAY.forEach(function(c) {
+    var myVal  = myCatVals[c.k];
+    var lgVal  = catLeagueAvg[c.k];
+    var rank   = catRanks[c.k];
+    if (myVal == null) return;
+    var isGood = c.hi ? myVal >= lgVal : myVal <= lgVal;
+    var barPct = Math.min(100, Math.round((myVal / (maxCatVal[c.k]||1))*100));
+    var barCol = isGood ? '#2d5a3d' : '#c0392b';
+    var dispVal = c.k==='AVG'?myVal.toFixed(3):(c.k==='ERA'||c.k==='WHIP')?myVal.toFixed(2):Math.round(myVal);
+    var lgDisp  = c.k==='AVG'?lgVal.toFixed(3):(c.k==='ERA'||c.k==='WHIP')?lgVal.toFixed(2):Math.round(lgVal);
+    html += '<div class="dash-cat-row">';
+    html += '<span class="dash-cat-name">' + c.label + '</span>';
+    html += '<div class="dash-cat-bar-wrap"><div class="dash-cat-bar" style="width:' + barPct + '%;background:' + barCol + '"></div></div>';
+    html += '<span class="dash-cat-val" style="color:' + barCol + '">' + dispVal + '</span>';
+    html += '<span class="dash-cat-rank" title="League avg: ' + lgDisp + '">#' + rank + '</span>';
+    html += '</div>';
+  });
+  html += '</div></div>';
+
+  // Upcoming schedule
+  html += '<div class="card"><div class="card-header"><span class="card-title">Upcoming schedule</span></div>';
+  if (!upcomingMatches.length) {
+    html += '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No upcoming matches found</div>';
+  } else {
+    upcomingMatches.forEach(function(m) {
+      var isAway   = m.away === teamName;
+      var opp      = isAway ? m.home : m.away;
+      var r        = m.result;
+      var myPts    = isAway ? r.awayPts : r.homePts;
+      var oppPts   = isAway ? r.homePts : r.awayPts;
+      var predWin  = myPts > oppPts;
+      var predLose = myPts < oppPts;
+      var predCls  = predWin ? 'win' : predLose ? 'lose' : 'even';
+      var predLbl  = predWin ? 'Predicted W' : predLose ? 'Predicted L' : 'Toss-up';
+      html += '<div class="dash-schedule-row">';
+      html += '<span style="font-size:11px;color:var(--muted);width:28px">P' + m.period + '</span>';
+      html += '<span class="dash-opp">' + (isAway ? '@ ' : 'vs ') + opp + '</span>';
+      html += '<span style="font-size:12px;color:var(--muted)">' + myPts.toFixed(1) + '–' + oppPts.toFixed(1) + '</span>';
+      html += '<span class="dash-pred ' + predCls + '">' + predLbl + '</span>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  html += '</div>'; // dash-two-col
+
+  html += '<div class="dash-two-col">';
+
+  // Trade suggestions
+  html += '<div class="card"><div class="card-header"><span class="card-title">Top trade suggestions</span></div>';
+  if (!tradeSuggestions.length) {
+    html += '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No trade opportunities found</div>';
+  } else {
+    tradeSuggestions.slice(0,4).forEach(function(s) {
+      var signMy = s.myNet>=0?'+':'';
+      html += '<div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap">';
+      html += '<div style="flex:1;min-width:0">';
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">';
+      if (s.mutual) html += '<span style="font-size:10px;background:var(--accent-light);color:var(--accent);padding:1px 6px;border-radius:8px;font-weight:500">Mutual</span>';
+      html += '<span style="font-size:12px;color:var(--muted)">w/ ' + s.oppName + '</span></div>';
+      html += '<div style="font-size:13px"><strong>Get:</strong> ' + s.receive.name + ' <span style="color:var(--muted);font-size:11px">(' + (s.weakGroup) + ', ' + Math.round(s.receive.overallRating*100) + 'th pct)</span></div>';
+      html += '<div style="font-size:13px"><strong>Send:</strong> ' + s.send.name + ' <span style="color:var(--muted);font-size:11px">(' + (s.send.bestGroup||s.send.group) + ', ' + Math.round(s.send.overallRating*100) + 'th pct)</span></div>';
+      html += '</div>';
+      html += '<span style="font-size:13px;font-weight:600;color:' + (s.myNet>0?'#2d5a3d':'#c0392b') + '">' + signMy + Math.round(s.myNet*100) + '</span>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  // Waiver wire targets
+  html += '<div class="card"><div class="card-header"><span class="card-title">Top waiver targets</span><span style="font-size:12px;color:var(--muted)">For your weak positions</span></div>';
+  if (!waiverTargets.length) {
+    html += '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No free agents found for your weak positions</div>';
+  } else {
+    waiverTargets.forEach(function(p) {
+      var r = p.overallRating;
+      var cats = p.type==='bat' ? BAT_CATS : PIT_CATS;
+      var statStr = cats.slice(0,4).map(function(c){
+        var v=p.stats[c]; if(v==null)return c+':—';
+        if(c==='AVG')return c+':'+v.toFixed(3);
+        if(c==='ERA'||c==='WHIP')return c+':'+v.toFixed(2);
+        return c+':'+Math.round(v);
+      }).join('  ');
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--border)">';
+      html += p.hs ? '<img class="player-hs" src="' + p.hs + '" alt="" onerror="this.style.display=\'none\'">' : '';
+      html += '<div style="flex:1;min-width:0">';
+      html += '<div style="font-size:13px;font-weight:500">' + p.name + '</div>';
+      html += '<div style="font-size:11px;color:var(--muted)"><span class="pos-badge">' + primaryPos(p.pos) + '</span> ' + statStr + '</div>';
+      html += '</div>';
+      html += '<div style="text-align:right;flex-shrink:0"><div style="font-size:14px;font-weight:600;color:' + ratingColor(r) + '">' + Math.round(r*100) + '</div><div style="font-size:10px;color:var(--muted)">pct</div></div>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  html += '</div>'; // dash-two-col
+
+  el.innerHTML = html;
+}
+
+function posHeatColorDash(pct) {
+  if (pct >= 0.65) return { bg: '#1e6b3a', fg: '#ffffff' };
+  if (pct >= 0.52) return { bg: '#4a9a68', fg: '#ffffff' };
+  if (pct >= 0.42) return { bg: '#a8d5b5', fg: '#1a3d26' };
+  if (pct >= 0.30) return { bg: '#f5c4b3', fg: '#6b2a1a' };
+  return               { bg: '#c0392b',  fg: '#ffffff' };
+}
 
 init();
 </script>
