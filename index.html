@@ -1944,6 +1944,7 @@ window.showFAFixer = function(teamId) {
 window.showTradeSuggestions = function(myTeamId) {
   var el = document.getElementById('suggestions-results-area');
   if (!myTeamId) { el.innerHTML = ''; return; }
+  try {
 
   var myName = (S.teamInfo[myTeamId] || {}).name || 'Your team';
   var myPlayers = TA.players.filter(function(p) { return p.ftId === myTeamId; });
@@ -2046,7 +2047,8 @@ window.showTradeSuggestions = function(myTeamId) {
         myNet:       myNet,
         theirNet:    theirNet,
         mutualScore: mutualScore,
-        weakGroup:   weakGroup
+        weakGroup:   weakGroup,
+        oppGroupAvg: oppGroupAvg
       });
     });
   });
@@ -2143,7 +2145,7 @@ window.showTradeSuggestions = function(myTeamId) {
       html += '<div class="trade-chip-detail"><span class="pos-badge">' + primaryPos(s.send.pos) + '</span>';
       html += s.send.group + ' · ' + Math.round(s.send.overallRating*100) + 'th pct</div>';
       html += '</div>';
-      var sendImpact = Math.round((s.send.overallRating - (byTeam[s.oppTeamId] ? oppGroupAvg : leagueGroupAvg)[s.send.group]) * 100);
+      var sendImpact = Math.round((s.send.overallRating - (s.oppGroupAvg[s.send.group] || leagueGroupAvg[s.send.group])) * 100);
       html += '<span class="trade-chip-delta up">+' + Math.max(0, Math.round(s.theirNet*100)) + '</span>';
       html += '</div></div>';
 
@@ -2155,6 +2157,10 @@ window.showTradeSuggestions = function(myTeamId) {
   });
 
   el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<div class="error-msg">Error generating suggestions: ' + e.message + '</div>';
+    console.error('showTradeSuggestions error:', e);
+  }
 };
 
 init();
