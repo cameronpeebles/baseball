@@ -263,6 +263,13 @@ td.neg { color: #c0392b; font-weight: 500; }
         <div class="card-body"><div class="chart-wrap-sm"><canvas id="chart-pit-pts"></canvas></div></div>
       </div>
     </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Positional strength heatmap</span>
+        <span style="font-size:12px;color:var(--muted)">Percentile vs all rostered players at same position. Green = strength, red = weakness.</span>
+      </div>
+      <div id="analytics-pos-heatmap"><div class="loading">Loading player ratings...</div></div>
+    </div>
   </div>
 
   <div class="page" id="page-zscores">
@@ -846,6 +853,121 @@ function renderAnalytics() {
   new Chart(document.getElementById('chart-points'), {type:'bar', data:{labels:sorted.map(function(s){return s.t;}), datasets:[{label:'Total Points', data:sorted.map(function(s){return s.pts;}), backgroundColor:sorted.map(function(s){return s.color;}), borderColor:sorted.map(function(s){return s.color;}), borderWidth:1, borderRadius:4}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(ctx){return ' '+ctx.parsed.y+' pts';}}}}, scales:{x:{grid:{display:false}}, y:{beginAtZero:false, grid:{color:'#e4e0d8'}, title:{display:true, text:'Points', font:{size:11}}}}}});
   new Chart(document.getElementById('chart-hit-pts'), {type:'bar', data:{labels:sorted.map(function(s){return s.t;}), datasets:[{label:'Hitting Points', data:sorted.map(function(s){return s.hPts;}), backgroundColor:'#3a7a52', borderRadius:4}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{display:false}}, y:{beginAtZero:false, grid:{color:'#e4e0d8'}}}}});
   new Chart(document.getElementById('chart-pit-pts'), {type:'bar', data:{labels:sorted.map(function(s){return s.t;}), datasets:[{label:'Pitching Points', data:sorted.map(function(s){return s.pPts;}), backgroundColor:'#c8a96e', borderRadius:4}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{display:false}}, y:{beginAtZero:false, grid:{color:'#e4e0d8'}}}}});
+
+  // Render positional heatmap — poll until player ratings are ready
+  function tryRenderPosHeatmap() {
+    if (TA.players && TA.players.length) {
+      renderPosHeatmap();
+    } else {
+      setTimeout(tryRenderPosHeatmap, 500);
+    }
+  }
+  tryRenderPosHeatmap();
+}
+
+function renderPosHeatmap() {
+  var el = document.getElementById('analytics-pos-heatmap');
+  if (!el) return;
+
+  var groups = ['Infield','Outfield','SP','RP'];
+
+  // League average per group
+  var leagueAvg = {};
+  groups.forEach(function(g) {
+    var gp = TA.players.filter(function(p) { return p.group === g; });
+    leagueAvg[g] = gp.length ? gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length : 0.5;
+  });
+
+  // Build per-team data sorted by overall avg descending
+  var teamIds = Object.keys(S.teamInfo);
+  var teamData = teamIds.map(function(id) {
+    var ti = S.teamInfo[id];
+    var name = ti.shortName || ti.name || id;
+    var logo = ti.logoUrl512 || '';
+    var groupData = {};
+    groups.forEach(function(g) {
+      var gp  = TA.players.filter(function(p) { return p.ftId === id && p.group === g; });
+      var avg = gp.length ? gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length : null;
+      groupData[g] = { avg: avg, count: gp.length };
+    });
+    var allRatings = groups.map(function(g){ return groupData[g].avg; }).filter(function(v){ return v != null; });
+    var overallAvg = allRatings.length ? allRatings.reduce(function(s,v){return s+v;},0)/allRatings.length : 0;
+    return { id: id, name: name, logo: logo, groupData: groupData, overallAvg: overallAvg };
+  }).sort(function(a,b) { return b.overallAvg - a.overallAvg; });
+
+  function posHeatColor(pct) {
+    if (pct == null) return { bg: 'var(--bg)', fg: 'var(--muted)', text: '—' };
+    var p = Math.round(pct * 100);
+    if (pct >= 0.65) return { bg: '#1e6b3a', fg: '#ffffff', text: p + '' };
+    if (pct >= 0.52) return { bg: '#4a9a68', fg: '#ffffff', text: p + '' };
+    if (pct >= 0.42) return { bg: '#a8d5b5', fg: '#1a3d26', text: p + '' };
+    if (pct >= 0.30) return { bg: '#f5c4b3', fg: '#6b2a1a', text: p + '' };
+    return               { bg: '#c0392b',  fg: '#ffffff', text: p + '' };
+  }
+
+  var html = '<div style="overflow-x:auto;padding:4px 0">';
+  html += '<table style="border-collapse:separate;border-spacing:3px;width:100%;font-size:13px">';
+
+  // Header row
+  html += '<thead><tr>';
+  html += '<th style="text-align:left;padding:6px 8px;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);border:none;background:none;min-width:140px">Team</th>';
+  groups.forEach(function(g) {
+    html += '<th style="text-align:center;padding:6px 8px;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);border:none;background:none;min-width:80px">';
+    html += g + '<br><span style="font-size:10px;font-weight:400">league avg: ' + Math.round(leagueAvg[g]*100) + '</span></th>';
+  });
+  html += '<th style="text-align:center;padding:6px 8px;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);border:none;background:none;min-width:70px">Overall</th>';
+  html += '</tr></thead><tbody>';
+
+  teamData.forEach(function(team) {
+    html += '<tr>';
+    // Team cell
+    html += '<td style="padding:4px 8px;border:none;white-space:nowrap">';
+    html += '<div style="display:flex;align-items:center;gap:8px">';
+    if (team.logo) {
+      html += '<img class="team-logo" src="' + team.logo + '" alt="" onerror="this.style.display=\'none\'">';
+    } else {
+      html += '<div class="team-logo-ph">' + (team.name[0]||'?') + '</div>';
+    }
+    html += '<span style="font-size:13px;font-weight:500">' + team.name + '</span></div></td>';
+
+    // Group cells
+    groups.forEach(function(g) {
+      var d    = team.groupData[g];
+      var c    = posHeatColor(d.avg);
+      var diff = d.avg != null ? Math.round((d.avg - leagueAvg[g]) * 100) : null;
+      var diffStr = diff != null ? (diff >= 0 ? '+' : '') + diff : '';
+      html += '<td style="padding:4px;border:none;text-align:center">';
+      html += '<div style="background:' + c.bg + ';color:' + c.fg + ';border-radius:6px;padding:8px 6px">';
+      html += '<div style="font-size:16px;font-weight:600;line-height:1">' + c.text + '</div>';
+      if (diff != null) html += '<div style="font-size:10px;opacity:0.8;margin-top:2px">' + diffStr + ' vs avg</div>';
+      html += '<div style="font-size:10px;opacity:0.7">' + d.count + ' rostered</div>';
+      html += '</div></td>';
+    });
+
+    // Overall cell
+    var oc = posHeatColor(team.overallAvg);
+    html += '<td style="padding:4px;border:none;text-align:center">';
+    html += '<div style="background:' + oc.bg + ';color:' + oc.fg + ';border-radius:6px;padding:8px 6px">';
+    html += '<div style="font-size:16px;font-weight:600;line-height:1">' + Math.round(team.overallAvg*100) + '</div>';
+    html += '</div></td>';
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+
+  // Legend
+  html += '<div style="display:flex;gap:12px;padding:10px 8px 4px;flex-wrap:wrap;font-size:11px;color:var(--muted)">';
+  [{bg:'#1e6b3a',fg:'#fff',label:'65+ Elite'},
+   {bg:'#4a9a68',fg:'#fff',label:'52–64 Above avg'},
+   {bg:'#a8d5b5',fg:'#1a3d26',label:'42–51 Average'},
+   {bg:'#f5c4b3',fg:'#6b2a1a',label:'30–41 Below avg'},
+   {bg:'#c0392b',fg:'#fff',label:'<30 Weak'}
+  ].forEach(function(item) {
+    html += '<span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:' + item.bg + ';flex-shrink:0"></span>' + item.label + '</span>';
+  });
+  html += '</div>';
+
+  el.innerHTML = html;
 }
 
 // ── JOE Factor ──────────────────────────────────────────────────────────────
