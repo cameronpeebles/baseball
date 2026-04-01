@@ -4351,14 +4351,24 @@ window.recalculateFWAR = function() {
   replZ['P'] = sortedPitchers[pitRank - 1] ? sortedPitchers[pitRank - 1].totalZ : 0;
 
   // ── Assign each hitter to their best slot and compute fWAR ───────────────
+  // Priority: assign to the most specific eligible position slot (not UT)
+  // UT is only used as a fallback if no other slot fits, or to compute
+  // a secondary fWAR showing UT value — but Slot display shows specific pos.
+  // Slot priority order: specific positions first, CI/MI second, OF third, UT last
+  var slotPriority = ['C','1B','2B','3B','SS','CI','MI','OF','UT'];
+  var specificSlots = ['C','1B','2B','3B','SS','CI','MI','OF'];
+
   allHitters.forEach(function(p) {
+    // First try to assign to a specific (non-UT) slot
     var bestSlot = null, bestFWAR = -Infinity;
-    hitSlots.forEach(function(slot) {
+    specificSlots.forEach(function(slot) {
       if (!isEligible(p.pos, slot)) return;
       var fw = p.totalZ - replZ[slot];
       if (fw > bestFWAR) { bestFWAR = fw; bestSlot = slot; }
     });
-    p.assignedSlot = bestSlot || 'UT';
+    // Only use UT if player has no specific slot eligibility at all
+    if (!bestSlot) bestSlot = 'UT';
+    p.assignedSlot = bestSlot;
     p.fWAR = parseFloat((p.totalZ - replZ[p.assignedSlot]).toFixed(2));
   });
 
