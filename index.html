@@ -2130,6 +2130,77 @@ function renderTradeResults() {
   html += '</div>';
 
   html += '</div>'; // trade-result-card
+
+  // ── Post-trade positional ratings ─────────────────────────────────────────
+  var groups = ['Infield','Outfield','SP','RP'];
+  var leagueAvg = {};
+  groups.forEach(function(g) {
+    var gp = TA.players.filter(function(p) { return p.bestGroup === g; });
+    leagueAvg[g] = gp.length ? gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length : 0.5;
+  });
+
+  function postTradeRatings(teamId, sendPlayers, receivePlayers) {
+    // Take current roster, remove sent players, add received players
+    var current = TA.players.filter(function(p) { return p.ftId === teamId; });
+    var sendNames = sendPlayers.map(function(p){return p.name;});
+    var simulated = current.filter(function(p){ return sendNames.indexOf(p.name) === -1; })
+                           .concat(receivePlayers);
+    var result = {};
+    groups.forEach(function(g) {
+      var gp  = simulated.filter(function(p){ return (p.bestGroup||p.group) === g; });
+      result[g] = gp.length ? gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length : null;
+    });
+    return result;
+  }
+
+  var afterA = postTradeRatings(TA.teamA, playersA, playersB);
+  var afterB = postTradeRatings(TA.teamB, playersB, playersA);
+
+  function ratingBar(teamId, afterRatings, label) {
+    var current = TA.players.filter(function(p){return p.ftId===teamId;});
+    var h = '<div style="flex:1;min-width:0">';
+    h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px;padding:0 4px">' + label + ' after trade</div>';
+    h += '<div style="display:flex;gap:8px;flex-wrap:wrap;padding:0 4px">';
+    groups.forEach(function(g) {
+      var curGp  = current.filter(function(p){return (p.bestGroup||p.group)===g;});
+      var curAvg = curGp.length ? curGp.reduce(function(s,p){return s+p.overallRating;},0)/curGp.length : null;
+      var newAvg = afterRatings[g];
+      if (newAvg == null && curAvg == null) return;
+      var pct    = Math.round((newAvg||0)*100);
+      var col    = ratingColor(newAvg||0);
+      var diff   = newAvg != null && curAvg != null ? Math.round((newAvg - curAvg)*100) : null;
+      var lgDiff = newAvg != null ? Math.round((newAvg - leagueAvg[g])*100) : null;
+      var sign   = diff != null ? (diff >= 0 ? '+' : '') : '';
+      var lgSign = lgDiff != null ? (lgDiff >= 0 ? '+' : '') : '';
+      var changed = diff != null && diff !== 0;
+
+      h += '<div style="display:flex;flex-direction:column;align-items:center;min-width:56px">';
+      h += '<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:2px">' + g + '</div>';
+      h += '<div style="font-size:15px;font-weight:600;color:' + col + '">' + pct + '</div>';
+      // Show change arrow if different from current
+      if (changed) {
+        var arrowCol = diff > 0 ? '#2d5a3d' : '#c0392b';
+        var arrow    = diff > 0 ? '▲' : '▼';
+        h += '<div style="font-size:10px;color:' + arrowCol + ';font-weight:600">' + arrow + ' ' + sign + Math.abs(diff) + '</div>';
+      } else {
+        h += '<div style="font-size:10px;color:var(--muted)">' + lgSign + lgDiff + ' vs lg</div>';
+      }
+      h += '<div style="width:48px;height:3px;background:var(--border);border-radius:2px;margin-top:2px">';
+      h += '<div style="width:' + pct + '%;height:100%;border-radius:2px;background:' + col + '"></div></div>';
+      h += '</div>';
+    });
+    h += '</div></div>';
+    return h;
+  }
+
+  html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-top:8px;padding:14px 16px">';
+  html += '<div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:12px">Projected positional ratings after trade</div>';
+  html += '<div style="display:flex;gap:20px;flex-wrap:wrap">';
+  html += ratingBar(TA.teamA, afterA, teamAName);
+  html += '<div style="width:1px;background:var(--border);flex-shrink:0"></div>';
+  html += ratingBar(TA.teamB, afterB, teamBName);
+  html += '</div></div>';
+
   el.innerHTML = html;
 }
 
