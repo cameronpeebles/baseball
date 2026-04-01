@@ -214,6 +214,7 @@ td.neg { color: #c0392b; font-weight: 500; }
   <button onclick="showPage('zscores',this)">Z-Scores</button>
   <button onclick="showPage('joe',this)">JOE Factor</button>
   <button onclick="showPage('matchup',this)">Match Predictions</button>
+  <button onclick="showPage('correlations',this)">Correlations</button>
   <button onclick="showPage('trade',this)">Player Trade &amp; Market</button>
 </nav>
 
@@ -371,6 +372,12 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div id="trade-body"><div class="loading">Loading...</div></div>
   </div>
 
+  <div class="page" id="page-correlations">
+    <div class="page-title">Correlations</div>
+    <div class="page-subtitle">How stats, luck, and roster strength relate to standings performance.</div>
+    <div id="correlations-body"><div class="loading">Loading...</div></div>
+  </div>
+
 </main>
 
 <script>
@@ -395,6 +402,7 @@ var matchupRendered = false;
 var tradeRendered = false;
 var dashboardBuilt = false;
 var combinedRendered = false;
+var correlationsRendered = false;
 var h2hRendered = false;
 
 function loadJSON(f) {
@@ -415,6 +423,7 @@ function showPage(name, btn) {
   if (name === 'zscores') renderZScores();
   if (name === 'joe') renderJOEFactor();
   if (name === 'matchup') renderMatchPredictions();
+  if (name === 'correlations') renderCorrelations();
   if (name === 'trade') renderTradeAnalyzer();
 }
 
@@ -3443,6 +3452,521 @@ window.filterMatchupHistory = function(filterTeam) {
   html += '</tbody></table></div></div>';
   document.getElementById('matchup-history-list').innerHTML = html;
 };
+
+// ── Correlations ─────────────────────────────────────────────────────────────
+
+function renderCorrelations() {
+  if (correlationsRendered) return;
+  correlationsRendered = true;
+
+  var el = document.getElementById('correlations-body');
+
+  // Need JOE data + season stats
+  function tryBuild() {
+    var hasJOE = window._joeByTeamWeek && window._joeByTeamWeek.length;
+    if (!hasJOE) {
+      if (!joeRendered) renderJOEFactor();
+      setTimeout(tryBuild, 400); return;
+    }
+    buildCorrelations(el);
+  }
+  tryBuild();
+}
+
+function buildCorrelations(el) {
+  // ── Gather standings points per team ────────────────────────────────────
+  var tables = (S.seasonData && S.seasonData.data && S.seasonData.data.tableList) || [];
+  var ptTable = null, statTable = null;
+  for (var i = 0; i < tables.length; i++) {
+    var cap = (tables[i].caption || '').toLowerCase();
+    if (cap.indexOf('point total') !== -1) ptTable = tables[i];
+    if (cap.indexOf('stat total') !== -1 || cap.indexOf('season stat') !== -1) statTable = tables[i];
+    if (!statTable && cap !== '' && cap.indexOf('point') === -1 && (tables[i].rows||[]).length > 0 && tables[i].tableType !== 'SECTION_HEADING') statTable = tables[i];
+  }
+
+  if (!ptTable && !statTable) {
+    el.innerHTML = '<div class="error-msg">Season data not available yet.</div>'; return;
+  }
+
+  // Build header index for both tables
+  function buildIdx(table) {
+    var idx = {};
+    ((table.header && table.header.cells) || []).forEach(function(h, i) {
+      if (h.key)       idx[h.key.toUpperCase()]       = i;
+      if (h.shortName) idx[h.shortName.toUpperCase()] = i;
+      if (h.name)      idx[h.name.toUpperCase()]      = i;
+    });
+    return idx;
+  }
+
+  // Points per team from ptTable
+  var ptIdx  = ptTable  ? buildIdx(ptTable)  : {};
+  var stIdx  = statTable ? buildIdx(statTable) : {};
+  var ptsColIdx = ptIdx['PTS'] != null ? ptIdx['PTS'] : ptIdx['POINTS'] != null ? ptIdx['POINTS'] : 0;
+
+  var teamPts = {}; // teamId → fantasy points
+  if (ptTable) {
+    (ptTable.rows || []).forEach(function(row) {
+      var fc = row.fixedCells || [], cells = row.cells || [];
+      var id = (fc[1] && fc[1].teamId) || '';
+      if (!id) return;
+      teamPts[id] = parseFloat(cells[ptsColIdx] && cells[ptsColIdx].content) || 0;
+    });
+  }
+
+  // Stat totals per team
+  var CATS = ['R','HR','RBI','SB','AVG','K','W','SV','ERA','WHIP'];
+  var teamStats = {}; // teamId → {cat: value}
+  var srcTable = statTable || ptTable;
+  var srcIdx   = statTable ? stIdx : ptIdx;
+
+  // Detect if AVG is real (< 2) or fantasy pts
+  var avgColIdx = srcIdx['AVG'];
+  var isRealStats = true;
+  if (avgColIdx != null) {
+    var testRow = (srcTable.rows || [])[0];
+    if (testRow) {
+      var testVal = parseFloat(((testRow.cells || [])[avgColIdx] || {}).content);
+      if (!isNaN(testVal) && testVal > 2) isRealStats = false;
+    }
+  }
+  // If stat table doesn't have real stats, try to get points table for relative ranking
+  var usePts = !isRealStats;
+
+  (srcTable.rows || []).forEach(function(row) {
+    var fc = row.fixedCells || [], cells = row.cells || [];
+    var id = (fc[1] && fc[1].teamId) || '';
+    if (!id) return;
+    var sv = {};
+    CATS.forEach(function(c) {
+      var ci = srcIdx[c]; if (ci == null) return;
+      var v = parseFloat(cells[ci] && cells[ci].content);
+      if (!isNaN(v)) sv[c] = v;
+    });
+    // Try SVH3 if SV missing
+    if (sv['SV'] == null && srcIdx['SVH3'] != null) {
+      var v = parseFloat(cells[srcIdx['SVH3']] && cells[srcIdx['SVH3']].content);
+      if (!isNaN(v)) sv['SV'] = v;
+    }
+    teamStats[id] = sv;
+    if (!teamPts[id] && ptIdx['PTS'] == null) {
+      teamPts[id] = parseFloat(cells[ptsColIdx] && cells[ptsColIdx].content) || 0;
+    }
+  });
+
+  // ── JOE Factor data per team ─────────────────────────────────────────────
+  var joeData = window._joeByTeamWeek || [];
+  var joeSeason = window._joeSeasonData || [];
+
+  // Rebuild season summaries from byTeamWeek
+  var teamJOE = {}; // teamName → {avgActual, avgCase, avgLuck}
+  var teamNames = {};
+  Object.keys(S.teamInfo).forEach(function(id) {
+    teamNames[(S.teamInfo[id].name||'')] = id;
+  });
+
+  var joeByTeam = {};
+  joeData.forEach(function(r) {
+    if (r.actual == null) return;
+    if (!joeByTeam[r.team]) joeByTeam[r.team] = [];
+    joeByTeam[r.team].push(r);
+  });
+  Object.keys(joeByTeam).forEach(function(team) {
+    var rows = joeByTeam[team];
+    var avgActual = rows.reduce(function(s,r){return s+r.actual;},0)/rows.length;
+    var avgCase   = rows.reduce(function(s,r){return s+(r.avgCase||0);},0)/rows.length;
+    var avgLuck   = rows.reduce(function(s,r){return s+(r.luck||0);},0)/rows.length;
+    teamJOE[team] = { avgActual: avgActual, avgCase: avgCase, avgLuck: avgLuck };
+  });
+
+  // Build unified dataset: one entry per team
+  var dataset = Object.keys(S.teamInfo).map(function(id) {
+    var ti   = S.teamInfo[id];
+    var name = ti.name || ti.shortName || id;
+    var short = ti.shortName || name;
+    var pts  = teamPts[id] || 0;
+    var stats = teamStats[id] || {};
+    var joe  = teamJOE[name] || null;
+    return { id: id, name: name, short: short, pts: pts, stats: stats, joe: joe };
+  }).filter(function(d) { return d.pts > 0; })
+    .sort(function(a,b) { return b.pts - a.pts; });
+
+  if (!dataset.length) {
+    el.innerHTML = '<div class="error-msg">Not enough data yet — check back after week 1.</div>'; return;
+  }
+
+  // ── Pearson correlation helper ───────────────────────────────────────────
+  function pearson(pairs) {
+    var n = pairs.length;
+    if (n < 3) return null;
+    var sumX=0, sumY=0, sumXY=0, sumX2=0, sumY2=0;
+    pairs.forEach(function(p){ sumX+=p[0]; sumY+=p[1]; sumXY+=p[0]*p[1]; sumX2+=p[0]*p[0]; sumY2+=p[1]*p[1]; });
+    var num = n*sumXY - sumX*sumY;
+    var den = Math.sqrt((n*sumX2-sumX*sumX)*(n*sumY2-sumY*sumY));
+    return den===0 ? 0 : num/den;
+  }
+
+  function corrColor(r) {
+    if (r == null) return 'var(--muted)';
+    var abs = Math.abs(r);
+    if (abs >= 0.7) return r > 0 ? '#1e6b3a' : '#c0392b';
+    if (abs >= 0.4) return r > 0 ? '#4a9a68' : '#e67e22';
+    return '#8a8479';
+  }
+
+  function corrLabel(r) {
+    if (r == null) return 'n/a';
+    var abs = Math.abs(r);
+    var dir = r > 0 ? 'positive' : 'negative';
+    if (abs >= 0.7) return 'Strong ' + dir;
+    if (abs >= 0.4) return 'Moderate ' + dir;
+    if (abs >= 0.2) return 'Weak ' + dir;
+    return 'No correlation';
+  }
+
+  // Team palette
+  var PALETTE = ['#2d5a3d','#c8a96e','#c0392b','#2980b9','#8e44ad','#16a085','#e67e22','#2c3e50','#27ae60','#e74c3c'];
+  dataset.forEach(function(d,i){ d.color = PALETTE[i % PALETTE.length]; });
+
+  var html = '';
+
+  // ── Section 1: Category vs Points scatter grid ───────────────────────────
+  html += '<div class="card" style="margin-bottom:20px">';
+  html += '<div class="card-header"><span class="card-title">Stat categories vs standings points</span>';
+  html += '<span style="font-size:12px;color:var(--muted)">Which stats drive winning most?</span></div>';
+  html += '<div class="card-body" style="padding:16px 20px">';
+
+  // Correlation summary bar
+  var catCorrs = [];
+  CATS.forEach(function(cat) {
+    var pairs = dataset.filter(function(d){ return d.stats[cat] != null; })
+                       .map(function(d){ return [d.stats[cat], d.pts]; });
+    var r = pearson(pairs);
+    var isLow = cat==='ERA'||cat==='WHIP';
+    // For low-is-better, flip sign so "more positive = better for standings"
+    if (isLow && r!=null) r = -r;
+    catCorrs.push({ cat: cat, r: r, isLow: isLow });
+  });
+  catCorrs.sort(function(a,b){ return (b.r||0)-(a.r||0); });
+
+  html += '<div style="margin-bottom:20px">';
+  html += '<div style="font-size:12px;font-weight:500;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em">Correlation strength with standings points</div>';
+  html += '<div style="display:flex;flex-direction:column;gap:6px">';
+  catCorrs.forEach(function(cc) {
+    if (cc.r == null) return;
+    var barW = Math.round(Math.abs(cc.r) * 100);
+    var col  = corrColor(cc.r);
+    var sign = cc.r >= 0 ? '+' : '−';
+    html += '<div style="display:flex;align-items:center;gap:10px">';
+    html += '<span style="width:40px;font-size:12px;font-weight:600;text-align:right;color:var(--text)">' + cc.cat + '</span>';
+    html += '<div style="flex:1;height:18px;background:var(--bg);border-radius:3px;overflow:hidden">';
+    html += '<div style="height:100%;width:' + barW + '%;background:' + col + ';border-radius:3px;transition:width 0.3s"></div></div>';
+    html += '<span style="width:90px;font-size:12px;color:' + col + ';font-weight:500">' + sign + Math.abs(cc.r).toFixed(2) + ' — ' + corrLabel(cc.r).split(' ')[0] + '</span>';
+    if (cc.isLow) html += '<span style="font-size:10px;color:var(--muted)">(lower=better, inverted)</span>';
+    html += '</div>';
+  });
+  html += '</div></div>';
+
+  // Individual scatter plots for each cat — 2 per row
+  html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">';
+  CATS.forEach(function(cat) {
+    var cc   = catCorrs.find(function(c){return c.cat===cat;});
+    var pairs = dataset.filter(function(d){ return d.stats[cat]!=null; });
+    if (!pairs.length) return;
+    var xVals = pairs.map(function(d){return d.stats[cat];});
+    var xMin  = Math.min.apply(null,xVals), xMax = Math.max.apply(null,xVals);
+    var yVals = pairs.map(function(d){return d.pts;});
+    var yMin  = Math.min.apply(null,yVals)*0.97, yMax = Math.max.apply(null,yVals)*1.03;
+    var xRange = xMax-xMin||1, yRange = yMax-yMin||1;
+    var W=320, H=180, PAD=32;
+
+    html += '<div style="background:var(--bg);border-radius:var(--radius);padding:12px">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">';
+    html += '<span style="font-size:12px;font-weight:600">' + cat + ' vs Points</span>';
+    if (cc && cc.r!=null) html += '<span style="font-size:11px;color:' + corrColor(cc.r) + ';font-weight:500">r = ' + (cc.r>=0?'+':'') + cc.r.toFixed(2) + '</span>';
+    html += '</div>';
+
+    html += '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;display:block">';
+    // Grid lines
+    for (var gi=0;gi<=4;gi++) {
+      var gy = PAD + (H-PAD*2)*(gi/4);
+      html += '<line x1="' + PAD + '" y1="' + gy + '" x2="' + (W-8) + '" y2="' + gy + '" stroke="var(--border)" stroke-width="0.5"/>';
+      var yLabel = Math.round(yMax - (yRange*(gi/4)));
+      html += '<text x="' + (PAD-4) + '" y="' + (gy+4) + '" text-anchor="end" font-size="8" fill="var(--muted)">' + yLabel + '</text>';
+    }
+    // Trend line (simple least squares)
+    var n=pairs.length, sx=0,sy=0,sxy=0,sx2=0;
+    pairs.forEach(function(d){sx+=d.stats[cat];sy+=d.pts;sxy+=d.stats[cat]*d.pts;sx2+=d.stats[cat]*d.stats[cat];});
+    var denom = n*sx2-sx*sx;
+    if (denom!==0) {
+      var slope=(n*sxy-sx*sy)/denom, intercept=(sy-slope*sx)/n;
+      var tx1=xMin, ty1=slope*tx1+intercept;
+      var tx2=xMax, ty2=slope*tx2+intercept;
+      var px1=PAD+(tx1-xMin)/xRange*(W-PAD-8);
+      var py1=H-PAD-(ty1-yMin)/yRange*(H-PAD*2);
+      var px2=PAD+(tx2-xMin)/xRange*(W-PAD-8);
+      var py2=H-PAD-(ty2-yMin)/yRange*(H-PAD*2);
+      html += '<line x1="' + px1 + '" y1="' + py1 + '" x2="' + px2 + '" y2="' + py2 + '" stroke="' + (cc?corrColor(cc.r):'#aaa') + '" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>';
+    }
+    // Points
+    pairs.forEach(function(d) {
+      var cx = PAD + (d.stats[cat]-xMin)/xRange*(W-PAD-8);
+      var cy = H-PAD - (d.pts-yMin)/yRange*(H-PAD*2);
+      html += '<circle cx="' + cx + '" cy="' + cy + '" r="5" fill="' + d.color + '" opacity="0.85">';
+      html += '<title>' + d.short + ': ' + cat + '=' + (cat==='AVG'?d.stats[cat].toFixed(3):(cat==='ERA'||cat==='WHIP')?d.stats[cat].toFixed(2):Math.round(d.stats[cat])) + ', Pts=' + d.pts + '</title>';
+      html += '</circle>';
+      html += '<text x="' + (cx+7) + '" y="' + (cy+4) + '" font-size="8" fill="var(--muted)" opacity="0.9">' + d.short.substring(0,6) + '</text>';
+    });
+    // X axis labels
+    html += '<text x="' + PAD + '" y="' + (H-4) + '" font-size="8" fill="var(--muted)">' + (cat==='AVG'?xMin.toFixed(3):Math.round(xMin)) + '</text>';
+    html += '<text x="' + (W-8) + '" y="' + (H-4) + '" text-anchor="end" font-size="8" fill="var(--muted)">' + (cat==='AVG'?xMax.toFixed(3):Math.round(xMax)) + '</text>';
+    html += '<text x="' + (W/2) + '" y="' + (H-4) + '" text-anchor="middle" font-size="9" fill="var(--muted)">' + cat + '</text>';
+    html += '</svg></div>';
+  });
+  html += '</div></div></div>';
+
+  // ── Section 2: Batting vs Pitching vs Standings ──────────────────────────
+  html += '<div class="card" style="margin-bottom:20px">';
+  html += '<div class="card-header"><span class="card-title">Batting strength vs Pitching strength</span>';
+  html += '<span style="font-size:12px;color:var(--muted)">Are you better off investing in bats or arms?</span></div>';
+  html += '<div class="card-body" style="padding:16px 20px">';
+
+  // Compute batting z-sum and pitching z-sum per team using zData if available
+  var zData = S.zData || [];
+  if (zData.length) {
+    var batCorPairs = zData.map(function(z) {
+      var id = z.teamId; return [z.totalBatZ, teamPts[id]||0];
+    }).filter(function(p){return p[1]>0;});
+    var pitCorPairs = zData.map(function(z) {
+      var id = z.teamId; return [z.totalPitZ, teamPts[id]||0];
+    }).filter(function(p){return p[1]>0;});
+    var rBat = pearson(batCorPairs);
+    var rPit = pearson(pitCorPairs);
+
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">';
+
+    // Batting scatter
+    ['bat','pit'].forEach(function(type) {
+      var pairs2 = type==='bat' ? batCorPairs : pitCorPairs;
+      var r2     = type==='bat' ? rBat : rPit;
+      var label  = type==='bat' ? 'Total Batting Z-Score' : 'Total Pitching Z-Score';
+      if (!pairs2.length) return;
+      var xVals2 = pairs2.map(function(p){return p[0];});
+      var xMin2=Math.min.apply(null,xVals2), xMax2=Math.max.apply(null,xVals2);
+      var yVals2 = pairs2.map(function(p){return p[1];});
+      var yMin2=Math.min.apply(null,yVals2)*0.97, yMax2=Math.max.apply(null,yVals2)*1.03;
+      var xRange2=xMax2-xMin2||1, yRange2=yMax2-yMin2||1;
+      var W2=320,H2=180,P2=36;
+
+      html += '<div style="background:var(--bg);border-radius:var(--radius);padding:12px">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">';
+      html += '<span style="font-size:12px;font-weight:600">' + label + '</span>';
+      if (r2!=null) html += '<span style="font-size:11px;color:' + corrColor(r2) + ';font-weight:500">r = ' + (r2>=0?'+':'') + r2.toFixed(2) + '</span>';
+      html += '</div>';
+      html += '<svg viewBox="0 0 ' + W2 + ' ' + H2 + '" style="width:100%;height:auto;display:block">';
+      for (var gi2=0;gi2<=4;gi2++) {
+        var gy2=P2+(H2-P2*2)*(gi2/4);
+        html += '<line x1="' + P2 + '" y1="' + gy2 + '" x2="' + (W2-8) + '" y2="' + gy2 + '" stroke="var(--border)" stroke-width="0.5"/>';
+        html += '<text x="' + (P2-4) + '" y="' + (gy2+4) + '" text-anchor="end" font-size="8" fill="var(--muted)">' + Math.round(yMax2-(yRange2*(gi2/4))) + '</text>';
+      }
+      // Trend line
+      var n2=pairs2.length,sx2=0,sy2=0,sxy2=0,sxx2=0;
+      pairs2.forEach(function(p){sx2+=p[0];sy2+=p[1];sxy2+=p[0]*p[1];sxx2+=p[0]*p[0];});
+      var denom2=n2*sxx2-sx2*sx2;
+      if (denom2!==0) {
+        var sl2=(n2*sxy2-sx2*sy2)/denom2,int2=(sy2-sl2*sx2)/n2;
+        var tpx1=P2+(xMin2-xMin2)/xRange2*(W2-P2-8),tpy1=H2-P2-(sl2*xMin2+int2-yMin2)/yRange2*(H2-P2*2);
+        var tpx2=P2+(xMax2-xMin2)/xRange2*(W2-P2-8),tpy2=H2-P2-(sl2*xMax2+int2-yMin2)/yRange2*(H2-P2*2);
+        html += '<line x1="' + tpx1 + '" y1="' + tpy1 + '" x2="' + tpx2 + '" y2="' + tpy2 + '" stroke="' + corrColor(r2) + '" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>';
+      }
+      // Zero line
+      if (xMin2 < 0 && xMax2 > 0) {
+        var zx = P2 + (0-xMin2)/xRange2*(W2-P2-8);
+        html += '<line x1="' + zx + '" y1="' + P2 + '" x2="' + zx + '" y2="' + (H2-P2) + '" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,2"/>';
+      }
+      // Dots
+      var di = 0;
+      zData.forEach(function(z) {
+        var id = z.teamId;
+        if (teamPts[id]==null||teamPts[id]===0) return;
+        var xv = type==='bat' ? z.totalBatZ : z.totalPitZ;
+        var yv = teamPts[id];
+        var d2 = dataset.find(function(d){return d.id===id;});
+        if (!d2) return;
+        var cx2 = P2 + (xv-xMin2)/xRange2*(W2-P2-8);
+        var cy2 = H2-P2 - (yv-yMin2)/yRange2*(H2-P2*2);
+        html += '<circle cx="' + cx2 + '" cy="' + cy2 + '" r="5" fill="' + d2.color + '" opacity="0.85"><title>' + d2.short + '</title></circle>';
+        html += '<text x="' + (cx2+7) + '" y="' + (cy2+4) + '" font-size="8" fill="var(--muted)">' + d2.short.substring(0,6) + '</text>';
+      });
+      html += '<text x="' + (W2/2) + '" y="' + (H2-4) + '" text-anchor="middle" font-size="9" fill="var(--muted)">' + label + '</text>';
+      html += '</svg>';
+
+      html += '<div style="margin-top:8px;font-size:12px;text-align:center;color:' + corrColor(r2) + ';font-weight:500">';
+      html += r2!=null ? corrLabel(r2) + ' (r = ' + r2.toFixed(2) + ')' : '—';
+      html += '</div></div>';
+    });
+    html += '</div>';
+
+    // Winner callout
+    if (rBat!=null && rPit!=null) {
+      var winner = Math.abs(rBat) > Math.abs(rPit) ? 'Batting' : 'Pitching';
+      var diff2  = Math.abs(Math.abs(rBat)-Math.abs(rPit));
+      var strength = diff2 > 0.2 ? 'significantly more' : diff2 > 0.05 ? 'slightly more' : 'equally';
+      html += '<div style="background:var(--accent-light);border-radius:var(--radius);padding:12px 16px;font-size:13px">';
+      html += '<strong>' + winner + '</strong> is ' + strength + ' correlated with standings in your league (bat r=' + (rBat>=0?'+':'') + rBat.toFixed(2) + ', pit r=' + (rPit>=0?'+':'') + rPit.toFixed(2) + ')';
+      html += '</div>';
+    }
+  } else {
+    html += '<div style="color:var(--muted);font-size:13px">Z-score data not available — visit the Z-Scores page first.</div>';
+  }
+  html += '</div></div>';
+
+  // ── Section 3: Actual vs Expected win% ──────────────────────────────────
+  html += '<div class="card" style="margin-bottom:20px">';
+  html += '<div class="card-header"><span class="card-title">Actual win% vs expected win% (JOE Factor)</span>';
+  html += '<span style="font-size:12px;color:var(--muted)">Points above/below the diagonal = lucky/unlucky</span></div>';
+  html += '<div class="card-body" style="padding:16px 20px">';
+
+  var joeTeams = Object.keys(joeByTeam);
+  if (joeTeams.length) {
+    var W3=500,H3=320,P3=44;
+    var allActual = joeTeams.map(function(t){return teamJOE[t].avgActual;});
+    var allCase   = joeTeams.map(function(t){return teamJOE[t].avgCase;});
+    var xMin3=Math.min.apply(null,allCase)*0.95,  xMax3=Math.max.apply(null,allCase)*1.05;
+    var yMin3=Math.min.apply(null,allActual)*0.95, yMax3=Math.max.apply(null,allActual)*1.05;
+    // Expand to same range for diagonal
+    var axisMin = Math.min(xMin3,yMin3), axisMax = Math.max(xMax3,yMax3);
+    xMin3=axisMin; xMax3=axisMax; yMin3=axisMin; yMax3=axisMax;
+    var xRange3=xMax3-xMin3||1, yRange3=yMax3-yMin3||1;
+
+    html += '<svg viewBox="0 0 ' + W3 + ' ' + H3 + '" style="width:100%;max-width:600px;height:auto;display:block">';
+    // Grid
+    for (var gi3=0;gi3<=4;gi3++) {
+      var gy3=P3+(H3-P3*2)*(gi3/4);
+      var gx3=P3+(H3-P3*2)*(gi3/4);
+      html += '<line x1="' + P3 + '" y1="' + gy3 + '" x2="' + (W3-8) + '" y2="' + gy3 + '" stroke="var(--border)" stroke-width="0.5"/>';
+      var yLbl = (axisMin+(axisMax-axisMin)*((4-gi3)/4)*100).toFixed(0)+'%';
+      html += '<text x="' + (P3-4) + '" y="' + (gy3+4) + '" text-anchor="end" font-size="9" fill="var(--muted)">' + yLbl + '</text>';
+      var xLbl = (axisMin+(axisMax-axisMin)*(gi3/4)*100).toFixed(0)+'%';
+      html += '<text x="' + (P3+(H3-P3*2)*(gi3/4)) + '" y="' + (H3-P3+14) + '" text-anchor="middle" font-size="9" fill="var(--muted)">' + xLbl + '</text>';
+    }
+    // Diagonal line (equal actual = expected)
+    var diagX1=P3, diagY1=H3-P3;
+    var diagX2=P3+(W3-P3-8), diagY2=P3;
+    html += '<line x1="' + diagX1 + '" y1="' + diagY1 + '" x2="' + diagX2 + '" y2="' + diagY2 + '" stroke="var(--muted)" stroke-width="1" stroke-dasharray="5,4" opacity="0.5"/>';
+    html += '<text x="' + (diagX2-2) + '" y="' + (diagY2-4) + '" font-size="9" fill="var(--muted)" text-anchor="end">Expected = Actual</text>';
+    // Lucky/unlucky labels
+    html += '<text x="' + (W3-60) + '" y="' + (H3-P3-10) + '" font-size="9" fill="#4a9a68" opacity="0.7">Above line = Lucky</text>';
+    html += '<text x="' + (P3+10) + '" y="' + (P3+14) + '" font-size="9" fill="#c0392b" opacity="0.7">Below line = Unlucky</text>';
+    // Dots
+    joeTeams.forEach(function(team) {
+      var joe = teamJOE[team];
+      var tid = teamNames[team];
+      var d3 = dataset.find(function(d){return d.id===tid;});
+      var col3 = d3 ? d3.color : '#888';
+      var short3 = d3 ? d3.short : team.substring(0,8);
+      var cx3 = P3 + (joe.avgCase-axisMin)/xRange3*(W3-P3-8);
+      var cy3 = H3-P3 - (joe.avgActual-axisMin)/yRange3*(H3-P3*2);
+      var luckDiff = joe.avgActual - joe.avgCase;
+      var dotCol = luckDiff > 0.01 ? '#4a9a68' : luckDiff < -0.01 ? '#c0392b' : '#888';
+      html += '<circle cx="' + cx3 + '" cy="' + cy3 + '" r="6" fill="' + col3 + '" stroke="' + dotCol + '" stroke-width="2" opacity="0.9">';
+      html += '<title>' + team + '\nActual: ' + (joe.avgActual*100).toFixed(1) + '%\nExpected: ' + (joe.avgCase*100).toFixed(1) + '%\nLuck: ' + (luckDiff>=0?'+':'') + (luckDiff*100).toFixed(1) + '%</title>';
+      html += '</circle>';
+      html += '<text x="' + (cx3+8) + '" y="' + (cy3+4) + '" font-size="9" fill="var(--text)">' + short3.substring(0,7) + '</text>';
+    });
+    html += '<text x="' + (W3/2) + '" y="' + (H3-4) + '" text-anchor="middle" font-size="10" fill="var(--muted)">Expected win% (avg case)</text>';
+    html += '<text x="12" y="' + (H3/2) + '" text-anchor="middle" font-size="10" fill="var(--muted)" transform="rotate(-90,12,' + (H3/2) + ')">Actual win%</text>';
+    html += '</svg>';
+  }
+  html += '</div></div>';
+
+  // ── Section 4: Luck vs Standings rank ───────────────────────────────────
+  html += '<div class="card" style="margin-bottom:20px">';
+  html += '<div class="card-header"><span class="card-title">Luck score vs standings rank</span>';
+  html += '<span style="font-size:12px;color:var(--muted)">Do luckier teams finish higher?</span></div>';
+  html += '<div class="card-body" style="padding:16px 20px">';
+
+  var luckPairs = dataset.map(function(d,rank) {
+    var joe = teamJOE[d.name];
+    if (!joe) return null;
+    return { name: d.short, luck: joe.avgLuck, rank: rank+1, pts: d.pts, color: d.color };
+  }).filter(Boolean);
+
+  if (luckPairs.length >= 3) {
+    var luckR = pearson(luckPairs.map(function(p){return [p.luck, p.pts];}));
+    var W4=500, H4=260, P4=44;
+    var lVals = luckPairs.map(function(p){return p.luck;});
+    var lMin=Math.min.apply(null,lVals), lMax=Math.max.apply(null,lVals);
+    var pVals = luckPairs.map(function(p){return p.pts;});
+    var pMin=Math.min.apply(null,pVals)*0.97, pMax=Math.max.apply(null,pVals)*1.03;
+    var lRange=lMax-lMin||1, pRange=pMax-pMin||1;
+
+    html += '<div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;flex-wrap:wrap">';
+    html += '<div style="font-size:13px">Luck vs Points correlation: <strong style="color:' + corrColor(luckR) + '">r = ' + (luckR>=0?'+':'') + luckR.toFixed(2) + '</strong></div>';
+    html += '<div style="font-size:12px;color:var(--muted)">' + corrLabel(luckR) + '</div>';
+    html += '</div>';
+
+    html += '<svg viewBox="0 0 ' + W4 + ' ' + H4 + '" style="width:100%;max-width:600px;height:auto;display:block">';
+    for (var gi4=0;gi4<=4;gi4++) {
+      var gy4=P4+(H4-P4*2)*(gi4/4);
+      html += '<line x1="' + P4 + '" y1="' + gy4 + '" x2="' + (W4-8) + '" y2="' + gy4 + '" stroke="var(--border)" stroke-width="0.5"/>';
+      html += '<text x="' + (P4-4) + '" y="' + (gy4+4) + '" text-anchor="end" font-size="9" fill="var(--muted)">' + Math.round(pMax-(pRange*(gi4/4))) + '</text>';
+    }
+    // Zero vertical line
+    var zeroX = P4 + (0-lMin)/lRange*(W4-P4-8);
+    html += '<line x1="' + zeroX + '" y1="' + P4 + '" x2="' + zeroX + '" y2="' + (H4-P4) + '" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>';
+    html += '<text x="' + (zeroX+3) + '" y="' + (P4+10) + '" font-size="9" fill="var(--muted)">No luck</text>';
+    // Trend line
+    var n4=luckPairs.length,slx=0,sly=0,slxy=0,slx2=0;
+    luckPairs.forEach(function(p){slx+=p.luck;sly+=p.pts;slxy+=p.luck*p.pts;slx2+=p.luck*p.luck;});
+    var slDen=n4*slx2-slx*slx;
+    if (slDen!==0) {
+      var slSlope=(n4*slxy-slx*sly)/slDen,slInt=(sly-slSlope*slx)/n4;
+      var tlx1=P4+(lMin-lMin)/lRange*(W4-P4-8), tly1=H4-P4-(slSlope*lMin+slInt-pMin)/pRange*(H4-P4*2);
+      var tlx2=P4+(lMax-lMin)/lRange*(W4-P4-8), tly2=H4-P4-(slSlope*lMax+slInt-pMin)/pRange*(H4-P4*2);
+      html += '<line x1="' + tlx1 + '" y1="' + tly1 + '" x2="' + tlx2 + '" y2="' + tly2 + '" stroke="' + corrColor(luckR) + '" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>';
+    }
+    luckPairs.forEach(function(p) {
+      var cx4 = P4 + (p.luck-lMin)/lRange*(W4-P4-8);
+      var cy4 = H4-P4 - (p.pts-pMin)/pRange*(H4-P4*2);
+      html += '<circle cx="' + cx4 + '" cy="' + cy4 + '" r="6" fill="' + p.color + '" opacity="0.85">';
+      html += '<title>' + p.name + '\nLuck: ' + (p.luck>=0?'+':'') + p.luck.toFixed(3) + '\nPoints: ' + p.pts + '</title>';
+      html += '</circle>';
+      html += '<text x="' + (cx4+8) + '" y="' + (cy4+4) + '" font-size="9" fill="var(--text)">' + p.name.substring(0,7) + '</text>';
+    });
+    // X axis labels
+    html += '<text x="' + P4 + '" y="' + (H4-P4+14) + '" font-size="8" fill="var(--muted)">' + (lMin>=0?'+':'') + lMin.toFixed(3) + '</text>';
+    html += '<text x="' + (W4-8) + '" y="' + (H4-P4+14) + '" text-anchor="end" font-size="8" fill="var(--muted)">+' + lMax.toFixed(3) + '</text>';
+    html += '<text x="' + (W4/2) + '" y="' + (H4-4) + '" text-anchor="middle" font-size="10" fill="var(--muted)">Average luck score (actual − expected win%)</text>';
+    html += '<text x="12" y="' + (H4/2) + '" text-anchor="middle" font-size="10" fill="var(--muted)" transform="rotate(-90,12,' + (H4/2) + ')">Fantasy points</text>';
+    html += '</svg>';
+
+    // Insight callout
+    var luckyTeams  = luckPairs.filter(function(p){return p.luck>0.02;}).sort(function(a,b){return b.luck-a.luck;});
+    var unluckyTeams = luckPairs.filter(function(p){return p.luck<-0.02;}).sort(function(a,b){return a.luck-b.luck;});
+    if (luckyTeams.length || unluckyTeams.length) {
+      html += '<div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">';
+      if (luckyTeams.length) {
+        html += '<div style="background:#e8f0eb;border-radius:var(--radius);padding:10px 14px;font-size:12px;flex:1;min-width:160px">';
+        html += '<strong style="color:#2d5a3d">Luckiest:</strong> ';
+        html += luckyTeams.map(function(p){return p.name + ' (+' + (p.luck*100).toFixed(1) + '%pts)';}).join(', ');
+        html += '</div>';
+      }
+      if (unluckyTeams.length) {
+        html += '<div style="background:#fef3e2;border-radius:var(--radius);padding:10px 14px;font-size:12px;flex:1;min-width:160px">';
+        html += '<strong style="color:#b7791f">Unluckiest:</strong> ';
+        html += unluckyTeams.map(function(p){return p.name + ' (' + (p.luck*100).toFixed(1) + '%pts)';}).join(', ');
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+  } else {
+    html += '<div style="color:var(--muted);font-size:13px">Not enough JOE Factor data yet.</div>';
+  }
+  html += '</div></div>';
+
+  el.innerHTML = html;
+}
 
 init();
 </script>
