@@ -204,13 +204,11 @@ td.neg { color: #c0392b; font-weight: 500; }
 
 <nav>
   <button class="active" onclick="showPage('dashboard',this)">Dashboard</button>
-  <button onclick="showPage('standings',this)">Standings</button>
-  <button onclick="showPage('season',this)">Season Stats</button>
+  <button onclick="showPage('fantrax',this)">Fantrax Data</button>
   <button onclick="showPage('combined',this)">League Stats</button>
   <button onclick="showPage('hitting',this)">Hitting</button>
   <button onclick="showPage('pitching',this)">Pitching</button>
   <button onclick="showPage('rosters',this)">Rosters</button>
-  <button onclick="showPage('analytics',this)">Analytics</button>
   <button onclick="showPage('zscores',this)">Z-Scores</button>
   <button onclick="showPage('joe',this)">JOE Factor</button>
   <button onclick="showPage('matchup',this)">Match Predictions</button>
@@ -226,18 +224,37 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div id="dashboard-body"><div class="loading">Loading...</div></div>
   </div>
 
-  <div class="page" id="page-standings">
-    <div class="page-title">Standings</div>
-    <div class="page-subtitle">Overall league standings</div>
-    <div id="standings-body"><div class="loading">Loading...</div></div>
+  <div class="page" id="page-fantrax">
+    <div class="page-title">Fantrax Data</div>
+    <div class="page-subtitle">Standings, season stats, and analytics pulled directly from Fantrax.</div>
+    <div class="trade-tabs" id="fantrax-tabs">
+      <button class="trade-tab active" onclick="showFantraxTab('standings',this)">Standings</button>
+      <button class="trade-tab" onclick="showFantraxTab('season',this)">Season Stats</button>
+      <button class="trade-tab" onclick="showFantraxTab('tables',this)">Tables</button>
+    </div>
+    <div id="fantrax-tab-standings" class="trade-tab-content active">
+      <div id="standings-body"><div class="loading">Loading...</div></div>
+    </div>
+    <div id="fantrax-tab-season" class="trade-tab-content">
+      <div id="season-body"><div class="loading">Loading...</div></div>
+    </div>
+    <div id="fantrax-tab-tables" class="trade-tab-content">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Season Point Totals</span></div>
+        <div class="card-body"><div class="chart-wrap"><canvas id="chart-points"></canvas></div></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Hitting Points by Team</span></div>
+          <div class="card-body"><div class="chart-wrap-sm"><canvas id="chart-hit-pts"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Pitching Points by Team</span></div>
+          <div class="card-body"><div class="chart-wrap-sm"><canvas id="chart-pit-pts"></canvas></div></div>
+        </div>
+      </div>
+    </div>
   </div>
-
-  <div class="page" id="page-season">
-    <div class="page-title">Season Stats</div>
-    <div class="page-subtitle">Cumulative batting and pitching stats by team</div>
-    <div id="season-body"><div class="loading">Loading...</div></div>
-  </div>
-
   <div class="page" id="page-combined">
     <div class="page-title">League Stats</div>
     <div class="page-subtitle">Weekly stats, head-to-head results, and matchup history.</div>
@@ -289,25 +306,6 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div class="card">
       <div class="team-selector" id="team-sel"></div>
       <div id="roster-body"><div class="loading">Select a team above</div></div>
-    </div>
-  </div>
-
-  <div class="page" id="page-analytics">
-    <div class="page-title">Analytics</div>
-    <div class="page-subtitle">Charts and metrics for the 2026 Bluebonnet Baseball season</div>
-    <div class="card">
-      <div class="card-header"><span class="card-title">Season Point Totals</span></div>
-      <div class="card-body"><div class="chart-wrap"><canvas id="chart-points"></canvas></div></div>
-    </div>
-    <div class="two-col">
-      <div class="card">
-        <div class="card-header"><span class="card-title">Hitting Points by Team</span></div>
-        <div class="card-body"><div class="chart-wrap-sm"><canvas id="chart-hit-pts"></canvas></div></div>
-      </div>
-      <div class="card">
-        <div class="card-header"><span class="card-title">Pitching Points by Team</span></div>
-        <div class="card-body"><div class="chart-wrap-sm"><canvas id="chart-pit-pts"></canvas></div></div>
-      </div>
     </div>
   </div>
 
@@ -396,6 +394,7 @@ Chart.defaults.color = '#8a8479';
 
 var chartInstances = {};
 var analyticsBuilt = false;
+var fantraxRendered = false;
 var zRendered = false;
 var joeRendered = false;
 var matchupRendered = false;
@@ -418,14 +417,23 @@ function showPage(name, btn) {
   document.getElementById('page-' + name).classList.add('active');
   btn.classList.add('active');
   if (name === 'dashboard') renderDashboard();
+  if (name === 'fantrax') { if (!fantraxRendered) { fantraxRendered = true; } }
   if (name === 'combined') renderCombinedPage();
-  if (name === 'analytics') renderAnalytics();
   if (name === 'zscores') renderZScores();
   if (name === 'joe') renderJOEFactor();
   if (name === 'matchup') renderMatchPredictions();
   if (name === 'correlations') renderCorrelations();
   if (name === 'trade') renderTradeAnalyzer();
 }
+
+window.showFantraxTab = function(tab, btn) {
+  document.querySelectorAll('#fantrax-tabs .trade-tab').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('#page-fantrax .trade-tab-content').forEach(function(c){c.classList.remove('active');});
+  if (btn) btn.classList.add('active');
+  var el = document.getElementById('fantrax-tab-' + tab);
+  if (el) el.classList.add('active');
+  if (tab === 'tables') renderAnalytics();
+};
 
 function init() {
   Promise.all([
