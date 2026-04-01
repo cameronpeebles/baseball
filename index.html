@@ -193,6 +193,14 @@ td.neg { color: #c0392b; font-weight: 500; }
 .trade-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 .trade-tab-content { display: none; }
 .trade-tab-content.active { display: block; }
+/* fWAR */
+.fwar-input-group { display:flex;flex-direction:column;gap:4px; }
+.fwar-input-label { font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted); }
+.fwar-input { border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;font-family:var(--font-body);font-size:13px;background:var(--surface);color:var(--text);outline:none;width:100%; }
+.fwar-input:focus { border-color:var(--accent); }
+.fwar-badge { display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600; }
+.fwar-pos { display:inline-block;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:500;background:var(--bg);color:var(--muted);border:1px solid var(--border);margin-right:3px; }
+.fwar-pos.assigned { background:var(--accent-light);color:var(--accent);border-color:var(--accent); }
 </style>
 </head>
 <body>
@@ -206,8 +214,7 @@ td.neg { color: #c0392b; font-weight: 500; }
   <button class="active" onclick="showPage('dashboard',this)">Dashboard</button>
   <button onclick="showPage('fantrax',this)">Fantrax Data</button>
   <button onclick="showPage('combined',this)">League Stats</button>
-  <button onclick="showPage('hitting',this)">Hitting</button>
-  <button onclick="showPage('pitching',this)">Pitching</button>
+  <button onclick="showPage('fwar',this)">fWAR</button>
   <button onclick="showPage('rosters',this)">Rosters</button>
   <button onclick="showPage('zscores',this)">Z-Scores</button>
   <button onclick="showPage('joe',this)">JOE Factor</button>
@@ -266,37 +273,76 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div id="combined-body"><div class="loading">Loading...</div></div>
   </div>
 
-  <div class="page" id="page-hitting">
-    <div class="page-title">Hitting</div>
-    <div class="page-subtitle">All players — batting stats</div>
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">All Hitters</span>
-        <div class="pill-group" id="hit-pills">
-          <button class="pill active" onclick="setF('hit','ALL',this)">All</button>
-          <button class="pill" onclick="setF('hit','FA',this)">Free Agents</button>
-          <button class="pill" onclick="setF('hit','OWNED',this)">Rostered</button>
-        </div>
-      </div>
-      <div class="search-wrap"><input type="text" placeholder="Search players..." oninput="doSearch('hit',this.value)" /></div>
-      <div class="table-wrap" id="hit-table"><div class="loading">Loading...</div></div>
+  <div class="page" id="page-fwar">
+    <div class="page-title">fWAR</div>
+    <div class="page-subtitle">Fantasy WAR — player value above replacement level, adjustable by position and category weights.</div>
+    <div class="trade-tabs" id="fwar-tabs">
+      <button class="trade-tab active" onclick="showFWARTab('model',this)">fWAR Model</button>
+      <button class="trade-tab" onclick="showFWARTab('hitting',this)">Hitting</button>
+      <button class="trade-tab" onclick="showFWARTab('pitching',this)">Pitching</button>
     </div>
-  </div>
 
-  <div class="page" id="page-pitching">
-    <div class="page-title">Pitching</div>
-    <div class="page-subtitle">All players — pitching stats</div>
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">All Pitchers</span>
-        <div class="pill-group" id="pit-pills">
-          <button class="pill active" onclick="setF('pit','ALL',this)">All</button>
-          <button class="pill" onclick="setF('pit','FA',this)">Free Agents</button>
-          <button class="pill" onclick="setF('pit','OWNED',this)">Rostered</button>
+    <!-- Model Tab -->
+    <div id="fwar-tab-model" class="trade-tab-content active">
+      <div class="two-col" style="margin-top:16px">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Replacement rank by position</span></div>
+          <div class="card-body" style="padding:16px 20px">
+            <p style="font-size:12px;color:var(--muted);margin-bottom:14px">The Nth-ranked player at each position defines replacement level. Lower = harder to find, raises the bar.</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px" id="fwar-rep-inputs">
+              <!-- filled by JS -->
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Category weights</span></div>
+          <div class="card-body" style="padding:16px 20px">
+            <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Scale each category's contribution to fWAR from 0 (ignore) to 1 (full weight).</p>
+            <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent2);margin-bottom:8px">Hitting</div>
+            <div id="fwar-hit-weights" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-bottom:16px"></div>
+            <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent2);margin-bottom:8px">Pitching</div>
+            <div id="fwar-pit-weights" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px"></div>
+          </div>
         </div>
       </div>
-      <div class="search-wrap"><input type="text" placeholder="Search players..." oninput="doSearch('pit',this.value)" /></div>
-      <div class="table-wrap" id="pit-table"><div class="loading">Loading...</div></div>
+      <div style="margin-top:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <button class="pill active" style="padding:10px 28px;font-size:13px" onclick="recalculateFWAR()">Recalculate fWAR</button>
+        <button class="pill" style="padding:10px 20px;font-size:13px" onclick="resetFWARDefaults()">Reset defaults</button>
+        <span id="fwar-status" style="font-size:12px;color:var(--muted)"></span>
+      </div>
+      <div id="fwar-model-summary" style="margin-top:20px"></div>
+    </div>
+
+    <!-- Hitting Tab -->
+    <div id="fwar-tab-hitting" class="trade-tab-content">
+      <div class="card" style="margin-top:16px">
+        <div class="card-header">
+          <span class="card-title">All Hitters</span>
+          <div class="pill-group" id="hit-pills">
+            <button class="pill active" onclick="setF('hit','ALL',this)">All</button>
+            <button class="pill" onclick="setF('hit','FA',this)">Free Agents</button>
+            <button class="pill" onclick="setF('hit','OWNED',this)">Rostered</button>
+          </div>
+        </div>
+        <div class="search-wrap"><input type="text" placeholder="Search players..." oninput="doSearch('hit',this.value)" /></div>
+        <div class="table-wrap" id="hit-table"><div class="loading">Loading...</div></div>
+      </div>
+    </div>
+
+    <!-- Pitching Tab -->
+    <div id="fwar-tab-pitching" class="trade-tab-content">
+      <div class="card" style="margin-top:16px">
+        <div class="card-header">
+          <span class="card-title">All Pitchers</span>
+          <div class="pill-group" id="pit-pills">
+            <button class="pill active" onclick="setF('pit','ALL',this)">All</button>
+            <button class="pill" onclick="setF('pit','FA',this)">Free Agents</button>
+            <button class="pill" onclick="setF('pit','OWNED',this)">Rostered</button>
+          </div>
+        </div>
+        <div class="search-wrap"><input type="text" placeholder="Search players..." oninput="doSearch('pit',this.value)" /></div>
+        <div class="table-wrap" id="pit-table"><div class="loading">Loading...</div></div>
+      </div>
     </div>
   </div>
 
@@ -402,6 +448,7 @@ var tradeRendered = false;
 var dashboardBuilt = false;
 var combinedRendered = false;
 var correlationsRendered = false;
+var fwarRendered = false;
 var h2hRendered = false;
 
 function loadJSON(f) {
@@ -423,6 +470,7 @@ function showPage(name, btn) {
   if (name === 'joe') renderJOEFactor();
   if (name === 'matchup') renderMatchPredictions();
   if (name === 'correlations') renderCorrelations();
+  if (name === 'fwar') renderFWARPage();
   if (name === 'trade') renderTradeAnalyzer();
 }
 
@@ -461,6 +509,8 @@ function init() {
     buildRosterSelector();
     computeZScores();
     renderDashboard();
+    // Pre-build fWAR model inputs (calculation waits for user to click Recalculate)
+    renderFWARPage();
   }).catch(function(e) {
     console.error(e);
     ['standings-body','season-body','combined-body','hit-table','pit-table','roster-body'].forEach(function(id) {
@@ -546,6 +596,12 @@ function drawPlayers(type) {
   var q = isHit ? S.hitQ : S.pitQ;
   var id = isHit ? 'hit-table' : 'pit-table';
   if (!rows.length) { document.getElementById(id).innerHTML = '<div class="error-msg">No player data found</div>'; return; }
+
+  // Build fWAR lookup by name
+  var fwarLookup = {};
+  var fwarResults = isHit ? FWAR.hitResults : FWAR.pitResults;
+  fwarResults.forEach(function(p) { fwarLookup[p.name] = p; });
+
   var filtered = rows.filter(function(row) {
     var name = ((row.scorer && row.scorer.name) || '').toLowerCase();
     var ftId = ((row.cells || [])[1] && (row.cells || [])[1].teamId) || '';
@@ -554,9 +610,29 @@ function drawPlayers(type) {
     if (q && name.indexOf(q) === -1) return false;
     return true;
   });
+
+  // Sort by fWAR desc if calculated, otherwise keep original order
+  if (fwarResults.length) {
+    filtered = filtered.slice().sort(function(a, b) {
+      var na = (a.scorer && a.scorer.name) || '';
+      var nb = (b.scorer && b.scorer.name) || '';
+      var fa = fwarLookup[na]; var fb = fwarLookup[nb];
+      var va = fa ? fa.fWAR : -999; var vb = fb ? fb.fWAR : -999;
+      return vb - va;
+    });
+  }
+
   var html = '<table><thead><tr><th class="left">Player</th><th class="left">Pos</th><th class="left">MLB</th>';
+  // fWAR columns first
+  var hasFWAR = fwarResults.length > 0;
+  if (hasFWAR) {
+    html += '<th style="color:var(--accent);font-weight:700">fWAR</th>';
+    html += '<th style="color:var(--muted);font-size:11px">Slot</th>';
+    html += '<th style="color:var(--muted);font-size:11px">totalZ</th>';
+  }
   headers.forEach(function(h) { html += '<th>' + (h.shortName || h.name || '') + '</th>'; });
   html += '</tr></thead><tbody>';
+
   filtered.forEach(function(row) {
     var scorer = row.scorer || {};
     var cells = row.cells || [];
@@ -567,10 +643,25 @@ function drawPlayers(type) {
     var ftId = (cells[1] && cells[1].teamId) || '';
     var ft = S.teamInfo[ftId] || null;
     var isFa = !ftId;
+    var fw = fwarLookup[name];
+
     html += '<tr>';
     html += '<td class="left"><div class="team-cell">' + (hs ? '<img class="player-hs" src="' + hs + '" alt="" onerror="this.style.display=\'none\'">' : '') + '<span><strong>' + name + '</strong></span></div></td>';
     html += '<td class="left"><span style="color:var(--muted);font-size:12px">' + pos + '</span></td>';
     html += '<td class="left">' + mlb + '</td>';
+
+    if (hasFWAR) {
+      if (fw) {
+        var fv = fw.fWAR;
+        var fc = fv >= 2 ? '#1e6b3a' : fv >= 0.5 ? '#4a9a68' : fv >= -0.5 ? '#b7791f' : '#c0392b';
+        html += '<td style="font-weight:700;color:' + fc + '">' + (fv >= 0 ? '+' : '') + fv.toFixed(2) + '</td>';
+        html += '<td style="font-size:11px;color:var(--muted)">' + (fw.assignedSlot || '—') + '</td>';
+        html += '<td style="font-size:11px;color:var(--muted)">' + (fw.totalZ != null ? fw.totalZ.toFixed(2) : '—') + '</td>';
+      } else {
+        html += '<td style="color:var(--muted)">—</td><td></td><td></td>';
+      }
+    }
+
     cells.forEach(function(cell, j) {
       if (j === 1) {
         if (isFa) { html += '<td class="left"><span class="badge fa">FA</span></td>'; }
@@ -3975,6 +4066,343 @@ function buildCorrelations(el) {
 
   el.innerHTML = html;
 }
+
+// ── fWAR Engine ──────────────────────────────────────────────────────────────
+
+var FWAR_DEFAULTS = {
+  repRanks: { C:18, '1B':20, '2B':18, '3B':18, SS:18, CI:24, MI:24, OF:75, UT:140, P:140 },
+  hitWeights: { R:1, HR:1, RBI:1, SB:1, AVG:1 },
+  pitWeights: { W:1, SV:1, K:1, ERA:1, WHIP:1 }
+};
+
+// Current model state (mutated by inputs)
+var FWAR = {
+  repRanks:   JSON.parse(JSON.stringify(FWAR_DEFAULTS.repRanks)),
+  hitWeights: JSON.parse(JSON.stringify(FWAR_DEFAULTS.hitWeights)),
+  pitWeights: JSON.parse(JSON.stringify(FWAR_DEFAULTS.pitWeights)),
+  hitResults: [],  // computed fWAR per hitter
+  pitResults: []   // computed fWAR per pitcher
+};
+
+function renderFWARPage() {
+  if (fwarRendered) return;
+  fwarRendered = true;
+  buildFWARModelInputs();
+  // If player data is already loaded, run initial calculation
+  if (S.hitRows.length && S.pitRows.length) recalculateFWAR();
+}
+
+window.showFWARTab = function(tab, btn) {
+  document.querySelectorAll('#fwar-tabs .trade-tab').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('#page-fwar .trade-tab-content').forEach(function(c){c.classList.remove('active');});
+  if (btn) btn.classList.add('active');
+  document.getElementById('fwar-tab-' + tab).classList.add('active');
+};
+
+function buildFWARModelInputs() {
+  // Replacement rank inputs
+  var repEl = document.getElementById('fwar-rep-inputs');
+  if (!repEl) return;
+  var positions = ['C','1B','2B','3B','SS','CI','MI','OF','UT','P'];
+  repEl.innerHTML = positions.map(function(pos) {
+    return '<div class="fwar-input-group">' +
+      '<label class="fwar-input-label">' + pos + '</label>' +
+      '<input class="fwar-input" type="number" min="1" max="500" id="fwar-rep-' + pos.replace(/\//g,'-') + '" value="' + FWAR.repRanks[pos] + '">' +
+      '</div>';
+  }).join('');
+
+  // Hitting weight sliders
+  var hitEl = document.getElementById('fwar-hit-weights');
+  if (hitEl) {
+    hitEl.innerHTML = Object.keys(FWAR.hitWeights).map(function(cat) {
+      return '<div class="fwar-input-group">' +
+        '<label class="fwar-input-label">' + cat + '</label>' +
+        '<input class="fwar-input" type="number" min="0" max="1" step="0.1" id="fwar-hw-' + cat + '" value="' + FWAR.hitWeights[cat] + '">' +
+        '</div>';
+    }).join('');
+  }
+
+  // Pitching weight sliders
+  var pitEl = document.getElementById('fwar-pit-weights');
+  if (pitEl) {
+    pitEl.innerHTML = Object.keys(FWAR.pitWeights).map(function(cat) {
+      return '<div class="fwar-input-group">' +
+        '<label class="fwar-input-label">' + cat + '</label>' +
+        '<input class="fwar-input" type="number" min="0" max="1" step="0.1" id="fwar-pw-' + cat + '" value="' + FWAR.pitWeights[cat] + '">' +
+        '</div>';
+    }).join('');
+  }
+}
+
+window.resetFWARDefaults = function() {
+  FWAR.repRanks   = JSON.parse(JSON.stringify(FWAR_DEFAULTS.repRanks));
+  FWAR.hitWeights = JSON.parse(JSON.stringify(FWAR_DEFAULTS.hitWeights));
+  FWAR.pitWeights = JSON.parse(JSON.stringify(FWAR_DEFAULTS.pitWeights));
+  buildFWARModelInputs();
+  document.getElementById('fwar-status').textContent = 'Defaults restored — click Recalculate.';
+};
+
+window.recalculateFWAR = function() {
+  // Read current inputs
+  var positions = ['C','1B','2B','3B','SS','CI','MI','OF','UT','P'];
+  positions.forEach(function(pos) {
+    var el = document.getElementById('fwar-rep-' + pos.replace(/\//g,'-'));
+    if (el) FWAR.repRanks[pos] = Math.max(1, parseInt(el.value) || FWAR_DEFAULTS.repRanks[pos]);
+  });
+  Object.keys(FWAR.hitWeights).forEach(function(cat) {
+    var el = document.getElementById('fwar-hw-' + cat);
+    if (el) FWAR.hitWeights[cat] = Math.min(1, Math.max(0, parseFloat(el.value) || 0));
+  });
+  Object.keys(FWAR.pitWeights).forEach(function(cat) {
+    var el = document.getElementById('fwar-pw-' + cat);
+    if (el) FWAR.pitWeights[cat] = Math.min(1, Math.max(0, parseFloat(el.value) || 0));
+  });
+
+  if (!S.hitRows.length || !S.pitRows.length) {
+    document.getElementById('fwar-status').textContent = 'Player data not loaded yet.';
+    return;
+  }
+
+  var hitIdx = buildStatIdx(S.hitHeaders);
+  var pitIdx = buildStatIdx(S.pitHeaders);
+
+  // ── Pull raw stats for all hitters ───────────────────────────────────────
+  function getVal(cells, key, idx) {
+    var i = idx[key.toUpperCase()];
+    if (i == null) return null;
+    var v = parseFloat((cells[i] || {}).content);
+    return isNaN(v) ? null : v;
+  }
+
+  // Determine which players are rostered (used for league avg calculations)
+  var rosteredHitters = S.hitRows.filter(function(r){ return ((r.cells||[])[1]||{}).teamId; });
+  var rosteredPitchers = S.pitRows.filter(function(r){ return ((r.cells||[])[1]||{}).teamId; });
+
+  // ── Compute league averages from rostered players only ───────────────────
+  function mean(arr) { return arr.length ? arr.reduce(function(a,b){return a+b;})/arr.length : 0; }
+  function stddev(arr, m) {
+    if (arr.length < 2) return 1;
+    var v = arr.reduce(function(a,b){return a+(b-m)*(b-m);},0)/(arr.length-1);
+    return Math.sqrt(v)||1;
+  }
+
+  // Hitter stats from rostered players
+  var rAVGs = rosteredHitters.map(function(r){ return getVal(r.cells||[],  'AVG', hitIdx); }).filter(function(v){return v!=null;});
+  var rABs  = rosteredHitters.map(function(r){ return getVal(r.cells||[], 'AB',  hitIdx); }).filter(function(v){return v!=null;});
+  var lgAVG = mean(rAVGs);
+
+  // Pitcher league stats
+  var rERAs  = rosteredPitchers.map(function(r){ return getVal(r.cells||[], 'ERA',  pitIdx); }).filter(function(v){return v!=null;});
+  var rWHIPs = rosteredPitchers.map(function(r){ return getVal(r.cells||[], 'WHIP', pitIdx); }).filter(function(v){return v!=null;});
+  var lgERA  = mean(rERAs);
+  var lgWHIP = mean(rWHIPs);
+
+  // ── Build hitter dataset ─────────────────────────────────────────────────
+  var allHitters = S.hitRows.map(function(row) {
+    var scorer = row.scorer || {};
+    var cells  = row.cells || [];
+    var ftId   = (cells[1] && cells[1].teamId) || '';
+    var pos    = scorer.posShortNames || '';
+    var ab     = getVal(cells, 'AB',  hitIdx) || 0;
+    var avg    = getVal(cells, 'AVG', hitIdx);
+    var avgImpact = (avg != null && ab > 0) ? (avg - lgAVG) * ab : null;
+    return {
+      name: scorer.name || '',
+      pos: pos,
+      hs:  scorer.headshotUrl || '',
+      mlb: scorer.teamShortName || '',
+      ftId: ftId,
+      cells: cells,
+      raw: {
+        R:   getVal(cells, 'R',   hitIdx),
+        HR:  getVal(cells, 'HR',  hitIdx),
+        RBI: getVal(cells, 'RBI', hitIdx),
+        SB:  getVal(cells, 'SB',  hitIdx),
+        AVG: avg,
+        AB:  ab,
+        AVG_impact: avgImpact
+      }
+    };
+  });
+
+  // ── Compute z-scores for hitters ─────────────────────────────────────────
+  var hitCats = ['R','HR','RBI','SB'];
+  var hitZParams = {};
+  hitCats.forEach(function(cat) {
+    var vals = allHitters.map(function(p){ return p.raw[cat]; }).filter(function(v){return v!=null;});
+    var m = mean(vals);
+    hitZParams[cat] = { mean: m, std: stddev(vals, m) };
+  });
+  // AVG impact z
+  var avgImpactVals = allHitters.map(function(p){ return p.raw.AVG_impact; }).filter(function(v){return v!=null;});
+  var avgImpactMean = mean(avgImpactVals);
+  hitZParams['AVG'] = { mean: avgImpactMean, std: stddev(avgImpactVals, avgImpactMean) };
+
+  allHitters.forEach(function(p) {
+    p.z = {};
+    hitCats.forEach(function(cat) {
+      var v = p.raw[cat];
+      p.z[cat] = v != null ? (v - hitZParams[cat].mean) / hitZParams[cat].std : 0;
+    });
+    var vi = p.raw.AVG_impact;
+    p.z['AVG'] = vi != null ? (vi - hitZParams['AVG'].mean) / hitZParams['AVG'].std : 0;
+    // Weighted total z
+    p.totalZ = Object.keys(FWAR.hitWeights).reduce(function(s, cat) {
+      return s + (FWAR.hitWeights[cat] * (p.z[cat] || 0));
+    }, 0);
+  });
+
+  // ── Build pitcher dataset ─────────────────────────────────────────────────
+  var allPitchers = S.pitRows.map(function(row) {
+    var scorer = row.scorer || {};
+    var cells  = row.cells || [];
+    var ftId   = (cells[1] && cells[1].teamId) || '';
+    var ip     = getVal(cells, 'IP',   pitIdx) || 0;
+    var era    = getVal(cells, 'ERA',  pitIdx);
+    var whip   = getVal(cells, 'WHIP', pitIdx);
+    var sv     = getVal(cells, 'SV',   pitIdx);
+    var svh    = getVal(cells, 'SVH3', pitIdx);
+    return {
+      name: scorer.name || '',
+      pos:  scorer.posShortNames || '',
+      hs:   scorer.headshotUrl || '',
+      mlb:  scorer.teamShortName || '',
+      ftId: ftId,
+      cells: cells,
+      raw: {
+        W:    getVal(cells, 'W',  pitIdx),
+        SV:   sv != null ? sv : svh,
+        K:    getVal(cells, 'K',  pitIdx),
+        ERA:  era,
+        WHIP: whip,
+        IP:   ip,
+        ERA_impact:  (era  != null && ip > 0) ? (lgERA  - era)  * ip : null,
+        WHIP_impact: (whip != null && ip > 0) ? (lgWHIP - whip) * ip : null
+      }
+    };
+  });
+
+  // ── Compute z-scores for pitchers ────────────────────────────────────────
+  var pitCats = ['W','SV','K'];
+  var pitZParams = {};
+  pitCats.forEach(function(cat) {
+    var vals = allPitchers.map(function(p){ return p.raw[cat]; }).filter(function(v){return v!=null;});
+    var m = mean(vals);
+    pitZParams[cat] = { mean: m, std: stddev(vals, m) };
+  });
+  ['ERA','WHIP'].forEach(function(cat) {
+    var key = cat + '_impact';
+    var vals = allPitchers.map(function(p){ return p.raw[key]; }).filter(function(v){return v!=null;});
+    var m = mean(vals);
+    pitZParams[cat] = { mean: m, std: stddev(vals, m) };
+  });
+
+  allPitchers.forEach(function(p) {
+    p.z = {};
+    pitCats.forEach(function(cat) {
+      var v = p.raw[cat];
+      p.z[cat] = v != null ? (v - pitZParams[cat].mean) / pitZParams[cat].std : 0;
+    });
+    ['ERA','WHIP'].forEach(function(cat) {
+      var vi = p.raw[cat + '_impact'];
+      p.z[cat] = vi != null ? (vi - pitZParams[cat].mean) / pitZParams[cat].std : 0;
+    });
+    p.totalZ = Object.keys(FWAR.pitWeights).reduce(function(s, cat) {
+      return s + (FWAR.pitWeights[cat] * (p.z[cat] || 0));
+    }, 0);
+  });
+
+  // ── Position eligibility map ─────────────────────────────────────────────
+  var POS_MAP = {
+    'C':  ['C'],
+    '1B': ['1B'],
+    '2B': ['2B'],
+    '3B': ['3B'],
+    'SS': ['SS'],
+    'CI': ['1B','3B','CI'],
+    'MI': ['2B','SS','MI'],
+    'OF': ['OF','LF','CF','RF'],
+    'UT': null   // any hitter
+  };
+
+  function isEligible(posStr, slot) {
+    if (!posStr) return false;
+    var parts = posStr.split(',').map(function(p){return p.trim();});
+    if (slot === 'UT') return true; // any hitter
+    var eligible = POS_MAP[slot];
+    if (!eligible) return false;
+    return parts.some(function(p){ return eligible.indexOf(p) !== -1; });
+  }
+
+  // ── Compute replacement z per slot ───────────────────────────────────────
+  // Sort all hitters by totalZ desc and find Nth for each hitting slot
+  var sortedHitters  = allHitters.slice().sort(function(a,b){return b.totalZ-a.totalZ;});
+  var sortedPitchers = allPitchers.slice().sort(function(a,b){return b.totalZ-a.totalZ;});
+
+  var replZ = {};
+  var hitSlots = ['C','1B','2B','3B','SS','CI','MI','OF','UT'];
+  hitSlots.forEach(function(slot) {
+    var eligible = sortedHitters.filter(function(p){ return isEligible(p.pos, slot); });
+    var rank = FWAR.repRanks[slot] || 18;
+    var repPlayer = eligible[rank - 1] || eligible[eligible.length - 1];
+    replZ[slot] = repPlayer ? repPlayer.totalZ : 0;
+  });
+  var pitRank = FWAR.repRanks['P'] || 140;
+  replZ['P'] = sortedPitchers[pitRank - 1] ? sortedPitchers[pitRank - 1].totalZ : 0;
+
+  // ── Assign each hitter to their best slot and compute fWAR ───────────────
+  allHitters.forEach(function(p) {
+    var bestSlot = null, bestFWAR = -Infinity;
+    hitSlots.forEach(function(slot) {
+      if (!isEligible(p.pos, slot)) return;
+      var fw = p.totalZ - replZ[slot];
+      if (fw > bestFWAR) { bestFWAR = fw; bestSlot = slot; }
+    });
+    p.assignedSlot = bestSlot || 'UT';
+    p.fWAR = parseFloat((p.totalZ - replZ[p.assignedSlot]).toFixed(2));
+  });
+
+  allPitchers.forEach(function(p) {
+    p.assignedSlot = 'P';
+    p.fWAR = parseFloat((p.totalZ - replZ['P']).toFixed(2));
+  });
+
+  // Store results
+  FWAR.hitResults = allHitters;
+  FWAR.pitResults = allPitchers;
+  FWAR.replZ = replZ;
+  FWAR.lgAVG = lgAVG;
+  FWAR.lgERA = lgERA;
+  FWAR.lgWHIP = lgWHIP;
+
+  // Update tables
+  drawPlayers('hit');
+  drawPlayers('pit');
+
+  // Model summary
+  var sumEl = document.getElementById('fwar-model-summary');
+  if (sumEl) {
+    var html = '<div class="card"><div class="card-header"><span class="card-title">Replacement level summary</span></div>';
+    html += '<div class="card-body" style="padding:14px 20px"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">';
+    var allSlots = ['C','1B','2B','3B','SS','CI','MI','OF','UT','P'];
+    allSlots.forEach(function(slot) {
+      var rz = replZ[slot] != null ? replZ[slot].toFixed(2) : '—';
+      var rank = FWAR.repRanks[slot];
+      html += '<div style="background:var(--bg);border-radius:var(--radius);padding:8px 12px">';
+      html += '<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">' + slot + ' (rank ' + rank + ')</div>';
+      html += '<div style="font-size:16px;font-weight:600;margin-top:2px">' + rz + '</div>';
+      html += '<div style="font-size:10px;color:var(--muted)">replacement z</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+    html += '<div style="margin-top:12px;font-size:12px;color:var(--muted)">League avgs (rostered): AVG ' + lgAVG.toFixed(3) + ' · ERA ' + lgERA.toFixed(2) + ' · WHIP ' + lgWHIP.toFixed(2) + '</div>';
+    html += '</div></div>';
+    sumEl.innerHTML = html;
+  }
+
+  var n = allHitters.filter(function(p){return p.fWAR!=null;}).length;
+  document.getElementById('fwar-status').textContent = 'Calculated fWAR for ' + n + ' hitters and ' + allPitchers.length + ' pitchers.';
+};
 
 init();
 </script>
