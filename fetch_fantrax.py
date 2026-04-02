@@ -502,7 +502,13 @@ def fetch_fg(url, label):
         r = fg_session.get(url, timeout=30)
         r.raise_for_status()
         data = r.json()
-        rows = data.get("data", [])
+        # FanGraphs API may return {"data": [...]} or a raw array
+        if isinstance(data, list):
+            rows = data
+        elif isinstance(data, dict):
+            rows = data.get("data", data.get("Data", []))
+        else:
+            rows = []
         print(f"  Got {len(rows)} rows")
         return rows
     except Exception as e:
@@ -535,34 +541,44 @@ FG_PIT_LG_URL = (
     f"&season={SEASON}&season1={SEASON}&ind=0&qual=0&month=0&pageitems=2000000000&team=0%2Css"
 )
 
-HIT_STATS = ["PlayerName", "Barrel%", "HardHit%", "xSLG"]
-PIT_STATS  = ["PlayerName", "K-BB%", "xFIP", "xFIP-"]
+HIT_STATS = ["Name", "Barrel%", "HardHit%", "xSLG"]
+PIT_STATS  = ["Name", "K-BB%", "xFIP", "xFIP-"]
 
 def extract_players(rows, stat_cols):
     result = []
     for row in rows:
         entry = {}
+        # FanGraphs uses "Name" as the player name field
+        name = row.get("Name") or row.get("PlayerName") or ""
+        if not name:
+            continue
+        entry["PlayerName"] = name
         for col in stat_cols:
+            if col == "Name":
+                continue
             if col in row:
                 entry[col] = row[col]
-        if entry.get("PlayerName"):
-            result.append(entry)
+        result.append(entry)
     return result
 
 def extract_league_avg(rows, stat_cols):
-    """League average row is when team aggregation is used — take the row
-    where PlayerName is 'Average' or 'League Average', or else the last row."""
     if not rows:
         return {}
     lg_row = None
     for row in rows:
-        name = (row.get("PlayerName") or row.get("Team") or "").lower()
+        name = (row.get("Name") or row.get("PlayerName") or row.get("Team") or "").lower()
         if "average" in name or "league" in name:
             lg_row = row
             break
     if lg_row is None:
         lg_row = rows[-1]
-    return {col: lg_row.get(col) for col in stat_cols if col != "PlayerName"}
+    result = {}
+    for col in stat_cols:
+        if col == "Name":
+            continue
+        if col in lg_row:
+            result[col] = lg_row[col]
+    return result
 
 # Fetch
 hit_rows    = fetch_fg(FG_HIT_URL,    "hitting (Barrel%, HardHit%, xSLG)")
