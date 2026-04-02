@@ -448,7 +448,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 2:03 PM: Langeliers went 2-for-4 with a solo...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -38053,90 +38053,6 @@
                 },
                 {
                   "scorer": {
-                    "teamName": "Detroit Tigers",
-                    "urlName": "kevin-mcgonigle",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05yby_96_2.png",
-                    "scorerId": "05yby",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "005"
-                    ],
-                    "defaultPosId": "005",
-                    "posShortNames": "SS",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Mar 26, 8:09 PM: McGonigle went 4-for-5 with two...",
-                        "typeId": "9"
-                      },
-                      {
-                        "tooltip": "Bats Left",
-                        "typeId": "16"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "005",
-                      "007",
-                      "014"
-                    ],
-                    "teamId": "10080",
-                    "name": "Kevin McGonigle",
-                    "teamShortName": "DET",
-                    "shortName": "K. McGonigle"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "007",
-                  "cells": [
-                    {
-                      "content": "21"
-                    },
-                    {
-                      "content": ""
-                    },
-                    {
-                      "content": "22"
-                    },
-                    {
-                      "content": "4"
-                    },
-                    {
-                      "content": "8"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": "5"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": ".364"
-                    },
-                    {
-                      "content": "6"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "014",
-                    "005",
-                    "007"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
                     "teamName": "Minnesota Twins",
                     "urlName": "luke-keaschall",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05zh9_96_3.png",
@@ -38214,7 +38130,7 @@
                       }
                     },
                     {
-                      "content": "21"
+                      "content": "22"
                     },
                     {
                       "content": "0"
@@ -38232,7 +38148,7 @@
                       "content": "0"
                     },
                     {
-                      "content": ".238"
+                      "content": ".227"
                     },
                     {
                       "content": "6"
@@ -38242,6 +38158,90 @@
                   "eligiblePosIds": [
                     "003",
                     "014",
+                    "007"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
+                    "teamName": "Detroit Tigers",
+                    "urlName": "kevin-mcgonigle",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05yby_96_2.png",
+                    "scorerId": "05yby",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "005"
+                    ],
+                    "defaultPosId": "005",
+                    "posShortNames": "SS",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Mar 26, 8:09 PM: McGonigle went 4-for-5 with two...",
+                        "typeId": "9"
+                      },
+                      {
+                        "tooltip": "Bats Left",
+                        "typeId": "16"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "005",
+                      "007",
+                      "014"
+                    ],
+                    "teamId": "10080",
+                    "name": "Kevin McGonigle",
+                    "teamShortName": "DET",
+                    "shortName": "K. McGonigle"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "007",
+                  "cells": [
+                    {
+                      "content": "21"
+                    },
+                    {
+                      "content": ""
+                    },
+                    {
+                      "content": "22"
+                    },
+                    {
+                      "content": "4"
+                    },
+                    {
+                      "content": "8"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "5"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": ".364"
+                    },
+                    {
+                      "content": "6"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "014",
+                    "005",
                     "007"
                   ],
                   "actions": [
