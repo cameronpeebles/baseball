@@ -501,18 +501,28 @@ def fetch_fg(url, label):
     try:
         r = fg_session.get(url, timeout=30)
         r.raise_for_status()
+        print(f"  HTTP {r.status_code}, content length: {len(r.text)}")
+        print(f"  First 500 chars: {r.text[:500]}")
         data = r.json()
         # FanGraphs API may return {"data": [...]} or a raw array
         if isinstance(data, list):
             rows = data
+            print(f"  Response is a list of {len(rows)} items")
         elif isinstance(data, dict):
+            print(f"  Response is a dict with keys: {list(data.keys())[:10]}")
             rows = data.get("data", data.get("Data", []))
         else:
+            print(f"  Unexpected response type: {type(data)}")
             rows = []
         print(f"  Got {len(rows)} rows")
+        if rows:
+            print(f"  First row keys: {list(rows[0].keys())[:10]}")
+            print(f"  First row Name field: {rows[0].get('Name', 'NOT FOUND')[:100] if isinstance(rows[0].get('Name'), str) else rows[0].get('Name', 'NOT FOUND')}")
         return rows
     except Exception as e:
         print(f"  ERROR: {e}")
+        import traceback
+        traceback.print_exc()
         return []
 
 # Hitting: type=24 = Statcast batting (Barrel%, HardHit%, xSLG etc.)
