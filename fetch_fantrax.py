@@ -541,6 +541,19 @@ FG_PIT_LG_URL = (
     f"&season={SEASON}&season1={SEASON}&ind=0&qual=0&month=0&pageitems=2000000000&team=0%2Css"
 )
 
+import re as _re
+
+def strip_html(val):
+    """Extract plain text from an HTML string like <a href="...">Joey Wiemer</a>"""
+    if not val or not isinstance(val, str):
+        return val
+    # Extract text between > and <
+    match = _re.search(r'>([^<]+)<', val)
+    if match:
+        return match.group(1).strip()
+    # Fallback: strip all tags
+    return _re.sub(r'<[^>]+>', '', val).strip()
+
 HIT_STATS = ["Name", "Barrel%", "HardHit%", "xSLG"]
 PIT_STATS  = ["Name", "K-BB%", "xFIP", "xFIP-"]
 
@@ -548,8 +561,7 @@ def extract_players(rows, stat_cols):
     result = []
     for row in rows:
         entry = {}
-        # FanGraphs uses "Name" as the player name field
-        name = row.get("Name") or row.get("PlayerName") or ""
+        name = strip_html(row.get("Name") or row.get("PlayerName") or "")
         if not name:
             continue
         entry["PlayerName"] = name
@@ -566,7 +578,7 @@ def extract_league_avg(rows, stat_cols):
         return {}
     lg_row = None
     for row in rows:
-        name = (row.get("Name") or row.get("PlayerName") or row.get("Team") or "").lower()
+        name = strip_html(row.get("Name") or row.get("PlayerName") or row.get("Team") or "").lower()
         if "average" in name or "league" in name:
             lg_row = row
             break
