@@ -85,12 +85,22 @@ td.neg { color: #c0392b; font-weight: 500; }
 #page-fwar .card { overflow: visible; }
 #fwar-tab-hitting .table-wrap,
 #fwar-tab-pitching .table-wrap { max-height: 75vh; overflow-y: auto; overflow-x: auto; }
-#fwar-tab-hitting thead th,
-#fwar-tab-pitching thead th { position: sticky; top: 0; z-index: 2; }
+/* First header row sticky at top */
+#fwar-tab-hitting thead tr:first-child th,
+#fwar-tab-pitching thead tr:first-child th { position: sticky; top: 0; z-index: 3; background: var(--bg); }
+/* League avg row (second thead row) sticky just below first header row */
+#fwar-tab-hitting thead tr:nth-child(2) td,
+#fwar-tab-pitching thead tr:nth-child(2) td { position: sticky; top: 38px; z-index: 2; }
+/* Sticky first column */
 #fwar-tab-hitting tr td:nth-child(1),
 #fwar-tab-hitting tr th:nth-child(1),
 #fwar-tab-pitching tr td:nth-child(1),
 #fwar-tab-pitching tr th:nth-child(1) { position: sticky; left: 0; background: var(--surface); z-index: 1; box-shadow: 2px 0 4px rgba(0,0,0,0.04); }
+/* First column in header rows needs higher z-index to overlap both axes */
+#fwar-tab-hitting thead tr:first-child th:first-child,
+#fwar-tab-pitching thead tr:first-child th:first-child { z-index: 5; background: var(--bg); }
+#fwar-tab-hitting thead tr:nth-child(2) td:first-child,
+#fwar-tab-pitching thead tr:nth-child(2) td:first-child { z-index: 4; }
 .zscore-note { font-size: 11px; color: var(--muted); margin-bottom: 16px; }
 .joe-info { background: var(--accent-light); border: 1px solid #c8ddd0; border-radius: var(--radius); padding: 12px 16px; font-size: 12px; color: #2d5a3d; line-height: 1.7; margin-bottom: 20px; }
 .joe-info strong { font-weight: 500; }
