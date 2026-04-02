@@ -516,6 +516,124 @@
                 },
                 {
                   "scorer": {
+                    "teamName": "Kansas City Royals",
+                    "urlName": "salvador-perez",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs01u75_96_16.png",
+                    "scorerId": "01u75",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "001",
+                      "002"
+                    ],
+                    "defaultPosId": "001",
+                    "posShortNames": "C,1B",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
+                      {
+                        "tooltip": "Mar 21, 7:06 AM: Perez started at designated hitter and...",
+                        "typeId": "8"
+                      },
+                      {
+                        "tooltip": "Bats Right",
+                        "typeId": "17"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "001",
+                      "002",
+                      "006",
+                      "014"
+                    ],
+                    "teamId": "10090",
+                    "name": "Salvador Perez",
+                    "teamShortName": "KC",
+                    "shortName": "S. Perez"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "001",
+                  "cells": [
+                    {
+                      "content": "35"
+                    },
+                    {
+                      "content": "MIN 2<br/>@KC 1",
+                      "eventId": "06k85",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "taj-bradley",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04pr8_96_4.png",
+                          "scorerId": "04pr8",
+                          "upcomingEventStatusId": "1",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "In starting lineup",
+                              "typeId": "12"
+                            },
+                            {
+                              "tooltip": "RHP",
+                              "typeId": "17"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "Taj Bradley",
+                          "shortName": "T. Bradley"
+                        },
+                        "header": "Probable Starter for Minnesota:",
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 10.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 0.87 &nbsp;<b>WHIP</b> 1.161 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "24"
+                    },
+                    {
+                      "content": "2"
+                    },
+                    {
+                      "content": "5"
+                    },
+                    {
+                      "content": "1"
+                    },
+                    {
+                      "content": "1"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": ".208"
+                    },
+                    {
+                      "content": "6"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "001",
+                    "002",
+                    "014",
+                    "006"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
                     "teamName": "San Francisco Giants",
                     "urlName": "luis-arraez",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03mew_96_10.png",
@@ -622,124 +740,6 @@
                     "014",
                     "006",
                     "007"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
-                    "teamName": "Kansas City Royals",
-                    "urlName": "salvador-perez",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs01u75_96_16.png",
-                    "scorerId": "01u75",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "001",
-                      "002"
-                    ],
-                    "defaultPosId": "001",
-                    "posShortNames": "C,1B",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 4",
-                        "typeId": "24"
-                      },
-                      {
-                        "tooltip": "Mar 21, 7:06 AM: Perez started at designated hitter and...",
-                        "typeId": "8"
-                      },
-                      {
-                        "tooltip": "Bats Right",
-                        "typeId": "17"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "001",
-                      "002",
-                      "006",
-                      "014"
-                    ],
-                    "teamId": "10090",
-                    "name": "Salvador Perez",
-                    "teamShortName": "KC",
-                    "shortName": "S. Perez"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "001",
-                  "cells": [
-                    {
-                      "content": "35"
-                    },
-                    {
-                      "content": "MIN 2<br/>@KC 0",
-                      "eventId": "06k85",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "taj-bradley",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04pr8_96_4.png",
-                          "scorerId": "04pr8",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Taj Bradley",
-                          "shortName": "T. Bradley"
-                        },
-                        "header": "Probable Starter for Minnesota:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 10.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 0.87 &nbsp;<b>WHIP</b> 1.161 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "23"
-                    },
-                    {
-                      "content": "2"
-                    },
-                    {
-                      "content": "5"
-                    },
-                    {
-                      "content": "1"
-                    },
-                    {
-                      "content": "1"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": ".217"
-                    },
-                    {
-                      "content": "6"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "001",
-                    "002",
-                    "014",
-                    "006"
                   ],
                   "actions": [
                     {
@@ -2296,7 +2296,7 @@
                       "content": "26"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "eventId": "06k85",
                       "popOver": {
                         "scorer": {
@@ -2425,7 +2425,7 @@
                       "content": "33"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "eventId": "06k85",
                       "popOver": {
                         "scorer": {
@@ -3300,7 +3300,7 @@
                       "content": "28"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "pitcher": true,
                       "eventId": "06k85",
                       "popOver": {
@@ -6661,7 +6661,7 @@
                       "content": "23"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "eventId": "06k85",
                       "popOver": {
                         "scorer": {
@@ -6690,7 +6690,7 @@
                       }
                     },
                     {
-                      "content": "17"
+                      "content": "18"
                     },
                     {
                       "content": "3"
@@ -6708,7 +6708,7 @@
                       "content": "0"
                     },
                     {
-                      "content": ".353"
+                      "content": ".333"
                     },
                     {
                       "content": "6"
@@ -7647,7 +7647,7 @@
                         "typeId": "4"
                       },
                       {
-                        "tooltip": "Apr 2, 8:33 AM: The Pirates will call up Griffin from...",
+                        "tooltip": "Apr 2, 2:20 PM: The Pirates and Griffin are working to...",
                         "typeId": "14"
                       },
                       {
@@ -8325,7 +8325,7 @@
                       "content": "28"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "eventId": "06k85",
                       "popOver": {
                         "scorer": {
@@ -12128,7 +12128,7 @@
                       "content": "26"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "eventId": "06k85",
                       "popOver": {
                         "scorer": {
@@ -12157,13 +12157,13 @@
                       }
                     },
                     {
-                      "content": "18"
+                      "content": "19"
                     },
                     {
-                      "content": "2"
+                      "content": "3"
                     },
                     {
-                      "content": "5"
+                      "content": "6"
                     },
                     {
                       "content": "0"
@@ -12175,7 +12175,7 @@
                       "content": "1"
                     },
                     {
-                      "content": ".278"
+                      "content": ".316"
                     },
                     {
                       "content": "6"
@@ -19520,7 +19520,7 @@
                       "content": "29"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "eventId": "06k85",
                       "popOver": {
                         "scorer": {
@@ -19644,7 +19644,7 @@
                       "content": "28"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "eventId": "06k85",
                       "popOver": {
                         "scorer": {
@@ -19673,16 +19673,16 @@
                       }
                     },
                     {
-                      "content": "1"
+                      "content": "1.2"
                     },
                     {
                       "content": "0"
                     },
                     {
-                      "content": "0.00"
+                      "content": "5.40"
                     },
                     {
-                      "content": "1.000"
+                      "content": "1.800"
                     },
                     {
                       "content": "2"
@@ -19712,7 +19712,7 @@
                       "content": "0"
                     },
                     {
-                      "content": "1"
+                      "content": "2"
                     }
                   ],
                   "statusId": "1",
@@ -22106,7 +22106,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 2:44 PM: Cruz went 2-for-5 with a three-run home...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -28079,7 +28079,7 @@
                       "content": "26"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "eventId": "06k85",
                       "popOver": {
                         "scorer": {
@@ -28368,7 +28368,7 @@
                       "content": "22"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "eventId": "06k85",
                       "popOver": {
                         "scorer": {
@@ -33253,6 +33253,121 @@
                 },
                 {
                   "scorer": {
+                    "teamName": "Kansas City Royals",
+                    "urlName": "bobby-witt-jr",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04lgp_96_6.png",
+                    "scorerId": "04lgp",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "005"
+                    ],
+                    "defaultPosId": "005",
+                    "posShortNames": "SS",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
+                      {
+                        "tooltip": "Apr 1, 10:49 PM: Witt went 1-for-3 with one RBI and a...",
+                        "typeId": "14"
+                      },
+                      {
+                        "tooltip": "Bats Right",
+                        "typeId": "17"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "005",
+                      "007",
+                      "014"
+                    ],
+                    "teamId": "10090",
+                    "name": "Bobby Witt Jr.",
+                    "teamShortName": "KC",
+                    "shortName": "B. Witt Jr."
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "007",
+                  "cells": [
+                    {
+                      "content": "25"
+                    },
+                    {
+                      "content": "MIN 2<br/>@KC 1",
+                      "eventId": "06k85",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "taj-bradley",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04pr8_96_4.png",
+                          "scorerId": "04pr8",
+                          "upcomingEventStatusId": "1",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "In starting lineup",
+                              "typeId": "12"
+                            },
+                            {
+                              "tooltip": "RHP",
+                              "typeId": "17"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "Taj Bradley",
+                          "shortName": "T. Bradley"
+                        },
+                        "header": "Probable Starter for Minnesota:",
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 10.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 0.87 &nbsp;<b>WHIP</b> 1.161 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "22"
+                    },
+                    {
+                      "content": "1"
+                    },
+                    {
+                      "content": "6"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "2"
+                    },
+                    {
+                      "content": "2"
+                    },
+                    {
+                      "content": ".273"
+                    },
+                    {
+                      "content": "6"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "014",
+                    "005",
+                    "007"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
                     "teamName": "Los Angeles Dodgers",
                     "urlName": "andy-pages",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04ru5_96_8.png",
@@ -33326,121 +33441,6 @@
                   "eligiblePosIds": [
                     "012",
                     "014"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
-                    "teamName": "Kansas City Royals",
-                    "urlName": "bobby-witt-jr",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04lgp_96_6.png",
-                    "scorerId": "04lgp",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "005"
-                    ],
-                    "defaultPosId": "005",
-                    "posShortNames": "SS",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 2",
-                        "typeId": "22"
-                      },
-                      {
-                        "tooltip": "Apr 1, 10:49 PM: Witt went 1-for-3 with one RBI and a...",
-                        "typeId": "14"
-                      },
-                      {
-                        "tooltip": "Bats Right",
-                        "typeId": "17"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "005",
-                      "007",
-                      "014"
-                    ],
-                    "teamId": "10090",
-                    "name": "Bobby Witt Jr.",
-                    "teamShortName": "KC",
-                    "shortName": "B. Witt Jr."
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "007",
-                  "cells": [
-                    {
-                      "content": "25"
-                    },
-                    {
-                      "content": "MIN 2<br/>@KC 0",
-                      "eventId": "06k85",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "taj-bradley",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04pr8_96_4.png",
-                          "scorerId": "04pr8",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Taj Bradley",
-                          "shortName": "T. Bradley"
-                        },
-                        "header": "Probable Starter for Minnesota:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 10.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 0.87 &nbsp;<b>WHIP</b> 1.161 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "21"
-                    },
-                    {
-                      "content": "1"
-                    },
-                    {
-                      "content": "5"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": "2"
-                    },
-                    {
-                      "content": "2"
-                    },
-                    {
-                      "content": ".238"
-                    },
-                    {
-                      "content": "6"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "014",
-                    "005",
-                    "007"
                   ],
                   "actions": [
                     {
@@ -34796,7 +34796,7 @@
                       "content": "30"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "eventId": "06k85",
                       "popOver": {
                         "scorer": {
@@ -35338,7 +35338,7 @@
                       "content": "36"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "eventId": "06k85",
                       "popOver": {
                         "scorer": {
@@ -36008,7 +36008,7 @@
                       "content": "34"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "eventId": "06k85",
                       "popOver": {
                         "scorer": {
@@ -37987,7 +37987,7 @@
                       "content": "32"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "eventId": "06k85",
                       "popOver": {
                         "scorer": {
@@ -38101,7 +38101,7 @@
                       "content": "23"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "eventId": "06k85",
                       "popOver": {
                         "scorer": {
@@ -38130,7 +38130,7 @@
                       }
                     },
                     {
-                      "content": "22"
+                      "content": "23"
                     },
                     {
                       "content": "0"
@@ -38148,7 +38148,7 @@
                       "content": "0"
                     },
                     {
-                      "content": ".227"
+                      "content": ".217"
                     },
                     {
                       "content": "6"
@@ -38388,7 +38388,7 @@
                       "content": "28"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "eventId": "06k85",
                       "popOver": {
                         "scorer": {
@@ -38429,7 +38429,7 @@
                       "content": "0"
                     },
                     {
-                      "content": "3"
+                      "content": "4"
                     },
                     {
                       "content": "0"
@@ -39094,7 +39094,7 @@
                       "content": "21"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "eventId": "06k85"
                     },
                     {
@@ -40659,7 +40659,7 @@
                       "content": "25"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "eventId": "06k85",
                       "popOver": {
                         "scorer": {
@@ -44690,7 +44690,7 @@
                       "content": "24"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "eventId": "06k85",
                       "popOver": {
                         "scorer": {
@@ -49534,7 +49534,7 @@
                       "content": "29"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "eventId": "06k85",
                       "popOver": {
                         "scorer": {
@@ -50423,7 +50423,7 @@
                       "content": "25"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "pitcher": true,
                       "eventId": "06k85",
                       "popOver": {
@@ -51159,7 +51159,7 @@
                       "content": "30"
                     },
                     {
-                      "content": "MIN 2<br/>@KC 0",
+                      "content": "MIN 2<br/>@KC 1",
                       "eventId": "06k85",
                       "popOver": {
                         "scorer": {
@@ -51558,7 +51558,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 2:37 PM: Skenes (1-1) picked up the win in...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
