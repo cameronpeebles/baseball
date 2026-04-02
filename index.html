@@ -83,6 +83,10 @@ td.neg { color: #c0392b; font-weight: 500; }
 #page-fwar .table-wrap { overflow-x: auto; }
 #page-fwar table { min-width: max-content; }
 #page-fwar .card { overflow: visible; }
+/* Rosters wide tables */
+#page-rosters { max-width: none; }
+#page-rosters .table-wrap { overflow-x: auto; }
+#page-rosters table { min-width: max-content; }
 #fwar-tab-hitting .table-wrap,
 #fwar-tab-pitching .table-wrap { max-height: 75vh; overflow-y: auto; overflow-x: auto; }
 /* First header row sticky at top */
@@ -494,8 +498,6 @@ function showPage(name, btn) {
   document.querySelectorAll('nav button').forEach(function(b) { b.classList.remove('active'); });
   document.getElementById('page-' + name).classList.add('active');
   btn.classList.add('active');
-  // Expand main to full width for fWAR page (many columns)
-  document.querySelector('main').style.maxWidth = (name === 'fwar') ? 'none' : '';
   if (name === 'dashboard') renderDashboard();
   if (name === 'fantrax') { if (!fantraxRendered) { fantraxRendered = true; } }
   if (name === 'combined') renderCombinedPage();
@@ -505,6 +507,8 @@ function showPage(name, btn) {
   if (name === 'correlations') renderCorrelations();
   if (name === 'fwar') renderFWARPage();
   if (name === 'trade') renderTradeAnalyzer();
+  // Expand main to full width for wide-table pages
+  document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'rosters') ? 'none' : '';
 }
 
 window.showFantraxTab = function(tab, btn) {
