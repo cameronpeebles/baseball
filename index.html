@@ -1625,7 +1625,7 @@ var TA = {
 
 // Position groups
 var POS_GROUPS = {
-  'Infield':  ['C','1B','2B','3B','SS','UT','MI','CI'],
+  'Infield':  ['C','1B','2B','3B','SS','MI','CI'],
   'Outfield': ['OF','LF','CF','RF'],
   'SP':       ['SP'],
   'RP':       ['RP']
@@ -4196,7 +4196,7 @@ function buildCorrelations(el) {
 // ── fWAR Engine ──────────────────────────────────────────────────────────────
 
 var FWAR_DEFAULTS = {
-  repRanks: { C:18, '1B':20, '2B':18, '3B':18, SS:18, CI:24, MI:24, OF:75, UT:140, P:140 },
+  repRanks: { C:18, '1B':24, '2B':18, '3B':20, SS:18, CI:24, MI:24, OF:79, P:140 },
   hitWeights: { R:1, HR:1, RBI:1, SB:1, AVG:1 },
   pitWeights: { W:1, SVH3:1, K:1, ERA:1, WHIP:1 }
 };
@@ -4229,7 +4229,7 @@ function buildFWARModelInputs() {
   // Replacement rank inputs
   var repEl = document.getElementById('fwar-rep-inputs');
   if (!repEl) return;
-  var positions = ['C','1B','2B','3B','SS','CI','MI','OF','UT','P'];
+  var positions = ['C','1B','2B','3B','SS','CI','MI','OF','P'];
   repEl.innerHTML = positions.map(function(pos) {
     return '<div class="fwar-input-group">' +
       '<label class="fwar-input-label">' + pos + '</label>' +
@@ -4270,7 +4270,7 @@ window.resetFWARDefaults = function() {
 
 window.recalculateFWAR = function() {
   // Read current inputs
-  var positions = ['C','1B','2B','3B','SS','CI','MI','OF','UT','P'];
+  var positions = ['C','1B','2B','3B','SS','CI','MI','OF','P'];
   positions.forEach(function(pos) {
     var el = document.getElementById('fwar-rep-' + pos.replace(/\//g,'-'));
     if (el) FWAR.repRanks[pos] = Math.max(1, parseInt(el.value) || FWAR_DEFAULTS.repRanks[pos]);
@@ -4447,26 +4447,23 @@ window.recalculateFWAR = function() {
     'SS': ['SS'],
     'CI': ['1B','3B','CI'],
     'MI': ['2B','SS','MI'],
-    'OF': ['OF','LF','CF','RF'],
-    'UT': null   // any hitter
+    'OF': ['OF','LF','CF','RF']
   };
 
   function isEligible(posStr, slot) {
     if (!posStr) return false;
     var parts = posStr.split(',').map(function(p){return p.trim();});
-    if (slot === 'UT') return true; // any hitter
     var eligible = POS_MAP[slot];
     if (!eligible) return false;
     return parts.some(function(p){ return eligible.indexOf(p) !== -1; });
   }
 
   // ── Compute replacement z per slot ───────────────────────────────────────
-  // Sort all hitters by totalZ desc and find Nth for each hitting slot
   var sortedHitters  = allHitters.slice().sort(function(a,b){return b.totalZ-a.totalZ;});
   var sortedPitchers = allPitchers.slice().sort(function(a,b){return b.totalZ-a.totalZ;});
 
   var replZ = {};
-  var hitSlots = ['C','1B','2B','3B','SS','CI','MI','OF','UT'];
+  var hitSlots = ['C','1B','2B','3B','SS','CI','MI','OF'];
   hitSlots.forEach(function(slot) {
     var eligible = sortedHitters.filter(function(p){ return isEligible(p.pos, slot); });
     var rank = FWAR.repRanks[slot] || 18;
@@ -4477,23 +4474,20 @@ window.recalculateFWAR = function() {
   replZ['P'] = sortedPitchers[pitRank - 1] ? sortedPitchers[pitRank - 1].totalZ : 0;
 
   // ── Assign each hitter to their best slot and compute fWAR ───────────────
-  // Priority: assign to the most specific eligible position slot (not UT)
-  // UT is only used as a fallback if no other slot fits, or to compute
-  // a secondary fWAR showing UT value — but Slot display shows specific pos.
-  // Slot priority order: specific positions first, CI/MI second, OF third, UT last
-  var slotPriority = ['C','1B','2B','3B','SS','CI','MI','OF','UT'];
+  // UT is no longer a standalone slot — its demand is redistributed into
+  // 1B (+4), 3B (+2), and OF (+4) replacement ranks.
+  // Players listed as UT-eligible are assigned to their best specific position.
   var specificSlots = ['C','1B','2B','3B','SS','CI','MI','OF'];
 
   allHitters.forEach(function(p) {
-    // First try to assign to a specific (non-UT) slot
     var bestSlot = null, bestFWAR = -Infinity;
     specificSlots.forEach(function(slot) {
       if (!isEligible(p.pos, slot)) return;
       var fw = p.totalZ - replZ[slot];
       if (fw > bestFWAR) { bestFWAR = fw; bestSlot = slot; }
     });
-    // Only use UT if player has no specific slot eligibility at all
-    if (!bestSlot) bestSlot = 'UT';
+    // If no specific slot found (e.g. UT-only player), use OF as broadest fallback
+    if (!bestSlot) bestSlot = 'OF';
     p.assignedSlot = bestSlot;
     p.fWAR = parseFloat((p.totalZ - replZ[p.assignedSlot]).toFixed(2));
   });
@@ -4622,7 +4616,7 @@ window.recalculateFWAR = function() {
   if (sumEl) {
     var html = '<div class="card" style="margin-bottom:16px"><div class="card-header"><span class="card-title">Replacement level summary</span></div>';
     html += '<div class="card-body" style="padding:14px 20px"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">';
-    var allSlots = ['C','1B','2B','3B','SS','CI','MI','OF','UT','P'];
+    var allSlots = ['C','1B','2B','3B','SS','CI','MI','OF','P'];
     allSlots.forEach(function(slot) {
       var rz = replZ[slot] != null ? replZ[slot].toFixed(2) : '—';
       var rank = FWAR.repRanks[slot];
