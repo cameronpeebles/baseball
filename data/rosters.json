@@ -281,6 +281,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 30, 11:28 PM: Kwan went 3-for-5 with a double, a run,...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -360,7 +364,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 10:09 PM: Freeman went 1-for-4 with a solo home...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -444,7 +448,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 2:03 PM: Langeliers went 2-for-4 with a solo...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -527,7 +531,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 5:30 PM: Arraez went 3-for-4 with a double, a...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -640,6 +644,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 28, 12:19 AM: Betts went 1-for-4 with a three-run...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -721,6 +729,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 28, 10:12 AM: Muncy is starting at third base and...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -792,6 +804,124 @@
                 },
                 {
                   "scorer": {
+                    "teamName": "Kansas City Royals",
+                    "urlName": "salvador-perez",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs01u75_96_16.png",
+                    "scorerId": "01u75",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "001",
+                      "002"
+                    ],
+                    "defaultPosId": "001",
+                    "posShortNames": "C,1B",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
+                      {
+                        "tooltip": "Mar 21, 7:06 AM: Perez started at designated hitter and...",
+                        "typeId": "8"
+                      },
+                      {
+                        "tooltip": "Bats Right",
+                        "typeId": "17"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "001",
+                      "002",
+                      "006",
+                      "014"
+                    ],
+                    "teamId": "10090",
+                    "name": "Salvador Perez",
+                    "teamShortName": "KC",
+                    "shortName": "S. Perez"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "001",
+                  "cells": [
+                    {
+                      "content": "35"
+                    },
+                    {
+                      "content": "MIN 1<br/>@KC 0",
+                      "eventId": "06k85",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "taj-bradley",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04pr8_96_4.png",
+                          "scorerId": "04pr8",
+                          "upcomingEventStatusId": "1",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "In starting lineup",
+                              "typeId": "12"
+                            },
+                            {
+                              "tooltip": "RHP",
+                              "typeId": "17"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "Taj Bradley",
+                          "shortName": "T. Bradley"
+                        },
+                        "header": "Probable Starter for Minnesota:",
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 8.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 1.08 &nbsp;<b>WHIP</b> 1.320 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "22"
+                    },
+                    {
+                      "content": "2"
+                    },
+                    {
+                      "content": "4"
+                    },
+                    {
+                      "content": "1"
+                    },
+                    {
+                      "content": "1"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": ".182"
+                    },
+                    {
+                      "content": "6"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "001",
+                    "002",
+                    "014",
+                    "006"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
                     "teamName": "Philadelphia Phillies",
                     "urlName": "kyle-schwarber",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03cag_96_19.png",
@@ -804,6 +934,10 @@
                     "posShortNames": "UT",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 26, 9:56 PM: Schwarber went 1-for-4 with a two-run...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -964,6 +1098,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 4, 10:59 AM: Bellinger (back) completed a live...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -1134,6 +1272,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 27, 11:25 AM: Frelick went 1-for-3 with a two-run...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -1190,120 +1332,6 @@
                   "eligiblePosIds": [
                     "012",
                     "014"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
-                    "teamName": "Kansas City Royals",
-                    "urlName": "salvador-perez",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs01u75_96_16.png",
-                    "scorerId": "01u75",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "001",
-                      "002"
-                    ],
-                    "defaultPosId": "001",
-                    "posShortNames": "C,1B",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 4",
-                        "typeId": "24"
-                      },
-                      {
-                        "tooltip": "Bats Right",
-                        "typeId": "17"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "001",
-                      "002",
-                      "006",
-                      "014"
-                    ],
-                    "teamId": "10090",
-                    "name": "Salvador Perez",
-                    "teamShortName": "KC",
-                    "shortName": "S. Perez"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "001",
-                  "cells": [
-                    {
-                      "content": "35"
-                    },
-                    {
-                      "content": "MIN 1<br/>@KC 0",
-                      "eventId": "06k85",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "taj-bradley",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04pr8_96_4.png",
-                          "scorerId": "04pr8",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Taj Bradley",
-                          "shortName": "T. Bradley"
-                        },
-                        "header": "Probable Starter for Minnesota:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 7.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 1.23 &nbsp;<b>WHIP</b> 1.091 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "21"
-                    },
-                    {
-                      "content": "2"
-                    },
-                    {
-                      "content": "4"
-                    },
-                    {
-                      "content": "1"
-                    },
-                    {
-                      "content": "1"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": ".190"
-                    },
-                    {
-                      "content": "6"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "001",
-                    "002",
-                    "014",
-                    "006"
                   ],
                   "actions": [
                     {
@@ -1403,6 +1431,10 @@
                     "posShortNames": "SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 30, 8:44 PM: Swanson went 2-for-3 with a walk and an...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -1567,7 +1599,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 2:00 AM: Muncy went 2-for-3 with a solo home...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -1656,7 +1688,7 @@
                       },
                       {
                         "tooltip": "Apr 1, 10:17 AM: Cubs manager Craig Counsell said...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -1936,6 +1968,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 31, 12:45 AM: Bassitt (0-1) took the loss Monday...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -2035,7 +2071,7 @@
                       },
                       {
                         "tooltip": "Apr 1, 10:31 AM: Berrios (elbow) threw a bullpen session...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -2135,7 +2171,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 3:26 PM: Boyd (1-1) earned the win Wednesday...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -2233,7 +2269,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 10:28 PM: Cameron (1-0) allowed one run on four...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -2285,7 +2321,7 @@
                           "shortName": "T. Bradley"
                         },
                         "header": "Probable Starter for Minnesota:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 7.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 1.23 &nbsp;<b>WHIP</b> 1.091 &nbsp;"
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 8.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 1.08 &nbsp;<b>WHIP</b> 1.320 &nbsp;"
                       }
                     },
                     {
@@ -2361,7 +2397,7 @@
                       },
                       {
                         "tooltip": "Apr 1, 2:14 PM: The Royals placed Estevez (foot) on the...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -2414,7 +2450,7 @@
                           "shortName": "T. Bradley"
                         },
                         "header": "Probable Starter for Minnesota:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 7.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 1.23 &nbsp;<b>WHIP</b> 1.091 &nbsp;"
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 8.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 1.08 &nbsp;<b>WHIP</b> 1.320 &nbsp;"
                       }
                     },
                     {
@@ -2484,6 +2520,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 28, 7:53 AM: Finnegan worked around a walk to toss a...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -2678,6 +2718,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 28, 7:49 AM: Ginkel (0-1) allowed one run on two...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -2798,6 +2842,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 29, 2:35 PM: Lauer (1-0) earned the win against the...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
                       }
@@ -2896,6 +2944,10 @@
                       {
                         "tooltip": "In starting lineup",
                         "typeId": "12"
+                      },
+                      {
+                        "tooltip": "Mar 28, 8:17 PM: Lopez took a no-decision Saturday...",
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -3019,6 +3071,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 28, 7:27 PM: Nola allowed three runs on five hits...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -3112,6 +3168,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 31, 6:50 AM: Pagan was one of three relief pitchers...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -3212,6 +3272,10 @@
                         "typeId": "12"
                       },
                       {
+                        "tooltip": "Mar 28, 7:56 AM: Ragans (0-1) took the loss Friday,...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
                       }
@@ -3262,7 +3326,7 @@
                           "shortName": "T. Bradley"
                         },
                         "header": "Probable Starter for Minnesota:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 7.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 1.23 &nbsp;<b>WHIP</b> 1.091 &nbsp;"
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 8.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 1.08 &nbsp;<b>WHIP</b> 1.320 &nbsp;"
                       }
                     },
                     {
@@ -3275,7 +3339,7 @@
                       "content": "4.50"
                     },
                     {
-                      "content": "1.750"
+                      "content": "1.875"
                     },
                     {
                       "content": "10"
@@ -3332,6 +3396,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 30, 10:39 PM: Roupp (1-0) earned the win over San...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -3454,7 +3522,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 12:35 AM: Santillan's velocity is down so far...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -3552,7 +3620,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 8:44 PM: Senga (0-1) took the loss against the...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -3674,6 +3742,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 30, 11:45 PM: Soroka (1-0) earned the win over...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -3799,6 +3871,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Mar 30, 2:48 PM: Strider (oblique) will travel with...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -3920,6 +3996,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 22, 12:24 PM: Vesia has allowed one earned run on...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
                       }
@@ -4013,6 +4093,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 30, 10:46 PM: Walker earned a save against the Padres...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -4133,6 +4217,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 30, 10:12 PM: Williams (1) earned the save Monday...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -5562,6 +5650,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 28, 5:21 PM: Wetherholt went 2-for-5 with a run...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "On this team's trade block",
                         "typeId": "35"
                       },
@@ -5648,6 +5740,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 28, 5:50 PM: Crow-Armstrong went 2-for-4 with a...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -5725,6 +5821,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 30, 11:04 PM: Merrill went 1-for-4 with a two-run...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -5805,7 +5905,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 9:40 PM: Smith went 2-for-3 with a solo home run...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -5887,7 +5987,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 2:12 PM: Baldwin went 2-for-3 with a walk, a...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -5999,7 +6099,7 @@
                       },
                       {
                         "tooltip": "Apr 1, 2:54 PM: DeLauter (foot) is not in the lineup...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -6081,7 +6181,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 8:36 PM: Herrera went 1-for-2 with a two-run...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -6161,6 +6261,10 @@
                     "posShortNames": "3B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 6, 11:06 PM: Caminero went 2-for-5 with a two-run...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -6243,7 +6347,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 11:07 AM: Benge is out of the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -6351,7 +6455,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 9:10 AM: Diaz is out of the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -6431,6 +6535,10 @@
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 30, 6:32 AM: Stewart went 2-for-2 with a walk, a...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -6513,7 +6621,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 7:34 AM: Kurtz is not in the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -6596,6 +6704,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 31, 12:39 PM: Beck is not in the lineup for Tuesday's...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -6661,6 +6773,128 @@
                 },
                 {
                   "scorer": {
+                    "teamName": "Kansas City Royals",
+                    "urlName": "jac-caglianone",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05u9q_96_2.png",
+                    "scorerId": "05u9q",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "002",
+                      "012"
+                    ],
+                    "defaultPosId": "011",
+                    "posShortNames": "1B,OF",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 5",
+                        "typeId": "25"
+                      },
+                      {
+                        "tooltip": "Apr 1, 10:54 PM: Caglianone went 3-for-4 with a double...",
+                        "typeId": "14"
+                      },
+                      {
+                        "tooltip": "On this team's trade block",
+                        "typeId": "35"
+                      },
+                      {
+                        "tooltip": "Bats Left",
+                        "typeId": "16"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "002",
+                      "006",
+                      "012",
+                      "014"
+                    ],
+                    "teamId": "10090",
+                    "name": "Jac Caglianone",
+                    "teamShortName": "KC",
+                    "shortName": "J. Caglianone"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "014",
+                  "cells": [
+                    {
+                      "content": "23"
+                    },
+                    {
+                      "content": "MIN 1<br/>@KC 0",
+                      "eventId": "06k85",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "taj-bradley",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04pr8_96_4.png",
+                          "scorerId": "04pr8",
+                          "upcomingEventStatusId": "1",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "In starting lineup",
+                              "typeId": "12"
+                            },
+                            {
+                              "tooltip": "RHP",
+                              "typeId": "17"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "Taj Bradley",
+                          "shortName": "T. Bradley"
+                        },
+                        "header": "Probable Starter for Minnesota:",
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 8.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 1.08 &nbsp;<b>WHIP</b> 1.320 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "16"
+                    },
+                    {
+                      "content": "3"
+                    },
+                    {
+                      "content": "6"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": ".375"
+                    },
+                    {
+                      "content": "6"
+                    }
+                  ],
+                  "statusId": "2",
+                  "eligiblePosIds": [
+                    "012",
+                    "002",
+                    "014",
+                    "006"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
                     "teamName": "Arizona Diamondbacks",
                     "urlName": "jordan-lawlar",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05r1m_96_2.png",
@@ -6673,6 +6907,10 @@
                     "posShortNames": "3B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 28, 4:13 PM: Lawlar isn't in the lineup for...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "On this team's trade block",
                         "typeId": "35"
@@ -6771,128 +7009,6 @@
                 },
                 {
                   "scorer": {
-                    "teamName": "Kansas City Royals",
-                    "urlName": "jac-caglianone",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05u9q_96_2.png",
-                    "scorerId": "05u9q",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "002",
-                      "012"
-                    ],
-                    "defaultPosId": "011",
-                    "posShortNames": "1B,OF",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 5",
-                        "typeId": "25"
-                      },
-                      {
-                        "tooltip": "Apr 1, 10:54 PM: Caglianone went 3-for-4 with a double...",
-                        "typeId": "9"
-                      },
-                      {
-                        "tooltip": "On this team's trade block",
-                        "typeId": "35"
-                      },
-                      {
-                        "tooltip": "Bats Left",
-                        "typeId": "16"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "002",
-                      "006",
-                      "012",
-                      "014"
-                    ],
-                    "teamId": "10090",
-                    "name": "Jac Caglianone",
-                    "teamShortName": "KC",
-                    "shortName": "J. Caglianone"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "014",
-                  "cells": [
-                    {
-                      "content": "23"
-                    },
-                    {
-                      "content": "MIN 1<br/>@KC 0",
-                      "eventId": "06k85",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "taj-bradley",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04pr8_96_4.png",
-                          "scorerId": "04pr8",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Taj Bradley",
-                          "shortName": "T. Bradley"
-                        },
-                        "header": "Probable Starter for Minnesota:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 7.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 1.23 &nbsp;<b>WHIP</b> 1.091 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "15"
-                    },
-                    {
-                      "content": "3"
-                    },
-                    {
-                      "content": "5"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": ".333"
-                    },
-                    {
-                      "content": "6"
-                    }
-                  ],
-                  "statusId": "2",
-                  "eligiblePosIds": [
-                    "012",
-                    "002",
-                    "014",
-                    "006"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
                     "teamName": "Chicago Cubs",
                     "urlName": "matt-shaw",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs063vu_96_2.png",
@@ -6907,7 +7023,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 4:20 PM: Shaw went 2-for-4 with two RBI in...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -6994,6 +7110,10 @@
                         "typeId": "4"
                       },
                       {
+                        "tooltip": "Mar 22, 9:14 AM: Bazzana went 3-for-4 with two home runs...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -7078,6 +7198,10 @@
                         "typeId": "4"
                       },
                       {
+                        "tooltip": "Mar 9, 7:38 PM: Clark was reassigned to minor-league...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -7160,6 +7284,10 @@
                         "typeId": "4"
                       },
                       {
+                        "tooltip": "Mar 20, 12:26 PM: The Nationals assigned Crews to...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -7240,6 +7368,10 @@
                       {
                         "tooltip": "Minor Leagues",
                         "typeId": "4"
+                      },
+                      {
+                        "tooltip": "Mar 22, 10:33 PM: Eldridge went 2-for-3 with a home run...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -7345,6 +7477,10 @@
                       {
                         "tooltip": "Minor Leagues",
                         "typeId": "4"
+                      },
+                      {
+                        "tooltip": "Mar 31, 7:43 AM: The Mariners signed Emerson to an...",
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -7600,7 +7736,7 @@
                       },
                       {
                         "tooltip": "Mar 31, 3:40 PM: Phillies manager Rob Thomson said...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -7964,6 +8100,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Mar 4, 6:56 AM: Bautista (shoulder) threw a baseball...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -8059,6 +8199,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 29, 3:18 PM: Baz did not factor into the decision...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -8153,6 +8297,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 30, 9:03 PM: Bubic (1-0) collected the win after...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
                       }
@@ -8202,7 +8350,7 @@
                           "shortName": "T. Bradley"
                         },
                         "header": "Probable Starter for Minnesota:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 7.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 1.23 &nbsp;<b>WHIP</b> 1.091 &nbsp;"
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 8.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 1.08 &nbsp;<b>WHIP</b> 1.320 &nbsp;"
                       }
                     },
                     {
@@ -8272,6 +8420,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 30, 8:58 PM: Burns (1-0) earned the win Monday...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -8463,6 +8615,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 29, 9:18 PM: Hancock (1-0) earned the win Sunday...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -8661,6 +8817,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Mar 17, 10:24 AM: Jobe (elbow) is scheduled to play catch...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -8856,7 +9016,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 6:39 AM: Painter (1-0) picked up the win in...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -8954,7 +9114,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 4:27 PM: Palencia worked around a hit to pitch a...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -9180,6 +9340,10 @@
                         "typeId": "4"
                       },
                       {
+                        "tooltip": "Mar 18, 2:26 PM: The Marlins reassigned Snelling to...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
                       }
@@ -9276,6 +9440,10 @@
                       {
                         "tooltip": "Injured List - 60-day IL - Elbow",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Mar 25, 12:50 PM: The Cubs placed Steele (elbow) on the...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -10782,7 +10950,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 9:45 PM: Ramirez went 1-for-3 with a two-run...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Switch Hitter",
@@ -10866,7 +11034,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 8:20 PM: Soto went 1-for-5 with a solo home run...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -10973,6 +11141,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 12, 7:34 PM: Turner went 2-for-4 with two doubles...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -11052,6 +11224,10 @@
                     "posShortNames": "C",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 31, 12:48 AM: Raleigh went 1-for-2 with a walk-off...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Switch Hitter",
                         "typeId": "18"
@@ -11219,6 +11395,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 30, 6:57 AM: Arozarena went 2-for-4 with a double,...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -11296,6 +11476,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 27, 7:33 PM: Judge went 1-for-4 with a two-run home...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -11375,6 +11559,10 @@
                     "posShortNames": "2B,OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 30, 11:33 PM: Altuve went 4-for-4 with two solo home...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -11457,6 +11645,10 @@
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 24, 10:01 AM: Olson went 2-for-3 with two solo home...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -11649,7 +11841,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 8:31 PM: Anthony went 1-for-1 with a solo home...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -11814,6 +12006,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 23, 12:17 PM: Hernandez went 2-for-4 with a home run,...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -11899,6 +12095,10 @@
                         "typeId": "21"
                       },
                       {
+                        "tooltip": "Mar 17, 8:15 AM: Garcia went 2-for-4 with an RBI in Team...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -11953,7 +12153,7 @@
                           "shortName": "T. Bradley"
                         },
                         "header": "Probable Starter for Minnesota:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 7.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 1.23 &nbsp;<b>WHIP</b> 1.091 &nbsp;"
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 8.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 1.08 &nbsp;<b>WHIP</b> 1.320 &nbsp;"
                       }
                     },
                     {
@@ -12010,6 +12210,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 29, 9:38 AM: Carter is out of the lineup for...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -12089,6 +12293,10 @@
                     "posShortNames": "2B,SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 30, 4:14 PM: Stott is absent from the lineup for...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -12371,7 +12579,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 2:47 PM: Abbott (0-1) took the loss Wednesday,...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -12469,6 +12677,10 @@
                       {
                         "tooltip": "Minor Leagues",
                         "typeId": "4"
+                      },
+                      {
+                        "tooltip": "Mar 31, 10:20 AM: Anderson is opening the season with...",
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -12667,6 +12879,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Mar 30, 6:01 PM: Yankees manager Aaron Boone told...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -12763,7 +12979,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 11:30 PM: DeGrom allowed three earned runs on six...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -12954,6 +13170,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 29, 3:00 PM: Gore (1-0) earned the win Sunday over...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
                       }
@@ -13048,6 +13268,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 30, 10:06 PM: Harrison allowed one run on four hits...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
                       }
@@ -13141,6 +13365,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 30, 9:24 PM: Holmes (1-0) earned the win against the...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -13262,6 +13490,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 28, 5:46 PM: Horton (1-0) picked up the win...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -13361,7 +13593,7 @@
                       },
                       {
                         "tooltip": "Apr 1, 5:49 AM: Kelly (back) is scheduled to start for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -13484,6 +13716,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 28, 5:14 PM: McGreevy came away with a no-decision...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -13674,7 +13910,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 4:01 PM: Peralta (1-0) did not factor into the...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -13904,6 +14140,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Mar 29, 7:05 PM: Rodriguez (shoulder) has been playing...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -14094,7 +14334,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 8:31 PM: Stanek walked one and recorded one...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -14191,6 +14431,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 30, 11:15 PM: Suarez (0-1) took the loss Monday...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
                       }
@@ -14284,6 +14528,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 28, 11:52 PM: Vasquez (1-0) earned the win over...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -14379,6 +14627,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 12, 7:19 PM: Vest will join Team USA ahead of the...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -14472,6 +14724,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 31, 12:13 AM: Weathers did not factor into the...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
@@ -15870,6 +16126,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 30, 10:55 AM: Bichette went 0-for-5 with three...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -15976,6 +16236,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 31, 9:57 AM: Lile went 2-for-6 with a double, two...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -16053,6 +16317,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 31, 9:37 AM: Springer went 1-for-5 with a solo home...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -16229,6 +16497,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 31, 12:05 PM: Young went 3-for-4 with a double and an...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -16309,6 +16581,10 @@
                     "posShortNames": "1B,3B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 31, 12:16 AM: Okamoto went 1-for-3 with a solo home...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -16393,6 +16669,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 31, 12:53 PM: House is out of the lineup for...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -16474,6 +16754,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 28, 8:16 AM: Trout went 3-for-4 with a walk and a...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -16551,6 +16835,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 28, 7:42 AM: Carpenter went 0-for-3 with two walks...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -16630,6 +16918,10 @@
                     "posShortNames": "2B,SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 30, 10:30 AM: Edwards went 2-for-3 with a run scored...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Switch Hitter",
                         "typeId": "18"
@@ -16713,6 +17005,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 23, 10:24 AM: Marsee has gone 0-for-7 in Grapefruit...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -16790,6 +17086,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 28, 11:28 AM: Ramos went 1-for-3 with a double in...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -16896,7 +17196,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 4:14 PM: Busch went 2-for-3 with a walk and a...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -16980,7 +17280,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 8:39 PM: Guerrero went 2-for-3 with two walks,...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -17147,7 +17447,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 11:03 AM: Ramirez is out of the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -17229,7 +17529,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 9:28 AM: Rutschman is out of the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Switch Hitter",
@@ -17312,6 +17612,10 @@
                       {
                         "tooltip": "Minor Leagues",
                         "typeId": "4"
+                      },
+                      {
+                        "tooltip": "Mar 24, 2:27 PM: Jones went 2-for-2 with a pair of home...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -17590,6 +17894,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 29, 3:59 PM: Beeter earned the save Sunday against...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -17685,7 +17993,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 10:58 AM: Cease won't start Thursday against the...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -17784,7 +18092,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 3:56 PM: Crochet (1-1) took the loss Wednesday...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -17980,7 +18288,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 1:01 AM: Fried (2-0) earned the win over Seattle...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -18081,6 +18389,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Mar 27, 4:09 PM: Hader (biceps) threw a bullpen session...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
                       }
@@ -18175,6 +18487,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 29, 3:12 PM: Helsley earned the save in Sunday's 8-6...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -18274,6 +18590,10 @@
                         "typeId": "4"
                       },
                       {
+                        "tooltip": "Mar 19, 3:59 PM: The Brewers optioned Henderson to...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -18367,6 +18687,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 29, 7:26 PM: Imai did not factor into the decision...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -18586,6 +18910,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 29, 7:38 PM: King earned the save in Sunday's 9-7...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
@@ -18811,7 +19139,7 @@
                       },
                       {
                         "tooltip": "Apr 1, 6:13 AM: Puk (elbow) has thrown multiple bullpen...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -18938,6 +19266,10 @@
                       {
                         "tooltip": "In starting lineup",
                         "typeId": "12"
+                      },
+                      {
+                        "tooltip": "Mar 27, 7:29 PM: Ray (0-1) took the loss against the...",
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -19161,7 +19493,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 11:00 PM: Ryan (0-1) allowed five runs on nine...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -19284,6 +19616,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 28, 6:06 PM: Sands walked one and struck out two...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -19404,6 +19740,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 28, 11:36 PM: Santana allowed one walk but no hits...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -19502,6 +19842,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Mar 28, 10:02 PM: Uceta (shoulder) threw live batting...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -19598,7 +19942,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 1:20 AM: Webb (1-1) earned the win over San...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -19722,7 +20066,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 10:10 PM: Woodruff (1-0) earned the win Tuesday...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -19821,6 +20165,10 @@
                       {
                         "tooltip": "Injured List - 15-day IL - Shoulder",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Mar 30, 2:32 PM: Yesavage (shoulder) will throw a...",
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -21232,7 +21580,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 11:00 PM: Reynolds went 2-for-5 with a two-run...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Switch Hitter",
@@ -21398,7 +21746,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 8:09 PM: Wilson went 2-for-4 with a two-run...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -21482,7 +21830,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 1:34 AM: Adames went 4-for-5 with a home run, a...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -21591,6 +21939,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 29, 3:12 PM: Bregman went 2-for-4 with a pair of...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -21671,6 +22023,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 30, 8:30 PM: Happ went 1-for-4 with a walk, a solo...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Switch Hitter",
                         "typeId": "18"
                       }
@@ -21750,7 +22106,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 2:44 PM: Cruz went 2-for-5 with a three-run home...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -21831,6 +22187,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 28, 12:26 AM: Tucker went 1-for-3 with a walk, an...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -21910,7 +22270,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 4:10 PM: Hoerner went 3-for-5 with two doubles,...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -22073,6 +22433,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 30, 4:07 PM: Smith is not in the lineup for Monday's...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -22152,7 +22516,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 10:45 AM: Torkelson is absent from the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -22234,6 +22598,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 30, 2:35 PM: Robert is absent from the lineup for...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -22340,7 +22708,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 10:47 AM: Ballesteros is absent from the lineup...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -22421,7 +22789,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 4:46 PM: Dodgers manager Dave Roberts told...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -22504,6 +22872,10 @@
                       {
                         "tooltip": "Injured List - 10-day IL - Hand",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Mar 31, 12:59 PM: Vaughn underwent successful left hamate...",
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -22787,7 +23159,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 4:46 PM: Dodgers manager Dave Roberts told...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -22980,6 +23352,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 28, 6:19 PM: Bradish (0-1) allowed three runs (two...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -23075,7 +23451,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 9:24 PM: Brown (1-0) earned the win against the...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -23177,7 +23553,7 @@
                       },
                       {
                         "tooltip": "Apr 1, 1:32 PM: Red Sox manager Alex Cora said...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -23275,6 +23651,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 29, 10:50 AM: Marlins manager Clayton McCullough...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -23370,7 +23750,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 1:11 AM: Gilbert (0-1) took the loss against the...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -23467,6 +23847,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 29, 12:12 AM: Glasnow allowed two runs on four hits...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -23560,6 +23944,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 29, 3:51 PM: Irvin (1-0) notched the win Sunday...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -23657,6 +24045,10 @@
                       {
                         "tooltip": "Injured List - 15-day IL - Shoulder",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Mar 29, 7:12 PM: Joyce (shoulder) isn't yet tossing...",
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -23759,7 +24151,7 @@
                       },
                       {
                         "tooltip": "Apr 1, 9:26 AM: Kerkering (hamstring) will make the...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -23960,6 +24352,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Mar 25, 1:38 PM: The Mariners placed Miller on the...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -24056,7 +24452,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 11:14 PM: Mize did not factor into the decision...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -24241,6 +24637,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 16, 9:39 AM: Munoz allowed a hit and a walk while...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -24337,6 +24737,10 @@
                       {
                         "tooltip": "Injured List - 15-day IL - Hip",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Mar 25, 2:57 PM: Pepiot (hip) is set to resume a...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -24439,7 +24843,7 @@
                       },
                       {
                         "tooltip": "Apr 1, 12:55 PM: Rodon (elbow/hamstring) threw on flat...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -24538,7 +24942,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 9:08 PM: Romano earned the save in Tuesday's 2-0...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -24635,6 +25039,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 30, 11:21 PM: Sasaki (0-1) took the loss against...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -24730,7 +25138,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 8:23 PM: Scherzer (1-0) earned the win against...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -24829,7 +25237,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 8:59 PM: Soriano (2-0) picked up the win against...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -24925,6 +25333,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 31, 9:14 AM: Suarez gave up a hit in a scoreless...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -25046,6 +25458,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 28, 8:52 PM: Warren took a no-decision Saturday...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -25141,7 +25557,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 3:41 PM: Manager Dave Roberts told reporters...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -25237,6 +25653,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 25, 11:43 AM: Zeferjahn went two-thirds of an inning,...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -26644,6 +27064,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 30, 9:58 PM: Tovar went 3-for-6 with two doubles,...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Switch Hitter",
                         "typeId": "18"
                       }
@@ -26724,6 +27148,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 10, 6:15 PM: Greene went 1-for-3 with a two-run home...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -26801,6 +27229,10 @@
                     "posShortNames": "SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 31, 12:51 AM: Henderson went 2-for-4 with a solo home...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -26883,7 +27315,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 9:31 PM: Alvarez went 2-for-3 with a solo home...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -26966,7 +27398,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 11:09 AM: Baty is out of the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -27080,6 +27512,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 20, 3:39 PM: Soderstrom (knee) will bat fourth and...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -27161,6 +27597,10 @@
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 29, 11:50 AM: Devers went 2-for-4 with a double in...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "On this team's trade block",
                         "typeId": "35"
@@ -27272,6 +27712,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 31, 2:07 PM: Paredes is not in the lineup for...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -27353,7 +27797,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 11:50 AM: Lowe is out of the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -27434,6 +27878,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 27, 11:31 AM: Grisham is not in the starting lineup...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -27511,6 +27959,10 @@
                     "posShortNames": "2B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 28, 7:35 AM: Torres went 1-for-2 with three walks...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -27592,6 +28044,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 31, 2:11 PM: Mayo is not in the lineup for Tuesday's...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -27672,6 +28128,10 @@
                     "posShortNames": "C,1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 27, 11:25 AM: Rice is out of the lineup for Friday's...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -27818,7 +28278,7 @@
                           "shortName": "T. Bradley"
                         },
                         "header": "Probable Starter for Minnesota:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 7.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 1.23 &nbsp;<b>WHIP</b> 1.091 &nbsp;"
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 8.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 1.08 &nbsp;<b>WHIP</b> 1.320 &nbsp;"
                       }
                     },
                     {
@@ -27875,6 +28335,10 @@
                       {
                         "tooltip": "Batting Order: 8",
                         "typeId": "28"
+                      },
+                      {
+                        "tooltip": "Mar 28, 6:12 PM: Lewis went 1-for-3 with a two-run home...",
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -27984,7 +28448,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 7:38 AM: Butler is absent from the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -28066,6 +28530,10 @@
                       {
                         "tooltip": "Minor Leagues",
                         "typeId": "4"
+                      },
+                      {
+                        "tooltip": "Mar 9, 8:59 AM: De Vries went 2-for-4 with a two-run...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Switch Hitter",
@@ -28152,6 +28620,10 @@
                         "typeId": "4"
                       },
                       {
+                        "tooltip": "Mar 20, 4:42 PM: The Yankees optioned Dominguez to...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Switch Hitter",
                         "typeId": "18"
                       }
@@ -28232,6 +28704,10 @@
                       {
                         "tooltip": "Injured List - 10-day IL - Hand",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Mar 30, 8:41 AM: Holliday (hand) has gone 0-for-6 with a...",
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -28316,6 +28792,10 @@
                       {
                         "tooltip": "Minor Leagues",
                         "typeId": "4"
+                      },
+                      {
+                        "tooltip": "Mar 9, 11:43 AM: The Brewers reassigned Made to...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Switch Hitter",
@@ -28600,6 +29080,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Mar 17, 6:00 AM: Burnes (elbow) threw a bullpen session...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -28721,6 +29205,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 22, 2:00 PM: Manager Warren Schaeffer said Sunday...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -28814,6 +29302,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 29, 6:56 PM: Dominguez (0-1) blew his save...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -28915,7 +29407,7 @@
                       },
                       {
                         "tooltip": "Apr 1, 8:04 AM: The Orioles placed Eflin (elbow) on the...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -29018,7 +29510,7 @@
                       },
                       {
                         "tooltip": "Apr 1, 7:01 AM: Gaddis (forearm) allowed one hit and...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -29117,7 +29609,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 5:12 PM: Gallen (1-1) notched the win Wednesday...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -29244,6 +29736,10 @@
                         "typeId": "4"
                       },
                       {
+                        "tooltip": "Mar 25, 8:32 AM: The Yankees optioned Gil to Triple-A...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -29337,6 +29833,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 31, 12:23 AM: Leiter (1-0) earned the victory Monday...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -29535,6 +30035,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 29, 4:27 PM: May (0-1) took the loss Sunday against...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -29633,6 +30137,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Mar 29, 5:49 PM: Musgrove (elbow) said Thursday that he...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -29727,6 +30235,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 28, 7:45 PM: Perez did not factor into the decision...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -29823,7 +30335,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 10:54 PM: Pfaadt did not factor into the decision...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -29946,6 +30458,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 23, 2:23 PM: Rangers president of baseball...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -30039,6 +30555,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 29, 8:53 AM: Romero struck out one in a perfect...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
@@ -30135,7 +30655,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 5:39 PM: Schlittler (2-0) notched the win...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -30357,6 +30877,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 29, 6:28 PM: Sproat allowed seven runs on six hits...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -30453,6 +30977,10 @@
                       {
                         "tooltip": "Minor Leagues",
                         "typeId": "4"
+                      },
+                      {
+                        "tooltip": "Mar 29, 12:23 PM: Tong gave up one hit and two walks over...",
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -30574,6 +31102,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 23, 10:46 AM: Weaver gave up a run on three walks in...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -32002,6 +32534,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 11, 10:19 AM: Team Canada manager Ernie Whitt said...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -32082,6 +32618,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 30, 4:50 AM: Nimmo went 2-for-4 with a home run and...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -32160,6 +32700,10 @@
                     "posShortNames": "2B,OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 29, 9:30 PM: Donovan went 2-for-3 with a three-run...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -32244,7 +32788,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 8:34 PM: Goodman went 1-for-4 with a solo home...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -32324,6 +32868,10 @@
                     "posShortNames": "SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 27, 6:45 AM: Perdomo went 2-for-4 with a two-run...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Switch Hitter",
                         "typeId": "18"
@@ -32432,6 +32980,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 27, 12:59 AM: Burleson went 3-for-4 with a two-run...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -32515,7 +33067,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 11:21 AM: Chapman went 2-for-5 with a solo home...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -32625,6 +33177,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 29, 3:28 PM: Montgomery went 2-for-5 with a grand...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -32711,7 +33267,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 10:12 PM: Pages went 3-for-3 with a double in...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -32793,6 +33349,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 29, 3:49 PM: Yelich smacked a three-run home run...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -32870,6 +33430,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 29, 2:40 PM: Caissie went 1-for-2 with a two-run...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -32955,7 +33519,7 @@
                       },
                       {
                         "tooltip": "Apr 1, 10:49 PM: Witt went 1-for-3 with one RBI and a...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -33009,7 +33573,7 @@
                           "shortName": "T. Bradley"
                         },
                         "header": "Probable Starter for Minnesota:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 7.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 1.23 &nbsp;<b>WHIP</b> 1.091 &nbsp;"
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 8.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 1.08 &nbsp;<b>WHIP</b> 1.320 &nbsp;"
                       }
                     },
                     {
@@ -33065,7 +33629,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 3:15 PM: Polanco isn't in the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Switch Hitter",
@@ -33176,7 +33740,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 5:13 AM: Rafaela went 1-for-3 with a solo home...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -33262,7 +33826,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 11:41 AM: Mayer is out of the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -33344,6 +33908,10 @@
                     "posShortNames": "C",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 30, 1:16 PM: Realmuto is not in the lineup for...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -33803,7 +34371,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 9:47 PM: Bello (0-1) took the loss against the...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -33904,6 +34472,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Mar 30, 2:51 PM: Bieber (elbow) will throw off a mound...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -34000,6 +34572,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 30, 10:28 PM: Cabrera (1-0) earned the win Monday...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -34095,7 +34671,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 2:20 PM: Eovaldi (0-2) took the loss Wednesday,...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -34193,7 +34769,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 10:35 PM: Erceg retired both batters he faced to...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -34245,7 +34821,7 @@
                           "shortName": "T. Bradley"
                         },
                         "header": "Probable Starter for Minnesota:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 7.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 1.23 &nbsp;<b>WHIP</b> 1.091 &nbsp;"
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 8.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 1.08 &nbsp;<b>WHIP</b> 1.320 &nbsp;"
                       }
                     },
                     {
@@ -34315,6 +34891,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 28, 7:11 PM: Garcia surrendered two unearned runs on...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
@@ -34410,6 +34990,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 28, 7:35 PM: Gray allowed four runs (three earned)...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -34503,6 +35087,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 31, 9:10 AM: Iglesias worked a scoreless ninth...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -34625,7 +35213,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 11:27 PM: Jansen blew the save in Tuesday's 7-5...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -34722,6 +35310,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 29, 2:31 PM: Lugo (1-0) earned the win Sunday over...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -34771,7 +35363,7 @@
                           "shortName": "T. Bradley"
                         },
                         "header": "Probable Starter for Minnesota:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 7.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 1.23 &nbsp;<b>WHIP</b> 1.091 &nbsp;"
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 8.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 1.08 &nbsp;<b>WHIP</b> 1.320 &nbsp;"
                       }
                     },
                     {
@@ -34841,6 +35433,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 28, 9:01 PM: Mahle (0-1) took the loss Saturday...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -34962,6 +35558,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 28, 8:46 PM: Patrick did not factor into the...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -35057,7 +35657,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 2:24 PM: Rogers (2-0) picked up the win...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -35155,7 +35755,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 11:05 PM: Sewald earned the save by striking out...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -35282,6 +35882,10 @@
                         "typeId": "4"
                       },
                       {
+                        "tooltip": "Mar 23, 4:13 PM: The Red Sox optioned Tolle to...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
                       }
@@ -35376,6 +35980,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 28, 8:10 PM: Wacha took a no-decision Saturday...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -35425,7 +36033,7 @@
                           "shortName": "T. Bradley"
                         },
                         "header": "Probable Starter for Minnesota:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 7.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 1.23 &nbsp;<b>WHIP</b> 1.091 &nbsp;"
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 8.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 1.08 &nbsp;<b>WHIP</b> 1.320 &nbsp;"
                       }
                     },
                     {
@@ -35498,6 +36106,10 @@
                       {
                         "tooltip": "Injured List - 15-day IL - Shoulder",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Mar 30, 9:29 AM: Wheeler (shoulder) struck out three and...",
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -35594,6 +36206,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 25, 11:22 AM: Whitlock threw a perfect inning while...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -37001,6 +37617,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 13, 4:39 AM: Langford went 2-for-3 with a home run...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -37079,6 +37699,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 12, 12:42 PM: Adell went 2-for-3 with a solo home...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -37156,6 +37780,10 @@
                     "posShortNames": "SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 29, 7:48 PM: Neto went 2-for-4 with a two-run home...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -37236,6 +37864,10 @@
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 29, 6:26 AM: Manzardo started a first base and went...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -37320,6 +37952,10 @@
                       {
                         "tooltip": "Batting Order: 2",
                         "typeId": "22"
+                      },
+                      {
+                        "tooltip": "Mar 9, 2:13 PM: Buxton (elbow) will start in center...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "On this team's trade block",
@@ -37430,6 +38066,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 26, 8:09 PM: McGonigle went 4-for-5 with two...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -37513,6 +38153,10 @@
                       {
                         "tooltip": "Batting Order: 3",
                         "typeId": "23"
+                      },
+                      {
+                        "tooltip": "Mar 30, 8:08 AM: Keaschall went 1-for-4 with a walk in...",
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -37621,6 +38265,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 28, 7:45 PM: McLain went 3-for-4 with an RBI, a run...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "On this team's trade block",
                         "typeId": "35"
                       },
@@ -37706,7 +38354,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 2:27 PM: Basallo went 2-for-5 with a solo home...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -37876,6 +38524,10 @@
                         "typeId": "23"
                       },
                       {
+                        "tooltip": "Mar 12, 9:08 AM: Pasquantino went 3-for-4 with three...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -37927,17 +38579,17 @@
                           "shortName": "T. Bradley"
                         },
                         "header": "Probable Starter for Minnesota:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 7.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 1.23 &nbsp;<b>WHIP</b> 1.091 &nbsp;"
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 8.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 1.08 &nbsp;<b>WHIP</b> 1.320 &nbsp;"
                       }
                     },
                     {
-                      "content": "18"
+                      "content": "19"
                     },
                     {
                       "content": "2"
                     },
                     {
-                      "content": "3"
+                      "content": "4"
                     },
                     {
                       "content": "0"
@@ -37949,7 +38601,7 @@
                       "content": "0"
                     },
                     {
-                      "content": ".167"
+                      "content": ".211"
                     },
                     {
                       "content": "6"
@@ -37983,7 +38635,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 10:34 AM: Pena (finger) could be ready to play in...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "On this team's trade block",
@@ -38072,7 +38724,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 10:33 AM: Barger is out of the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -38158,6 +38810,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 29, 8:29 AM: Cowser is out of the lineup for...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -38237,6 +38893,10 @@
                       {
                         "tooltip": "Minor Leagues",
                         "typeId": "4"
+                      },
+                      {
+                        "tooltip": "Mar 9, 2:46 PM: The Cardinals optioned Baez to Triple-A...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -38320,6 +38980,10 @@
                         "typeId": "4"
                       },
                       {
+                        "tooltip": "Mar 31, 10:30 AM: Florentino is sidelined with a left...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -38399,6 +39063,10 @@
                       {
                         "tooltip": "Minor Leagues",
                         "typeId": "4"
+                      },
+                      {
+                        "tooltip": "Mar 29, 10:55 AM: Jenkins (hamstring) went 1-for-4 with a...",
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -38484,6 +39152,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Mar 27, 9:25 AM: Stowers (hamstring) was able to throw,...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -38564,6 +39236,10 @@
                       {
                         "tooltip": "Minor Leagues",
                         "typeId": "4"
+                      },
+                      {
+                        "tooltip": "Mar 18, 6:40 AM: The Diamondbacks plan to have...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -38673,6 +39349,10 @@
                       {
                         "tooltip": "Minor Leagues",
                         "typeId": "4"
+                      },
+                      {
+                        "tooltip": "Mar 16, 7:14 PM: Williams was reassigned to minor-league...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -38957,6 +39637,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 30, 9:05 PM: Ashcraft (0-1) took the loss Monday...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -39052,7 +39736,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 3:52 PM: Burrows (1-1) earned the win Wednesday...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -39150,7 +39834,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 6:14 AM: Chandler didn't factor into the...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -39247,6 +39931,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 14, 8:49 AM: Cleavinger has given up one hit with...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
                       }
@@ -39341,6 +40029,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 28, 9:17 PM: Detmers took a no-decision Saturday...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
                       }
@@ -39434,6 +40126,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 29, 4:02 PM: Early did not factor into the decision...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "On this team's trade block",
                         "typeId": "35"
@@ -39532,6 +40228,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 29, 2:28 PM: Hoffman earned the save in Sunday's 5-2...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -39727,6 +40427,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 27, 11:51 PM: King allowed one unearned run on one...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -39820,6 +40524,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 29, 3:05 PM: Luzardo (0-1) took the loss Sunday...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "On this team's trade block",
                         "typeId": "35"
@@ -39921,6 +40629,10 @@
                       {
                         "tooltip": "Minor Leagues",
                         "typeId": "4"
+                      },
+                      {
+                        "tooltip": "Mar 20, 11:26 AM: The Twins optioned Matthews to Triple-A...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -40044,7 +40756,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 10:00 PM: McClanahan (0-1) took the loss Tuesday,...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "On this team's trade block",
@@ -40149,6 +40861,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Mar 13, 1:29 PM: The Tigers announced Friday that Melton...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -40245,7 +40961,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 3:32 PM: Misiorowski (1-0) did not factor into...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -40343,7 +41059,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 5:08 PM: Pivetta (1-1) allowed one hit and two...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "On this team's trade block",
@@ -40445,7 +41161,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 3:39 PM: Rasmussen allowed two runs (one earned)...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -40546,6 +41262,10 @@
                         "typeId": "4"
                       },
                       {
+                        "tooltip": "Mar 18, 4:38 PM: The Dodgers optioned Ryan to Triple-A...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -40642,6 +41362,10 @@
                       {
                         "tooltip": "Injured List - 60-day IL - Elbow",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Mar 25, 11:41 AM: Schmidt (elbow) is tentatively slated...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -40744,7 +41468,7 @@
                       },
                       {
                         "tooltip": "Apr 1, 4:55 PM: Manager Dave Roberts told reporters...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "On this team's trade block",
@@ -42162,6 +42886,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 21, 9:27 AM: Rodriguez went 3-for-3 with a home run,...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -42239,6 +42967,10 @@
                     "posShortNames": "SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 29, 6:57 AM: De La Cruz went 1-for-4 with two walks...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Switch Hitter",
                         "typeId": "18"
@@ -42400,6 +43132,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 28, 9:23 AM: Harris went 1-for-4 with a two-run home...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -42503,6 +43239,10 @@
                     "posShortNames": "2B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 28, 12:35 AM: Marte went 2-for-5 with a solo home run...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Switch Hitter",
                         "typeId": "18"
@@ -42694,6 +43434,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 27, 9:44 AM: Lindor went 0-for-2 with three walks...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Switch Hitter",
                         "typeId": "18"
                       }
@@ -42801,6 +43545,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 29, 3:38 PM: Murakami went 1-for-4 with a solo home...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -42883,6 +43631,10 @@
                     "posShortNames": "3B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 28, 9:30 AM: Riley went 3-for-3 with a walk and a...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -42990,6 +43742,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 26, 11:50 AM: Simpson is out of the lineup for...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -43067,6 +43823,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 30, 9:43 PM: Acuna went 2-for-2 with one double, one...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -43173,7 +43933,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 2:30 PM: Duran is out of the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -43255,7 +44015,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 8:41 AM: Lowe is not in the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -43339,7 +44099,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 10:37 AM: Varsho is out of the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -43422,7 +44182,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 3:13 PM: Alvarez isn't in the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -43530,6 +44290,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 31, 1:11 PM: Marte will start in right field and bat...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -43614,6 +44378,10 @@
                       {
                         "tooltip": "Injured List - 10-day IL - Hamstring",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Mar 25, 12:32 PM: The White Sox placed Teel (hamstring)...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -43894,6 +44662,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 29, 5:19 PM: Abel (0-1) was the pitcher of record in...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -44015,7 +44787,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 5:25 PM: Bednar earned the save Wednesday...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -44113,7 +44885,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 1:56 AM: Bibee (0-1) allowed one run on four...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -44209,6 +44981,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 29, 12:18 AM: Diaz earned the save against the...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -44306,6 +45082,10 @@
                       {
                         "tooltip": "Minor Leagues",
                         "typeId": "4"
+                      },
+                      {
+                        "tooltip": "Mar 30, 7:45 AM: Atlanta optioned Fuentes to Triple-A...",
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -44432,6 +45212,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Mar 23, 3:59 PM: The Reds placed Greene (elbow) on the...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -44526,6 +45310,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 29, 3:46 PM: Imanaga (0-1) took the loss Sunday...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
@@ -44622,7 +45410,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 8:16 PM: Kirby (1-1) took the loss Wednesday...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -44721,6 +45509,10 @@
                       {
                         "tooltip": "Injured List - 60-day IL - Elbow",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Mar 25, 5:55 AM: Martinez (elbow) is throwing from up to...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -44844,6 +45636,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 29, 4:55 PM: McLean did not factor into the decision...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -44964,6 +45760,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 30, 11:13 PM: Messick (1-0) earned the win over the...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
                       }
@@ -45057,6 +45857,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 29, 3:06 PM: Meyer did not factor into the decision...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -45153,7 +45957,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 5:23 PM: Miller allowed a hit and struck out...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -45253,6 +46057,10 @@
                       {
                         "tooltip": "In starting lineup",
                         "typeId": "12"
+                      },
+                      {
+                        "tooltip": "Mar 28, 12:31 AM: Nelson allowed four runs on two hits...",
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -45377,7 +46185,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 2:08 PM: Sale (2-0) allowed one run on one hit...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -45499,6 +46307,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 28, 12:08 AM: Sheehan allowed four runs on five hits...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -45697,6 +46509,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Mar 25, 10:49 AM: Atlanta placed Waldrep (elbow) on the...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -45819,7 +46635,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 9:39 PM: Williams (1-1) allowed two hits and...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -45916,6 +46732,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 29, 1:04 AM: Woo allowed two runs on four hits and...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -46011,7 +46831,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 10:03 PM: Yamamoto (1-1) allowed two runs on four...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -47414,6 +48234,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 29, 7:32 AM: Story went 1-for-6 with a solo home run...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -47496,6 +48320,10 @@
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 30, 10:14 PM: Diaz went 2-for-4 with a solo home run...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -47580,6 +48408,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 28, 5:42 PM: Wood went 1-for-4 with a solo home run...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -47660,6 +48492,10 @@
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 31, 7:53 AM: Burger went 2-for-4 with a double, two...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -47830,6 +48666,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 21, 7:31 AM: Rooker went 2-for-3 with a double in...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -47912,7 +48752,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 11:59 PM: Ward went 4-for-5 with two RBI and a...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -47995,6 +48835,10 @@
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 26, 10:14 PM: Aranda went 2-for-4 with a solo home...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -48079,6 +48923,10 @@
                     "posShortNames": "2B,3B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 25, 9:21 PM: Chisholm went 1-for-3 with a...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -48167,6 +49015,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 30, 10:00 PM: Contreras went 2-for-4 with a two-run...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -48247,6 +49099,10 @@
                     "posShortNames": "2B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 28, 9:27 AM: Albies went 2-for-4 with a solo home...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Switch Hitter",
                         "typeId": "18"
@@ -48359,7 +49215,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 10:21 PM: Bauers went 2-for-4 with a solo home...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -48448,7 +49304,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 8:21 PM: Carroll went 2-for-3 with a home run...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -48559,7 +49415,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 7:43 AM: Walker is out of the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -48740,7 +49596,7 @@
                       },
                       {
                         "tooltip": "Apr 1, 10:44 PM: Isbel went 4-for-4 with a solo home...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -48793,7 +49649,7 @@
                           "shortName": "T. Bradley"
                         },
                         "header": "Probable Starter for Minnesota:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 7.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 1.23 &nbsp;<b>WHIP</b> 1.091 &nbsp;"
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 8.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 1.08 &nbsp;<b>WHIP</b> 1.320 &nbsp;"
                       }
                     },
                     {
@@ -48852,6 +49708,10 @@
                       {
                         "tooltip": "Injured List - 10-day IL - Hand",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Mar 26, 8:27 AM: The Brewers placed Chourio (hand) on...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -48938,6 +49798,10 @@
                       {
                         "tooltip": "Injured List - 10-day IL - Shoulder",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Mar 31, 9:39 AM: Yankees manager Aaron Boone said...",
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -49030,7 +49894,7 @@
                       },
                       {
                         "tooltip": "Apr 1, 8:07 AM: The Orioles transferred Westburg...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -49320,7 +50184,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 3:47 PM: Abreu earned the save in Wednesday's...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -49422,6 +50286,10 @@
                       {
                         "tooltip": "Minor Leagues",
                         "typeId": "4"
+                      },
+                      {
+                        "tooltip": "Mar 23, 4:21 PM: The Astros optioned Arrighetti to...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -49527,6 +50395,10 @@
                         "typeId": "12"
                       },
                       {
+                        "tooltip": "Mar 28, 5:58 PM: Bradley allowed one run on three hits...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -49581,19 +50453,19 @@
                       }
                     },
                     {
-                      "content": "7.1"
+                      "content": "8.1"
                     },
                     {
                       "content": "0"
                     },
                     {
-                      "content": "1.23"
+                      "content": "1.08"
                     },
                     {
-                      "content": "1.091"
+                      "content": "1.320"
                     },
                     {
-                      "content": "11"
+                      "content": "12"
                     },
                     {
                       "content": "0.0"
@@ -49650,6 +50522,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 31, 12:33 AM: Castillo did not factor into the...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -49748,6 +50624,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 26, 9:29 PM: Chapman picked up the save Thursday...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
                       }
@@ -49844,6 +50724,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 23, 9:21 AM: Through nine spring appearances,...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -49942,6 +50826,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 29, 12:06 AM: Flaherty (0-1) took the loss against...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -50039,6 +50927,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 28, 9:24 PM: Javier took a no-decision Saturday...",
+                        "typeId": "9"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -50135,6 +51027,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 28, 8:33 PM: Keller did not factor into the decision...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -50361,6 +51257,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 30, 10:10 PM: Megill (0-1) allowed one run on one hit...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -50658,7 +51558,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 2:37 PM: Skenes (1-1) picked up the win in...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -50759,7 +51659,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 5:04 PM: Skubal (0-1) took the loss Wednesday...",
-                        "typeId": "9"
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -50960,6 +51860,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Mar 4, 9:45 AM: Uribe struck out the side during a...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -51056,6 +51960,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Mar 27, 11:57 PM: Valdez allowed two runs (one earned) on...",
+                        "typeId": "9"
+                      },
                       {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
