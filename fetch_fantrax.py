@@ -482,3 +482,118 @@ else:
     print("Saved CSV-derived schedule as fallback.")
 
 print("All done!")
+
+# ---------------------------------------------------------------------------
+# FanGraphs advanced stats
+# ---------------------------------------------------------------------------
+
+fg_session = requests.Session()
+fg_session.headers.update({
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "Referer": "https://www.fangraphs.com/",
+})
+
+def fetch_fangraphs(url, label):
+    """Fetch a FanGraphs leaderboard JSON API endpoint."""
+    print(f"Fetching FanGraphs {label}...")
+    try:
+        r = fg_session.get(url, timeout=30)
+        r.raise_for_status()
+        data = r.json()
+        print(f"  Got {len(data.get('data', []))} rows")
+        return data
+    except Exception as e:
+        print(f"  ERROR fetching {label}: {e}")
+        return {}
+
+# FanGraphs uses a JSON API — construct the API URL from the leaderboard params
+# The API endpoint mirrors the leaderboard URL params
+FG_HIT_URL = (
+    "https://www.fangraphs.com/api/leaders/major-league/data"
+    "?age=&pos=all&stats=bat&lg=all&type=24"
+    "&season=2026&season1=2026&ind=0&pageitems=2000000000&qual=0&month=0&team=&rost=&players="
+)
+
+FG_PIT_URL = (
+    "https://www.fangraphs.com/api/leaders/major-league/data"
+    "?age=&pos=all&stats=pit&lg=all&type=1"
+    "&season=2026&season1=2026&ind=0&pageitems=2000000000&qual=0&month=0&team=&rost=&players="
+)
+
+FG_HIT_LG_URL = (
+    "https://www.fangraphs.com/api/leaders/major-league/data"
+    "?age=&pos=all&stats=bat&lg=all&type=24"
+    "&season=2026&season1=2026&ind=0&pageitems=2000000000&qual=0&month=0&team=0%2Css&rost=&players="
+)
+
+FG_PIT_LG_URL = (
+    "https://www.fangraphs.com/api/leaders/major-league/data"
+    "?age=&pos=all&stats=pit&lg=all&type=1"
+    "&season=2026&season1=2026&ind=0&pageitems=2000000000&qual=0&month=0&team=0%2Css&rost=&players="
+)
+
+# Hitting: Barrel%, HardHit%, xSLG
+# FanGraphs stat key names for type=24 (Statcast batting):
+#   Barrel% = "Barrel%"  HardHit% = "HardHit%"  xSLG = "xSLG"
+HIT_COLS = ["PlayerName", "PlayerNameRoute", "Barrel%", "HardHit%", "xSLG"]
+
+# Pitching: K-BB%, xFIP, xFIP-
+# FanGraphs stat key names for type=1 (dashboard):
+#   K-BB% = "K-BB%"  xFIP = "xFIP"  xFIP- = "xFIP-"
+PIT_COLS = ["PlayerName", "PlayerNameRoute", "K-BB%", "xFIP", "xFIP-"]
+
+def extract_fg_players(data, cols):
+    """Extract only the needed columns from a FanGraphs API response."""
+    rows = data.get("data", [])
+    result = []
+    for row in rows:
+        entry = {}
+        for col in cols:
+            if col in row:
+                entry[col] = row[col]
+        if entry.get("PlayerName"):
+            result.append(entry)
+    return result
+
+def extract_fg_league(data, cols):
+    """Extract league average row — FanGraphs returns it as the last row when team=0,ss."""
+    rows = data.get("data", [])
+    if not rows:
+        return {}
+    # League average row typically has PlayerName = "Average" or similar
+    # Take the last row which is usually the league total/average
+    lg_row = rows[-1] if rows else {}
+    entry = {}
+    for col in cols:
+        if col in lg_row:
+            entry[col] = lg_row[col]
+    return entry
+
+# Fetch and save hitting
+fg_hit = fetch_fangraphs(FG_HIT_URL, "hitting (Barrel%, HardHit%, xSLG)")
+fg_hit_lg = fetch_fangraphs(FG_HIT_LG_URL, "hitting league averages")
+
+hit_players = extract_fg_players(fg_hit, HIT_COLS)
+hit_league  = extract_fg_league(fg_hit_lg, HIT_COLS)
+
+save("fangraphs_hitting.json", {
+    "players": hit_players,
+    "league_avg": hit_league,
+    "cols": ["Barrel%", "HardHit%", "xSLG"]
+})
+
+# Fetch and save pitching
+fg_pit = fetch_fangraphs(FG_PIT_URL, "pitching (K-BB%, xFIP, xFIP-)")
+fg_pit_lg = fetch_fangraphs(FG_PIT_LG_URL, "pitching league averages")
+
+pit_players = extract_fg_players(fg_pit, PIT_COLS)
+pit_league  = extract_fg_league(fg_pit_lg, PIT_COLS)
+
+save("fangraphs_pitching.json", {
+    "players": pit_players,
+    "league_avg": pit_league,
+    "cols": ["K-BB%", "xFIP", "xFIP-"]
+})
+
+print("FanGraphs fetch complete!")
