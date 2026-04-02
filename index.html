@@ -507,14 +507,32 @@ function init() {
     loadJSON('standings_combined.json'),
     loadJSON('players_hitting.json'),
     loadJSON('players_pitching.json'),
-    loadJSON('rosters.json')
+    loadJSON('rosters.json'),
+    loadJSON('fangraphs_hitting.json').catch(function(){ return {}; }),
+    loadJSON('fangraphs_pitching.json').catch(function(){ return {}; })
   ]).then(function(results) {
     var standings = results[0], season = results[1], combined = results[2];
     var hitting = results[3], pitching = results[4], rosters = results[5];
+    var fgHit = results[6], fgPit = results[7];
 
     S.teamInfo = (standings.data && standings.data.fantasyTeamInfo) || (season.data && season.data.fantasyTeamInfo) || {};
     S.seasonData = season;
     S.combinedData = combined;
+
+    // Build FanGraphs lookup by player name (lowercase for matching)
+    S.fgHitLookup = {};
+    S.fgPitLookup = {};
+    S.fgHitLeague = (fgHit && fgHit.league_avg) || null;
+    S.fgPitLeague = (fgPit && fgPit.league_avg) || null;
+    S.fgHitCols   = (fgHit && fgHit.cols) || ['Barrel%','HardHit%','xSLG'];
+    S.fgPitCols   = (fgPit && fgPit.cols) || ['K-BB%','xFIP','xFIP-'];
+
+    (fgHit.players || []).forEach(function(p) {
+      if (p.PlayerName) S.fgHitLookup[p.PlayerName.toLowerCase()] = p;
+    });
+    (fgPit.players || []).forEach(function(p) {
+      if (p.PlayerName) S.fgPitLookup[p.PlayerName.toLowerCase()] = p;
+    });
 
     document.getElementById('ts').textContent = 'Updated ' + new Date().toLocaleString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
 
@@ -649,8 +667,41 @@ function drawPlayers(type) {
     html += '<th style="color:var(--muted);font-size:11px">Slot</th>';
     html += '<th style="color:var(--muted);font-size:11px">totalZ</th>';
   }
+  // FanGraphs columns
+  var fgLookup  = isHit ? S.fgHitLookup  : S.fgPitLookup;
+  var fgLeague  = isHit ? S.fgHitLeague  : S.fgPitLeague;
+  var fgCols    = isHit ? S.fgHitCols    : S.fgPitCols;
+  var hasFG     = fgLookup && Object.keys(fgLookup).length > 0;
+  if (hasFG) {
+    fgCols.forEach(function(c) {
+      html += '<th style="color:#2980b9;font-size:11px;white-space:nowrap" title="FanGraphs">' + c + '</th>';
+    });
+  }
   headers.forEach(function(h) { html += '<th>' + (h.shortName || h.name || '') + '</th>'; });
   html += '</tr></thead><tbody>';
+
+  // ── League average row (FanGraphs) ───────────────────────────────────────
+  if (hasFG && fgLeague) {
+    var fgColCount = (hasFWAR ? 5 : 0) + fgCols.length + headers.length;
+    html += '<tr style="background:#e8f4fd;border-bottom:2px solid #2980b9">';
+    html += '<td class="left" colspan="3" style="font-weight:600;font-size:12px;color:#2980b9">MLB League Average (FanGraphs)</td>';
+    if (hasFWAR) html += '<td></td><td></td><td></td><td></td><td></td>';
+    fgCols.forEach(function(c) {
+      var v = fgLeague[c];
+      var disp = v != null ? (typeof v === 'number' ? (c.indexOf('%') !== -1 ? (v*100).toFixed(1)+'%' : v.toFixed(2)) : v) : '—';
+      html += '<td style="font-weight:600;color:#2980b9;font-size:12px">' + disp + '</td>';
+    });
+    headers.forEach(function() { html += '<td></td>'; });
+    html += '</tr>';
+  }
+
+  // Helper to format FanGraphs values
+  function fmtFG(val, col) {
+    if (val == null) return '—';
+    if (typeof val !== 'number') return val;
+    if (col.indexOf('%') !== -1) return (val * 100).toFixed(1) + '%';
+    return val.toFixed(2);
+  }
 
   filtered.forEach(function(row) {
     var scorer = row.scorer || {};
@@ -663,6 +714,8 @@ function drawPlayers(type) {
     var ft = S.teamInfo[ftId] || null;
     var isFa = !ftId;
     var fw = fwarLookup[name];
+    // FanGraphs lookup — try exact then case-insensitive
+    var fgRow = hasFG ? (fgLookup[name.toLowerCase()] || null) : null;
 
     html += '<tr>';
     html += '<td class="left"><div class="team-cell">' + (hs ? '<img class="player-hs" src="' + hs + '" alt="" onerror="this.style.display=\'none\'">' : '') + '<span><strong>' + name + '</strong></span></div></td>';
@@ -685,6 +738,14 @@ function drawPlayers(type) {
       } else {
         html += '<td style="color:var(--muted)">—</td><td></td><td></td><td></td><td></td>';
       }
+    }
+
+    // FanGraphs stat columns
+    if (hasFG) {
+      fgCols.forEach(function(c) {
+        var v = fgRow ? fgRow[c] : null;
+        html += '<td style="font-size:12px;color:#2980b9">' + fmtFG(v, c) + '</td>';
+      });
     }
 
     cells.forEach(function(cell, j) {
