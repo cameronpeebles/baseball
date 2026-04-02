@@ -725,6 +725,13 @@ function showRoster(teamId) {
   if (!rosterData) { document.getElementById('roster-body').innerHTML = '<div class="loading">No roster data for <strong>' + (ti.name || teamId) + '</strong></div>'; return; }
   var tables = (rosterData.data && rosterData.data.tables) || [];
   if (!tables.length) { document.getElementById('roster-body').innerHTML = '<div class="loading">No tables found</div>'; return; }
+
+  // Build combined fWAR lookup (hitters + pitchers) by player name
+  var fwarLookup = {};
+  var hasFWAR = FWAR.hitResults.length > 0 || FWAR.pitResults.length > 0;
+  FWAR.hitResults.forEach(function(p) { fwarLookup[p.name] = p; });
+  FWAR.pitResults.forEach(function(p) { fwarLookup[p.name] = p; });
+
   var statusLabels = {'1':'Active','2':'Reserve','3':'IR'};
   var html = '';
   tables.forEach(function(table) {
@@ -733,11 +740,30 @@ function showRoster(teamId) {
     var rows = table.rows || [];
     if (!rows.length) return;
     html += '<div class="roster-section-label">' + sectionLabel + '</div>';
-    html += '<div class="table-wrap"><table><thead><tr><th class="left">Player</th><th class="left">Pos</th><th class="left">MLB Team</th><th class="left">Status</th>';
+    html += '<div class="table-wrap"><table><thead><tr>';
+    html += '<th class="left">Player</th><th class="left">Pos</th><th class="left">MLB Team</th><th class="left">Status</th>';
+    if (hasFWAR) {
+      html += '<th style="color:var(--accent);font-weight:700;white-space:nowrap">fWAR</th>';
+      html += '<th style="color:#4a9a68;font-size:11px;white-space:nowrap">fWAR-W</th>';
+      html += '<th style="color:#c8a96e;font-size:11px;white-space:nowrap">fWAR-Pts</th>';
+    }
     var statHeaders = headers.filter(function(h) { return ['age','opponent'].indexOf(h.key || '') === -1; });
     statHeaders.forEach(function(h) { html += '<th>' + (h.shortName || h.name || '') + '</th>'; });
     html += '</tr></thead><tbody>';
-    rows.forEach(function(row) {
+
+    // Sort rows by fWAR desc if available
+    var sortedRows = rows.slice();
+    if (hasFWAR) {
+      sortedRows.sort(function(a, b) {
+        var na = (a.scorer && a.scorer.name) || '';
+        var nb = (b.scorer && b.scorer.name) || '';
+        var fa = fwarLookup[na]; var fb = fwarLookup[nb];
+        var va = fa ? fa.fWAR : -999; var vb = fb ? fb.fWAR : -999;
+        return vb - va;
+      });
+    }
+
+    sortedRows.forEach(function(row) {
       var scorer = row.scorer || {};
       var cells = row.cells || [];
       var name = scorer.name || scorer.shortName || '';
@@ -745,10 +771,28 @@ function showRoster(teamId) {
       var mlb = scorer.teamShortName || '';
       var hs = scorer.headshotUrl || '';
       var statusId = row.statusId || '1';
-      html += '<tr><td class="left"><div class="team-cell">' + (hs ? '<img class="player-hs" src="' + hs + '" alt="" onerror="this.style.display=\'none\'">' : '') + '<span><strong>' + name + '</strong></span></div></td>';
+      var fw = fwarLookup[name];
+
+      html += '<tr>';
+      html += '<td class="left"><div class="team-cell">' + (hs ? '<img class="player-hs" src="' + hs + '" alt="" onerror="this.style.display=\'none\'">' : '') + '<span><strong>' + name + '</strong></span></div></td>';
       html += '<td class="left"><span style="color:var(--muted);font-size:12px">' + pos + '</span></td>';
       html += '<td class="left">' + mlb + '</td>';
       html += '<td class="left"><span class="status-badge status-' + statusId + '">' + (statusLabels[statusId] || '') + '</span></td>';
+
+      if (hasFWAR) {
+        if (fw) {
+          var fv = fw.fWAR;
+          var fc = fv >= 2 ? '#1e6b3a' : fv >= 0.5 ? '#4a9a68' : fv >= -0.5 ? '#b7791f' : '#c0392b';
+          html += '<td style="font-weight:700;color:' + fc + ';white-space:nowrap">' + (fv >= 0 ? '+' : '') + fv.toFixed(2) + '</td>';
+          var fwW = fw.fWAR_W;
+          html += '<td style="font-size:12px;color:#4a9a68;white-space:nowrap">' + (fwW != null ? (fwW >= 0 ? '+' : '') + fwW.toFixed(2) : '—') + '</td>';
+          var fwP = fw.fWAR_Pts;
+          html += '<td style="font-size:12px;color:#c8a96e;white-space:nowrap">' + (fwP != null ? (fwP >= 0 ? '+' : '') + fwP.toFixed(1) : '—') + '</td>';
+        } else {
+          html += '<td style="color:var(--muted)">—</td><td></td><td></td>';
+        }
+      }
+
       cells.slice(2).forEach(function(cell) { html += '<td>' + ((cell.content != null ? cell.content : '')).toString().replace(/<[^>]+>/g, '') + '</td>'; });
       html += '</tr>';
     });
