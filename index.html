@@ -446,7 +446,11 @@ var S = {
   teamInfo: {}, hitRows: [], pitRows: [],
   hitHeaders: [], pitHeaders: [],
   hitF: 'ALL', pitF: 'ALL', hitQ: '', pitQ: '',
-  rosterRaw: null, seasonData: null, zData: null
+  rosterRaw: null, seasonData: null, zData: null,
+  fgHitLookup: {}, fgPitLookup: {},
+  fgHitLeague: null, fgPitLeague: null,
+  fgHitCols: ['Barrel%','HardHit%','xSLG'],
+  fgPitCols: ['K-BB%','xFIP','xFIP-']
 };
 
 Chart.defaults.font.family = "'DM Sans', sans-serif";
@@ -533,6 +537,10 @@ function init() {
     (fgPit.players || []).forEach(function(p) {
       if (p.PlayerName) S.fgPitLookup[p.PlayerName.toLowerCase()] = p;
     });
+    console.log('FanGraphs hitters loaded:', Object.keys(S.fgHitLookup).length);
+    console.log('FanGraphs pitchers loaded:', Object.keys(S.fgPitLookup).length);
+    console.log('FanGraphs hit league avg:', S.fgHitLeague);
+    console.log('FanGraphs pit league avg:', S.fgPitLeague);
 
     document.getElementById('ts').textContent = 'Updated ' + new Date().toLocaleString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
 
