@@ -914,6 +914,18 @@ function showRoster(teamId) {
   FWAR.hitResults.forEach(function(p) { fwarLookup[p.name] = p; });
   FWAR.pitResults.forEach(function(p) { fwarLookup[p.name] = p; });
 
+  var hasFGHit = S.fgHitLookup && Object.keys(S.fgHitLookup).length > 0;
+  var hasFGPit = S.fgPitLookup && Object.keys(S.fgPitLookup).length > 0;
+
+  function fmtFG(val, col) {
+    if (val == null) return '—';
+    if (typeof val !== 'number') return val;
+    var pctCols = ['Barrel%','HardHit%','Whiff%','K%','BB%'];
+    if (pctCols.indexOf(col) !== -1) return val.toFixed(1) + '%';
+    if (col === 'EV50') return val.toFixed(1);
+    return val.toFixed(3);
+  }
+
   var statusLabels = {'1':'Active','2':'Reserve','3':'IR'};
   var html = '';
   tables.forEach(function(table) {
@@ -921,6 +933,15 @@ function showRoster(teamId) {
     var headers = (table.header && table.header.cells) || [];
     var rows = table.rows || [];
     if (!rows.length) return;
+
+    // Detect hitter vs pitcher section
+    var labelLow = sectionLabel.toLowerCase();
+    var isHitSection = labelLow.indexOf('pitch') === -1; // batters/bench = hit; pitchers = pit
+    var fgLookup = isHitSection ? S.fgHitLookup : S.fgPitLookup;
+    var fgLeague = isHitSection ? S.fgHitLeague : S.fgPitLeague;
+    var fgCols   = isHitSection ? S.fgHitCols   : S.fgPitCols;
+    var hasFG    = isHitSection ? hasFGHit : hasFGPit;
+
     html += '<div class="roster-section-label">' + sectionLabel + '</div>';
     html += '<div class="table-wrap"><table><thead><tr>';
     html += '<th class="left">Player</th><th class="left">Pos</th><th class="left">MLB Team</th><th class="left">Status</th>';
@@ -931,7 +952,26 @@ function showRoster(teamId) {
     }
     var statHeaders = headers.filter(function(h) { return ['age','opponent'].indexOf(h.key || '') === -1; });
     statHeaders.forEach(function(h) { html += '<th>' + (h.shortName || h.name || '') + '</th>'; });
-    html += '</tr></thead><tbody>';
+    if (hasFG) {
+      fgCols.forEach(function(c) {
+        html += '<th style="color:#2980b9;font-size:11px;white-space:nowrap">' + c + '</th>';
+      });
+    }
+    html += '</tr>';
+
+    // League average row
+    if (hasFG && fgLeague && Object.keys(fgLeague).length > 0) {
+      var blankCols = 4 + (hasFWAR ? 3 : 0) + statHeaders.length;
+      html += '<tr style="background:#e8f4fd;border-bottom:2px solid #2980b9">';
+      html += '<td class="left" colspan="' + blankCols + '" style="font-weight:600;font-size:11px;color:#2980b9;white-space:nowrap">MLB Avg (Savant)</td>';
+      fgCols.forEach(function(c) {
+        var v = fgLeague[c];
+        html += '<td style="font-weight:600;color:#2980b9;font-size:12px">' + (v != null ? fmtFG(v, c) : '—') + '</td>';
+      });
+      html += '</tr>';
+    }
+
+    html += '</thead><tbody>';
 
     // Sort rows by fWAR desc if available
     var sortedRows = rows.slice();
@@ -954,6 +994,7 @@ function showRoster(teamId) {
       var hs = scorer.headshotUrl || '';
       var statusId = row.statusId || '1';
       var fw = fwarLookup[name];
+      var fgRow = hasFG ? (fgLookup[name.toLowerCase()] || null) : null;
 
       html += '<tr>';
       html += '<td class="left"><div class="team-cell">' + (hs ? '<img class="player-hs" src="' + hs + '" alt="" onerror="this.style.display=\'none\'">' : '') + '<span><strong>' + name + '</strong></span></div></td>';
@@ -976,6 +1017,14 @@ function showRoster(teamId) {
       }
 
       cells.slice(2).forEach(function(cell) { html += '<td>' + ((cell.content != null ? cell.content : '')).toString().replace(/<[^>]+>/g, '') + '</td>'; });
+
+      if (hasFG) {
+        fgCols.forEach(function(c) {
+          var v = fgRow ? fgRow[c] : null;
+          html += '<td style="font-size:12px;color:#2980b9">' + fmtFG(v, c) + '</td>';
+        });
+      }
+
       html += '</tr>';
     });
     html += '</tbody></table></div>';
