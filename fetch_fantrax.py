@@ -578,22 +578,45 @@ def fetch_via_requests_csv(player_type, field_map, label):
         print("  Empty response")
         return [], {}
 
+    # Strip BOM if present
+    if text.startswith('\ufeff'):
+        text = text[1:]
+
+    # Baseball Savant sometimes combines last_name and first_name into one
+    # quoted field "last_name, first_name" — detect and handle both formats
     reader = csv.DictReader(io.StringIO(text))
     rows = list(reader)
-    print(f"  CSV rows: {len(rows)}, headers: {list(reader.fieldnames or [])[:10]}")
+    print(f"  CSV rows: {len(rows)}, headers: {list(reader.fieldnames or [])[:12]}")
+
+    # Detect combined name field
+    fieldnames = reader.fieldnames or []
+    combined_name_field = None
+    for f in fieldnames:
+        clean = f.strip().strip('"').lower()
+        if 'last_name' in clean and 'first_name' in clean:
+            combined_name_field = f
+            break
 
     players = []
     totals = {d: 0.0 for d in field_map.values()}
     counts = {d: 0   for d in field_map.values()}
 
     for row in rows:
-        first = row.get("first_name","").strip()
-        last  = row.get("last_name","").strip()
-        name  = (first + " " + last).strip()
+        if combined_name_field:
+            # Format: "Vargas, Ildemaro" → "Ildemaro Vargas"
+            combined = (row.get(combined_name_field) or "").strip()
+            parts = combined.split(",", 1)
+            last  = parts[0].strip()
+            first = parts[1].strip() if len(parts) > 1 else ""
+        else:
+            first = (row.get("first_name") or "").strip()
+            last  = (row.get("last_name")  or "").strip()
+        name = (first + " " + last).strip()
         if not name: continue
         entry = {"PlayerName": name}
         for field, disp in field_map.items():
-            raw = row.get(field,"").strip()
+            raw = row.get(field)
+            raw = raw.strip() if raw is not None else ""
             if raw and raw not in ("null",""):
                 try:
                     v = float(raw)
