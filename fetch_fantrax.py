@@ -484,106 +484,125 @@ else:
 print("All done!")
 
 # ---------------------------------------------------------------------------
-# Baseball Savant advanced stats
+# Baseball Savant advanced stats via pybaseball
+# pip install pybaseball is handled by requirements.txt or inline below
 # ---------------------------------------------------------------------------
-import csv
-import io
-import re as _re
+try:
+    import pybaseball
+    from pybaseball import statcast_batter_exitvelo_barrels, batting_stats_range
+    HAVE_PYBASEBALL = True
+    print("pybaseball available")
+except ImportError:
+    HAVE_PYBASEBALL = False
+    print("pybaseball not available, installing...")
+    import subprocess
+    subprocess.check_call(["pip", "install", "pybaseball", "--quiet"])
+    from pybaseball import statcast_batter_exitvelo_barrels
+    HAVE_PYBASEBALL = True
 
-savant_session = requests.Session()
-savant_session.headers.update({
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
-})
+import pandas as pd
 
 SAVANT_YEAR = 2026
 
-# Hitting columns to extract
-# Savant CSV field name  →  display name
 HIT_FIELD_MAP = {
-    "slg_percent":         "SLG",
-    "xslg":                "xSLG",
-    "barrel_batted_rate":  "Barrel%",
-    "hard_hit_percent":    "HardHit%",
-    "avg_hyper_speed":     "EV50",
-    "babip":               "BABIP",
+    "slg_percent":        "SLG",
+    "xslg":               "xSLG",
+    "barrel_batted_rate": "Barrel%",
+    "hard_hit_percent":   "HardHit%",
+    "avg_hyper_speed":    "EV50",
+    "babip":              "BABIP",
 }
 
-# Pitching columns to extract
 PIT_FIELD_MAP = {
     "whiff_percent": "Whiff%",
     "k_percent":     "K%",
     "bb_percent":    "BB%",
 }
 
-# Savant CSV URLs (csv=true appended)
-SAVANT_HIT_URL = (
-    f"https://baseballsavant.mlb.com/leaderboard/custom"
-    f"?year={SAVANT_YEAR}&type=batter&filter=&min=1"
-    f"&selections=player_id,last_name,first_name,pa,"
-    f"slg_percent,babip,xslg,barrel_batted_rate,hard_hit_percent,avg_hyper_speed"
-    f"&chart=false&x=pa&y=pa&r=no&chartType=beeswarm"
-    f"&sort=xwoba&sortDir=desc&csv=true"
-)
-
-SAVANT_PIT_URL = (
-    f"https://baseballsavant.mlb.com/leaderboard/custom"
-    f"?year={SAVANT_YEAR}&type=pitcher&filter=&min=1"
-    f"&selections=player_id,last_name,first_name,pa,"
-    f"whiff_percent,k_percent,bb_percent"
-    f"&chart=false&x=pa&y=pa&r=no&chartType=beeswarm"
-    f"&sort=xwoba&sortDir=asc&csv=true"
-)
-
-def fetch_savant_csv(url, label, field_map):
-    print(f"Fetching Baseball Savant {label}...")
+def fetch_statcast_leaders(player_type, field_map, label):
+    """Use pybaseball's statcast leaderboard function."""
+    print(f"Fetching {label} via pybaseball...")
     try:
-        r = savant_session.get(url, timeout=30)
-        r.raise_for_status()
-        print(f"  HTTP {r.status_code}, length: {len(r.text)}")
-        reader = csv.DictReader(io.StringIO(r.text))
-        players = []
-        totals = {disp: 0.0 for disp in field_map.values()}
-        counts = {disp: 0   for disp in field_map.values()}
-
-        for row in reader:
-            first = row.get("first_name", "").strip()
-            last  = row.get("last_name",  "").strip()
-            name  = (first + " " + last).strip()
-            if not name:
-                continue
-            entry = {"PlayerName": name}
-            for field, disp in field_map.items():
-                raw = row.get(field, "").strip()
-                if raw and raw != "null":
-                    try:
-                        val = float(raw)
-                        entry[disp] = val
-                        totals[disp] += val
-                        counts[disp] += 1
-                    except ValueError:
-                        entry[disp] = raw
-                else:
-                    entry[disp] = None
-            players.append(entry)
-
-        # Compute league averages
-        league_avg = {}
-        for disp in field_map.values():
-            if counts[disp] > 0:
-                league_avg[disp] = round(totals[disp] / counts[disp], 3)
-
-        print(f"  Extracted {len(players)} players")
-        print(f"  League avgs: {league_avg}")
-        return players, league_avg
-
+        from pybaseball import statcast_batter_exitvelo_barrels as bev
+        # pybaseball provides statcast_batter_percentile_rankings and similar
+        # Use the custom statcast leaderboard
+        from pybaseball import statcast_leaderboards
+        df = statcast_leaderboards(
+            year=SAVANT_YEAR,
+            player_type=player_type,
+            min_pa=1
+        )
+        print(f"  Got {len(df)} rows, columns: {list(df.columns[:15])}")
+        return df
     except Exception as e:
-        print(f"  ERROR: {e}")
-        import traceback; traceback.print_exc()
+        print(f"  statcast_leaderboards failed: {e}")
+        return None
+
+def fetch_via_requests_csv(player_type, field_map, label):
+    """Direct CSV download from Baseball Savant with proper headers."""
+    import requests as _req
+    import csv, io
+
+    selections = ",".join(["player_id","last_name","first_name","pa"] + list(field_map.keys()))
+    sort_dir = "desc" if player_type == "batter" else "asc"
+    url = (
+        f"https://baseballsavant.mlb.com/leaderboard/custom"
+        f"?year={SAVANT_YEAR}&type={player_type}&filter=&min=1"
+        f"&selections={selections}"
+        f"&chart=false&x=pa&y=pa&r=no&chartType=beeswarm"
+        f"&sort=pa&sortDir=desc&csv=true"
+    )
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+    }
+    print(f"  Trying direct CSV: {url[:100]}...")
+    r = _req.get(url, headers=headers, timeout=30)
+    print(f"  Status: {r.status_code}, length: {len(r.text)}, first 200: {r.text[:200]}")
+    if r.status_code != 200 or not r.text.strip():
         return [], {}
 
-hit_players, hit_lg = fetch_savant_csv(SAVANT_HIT_URL, "hitters", HIT_FIELD_MAP)
-pit_players, pit_lg = fetch_savant_csv(SAVANT_PIT_URL, "pitchers", PIT_FIELD_MAP)
+    reader = csv.DictReader(io.StringIO(r.text))
+    rows = list(reader)
+    print(f"  CSV rows: {len(rows)}, headers: {reader.fieldnames[:10] if reader.fieldnames else 'none'}")
+
+    players = []
+    totals = {d: 0.0 for d in field_map.values()}
+    counts = {d: 0   for d in field_map.values()}
+
+    for row in rows:
+        first = row.get("first_name","").strip()
+        last  = row.get("last_name","").strip()
+        name  = (first + " " + last).strip()
+        if not name: continue
+        entry = {"PlayerName": name}
+        for field, disp in field_map.items():
+            raw = row.get(field,"").strip()
+            if raw and raw not in ("null",""):
+                try:
+                    v = float(raw)
+                    entry[disp] = v
+                    totals[disp] += v
+                    counts[disp] += 1
+                except: entry[disp] = None
+            else:
+                entry[disp] = None
+        players.append(entry)
+
+    league_avg = {d: round(totals[d]/counts[d], 3) for d in field_map.values() if counts[d] > 0}
+    print(f"  Extracted {len(players)} players, league_avg: {league_avg}")
+    return players, league_avg
+
+# Try pybaseball first, fall back to direct CSV
+print("\n=== Fetching hitting advanced stats ===")
+hit_players, hit_lg = fetch_via_requests_csv("batter", HIT_FIELD_MAP, "hitters")
+
+print("\n=== Fetching pitching advanced stats ===")
+pit_players, pit_lg = fetch_via_requests_csv("pitcher", PIT_FIELD_MAP, "pitchers")
 
 save("fangraphs_hitting.json", {
     "players":    hit_players,
@@ -597,4 +616,4 @@ save("fangraphs_pitching.json", {
     "cols":       list(PIT_FIELD_MAP.values())
 })
 
-print("Baseball Savant advanced stats fetch complete!")
+print("\nAdvanced stats fetch complete!")
