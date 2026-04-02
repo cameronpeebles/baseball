@@ -320,9 +320,11 @@ td.neg { color: #c0392b; font-weight: 500; }
       </div>
       <div style="margin-top:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <button class="pill active" style="padding:10px 28px;font-size:13px" onclick="recalculateFWAR()">Recalculate fWAR</button>
+        <button class="pill" style="padding:10px 20px;font-size:13px;background:var(--accent2);border-color:var(--accent2);color:white" onclick="autoWeightFromCorrelations()">Auto-weight from correlations</button>
         <button class="pill" style="padding:10px 20px;font-size:13px" onclick="resetFWARDefaults()">Reset defaults</button>
         <span id="fwar-status" style="font-size:12px;color:var(--muted)"></span>
       </div>
+      <div id="fwar-weight-summary" style="margin-top:16px"></div>
       <div id="fwar-model-summary" style="margin-top:20px"></div>
     </div>
 
@@ -4793,6 +4795,206 @@ window.recalculateFWAR = function() {
 
   var n = allHitters.filter(function(p){return p.fWAR!=null;}).length;
   document.getElementById('fwar-status').textContent = 'Calculated fWAR for ' + n + ' hitters and ' + allPitchers.length + ' pitchers.';
+};
+
+window.autoWeightFromCorrelations = function() {
+  var statusEl = document.getElementById('fwar-status');
+  var summaryEl = document.getElementById('fwar-weight-summary');
+  statusEl.textContent = 'Computing correlations…';
+  summaryEl.innerHTML = '';
+
+  // Helper: Pearson correlation
+  function pearsonLocal(pairs) {
+    var n = pairs.length;
+    if (n < 3) return null;
+    var sx=0,sy=0,sxy=0,sx2=0,sy2=0;
+    pairs.forEach(function(p){sx+=p[0];sy+=p[1];sxy+=p[0]*p[1];sx2+=p[0]*p[0];sy2+=p[1]*p[1];});
+    var num=n*sxy-sx*sy, den=Math.sqrt((n*sx2-sx*sx)*(n*sy2-sy*sy));
+    return den===0?0:num/den;
+  }
+
+  // We need season stat data and standings points — same sources as Correlations page
+  function computeAndApply() {
+    var tables = (S.seasonData && S.seasonData.data && S.seasonData.data.tableList) || [];
+    var statTable = null, ptTable = null;
+    for (var i=0;i<tables.length;i++) {
+      var cap = (tables[i].caption||'').toLowerCase();
+      if (cap.indexOf('point total')!==-1) ptTable=tables[i];
+      if (!statTable && cap.indexOf('point')===-1 && tables[i].tableType!=='SECTION_HEADING' && (tables[i].rows||[]).length>0) statTable=tables[i];
+    }
+    var srcTable = statTable || ptTable;
+    if (!srcTable) { statusEl.textContent = 'Season data not available — visit Fantrax Data first.'; return; }
+
+    // Build header index
+    var hIdx = {};
+    ((srcTable.header && srcTable.header.cells)||[]).forEach(function(h,i){
+      if (h.key) hIdx[h.key.toUpperCase()]=i;
+      if (h.shortName) hIdx[h.shortName.toUpperCase()]=i;
+      if (h.name) hIdx[h.name.toUpperCase()]=i;
+    });
+
+    // Check real stats vs fantasy pts
+    var avgIdx = hIdx['AVG'];
+    var isReal = true;
+    if (avgIdx!=null) {
+      var tr = ((srcTable.rows||[])[0]||{}).cells||[];
+      var tv = parseFloat((tr[avgIdx]||{}).content);
+      if (!isNaN(tv)&&tv>2) isReal=false;
+    }
+
+    // Get fantasy points per team from ptTable
+    var teamPts = {};
+    if (ptTable) {
+      var phIdx={};
+      ((ptTable.header&&ptTable.header.cells)||[]).forEach(function(h,i){
+        if (h.key) phIdx[h.key.toUpperCase()]=i;
+        if (h.shortName) phIdx[h.shortName.toUpperCase()]=i;
+      });
+      var ptsCol=phIdx['PTS']!=null?phIdx['PTS']:phIdx['POINTS']!=null?phIdx['POINTS']:0;
+      (ptTable.rows||[]).forEach(function(row){
+        var fc=row.fixedCells||[],cells=row.cells||[];
+        var id=(fc[1]&&fc[1].teamId)||'';
+        if (id) teamPts[id]=parseFloat(cells[ptsCol]&&cells[ptsCol].content)||0;
+      });
+    }
+
+    // Gather per-team stat totals
+    var CATS_ALL = ['R','HR','RBI','SB','AVG','K','W','SVH3','ERA','WHIP'];
+    var teamStats = {}; // teamId → {cat: val}
+    (srcTable.rows||[]).forEach(function(row){
+      var fc=row.fixedCells||[],cells=row.cells||[];
+      var id=(fc[1]&&fc[1].teamId)||'';
+      if (!id) return;
+      var sv={};
+      CATS_ALL.forEach(function(c){
+        var ci=hIdx[c]; if (ci==null) return;
+        var v=parseFloat(cells[ci]&&cells[ci].content);
+        if (!isNaN(v)) sv[c]=v;
+      });
+      if (sv['SVH3']==null&&hIdx['SVH3']!=null) {
+        var v=parseFloat(cells[hIdx['SVH3']]&&cells[hIdx['SVH3']].content);
+        if (!isNaN(v)) sv['SVH3']=v;
+      }
+      teamStats[id]=sv;
+      if (!teamPts[id]) teamPts[id]=parseFloat(cells[hIdx['PTS']!=null?hIdx['PTS']:0]&&cells[hIdx['PTS']!=null?hIdx['PTS']:0].content)||0;
+    });
+
+    // Build dataset
+    var dataset = Object.keys(S.teamInfo).map(function(id){
+      return {id:id, pts:teamPts[id]||0, stats:teamStats[id]||{}};
+    }).filter(function(d){return d.pts>0;});
+
+    if (dataset.length < 3) {
+      statusEl.textContent = 'Not enough team data for correlations — need at least 3 teams with points.';
+      return;
+    }
+
+    // Compute r per category vs pts — for ERA/WHIP flip sign (lower=better)
+    var LOW_CATS_C = ['ERA','WHIP'];
+    var catR = {};
+    CATS_ALL.forEach(function(cat){
+      var pairs=dataset.filter(function(d){return d.stats[cat]!=null;})
+                       .map(function(d){return [d.stats[cat],d.pts];});
+      var r=pearsonLocal(pairs);
+      if (r!=null && LOW_CATS_C.indexOf(cat)!==-1) r=-r; // flip so positive = good
+      catR[cat]=r;
+    });
+
+    // Normalize to 0–1: weight = |r| / max(|r|)
+    var maxAbs=0;
+    CATS_ALL.forEach(function(cat){
+      if (catR[cat]!=null) maxAbs=Math.max(maxAbs,Math.abs(catR[cat]));
+    });
+    if (maxAbs===0) { statusEl.textContent='All correlations are zero — not enough data yet.'; return; }
+
+    var newHitW={}, newPitW={};
+    var HIT_CATS=['R','HR','RBI','SB','AVG'];
+    var PIT_CATS_C=['W','SVH3','K','ERA','WHIP'];
+    HIT_CATS.forEach(function(c){
+      newHitW[c]=catR[c]!=null?parseFloat((Math.abs(catR[c])/maxAbs).toFixed(2)):0;
+    });
+    PIT_CATS_C.forEach(function(c){
+      newPitW[c]=catR[c]!=null?parseFloat((Math.abs(catR[c])/maxAbs).toFixed(2)):0;
+    });
+
+    // Build change summary
+    var allCats=[
+      {cat:'R',    type:'hit', oldW:FWAR.hitWeights['R'],    newW:newHitW['R']},
+      {cat:'HR',   type:'hit', oldW:FWAR.hitWeights['HR'],   newW:newHitW['HR']},
+      {cat:'RBI',  type:'hit', oldW:FWAR.hitWeights['RBI'],  newW:newHitW['RBI']},
+      {cat:'SB',   type:'hit', oldW:FWAR.hitWeights['SB'],   newW:newHitW['SB']},
+      {cat:'AVG',  type:'hit', oldW:FWAR.hitWeights['AVG'],  newW:newHitW['AVG']},
+      {cat:'W',    type:'pit', oldW:FWAR.pitWeights['W'],    newW:newPitW['W']},
+      {cat:'SVH3', type:'pit', oldW:FWAR.pitWeights['SVH3'], newW:newPitW['SVH3']},
+      {cat:'K',    type:'pit', oldW:FWAR.pitWeights['K'],    newW:newPitW['K']},
+      {cat:'ERA',  type:'pit', oldW:FWAR.pitWeights['ERA'],  newW:newPitW['ERA']},
+      {cat:'WHIP', type:'pit', oldW:FWAR.pitWeights['WHIP'], newW:newPitW['WHIP']},
+    ];
+
+    var sh='<div class="card"><div class="card-header"><span class="card-title">Weights applied from correlations</span>';
+    sh+='<span style="font-size:12px;color:var(--muted)">Normalized |r| vs standings points. Review then click Recalculate fWAR.</span></div>';
+    sh+='<div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%;font-size:12px">';
+    sh+='<thead><tr>';
+    sh+='<th style="text-align:left;padding:7px 12px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted)">Category</th>';
+    sh+='<th style="padding:7px 12px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);text-align:center">r vs Pts</th>';
+    sh+='<th style="padding:7px 12px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);text-align:center">Old weight</th>';
+    sh+='<th style="padding:7px 12px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);text-align:center">New weight</th>';
+    sh+='<th style="padding:7px 12px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);text-align:left">Bar</th>';
+    sh+='</tr></thead><tbody>';
+
+    allCats.forEach(function(c,i){
+      var r=catR[c.cat];
+      var rStr=r!=null?(r>=0?'+':'')+r.toFixed(2):'—';
+      var rCol=r==null?'var(--muted)':Math.abs(r)>=0.7?'#1e6b3a':Math.abs(r)>=0.4?'#4a9a68':'#8a8479';
+      var changed=c.oldW!==c.newW;
+      var delta=c.newW-c.oldW;
+      var deltaStr=delta>=0?'+'+delta.toFixed(2):delta.toFixed(2);
+      var deltaCol=delta>0.05?'#2d5a3d':delta<-0.05?'#c0392b':'var(--muted)';
+      var bgRow=i%2===1?'background:var(--bg)':'';
+      var barW=Math.round(c.newW*100);
+      var barCol=Math.abs(r||0)>=0.7?'#2d5a3d':Math.abs(r||0)>=0.4?'#4a9a68':'#a8d5b5';
+
+      sh+='<tr style="'+bgRow+';border-bottom:1px solid var(--border)">';
+      sh+='<td style="padding:8px 12px;text-align:left"><strong>'+c.cat+'</strong>';
+      sh+='<span style="margin-left:6px;font-size:10px;color:var(--muted)">'+(c.type==='hit'?'batting':'pitching')+'</span></td>';
+      sh+='<td style="padding:8px 12px;text-align:center;font-weight:600;color:'+rCol+'">'+rStr+'</td>';
+      sh+='<td style="padding:8px 12px;text-align:center;color:var(--muted)">'+c.oldW.toFixed(2)+'</td>';
+      sh+='<td style="padding:8px 12px;text-align:center">';
+      sh+='<strong>'+c.newW.toFixed(2)+'</strong>';
+      if (changed) sh+=' <span style="font-size:10px;color:'+deltaCol+'">('+deltaStr+')</span>';
+      sh+='</td>';
+      sh+='<td style="padding:8px 12px">';
+      sh+='<div style="height:8px;background:var(--border);border-radius:4px;width:120px">';
+      sh+='<div style="height:100%;width:'+barW+'%;background:'+barCol+';border-radius:4px"></div></div></td>';
+      sh+='</tr>';
+    });
+    sh+='</tbody></table></div></div>';
+    summaryEl.innerHTML=sh;
+
+    // Apply new weights to FWAR state and update inputs
+    HIT_CATS.forEach(function(c){ FWAR.hitWeights[c]=newHitW[c]; });
+    PIT_CATS_C.forEach(function(c){ FWAR.pitWeights[c]=newPitW[c]; });
+
+    // Update input fields visually
+    HIT_CATS.forEach(function(c){
+      var el=document.getElementById('fwar-hw-'+c);
+      if (el) el.value=newHitW[c].toFixed(2);
+    });
+    PIT_CATS_C.forEach(function(c){
+      var el=document.getElementById('fwar-pw-'+c);
+      if (el) el.value=newPitW[c].toFixed(2);
+    });
+
+    statusEl.textContent='Weights updated from correlations — review above, then click Recalculate fWAR.';
+  }
+
+  // If JOE data not loaded yet, trigger it then proceed
+  // Correlations only needs season data which is always loaded
+  if (!S.seasonData) {
+    statusEl.textContent='Season data not loaded yet.';
+    return;
+  }
+  computeAndApply();
 };
 
 init();
