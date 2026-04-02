@@ -541,10 +541,9 @@ def fetch_statcast_leaders(player_type, field_map, label):
 def fetch_via_requests_csv(player_type, field_map, label):
     """Direct CSV download from Baseball Savant with proper headers."""
     import requests as _req
-    import csv, io
+    import csv, io, gzip
 
     selections = ",".join(["player_id","last_name","first_name","pa"] + list(field_map.keys()))
-    sort_dir = "desc" if player_type == "batter" else "asc"
     url = (
         f"https://baseballsavant.mlb.com/leaderboard/custom"
         f"?year={SAVANT_YEAR}&type={player_type}&filter=&min=1"
@@ -554,21 +553,34 @@ def fetch_via_requests_csv(player_type, field_map, label):
     )
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
+        "Accept": "text/csv,text/plain,*/*",
+        # No Accept-Encoding — let requests handle decompression automatically
     }
-    print(f"  Trying direct CSV: {url[:100]}...")
+    print(f"  Trying direct CSV: {url[:120]}...")
     r = _req.get(url, headers=headers, timeout=30)
-    print(f"  Status: {r.status_code}, length: {len(r.text)}, first 200: {r.text[:200]}")
-    if r.status_code != 200 or not r.text.strip():
+    r.encoding = 'utf-8'
+    print(f"  Status: {r.status_code}, length: {len(r.content)}")
+
+    if r.status_code != 200:
+        print(f"  Non-200 response, aborting")
         return [], {}
 
-    reader = csv.DictReader(io.StringIO(r.text))
+    # Decompress if gzipped
+    content = r.content
+    if content[:2] == b'\x1f\x8b':
+        print("  Response is gzip-compressed, decompressing...")
+        content = gzip.decompress(content)
+
+    text = content.decode('utf-8', errors='replace')
+    print(f"  Decoded text length: {len(text)}, first 200: {text[:200]}")
+
+    if not text.strip():
+        print("  Empty response")
+        return [], {}
+
+    reader = csv.DictReader(io.StringIO(text))
     rows = list(reader)
-    print(f"  CSV rows: {len(rows)}, headers: {reader.fieldnames[:10] if reader.fieldnames else 'none'}")
+    print(f"  CSV rows: {len(rows)}, headers: {list(reader.fieldnames or [])[:10]}")
 
     players = []
     totals = {d: 0.0 for d in field_map.values()}
