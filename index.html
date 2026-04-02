@@ -449,8 +449,8 @@ var S = {
   rosterRaw: null, seasonData: null, zData: null,
   fgHitLookup: {}, fgPitLookup: {},
   fgHitLeague: null, fgPitLeague: null,
-  fgHitCols: ['Barrel%','HardHit%','xSLG'],
-  fgPitCols: ['K-BB%','xFIP','xFIP-']
+  fgHitCols: ['SLG','xSLG','Barrel%','HardHit%','EV50','BABIP'],
+  fgPitCols: ['Whiff%','K%','BB%']
 };
 
 Chart.defaults.font.family = "'DM Sans', sans-serif";
@@ -528,8 +528,8 @@ function init() {
     S.fgPitLookup = {};
     S.fgHitLeague = (fgHit && fgHit.league_avg) || null;
     S.fgPitLeague = (fgPit && fgPit.league_avg) || null;
-    S.fgHitCols   = (fgHit && fgHit.cols) || ['Barrel%','HardHit%','xSLG'];
-    S.fgPitCols   = (fgPit && fgPit.cols) || ['K-BB%','xFIP','xFIP-'];
+    S.fgHitCols   = (fgHit && fgHit.cols) || ['SLG','xSLG','Barrel%','HardHit%','EV50','BABIP'];
+    S.fgPitCols   = (fgPit && fgPit.cols) || ['Whiff%','K%','BB%'];
 
     (fgHit.players || []).forEach(function(p) {
       if (p.PlayerName) S.fgHitLookup[p.PlayerName.toLowerCase()] = p;
@@ -696,7 +696,7 @@ function drawPlayers(type) {
     if (hasFWAR) html += '<td></td><td></td><td></td><td></td><td></td>';
     fgCols.forEach(function(c) {
       var v = fgLeague[c];
-      var disp = v != null ? (typeof v === 'number' ? (c.indexOf('%') !== -1 ? (v*100).toFixed(1)+'%' : v.toFixed(2)) : v) : '—';
+      var disp = v != null ? (typeof v === 'number' ? fmtFG(v, c) : v) : '—';
       html += '<td style="font-weight:600;color:#2980b9;font-size:12px">' + disp + '</td>';
     });
     headers.forEach(function() { html += '<td></td>'; });
@@ -707,8 +707,12 @@ function drawPlayers(type) {
   function fmtFG(val, col) {
     if (val == null) return '—';
     if (typeof val !== 'number') return val;
-    if (col.indexOf('%') !== -1) return (val * 100).toFixed(1) + '%';
-    return val.toFixed(2);
+    // Savant returns percentages as whole numbers (e.g. 35.2 not 0.352)
+    // SLG, xSLG, BABIP are decimals; percentages are already whole numbers
+    var pctCols = ['Barrel%','HardHit%','Whiff%','K%','BB%'];
+    if (pctCols.indexOf(col) !== -1) return val.toFixed(1) + '%';
+    if (col === 'EV50') return val.toFixed(1);
+    return val.toFixed(3);
   }
 
   filtered.forEach(function(row) {
