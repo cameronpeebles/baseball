@@ -484,140 +484,117 @@ else:
 print("All done!")
 
 # ---------------------------------------------------------------------------
-# FanGraphs advanced stats
+# Baseball Savant advanced stats
 # ---------------------------------------------------------------------------
-
-fg_session = requests.Session()
-fg_session.headers.update({
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Accept": "application/json, text/plain, */*",
-    "Referer": "https://www.fangraphs.com/",
-})
-
-SEASON = 2026
-
-def fetch_fg(url, label):
-    print(f"Fetching FanGraphs {label}...")
-    try:
-        r = fg_session.get(url, timeout=30)
-        r.raise_for_status()
-        print(f"  HTTP {r.status_code}, content length: {len(r.text)}")
-        print(f"  First 500 chars: {r.text[:500]}")
-        data = r.json()
-        # FanGraphs API may return {"data": [...]} or a raw array
-        if isinstance(data, list):
-            rows = data
-            print(f"  Response is a list of {len(rows)} items")
-        elif isinstance(data, dict):
-            print(f"  Response is a dict with keys: {list(data.keys())[:10]}")
-            rows = data.get("data", data.get("Data", []))
-        else:
-            print(f"  Unexpected response type: {type(data)}")
-            rows = []
-        print(f"  Got {len(rows)} rows")
-        if rows:
-            print(f"  First row keys: {list(rows[0].keys())[:10]}")
-            print(f"  First row Name field: {rows[0].get('Name', 'NOT FOUND')[:100] if isinstance(rows[0].get('Name'), str) else rows[0].get('Name', 'NOT FOUND')}")
-        return rows
-    except Exception as e:
-        print(f"  ERROR: {e}")
-        import traceback
-        traceback.print_exc()
-        return []
-
-# Hitting: type=24 = Statcast batting (Barrel%, HardHit%, xSLG etc.)
-# Individual players
-FG_HIT_URL = (
-    f"https://www.fangraphs.com/api/leaders/major-league/data"
-    f"?age=&pos=all&stats=bat&lg=all&type=24"
-    f"&season={SEASON}&season1={SEASON}&ind=0&qual=0&month=0&pageitems=2000000000"
-)
-# League average (team=0,ss)
-FG_HIT_LG_URL = (
-    f"https://www.fangraphs.com/api/leaders/major-league/data"
-    f"?age=&pos=all&stats=bat&lg=all&type=24"
-    f"&season={SEASON}&season1={SEASON}&ind=0&qual=0&month=0&pageitems=2000000000&team=0%2Css"
-)
-
-# Pitching: type=1 = dashboard pitching (K-BB%, xFIP, xFIP- etc.)
-FG_PIT_URL = (
-    f"https://www.fangraphs.com/api/leaders/major-league/data"
-    f"?age=&pos=all&stats=pit&lg=all&type=1"
-    f"&season={SEASON}&season1={SEASON}&ind=0&qual=0&month=0&pageitems=2000000000"
-)
-FG_PIT_LG_URL = (
-    f"https://www.fangraphs.com/api/leaders/major-league/data"
-    f"?age=&pos=all&stats=pit&lg=all&type=1"
-    f"&season={SEASON}&season1={SEASON}&ind=0&qual=0&month=0&pageitems=2000000000&team=0%2Css"
-)
-
+import csv
+import io
 import re as _re
 
-def strip_html(val):
-    """Extract plain text from an HTML string like <a href="...">Joey Wiemer</a>"""
-    if not val or not isinstance(val, str):
-        return val
-    # Extract text between > and <
-    match = _re.search(r'>([^<]+)<', val)
-    if match:
-        return match.group(1).strip()
-    # Fallback: strip all tags
-    return _re.sub(r'<[^>]+>', '', val).strip()
+savant_session = requests.Session()
+savant_session.headers.update({
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
+})
 
-HIT_STATS = ["Name", "Barrel%", "HardHit%", "xSLG"]
-PIT_STATS  = ["Name", "K-BB%", "xFIP", "xFIP-"]
+SAVANT_YEAR = 2026
 
-def extract_players(rows, stat_cols):
-    result = []
-    for row in rows:
-        entry = {}
-        name = strip_html(row.get("Name") or row.get("PlayerName") or "")
-        if not name:
-            continue
-        entry["PlayerName"] = name
-        for col in stat_cols:
-            if col == "Name":
+# Hitting columns to extract
+# Savant CSV field name  →  display name
+HIT_FIELD_MAP = {
+    "slg_percent":         "SLG",
+    "xslg":                "xSLG",
+    "barrel_batted_rate":  "Barrel%",
+    "hard_hit_percent":    "HardHit%",
+    "avg_hyper_speed":     "EV50",
+    "babip":               "BABIP",
+}
+
+# Pitching columns to extract
+PIT_FIELD_MAP = {
+    "whiff_percent": "Whiff%",
+    "k_percent":     "K%",
+    "bb_percent":    "BB%",
+}
+
+# Savant CSV URLs (csv=true appended)
+SAVANT_HIT_URL = (
+    f"https://baseballsavant.mlb.com/leaderboard/custom"
+    f"?year={SAVANT_YEAR}&type=batter&filter=&min=1"
+    f"&selections=player_id,last_name,first_name,pa,"
+    f"slg_percent,babip,xslg,barrel_batted_rate,hard_hit_percent,avg_hyper_speed"
+    f"&chart=false&x=pa&y=pa&r=no&chartType=beeswarm"
+    f"&sort=xwoba&sortDir=desc&csv=true"
+)
+
+SAVANT_PIT_URL = (
+    f"https://baseballsavant.mlb.com/leaderboard/custom"
+    f"?year={SAVANT_YEAR}&type=pitcher&filter=&min=1"
+    f"&selections=player_id,last_name,first_name,pa,"
+    f"whiff_percent,k_percent,bb_percent"
+    f"&chart=false&x=pa&y=pa&r=no&chartType=beeswarm"
+    f"&sort=xwoba&sortDir=asc&csv=true"
+)
+
+def fetch_savant_csv(url, label, field_map):
+    print(f"Fetching Baseball Savant {label}...")
+    try:
+        r = savant_session.get(url, timeout=30)
+        r.raise_for_status()
+        print(f"  HTTP {r.status_code}, length: {len(r.text)}")
+        reader = csv.DictReader(io.StringIO(r.text))
+        players = []
+        totals = {disp: 0.0 for disp in field_map.values()}
+        counts = {disp: 0   for disp in field_map.values()}
+
+        for row in reader:
+            first = row.get("first_name", "").strip()
+            last  = row.get("last_name",  "").strip()
+            name  = (first + " " + last).strip()
+            if not name:
                 continue
-            if col in row:
-                entry[col] = row[col]
-        result.append(entry)
-    return result
+            entry = {"PlayerName": name}
+            for field, disp in field_map.items():
+                raw = row.get(field, "").strip()
+                if raw and raw != "null":
+                    try:
+                        val = float(raw)
+                        entry[disp] = val
+                        totals[disp] += val
+                        counts[disp] += 1
+                    except ValueError:
+                        entry[disp] = raw
+                else:
+                    entry[disp] = None
+            players.append(entry)
 
-def extract_league_avg(rows, stat_cols):
-    if not rows:
-        return {}
-    lg_row = None
-    for row in rows:
-        name = strip_html(row.get("Name") or row.get("PlayerName") or row.get("Team") or "").lower()
-        if "average" in name or "league" in name:
-            lg_row = row
-            break
-    if lg_row is None:
-        lg_row = rows[-1]
-    result = {}
-    for col in stat_cols:
-        if col == "Name":
-            continue
-        if col in lg_row:
-            result[col] = lg_row[col]
-    return result
+        # Compute league averages
+        league_avg = {}
+        for disp in field_map.values():
+            if counts[disp] > 0:
+                league_avg[disp] = round(totals[disp] / counts[disp], 3)
 
-# Fetch
-hit_rows    = fetch_fg(FG_HIT_URL,    "hitting (Barrel%, HardHit%, xSLG)")
-hit_lg_rows = fetch_fg(FG_HIT_LG_URL, "hitting league averages")
-pit_rows    = fetch_fg(FG_PIT_URL,    "pitching (K-BB%, xFIP, xFIP-)")
-pit_lg_rows = fetch_fg(FG_PIT_LG_URL, "pitching league averages")
+        print(f"  Extracted {len(players)} players")
+        print(f"  League avgs: {league_avg}")
+        return players, league_avg
+
+    except Exception as e:
+        print(f"  ERROR: {e}")
+        import traceback; traceback.print_exc()
+        return [], {}
+
+hit_players, hit_lg = fetch_savant_csv(SAVANT_HIT_URL, "hitters", HIT_FIELD_MAP)
+pit_players, pit_lg = fetch_savant_csv(SAVANT_PIT_URL, "pitchers", PIT_FIELD_MAP)
 
 save("fangraphs_hitting.json", {
-    "players":    extract_players(hit_rows, HIT_STATS),
-    "league_avg": extract_league_avg(hit_lg_rows, HIT_STATS),
-    "cols":       ["Barrel%", "HardHit%", "xSLG"]
+    "players":    hit_players,
+    "league_avg": hit_lg,
+    "cols":       list(HIT_FIELD_MAP.values())
 })
 
 save("fangraphs_pitching.json", {
-    "players":    extract_players(pit_rows, PIT_STATS),
-    "league_avg": extract_league_avg(pit_lg_rows, PIT_STATS),
-    "cols":       ["K-BB%", "xFIP", "xFIP-"]
+    "players":    pit_players,
+    "league_avg": pit_lg,
+    "cols":       list(PIT_FIELD_MAP.values())
 })
 
-print("FanGraphs fetch complete!")
+print("Baseball Savant advanced stats fetch complete!")
