@@ -358,6 +358,18 @@ td.neg { color: #c0392b; font-weight: 500; }
             <button class="pill" onclick="setF('hit','OWNED',this)">Rostered</button>
           </div>
         </div>
+        <div style="padding:8px 20px 6px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:0.05em;margin-right:4px">Position:</span>
+          <div class="pill-group" id="hit-pos-pills">
+            <button class="pill active" onclick="setPos('hit','ALL',this)">All</button>
+            <button class="pill" onclick="setPos('hit','C',this)">C</button>
+            <button class="pill" onclick="setPos('hit','1B',this)">1B</button>
+            <button class="pill" onclick="setPos('hit','2B',this)">2B</button>
+            <button class="pill" onclick="setPos('hit','3B',this)">3B</button>
+            <button class="pill" onclick="setPos('hit','SS',this)">SS</button>
+            <button class="pill" onclick="setPos('hit','OF',this)">OF</button>
+          </div>
+        </div>
         <div class="search-wrap"><input type="text" placeholder="Search players..." oninput="doSearch('hit',this.value)" /></div>
         <div class="table-wrap" id="hit-table"><div class="loading">Loading...</div></div>
       </div>
@@ -372,6 +384,14 @@ td.neg { color: #c0392b; font-weight: 500; }
             <button class="pill active" onclick="setF('pit','ALL',this)">All</button>
             <button class="pill" onclick="setF('pit','FA',this)">Free Agents</button>
             <button class="pill" onclick="setF('pit','OWNED',this)">Rostered</button>
+          </div>
+        </div>
+        <div style="padding:8px 20px 6px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:0.05em;margin-right:4px">Position:</span>
+          <div class="pill-group" id="pit-pos-pills">
+            <button class="pill active" onclick="setPos('pit','ALL',this)">All</button>
+            <button class="pill" onclick="setPos('pit','SP',this)">SP</button>
+            <button class="pill" onclick="setPos('pit','RP',this)">RP</button>
           </div>
         </div>
         <div class="search-wrap"><input type="text" placeholder="Search players..." oninput="doSearch('pit',this.value)" /></div>
@@ -465,6 +485,7 @@ var S = {
   teamInfo: {}, hitRows: [], pitRows: [],
   hitHeaders: [], pitHeaders: [],
   hitF: 'ALL', pitF: 'ALL', hitQ: '', pitQ: '',
+  hitPos: 'ALL', pitPos: 'ALL',
   hitSort: null, hitSortDir: -1,
   pitSort: null, pitSortDir: -1,
   rosterRaw: null, seasonData: null, zData: null,
@@ -675,6 +696,14 @@ function sortPlayers(type, col) {
   drawPlayers(type);
 }
 
+function setPos(type, pos, btn) {
+  if (type === 'hit') S.hitPos = pos; else S.pitPos = pos;
+  var groupId = type === 'hit' ? 'hit-pos-pills' : 'pit-pos-pills';
+  document.getElementById(groupId).querySelectorAll('.pill').forEach(function(p) { p.classList.remove('active'); });
+  btn.classList.add('active');
+  drawPlayers(type);
+}
+
 function drawPlayers(type) {
   var isHit = type === 'hit';
   var rows = isHit ? S.hitRows : S.pitRows;
@@ -719,12 +748,35 @@ function drawPlayers(type) {
     return { row: row, scorer: scorer, cells: cells, name: name, ftId: ftId, fw: fw, fgRow: fgRow };
   });
 
+  var posFilter = isHit ? S.hitPos : S.pitPos;
+
+  // Position eligibility for filter — map slot → position strings
+  var POS_FILTER_MAP = {
+    'C':  ['C'],
+    '1B': ['1B'],
+    '2B': ['2B'],
+    '3B': ['3B'],
+    'SS': ['SS'],
+    'OF': ['OF','LF','CF','RF'],
+    'SP': ['SP'],
+    'RP': ['RP']
+  };
+
   // Filter
   var filtered = enriched.filter(function(e) {
     var nameLow = e.name.toLowerCase();
     if (filter === 'FA'    && e.ftId)  return false;
     if (filter === 'OWNED' && !e.ftId) return false;
     if (q && nameLow.indexOf(q) === -1) return false;
+    // Position filter
+    if (posFilter && posFilter !== 'ALL') {
+      var eligible = POS_FILTER_MAP[posFilter];
+      if (eligible) {
+        var pos = e.scorer.posShortNames || '';
+        var parts = pos.split(',').map(function(p){return p.trim();});
+        if (!parts.some(function(p){return eligible.indexOf(p) !== -1;})) return false;
+      }
+    }
     return true;
   });
 
