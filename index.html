@@ -797,15 +797,15 @@ function drawPlayers(type) {
   }
   html += '</tr>';
 
-  // League average row in thead (stays sticky with headers)
+  // League average row in thead using th elements so it sticks properly
   if (hasFG && fgLeague && Object.keys(fgLeague).length > 0) {
     html += '<tr style="background:#e8f4fd;border-bottom:2px solid #2980b9">';
-    html += '<td class="left" colspan="3" style="font-weight:600;font-size:11px;color:#2980b9;white-space:nowrap;position:sticky;left:0;background:#e8f4fd;z-index:1">MLB Avg (Savant)</td>';
-    if (hasFWAR) html += '<td></td><td></td><td></td><td></td><td></td>';
-    ftxCols.forEach(function() { html += '<td></td>'; });
+    html += '<th style="text-align:left;font-weight:600;font-size:11px;color:#2980b9;white-space:nowrap;position:sticky;left:0;background:#e8f4fd;z-index:5" colspan="3">MLB Avg (Savant)</th>';
+    if (hasFWAR) html += '<th></th><th></th><th></th><th></th><th></th>';
+    ftxCols.forEach(function() { html += '<th></th>'; });
     fgCols.forEach(function(c) {
       var v = fgLeague[c];
-      html += '<td style="font-weight:600;color:#2980b9;font-size:12px">' + (v != null ? fmtFG(v, c) : '—') + '</td>';
+      html += '<th style="font-weight:600;color:#2980b9;font-size:12px;text-align:right">' + (v != null ? fmtFG(v, c) : '—') + '</th>';
     });
     html += '</tr>';
   }
