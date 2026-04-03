@@ -652,3 +652,152 @@ save("fangraphs_pitching.json", {
 })
 
 print("\nAdvanced stats fetch complete!")
+
+# ---------------------------------------------------------------------------
+# Waiver Targets — xwOBA vs wOBA, BABIP YoY, Barrel% YoY
+# ---------------------------------------------------------------------------
+print("\n=== Fetching waiver target data ===")
+
+import csv, io, gzip
+import requests as _req
+
+TARGETS_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/csv,text/plain,*/*",
+}
+
+def parse_savant_csv(text):
+    """Parse a Savant CSV, handling BOM and combined name fields."""
+    if text.startswith('\ufeff'):
+        text = text[1:]
+    reader = csv.DictReader(io.StringIO(text))
+    rows = list(reader)
+    fieldnames = reader.fieldnames or []
+    combined = next((f for f in fieldnames if 'last_name' in f.lower() and 'first_name' in f.lower()), None)
+    result = []
+    for row in rows:
+        if combined:
+            parts = (row.get(combined) or "").strip().split(",", 1)
+            last  = parts[0].strip()
+            first = parts[1].strip() if len(parts) > 1 else ""
+        else:
+            first = (row.get("first_name") or "").strip()
+            last  = (row.get("last_name")  or "").strip()
+        name = (first + " " + last).strip()
+        if not name: continue
+        result.append((name, row))
+    return result
+
+def fetch_csv(url, label):
+    print(f"  {label}: {url[:100]}...")
+    try:
+        r = _req.get(url, headers=TARGETS_HEADERS, timeout=30)
+        print(f"  Status {r.status_code}, {len(r.content)} bytes")
+        if r.status_code != 200:
+            return []
+        content = r.content
+        if content[:2] == b'\x1f\x8b':
+            content = gzip.decompress(content)
+        return parse_savant_csv(content.decode('utf-8', errors='replace'))
+    except Exception as e:
+        print(f"  Error: {e}")
+        return []
+
+# 1. xwOBA vs wOBA (2026, batters, min BIP qualifier)
+xwoba_url = (
+    "https://baseballsavant.mlb.com/leaderboard/expected_statistics"
+    "?type=batter&year=2026&position=&team=&filterType=bip&min=q&csv=true"
+)
+xwoba_rows = fetch_csv(xwoba_url, "xwOBA/wOBA 2026")
+
+# 2. BABIP year-to-year (batters, 2025 = prior year)
+babip_url = (
+    "https://baseballsavant.mlb.com/leaderboard/statcast-year-to-year"
+    "?type=babip&group=Batter&year=2025&csv=true"
+)
+babip_rows = fetch_csv(babip_url, "BABIP YoY 2025→2026")
+
+# 3. Barrel% year-to-year (batters, 2025 = prior year)
+barrel_url = (
+    "https://baseballsavant.mlb.com/leaderboard/statcast-year-to-year"
+    "?type=barrel_batted_rate&group=Batter&year=2025&csv=true"
+)
+barrel_rows = fetch_csv(barrel_url, "Barrel% YoY 2025→2026")
+
+# Build lookup by name
+def build_lookup(rows):
+    d = {}
+    for name, row in rows:
+        d[name.lower()] = row
+    return d
+
+xwoba_lkp  = build_lookup(xwoba_rows)
+babip_lkp  = build_lookup(babip_rows)
+barrel_lkp = build_lookup(barrel_rows)
+
+def safe_float(row, *keys):
+    for k in keys:
+        v = (row.get(k) or "").strip()
+        if v and v not in ("null", ""):
+            try: return float(v)
+            except: pass
+    return None
+
+# Merge by player name
+all_names = set(xwoba_lkp.keys()) | set(babip_lkp.keys()) | set(barrel_lkp.keys())
+targets = []
+for name_lower in all_names:
+    xr = xwoba_lkp.get(name_lower, {})
+    br = babip_lkp.get(name_lower, {})
+    blr = barrel_lkp.get(name_lower, {})
+
+    # Reconstruct display name from whichever source has it
+    display_name = name_lower.title()
+
+    xwoba  = safe_float(xr,  'est_woba', 'xwoba', 'expected_woba')
+    woba   = safe_float(xr,  'woba')
+    pa_26  = safe_float(xr,  'pa', 'ab')
+
+    babip_26 = safe_float(br,  'babip_current', 'babip_2', 'current_year_value')
+    babip_25 = safe_float(br,  'babip_prior',   'babip_1', 'prior_year_value')
+
+    barrel_26 = safe_float(blr, 'barrel_batted_rate_current', 'barrel_current', 'current_year_value')
+    barrel_25 = safe_float(blr, 'barrel_batted_rate_prior',   'barrel_prior',   'prior_year_value')
+
+    # Skip if we have none of the key metrics
+    if xwoba is None and babip_26 is None and barrel_26 is None:
+        continue
+
+    delta_xwoba  = round(xwoba  - woba,   3) if xwoba  is not None and woba   is not None else None
+    delta_babip  = round(babip_26  - babip_25,  3) if babip_26  is not None and babip_25  is not None else None
+    delta_barrel = round(barrel_26 - barrel_25, 1) if barrel_26 is not None and barrel_25 is not None else None
+
+    # Signal
+    signal = "Neutral"
+    if (delta_xwoba  is not None and delta_xwoba  >= 0.020 and
+        delta_babip  is not None and delta_babip  <= -0.020 and
+        delta_barrel is not None and delta_barrel >= 0.0):
+        signal = "Underperforming"
+    elif (delta_xwoba  is not None and delta_xwoba  <= -0.020 and
+          delta_babip  is not None and delta_babip  >= 0.020 and
+          delta_barrel is not None and delta_barrel <= 0.0):
+        signal = "Overperforming"
+
+    targets.append({
+        "name":         display_name,
+        "pa_2026":      int(pa_26) if pa_26 is not None else None,
+        "xwoba":        xwoba,
+        "woba":         woba,
+        "delta_xwoba":  delta_xwoba,
+        "babip_2026":   babip_26,
+        "babip_2025":   babip_25,
+        "delta_babip":  delta_babip,
+        "barrel_2026":  barrel_26,
+        "barrel_2025":  barrel_25,
+        "delta_barrel": delta_barrel,
+        "signal":       signal
+    })
+
+print(f"  Merged {len(targets)} players, {sum(1 for t in targets if t['signal']=='Underperforming')} underperforming, {sum(1 for t in targets if t['signal']=='Overperforming')} overperforming")
+save("targets_hitting.json", targets)
+print("Targets fetch complete!")
