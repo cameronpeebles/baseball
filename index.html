@@ -247,6 +247,7 @@ td.neg { color: #c0392b; font-weight: 500; }
   <button onclick="showPage('correlations',this)">Correlations</button>
   <button onclick="showPage('fwar',this)">fWAR</button>
   <button onclick="showPage('trade',this)">Player Trade &amp; Market</button>
+  <button onclick="showPage('historic',this)">Historic League Data</button>
 </nav>
 
 <main>
@@ -475,6 +476,11 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div class="page-subtitle">How stats, luck, and roster strength relate to standings performance.</div>
     <div id="correlations-body"><div class="loading">Loading...</div></div>
   </div>
+  <div class="page" id="page-historic">
+    <div class="page-title">Historic League Data</div>
+    <div class="page-subtitle">Season-by-season standings, stats, and SPG analysis (2021–2025).</div>
+    <div id="historic-body"><div class="loading">Loading...</div></div>
+  </div>
 
 </main>
 
@@ -510,6 +516,7 @@ var dashboardBuilt = false;
 var combinedRendered = false;
 var correlationsRendered = false;
 var fwarRendered = false;
+var historicRendered = false;
 var h2hRendered = false;
 
 function loadJSON(f) {
@@ -533,8 +540,9 @@ function showPage(name, btn) {
   if (name === 'correlations') renderCorrelations();
   if (name === 'fwar') renderFWARPage();
   if (name === 'trade') renderTradeAnalyzer();
+  if (name === 'historic') renderHistoricPage();
   // Expand main to full width for wide-table pages
-  document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'rosters') ? 'none' : '';
+  document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'rosters' || name === 'historic') ? 'none' : '';
 }
 
 window.showFantraxTab = function(tab, btn) {
@@ -5462,6 +5470,250 @@ window.autoWeightFromCorrelations = function() {
   }
   computeAndApply();
 };
+
+// ── Historic League Data ──────────────────────────────────────────────────────
+
+var HISTORIC_DATA = {
+  2025: [
+    {rank:1,  pts:81,   gp:2762, ab:7847,  h:2048, r:1159, hr:305, rbi:1059, sb:262, avg:0.261, ip:2354.1, w:165, k:2555, sv:126,   era:3.51, whip:1.165},
+    {rank:2,  pts:80,   gp:2827, ab:7810,  h:2039, r:1241, hr:393, rbi:1165, sb:224, avg:0.261, ip:2411.1, w:144, k:2137, sv:127,   era:3.84, whip:1.226},
+    {rank:3,  pts:68.5, gp:2781, ab:7584,  h:1882, r:1057, hr:311, rbi:1080, sb:181, avg:0.248, ip:1908.1, w:112, k:2098, sv:176.5, era:3.47, whip:1.171},
+    {rank:4,  pts:65,   gp:2543, ab:7368,  h:1923, r:1067, hr:319, rbi:1064, sb:164, avg:0.261, ip:758.1,  w:38,  k:793,  sv:189,   era:3.38, whip:1.195},
+    {rank:5,  pts:57.5, gp:2879, ab:8034,  h:2042, r:1102, hr:265, rbi:970,  sb:126, avg:0.254, ip:1991.2, w:152, k:2062, sv:148,   era:3.47, whip:1.169},
+    {rank:6,  pts:56,   gp:2661, ab:7291,  h:1852, r:1102, hr:308, rbi:981,  sb:200, avg:0.254, ip:1864.1, w:108, k:1923, sv:151.5, era:3.74, whip:1.206},
+    {rank:7,  pts:54,   gp:2714, ab:7707,  h:1964, r:1076, hr:287, rbi:1011, sb:176, avg:0.255, ip:2336,   w:149, k:2072, sv:76.5,  era:3.86, whip:1.217},
+    {rank:8,  pts:48.5, gp:2511, ab:7450,  h:1897, r:1011, hr:311, rbi:1016, sb:211, avg:0.255, ip:2005.2, w:129, k:1970, sv:67,    era:4.04, whip:1.279},
+    {rank:9,  pts:28.5, gp:2390, ab:7151,  h:1771, r:1005, hr:299, rbi:981,  sb:148, avg:0.248, ip:1319.1, w:84,  k:1320, sv:72.5,  era:4.15, whip:1.238},
+    {rank:10, pts:11,   gp:1740, ab:5582,  h:1351, r:737,  hr:235, rbi:762,  sb:115, avg:0.242, ip:771.1,  w:41,  k:751,  sv:3,     era:4.5,  whip:1.329}
+  ],
+  2024: [
+    {rank:1,  pts:78,   gp:2734, ab:7668,  h:1881, r:1101, hr:338, rbi:1025, sb:254, avg:0.245, ip:2338.2, w:171, k:2414, sv:109, era:3.63, whip:1.148},
+    {rank:2,  pts:72,   gp:2666, ab:7694,  h:1974, r:1076, hr:326, rbi:1053, sb:226, avg:0.257, ip:1944.1, w:125, k:1967, sv:117, era:3.55, whip:1.119},
+    {rank:3,  pts:69.5, gp:2883, ab:7836,  h:2012, r:1078, hr:282, rbi:1037, sb:197, avg:0.257, ip:2377.1, w:153, k:2501, sv:121, era:4.02, whip:1.204},
+    {rank:4,  pts:69,   gp:2768, ab:7764,  h:2005, r:1081, hr:289, rbi:1052, sb:178, avg:0.258, ip:2407.2, w:152, k:2309, sv:147, era:3.81, whip:1.258},
+    {rank:5,  pts:59,   gp:2681, ab:7713,  h:1965, r:1188, hr:366, rbi:1115, sb:166, avg:0.255, ip:2420.2, w:142, k:2227, sv:78,  era:4.02, whip:1.257},
+    {rank:6,  pts:55,   gp:2578, ab:7361,  h:1853, r:1037, hr:308, rbi:991,  sb:172, avg:0.252, ip:2163,   w:144, k:2085, sv:130, era:3.71, whip:1.21},
+    {rank:7,  pts:50.5, gp:2776, ab:7628,  h:1881, r:1073, hr:271, rbi:985,  sb:211, avg:0.247, ip:2284.1, w:145, k:2404, sv:46,  era:3.73, whip:1.226},
+    {rank:8,  pts:49,   gp:2746, ab:7713,  h:1960, r:1047, hr:262, rbi:985,  sb:197, avg:0.254, ip:2399.2, w:159, k:2195, sv:108, era:3.94, whip:1.235},
+    {rank:9,  pts:30,   gp:2414, ab:7426,  h:1911, r:1014, hr:273, rbi:1023, sb:148, avg:0.257, ip:1634.1, w:95,  k:1624, sv:28,  era:4.34, whip:1.299},
+    {rank:10, pts:18,   gp:1376, ab:4263,  h:1052, r:515,  hr:143, rbi:532,  sb:95,  avg:0.247, ip:411.2,  w:22,  k:403,  sv:0,   era:3.96, whip:1.236}
+  ],
+  2023: [
+    {rank:1,  pts:80,   gp:2778, ab:7737,  h:2026, r:1203, hr:373, rbi:1199, sb:162, avg:0.262, ip:2629.2, w:179, k:2811, sv:142, era:4.01, whip:1.269},
+    {rank:2,  pts:76.5, gp:2674, ab:7682,  h:2024, r:1204, hr:353, rbi:1154, sb:189, avg:0.263, ip:2267.1, w:155, k:2201, sv:86,  era:3.98, whip:1.252},
+    {rank:3,  pts:71,   gp:2751, ab:8176,  h:2159, r:1231, hr:356, rbi:1167, sb:184, avg:0.264, ip:2065,   w:130, k:2090, sv:60,  era:4.2,  whip:1.229},
+    {rank:4,  pts:71,   gp:2674, ab:7588,  h:1966, r:1084, hr:271, rbi:935,  sb:225, avg:0.259, ip:2176.1, w:144, k:2218, sv:130, era:3.79, whip:1.191},
+    {rank:5,  pts:62.5, gp:2903, ab:8055,  h:2075, r:1063, hr:305, rbi:1098, sb:189, avg:0.258, ip:2149,   w:128, k:2076, sv:173, era:4.01, whip:1.237},
+    {rank:6,  pts:45,   gp:2291, ab:6629,  h:1629, r:921,  hr:259, rbi:874,  sb:143, avg:0.246, ip:1487.2, w:99,  k:1586, sv:122, era:3.95, whip:1.186},
+    {rank:7,  pts:44,   gp:2263, ab:7169,  h:1859, r:1078, hr:328, rbi:1060, sb:213, avg:0.259, ip:1544,   w:97,  k:1585, sv:0,   era:4.28, whip:1.296},
+    {rank:8,  pts:40,   gp:2273, ab:7124,  h:1863, r:1057, hr:268, rbi:946,  sb:306, avg:0.262, ip:1511,   w:89,  k:1543, sv:16,  era:4.12, whip:1.318},
+    {rank:9,  pts:34,   gp:2111, ab:6169,  h:1582, r:936,  hr:301, rbi:961,  sb:133, avg:0.256, ip:1434,   w:88,  k:1504, sv:78,  era:4.03, whip:1.273},
+    {rank:10, pts:26,   gp:2161, ab:6670,  h:1761, r:947,  hr:192, rbi:780,  sb:67,  avg:0.264, ip:1169.1, w:65,  k:1202, sv:13,  era:4.05, whip:1.28}
+  ],
+  2022: [
+    {rank:1,  pts:80,   gp:2048, ab:7635,  h:1949, r:1099, hr:332, rbi:1124, sb:180, avg:0.264, ip:2343,  w:164, k:2115, sv:140, era:3.25, whip:1.1},
+    {rank:2,  pts:78,   gp:1986, ab:7457,  h:1941, r:1085, hr:318, rbi:1059, sb:178, avg:0.261, ip:2147,  w:140, k:2074, sv:120, era:3.28, whip:1.11},
+    {rank:3,  pts:73,   gp:1980, ab:7440,  h:1933, r:1066, hr:315, rbi:1057, sb:146, avg:0.259, ip:2054,  w:138, k:2070, sv:95,  era:3.41, whip:1.14},
+    {rank:4,  pts:68,   gp:1976, ab:7414,  h:1929, r:1038, hr:302, rbi:1051, sb:137, avg:0.258, ip:1974,  w:138, k:2068, sv:93,  era:3.43, whip:1.17},
+    {rank:5,  pts:65.5, gp:1964, ab:7385,  h:1915, r:1034, hr:286, rbi:1015, sb:121, avg:0.256, ip:1904,  w:128, k:2048, sv:91,  era:3.52, whip:1.19},
+    {rank:6,  pts:58,   gp:1963, ab:7342,  h:1883, r:1027, hr:271, rbi:964,  sb:114, avg:0.253, ip:1868,  w:122, k:1791, sv:88,  era:3.62, whip:1.2},
+    {rank:7,  pts:47.5, gp:1935, ab:7299,  h:1782, r:1012, hr:269, rbi:918,  sb:101, avg:0.252, ip:1825,  w:108, k:1654, sv:60,  era:3.77, whip:1.2},
+    {rank:8,  pts:34,   gp:1682, ab:6034,  h:1513, r:841,  hr:214, rbi:818,  sb:82,  avg:0.251, ip:1170,  w:80,  k:1199, sv:54,  era:3.79, whip:1.22},
+    {rank:9,  pts:32,   gp:1648, ab:6030,  h:1459, r:786,  hr:200, rbi:719,  sb:58,  avg:0.244, ip:1042,  w:63,  k:1036, sv:17,  era:4.14, whip:1.24},
+    {rank:10, pts:14,   gp:1530, ab:5395,  h:1362, r:690,  hr:186, rbi:667,  sb:45,  avg:0.242, ip:1030,  w:55,  k:1019, sv:11,  era:4.46, whip:1.32}
+  ],
+  2021: [
+    {rank:1,  pts:81,   gp:1764, ab:6490,  h:1727, r:1039, hr:305, rbi:991,  sb:127, avg:0.266, ip:1888,  w:133, k:1963, sv:125, era:3.28, whip:1.08},
+    {rank:2,  pts:79,   gp:1764, ab:6489,  h:1714, r:1035, hr:302, rbi:951,  sb:123, avg:0.265, ip:1678,  w:112, k:1918, sv:123, era:3.38, whip:1.16},
+    {rank:3,  pts:78,   gp:1744, ab:6393,  h:1678, r:997,  hr:299, rbi:929,  sb:118, avg:0.264, ip:1638,  w:111, k:1829, sv:92,  era:3.55, whip:1.16},
+    {rank:4,  pts:77,   gp:1743, ab:6336,  h:1652, r:966,  hr:293, rbi:922,  sb:106, avg:0.262, ip:1549,  w:108, k:1738, sv:88,  era:3.78, whip:1.16},
+    {rank:5,  pts:49,   gp:1726, ab:6310,  h:1648, r:965,  hr:277, rbi:894,  sb:101, avg:0.261, ip:1519,  w:101, k:1453, sv:62,  era:3.8,  whip:1.19},
+    {rank:6,  pts:48,   gp:1676, ab:6127,  h:1564, r:928,  hr:257, rbi:878,  sb:98,  avg:0.261, ip:1470,  w:85,  k:1447, sv:58,  era:3.85, whip:1.21},
+    {rank:7,  pts:42.5, gp:1617, ab:5878,  h:1498, r:813,  hr:257, rbi:839,  sb:87,  avg:0.261, ip:1364,  w:80,  k:1427, sv:48,  era:3.88, whip:1.21},
+    {rank:8,  pts:38.5, gp:1540, ab:5472,  h:1450, r:804,  hr:216, rbi:796,  sb:84,  avg:0.255, ip:1030,  w:59,  k:1019, sv:17,  era:3.91, whip:1.22},
+    {rank:9,  pts:36,   gp:1277, ab:4557,  h:1191, r:689,  hr:180, rbi:678,  sb:48,  avg:0.255, ip:879,   w:55,  k:927,  sv:2,   era:4.2,  whip:1.27},
+    {rank:10, pts:21,   gp:993,  ab:3441,  h:827,  r:451,  hr:134, rbi:494,  sb:43,  avg:0.24,  ip:483,   w:29,  k:493,  sv:0,   era:4.46, whip:1.32}
+  ]
+};
+
+var historicRendered2 = false;
+
+function renderHistoricPage() {
+  if (historicRendered) return;
+  historicRendered = true;
+
+  var el = document.getElementById('historic-body');
+  if (!el) return;
+
+  var CATS = ['r','hr','rbi','sb','avg','w','k','sv','era','whip'];
+  var CAT_LABELS = {r:'R', hr:'HR', rbi:'RBI', sb:'SB', avg:'AVG', w:'W', k:'K', sv:'SV', era:'ERA', whip:'WHIP'};
+  var LOW_CATS = ['era','whip']; // lower is better
+
+  var years = [2025, 2024, 2023, 2022, 2021];
+
+  // ── Compute SPG weights from all historical data ──────────────────────────
+  // Flatten all team-seasons into one dataset
+  var allRows = [];
+  years.forEach(function(yr) {
+    HISTORIC_DATA[yr].forEach(function(row) {
+      allRows.push({ year: yr, pts: row.pts, row: row });
+    });
+  });
+
+  function mean(arr) { return arr.length ? arr.reduce(function(a,b){return a+b;})/arr.length : 0; }
+  function std(arr, m) {
+    if (arr.length < 2) return 1;
+    return Math.sqrt(arr.reduce(function(s,v){return s+(v-m)*(v-m);},0)/(arr.length-1)) || 1;
+  }
+  function pearson(pairs) {
+    var n = pairs.length; if (n < 3) return 0;
+    var sx=0,sy=0,sxy=0,sx2=0,sy2=0;
+    pairs.forEach(function(p){sx+=p[0];sy+=p[1];sxy+=p[0]*p[1];sx2+=p[0]*p[0];sy2+=p[1]*p[1];});
+    var den=Math.sqrt((n*sx2-sx*sx)*(n*sy2-sy*sy));
+    return den===0?0:(n*sxy-sx*sy)/den;
+  }
+
+  // Per-cat: mean, std, correlation with pts across all 50 team-seasons
+  var catStats = {};
+  CATS.forEach(function(cat) {
+    var vals = allRows.map(function(d){ return d.row[cat]; });
+    var m = mean(vals);
+    var s = std(vals, m);
+    var pairs = allRows.map(function(d){ return [d.row[cat], d.pts]; });
+    var r = pearson(pairs);
+    if (LOW_CATS.indexOf(cat) !== -1) r = -r; // flip so positive = good
+    catStats[cat] = { mean: m, std: s, r: r };
+  });
+
+  // Normalize weights: each cat weight = |r| / sum(|r|) × 10 (so total = 10 points of signal)
+  var totalR = CATS.reduce(function(s,c){ return s + Math.abs(catStats[c].r); }, 0);
+  CATS.forEach(function(cat) {
+    catStats[cat].weight = totalR > 0 ? Math.abs(catStats[cat].r) / totalR * 10 : 1;
+  });
+
+  // SPG for a team row = sum over cats: weight × (val - mean) / std
+  // For ERA/WHIP: negate before z-score so more positive = better
+  function computeSPG(row) {
+    return CATS.reduce(function(s, cat) {
+      var cs = catStats[cat];
+      var v = row[cat];
+      var z = (v - cs.mean) / cs.std;
+      if (LOW_CATS.indexOf(cat) !== -1) z = -z;
+      return s + cs.weight * z;
+    }, 0);
+  }
+
+  // ── Build HTML ────────────────────────────────────────────────────────────
+  var html = '';
+
+  // ── Section 1: SPG weights table ─────────────────────────────────────────
+  html += '<div class="card" style="margin-bottom:24px">';
+  html += '<div class="card-header"><span class="card-title">SPG category weights (all seasons combined)</span>';
+  html += '<span style="font-size:12px;color:var(--muted)">Based on correlation with fantasy points across 50 team-seasons (2021–2025)</span></div>';
+  html += '<div class="table-wrap"><table><thead><tr>';
+  html += '<th class="left">Category</th><th>r vs Pts</th><th>Weight</th><th>Direction</th><th>Mean</th><th>Std Dev</th>';
+  html += '</tr></thead><tbody>';
+  var sortedCats = CATS.slice().sort(function(a,b){ return catStats[b].weight - catStats[a].weight; });
+  sortedCats.forEach(function(cat, i) {
+    var cs = catStats[cat];
+    var rCol = Math.abs(cs.r) >= 0.7 ? '#1e6b3a' : Math.abs(cs.r) >= 0.4 ? '#4a9a68' : '#b7791f';
+    html += '<tr' + (i%2===1?' style="background:var(--bg)"':'') + '>';
+    html += '<td class="left"><strong>' + CAT_LABELS[cat] + '</strong></td>';
+    html += '<td style="font-weight:600;color:' + rCol + '">' + (cs.r>=0?'+':'') + cs.r.toFixed(3) + '</td>';
+    html += '<td style="font-weight:600">' + cs.weight.toFixed(3) + '</td>';
+    html += '<td style="font-size:11px;color:var(--muted)">' + (LOW_CATS.indexOf(cat)!==-1?'Lower = better':'Higher = better') + '</td>';
+    var fmt = (cat==='avg'||cat==='era'||cat==='whip') ? cs.mean.toFixed(3) : Math.round(cs.mean);
+    var fmts = (cat==='avg'||cat==='era'||cat==='whip') ? cs.std.toFixed(3) : Math.round(cs.std);
+    html += '<td>' + fmt + '</td><td>' + fmts + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div></div>';
+
+  // ── Section 2: Per-year standings + SPG ──────────────────────────────────
+  years.forEach(function(yr) {
+    var teams = HISTORIC_DATA[yr];
+    // Compute per-year means and stds for z-score display
+    var yrCatStats = {};
+    CATS.forEach(function(cat) {
+      var vals = teams.map(function(t){return t[cat];});
+      var m = mean(vals); var s = std(vals, m);
+      yrCatStats[cat] = {mean:m, std:s};
+    });
+    // Add SPG to each team
+    var teamsWithSPG = teams.map(function(t) {
+      return { t: t, spg: computeSPG(t) };
+    }).sort(function(a,b){return b.spg-a.spg;});
+
+    html += '<div class="card" style="margin-bottom:24px">';
+    html += '<div class="card-header"><span class="card-title">' + yr + ' Season</span></div>';
+    html += '<div class="table-wrap"><table><thead><tr>';
+    html += '<th class="left">Rank</th><th>Pts</th>';
+    CATS.forEach(function(cat){ html += '<th>' + CAT_LABELS[cat] + '</th>'; });
+    html += '<th style="color:var(--accent);font-weight:700">SPG</th>';
+    html += '</tr></thead><tbody>';
+
+    // League avg row
+    html += '<tr style="background:#e8f4fd;border-bottom:2px solid #2980b9">';
+    html += '<td class="left" style="font-weight:600;font-size:11px;color:#2980b9">League Avg</td><td></td>';
+    CATS.forEach(function(cat) {
+      var m = yrCatStats[cat].mean;
+      var fmt = (cat==='avg'||cat==='era'||cat==='whip') ? m.toFixed(3) : Math.round(m);
+      html += '<td style="font-weight:600;color:#2980b9;font-size:12px">' + fmt + '</td>';
+    });
+    html += '<td style="color:#2980b9;font-weight:600">0.000</td>';
+    html += '</tr>';
+
+    teamsWithSPG.forEach(function(d, i) {
+      var t = d.t;
+      var spgCol = d.spg >= 1 ? '#1e6b3a' : d.spg >= 0 ? '#4a9a68' : d.spg >= -1 ? '#b7791f' : '#c0392b';
+      html += '<tr' + (i%2===1?' style="background:var(--bg)"':'') + '>';
+      html += '<td class="left"><span class="rank' + (t.rank<=3?' top':'') + '">' + t.rank + '</span> <span style="font-size:11px;color:var(--muted)">' + t.pts + ' pts</span></td>';
+      html += '<td style="font-weight:600">' + t.pts + '</td>';
+      CATS.forEach(function(cat) {
+        var v = t[cat];
+        var cs = yrCatStats[cat];
+        var z = (v - cs.mean) / cs.std;
+        if (LOW_CATS.indexOf(cat)!==-1) z=-z;
+        var col = z >= 0.5 ? '#1e6b3a' : z <= -0.5 ? '#c0392b' : 'var(--text)';
+        var fmt = (cat==='avg'||cat==='era'||cat==='whip') ? v.toFixed(3) : v;
+        html += '<td style="color:' + col + '">' + fmt + '</td>';
+      });
+      html += '<td style="font-weight:700;color:' + spgCol + '">' + (d.spg>=0?'+':'') + d.spg.toFixed(2) + '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div></div>';
+  });
+
+  // ── Section 3: Multi-year SPG combined ───────────────────────────────────
+  html += '<div class="card" style="margin-bottom:24px">';
+  html += '<div class="card-header"><span class="card-title">SPG rank by season</span>';
+  html += '<span style="font-size:12px;color:var(--muted)">SPG ranking (1=best) for each season — shows consistency of dominance</span></div>';
+  html += '<div class="table-wrap"><table><thead><tr>';
+  html += '<th class="left">Rank</th>';
+  years.forEach(function(yr){ html += '<th colspan="2" style="text-align:center">' + yr + '</th>'; });
+  html += '</tr><tr><th class="left">by Pts</th>';
+  years.forEach(function(){ html += '<th style="font-size:10px;color:var(--muted)">Pts</th><th style="font-size:10px;color:var(--accent)">SPG</th>'; });
+  html += '</tr></thead><tbody>';
+
+  for (var rank = 1; rank <= 10; rank++) {
+    html += '<tr' + (rank%2===0?' style="background:var(--bg)"':'') + '>';
+    html += '<td class="left"><span class="rank' + (rank<=3?' top':'') + '">' + rank + '</span></td>';
+    years.forEach(function(yr) {
+      var team = HISTORIC_DATA[yr].find(function(t){return t.rank===rank;});
+      if (!team) { html += '<td>—</td><td>—</td>'; return; }
+      var spg = computeSPG(team);
+      var allSPG = HISTORIC_DATA[yr].map(function(t){return {pts:t.pts, spg:computeSPG(t)};}).sort(function(a,b){return b.spg-a.spg;});
+      var spgRank = allSPG.findIndex(function(d){return d.pts===team.pts;})+1;
+      var spgCol = spgRank <= 3 ? '#1e6b3a' : spgRank >= 8 ? '#c0392b' : 'var(--text)';
+      html += '<td>' + team.pts + '</td>';
+      html += '<td style="font-weight:600;color:' + spgCol + '">#' + spgRank + ' (' + (spg>=0?'+':'') + spg.toFixed(1) + ')</td>';
+    });
+    html += '</tr>';
+  }
+  html += '</tbody></table></div></div>';
+
+  el.innerHTML = html;
+}
 
 init();
 </script>
