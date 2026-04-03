@@ -543,6 +543,9 @@ function showPage(name, btn) {
   if (name === 'historic') renderHistoricPage();
   // Expand main to full width for wide-table pages
   document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'rosters' || name === 'historic') ? 'none' : '';
+  if (name === 'trade' && (TA.activeTab === 'sgp-hit' || TA.activeTab === 'sgp-pit')) {
+    document.querySelector('main').style.maxWidth = 'none';
+  }
 }
 
 window.showFantraxTab = function(tab, btn) {
@@ -2378,6 +2381,9 @@ function buildTradeAnalyzer() {
     html += '<option value="' + id + '">' + (t.name || t.shortName || id) + '</option>';
   });
   html += '</select>';
+  html += '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">';
+  html += 'Min AB: <input type="number" id="sgp-min-ab" value="0" min="0" max="600" step="10" style="width:64px;border:1px solid var(--border);border-radius:var(--radius);padding:4px 8px;font-size:12px;background:var(--surface);color:var(--text)" oninput="drawSGPTable(\'hit\')">';
+  html += '</label>';
   html += '<span style="font-size:11px;color:var(--muted)">ΔSGP vs your best starter at that position</span>';
   html += '</div>';
   html += '<div class="card"><div class="card-header"><span class="card-title">ALL HITTERS</span>';
@@ -2386,7 +2392,7 @@ function buildTradeAnalyzer() {
   html += '<button class="pill" onclick="setSGPFilter(\'hit\',\'FA\',this)">Free Agents</button>';
   html += '<button class="pill" onclick="setSGPFilter(\'hit\',\'OWNED\',this)">Rostered</button>';
   html += '</div></div>';
-  html += '<div id="sgp-hit-table"><div class="loading">Select your team above</div></div>';
+  html += '<div class="table-wrap" id="sgp-hit-table"><div class="loading">Select your team above</div></div>';
   html += '</div></div>';
 
   // ── Pitcher SGP tab ───────────────────────────────────────────────────────
@@ -2400,6 +2406,9 @@ function buildTradeAnalyzer() {
     html += '<option value="' + id + '">' + (t.name || t.shortName || id) + '</option>';
   });
   html += '</select>';
+  html += '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">';
+  html += 'Min IP: <input type="number" id="sgp-min-ip" value="0" min="0" max="300" step="5" style="width:64px;border:1px solid var(--border);border-radius:var(--radius);padding:4px 8px;font-size:12px;background:var(--surface);color:var(--text)" oninput="drawSGPTable(\'pit\')">';
+  html += '</label>';
   html += '<span style="font-size:11px;color:var(--muted)">ΔSGP vs your best starter at that position</span>';
   html += '</div>';
   html += '<div class="card"><div class="card-header"><span class="card-title">ALL PITCHERS</span>';
@@ -2408,7 +2417,7 @@ function buildTradeAnalyzer() {
   html += '<button class="pill" onclick="setSGPFilter(\'pit\',\'FA\',this)">Free Agents</button>';
   html += '<button class="pill" onclick="setSGPFilter(\'pit\',\'OWNED\',this)">Rostered</button>';
   html += '</div></div>';
-  html += '<div id="sgp-pit-table"><div class="loading">Select your team above</div></div>';
+  html += '<div class="table-wrap" id="sgp-pit-table"><div class="loading">Select your team above</div></div>';
   html += '</div></div>';
 
   document.getElementById('trade-body').innerHTML = html;
@@ -2427,6 +2436,9 @@ window.showTradeTab = function(tab, btn) {
     var b2 = document.getElementById('sgp-team-select-pit');
     if (a && a.value !== val) a.value = val;
     if (b2 && b2.value !== val) b2.value = val;
+    document.querySelector('main').style.maxWidth = 'none';
+  } else {
+    document.querySelector('main').style.maxWidth = '';
   }
 };
 
@@ -5987,9 +5999,14 @@ function drawSGPTable(type) {
   });
 
   // ── Filter ────────────────────────────────────────────────────────────────
+  var minAB = isHit ? (parseInt((document.getElementById('sgp-min-ab')||{}).value)||0) : 0;
+  var minIP = !isHit ? (parseFloat((document.getElementById('sgp-min-ip')||{}).value)||0) : 0;
+
   var filtered = enriched.filter(function(e) {
     if (filter === 'FA'    &&  e.p.ftId) return false;
     if (filter === 'OWNED' && !e.p.ftId) return false;
+    if (isHit  && e.p.raw.ab  < minAB)  return false;
+    if (!isHit && e.p.raw.ip  < minIP)  return false;
     return true;
   });
 
@@ -6003,7 +6020,7 @@ function drawSGPTable(type) {
   // ── Render table ──────────────────────────────────────────────────────────
   if (!filtered.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">No players found</div>'; return; }
 
-  var html = '<div class="table-wrap" style="max-height:75vh;overflow-y:auto;overflow-x:auto"><table style="min-width:max-content"><thead><tr>';
+  var html = '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>';
   var cols = isHit
     ? ['Player','Pos','GP','Rem','fWAR','SGP','ΔSGP','ΔfWAR','ROS R','ROS HR','ROS RBI','ROS SB','ROS AVG','Best Cats','Weak Cats','Profile','Verdict']
     : ['Player','Pos','GP','Rem','fWAR','SGP','ΔSGP','ΔfWAR','ROS W','ROS K','ROS SV','ROS ERA','ROS WHIP','Best Cats','Weak Cats','Profile','Verdict'];
@@ -6088,7 +6105,7 @@ function drawSGPTable(type) {
     html += '</tr>';
   });
 
-  html += '</tbody></table></div>';
+  html += '</tbody></table>';
   el.innerHTML = html;
 }
 
