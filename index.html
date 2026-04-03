@@ -6015,7 +6015,7 @@ function drawSGPTable(type) {
     var topV  = cats[0].v, botV = cats[cats.length-1].v;
     var profile = (topV > 0 && (topV / (Math.abs(botV)+topV+0.001)) > 0.75) ? 'one-dim' : 'balanced';
     var verdict = getVerdict(dsgp, dfwar, p);
-    return { p:p, sgp:sgp, slot:slot, dsgp:dsgp, fv:fv, dfwar:dfwar, best2:best2, weak2:weak2, profile:profile, verdict:verdict };
+    return { p:p, sgp:sgp, slot:slot, starter:starter, dsgp:dsgp, fv:fv, dfwar:dfwar, best2:best2, weak2:weak2, profile:profile, verdict:verdict };
   });
 
   // ── Filter ────────────────────────────────────────────────────────────────
@@ -6042,15 +6042,16 @@ function drawSGPTable(type) {
 
   var html = '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>';
   var cols = isHit
-    ? ['Player','Pos','GP','Rem','fWAR','SGP','ΔSGP','ΔfWAR','ROS R','ROS HR','ROS RBI','ROS SB','ROS AVG','Best Cats','Weak Cats','Profile','Verdict']
-    : ['Player','Pos','GP','Rem','fWAR','SGP','ΔSGP','ΔfWAR','ROS W','ROS K','ROS SV','ROS ERA','ROS WHIP','Best Cats','Weak Cats','Profile','Verdict'];
+    ? ['Vs.','Player','Pos','GP','Rem','fWAR','SGP','ΔSGP','ΔfWAR','ROS R','ROS HR','ROS RBI','ROS SB','ROS AVG','Best Cats','Weak Cats','Profile','Verdict']
+    : ['Vs.','Player','Pos','GP','Rem','fWAR','SGP','ΔSGP','ΔfWAR','ROS W','ROS K','ROS SV','ROS ERA','ROS WHIP','Best Cats','Weak Cats','Profile','Verdict'];
   cols.forEach(function(c,i){
     var s = '';
     if (c==='fWAR')   s='color:var(--accent);font-weight:700';
     if (c==='SGP')    s='color:#2980b9;font-weight:700';
     if (c==='ΔSGP')   s='color:#4a9a68;font-weight:700';
     if (c==='Verdict')s='color:var(--muted)';
-    html += '<th' + (s?' style="'+s+'"':'') + (i<4?' class="left"':'') + '>' + c + '</th>';
+    if (c==='Vs.')    s='color:var(--muted);font-size:11px';
+    html += '<th' + (s?' style="'+s+'"':'') + (i<=4?' class="left"':'') + '>' + c + '</th>';
   });
   html += '</tr></thead><tbody>';
 
@@ -6061,6 +6062,21 @@ function drawSGPTable(type) {
     var rowStyle = isMine ? 'background:var(--accent-light)' : (i%2===1?'background:var(--bg)':'');
 
     html += '<tr style="border-bottom:1px solid var(--border);' + rowStyle + '">';
+
+    // Vs. column — show my starter being compared against
+    var starter = e.starter;
+    if (isMine) {
+      html += '<td class="left" style="color:var(--muted);font-size:11px">—</td>';
+    } else if (starter) {
+      var sHs = starter.fw ? starter.fw.hs || '' : '';
+      html += '<td class="left" style="white-space:nowrap"><div class="team-cell">';
+      if (sHs) html += '<img class="player-hs" src="' + sHs + '" alt="" onerror="this.style.display=\'none\'">';
+      html += '<div><div style="font-size:12px;font-weight:500;color:var(--muted)">' + starter.name + '</div>';
+      html += '<div style="font-size:10px;color:var(--muted)">' + e.slot + '</div>';
+      html += '</div></div></td>';
+    } else {
+      html += '<td class="left" style="font-size:11px;color:var(--muted)">no starter</td>';
+    }
 
     // Player name + headshot
     var hs = p.fw ? (fwarLookup[p.name]||{}).hs || '' : '';
