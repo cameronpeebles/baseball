@@ -92,9 +92,9 @@ td.neg { color: #c0392b; font-weight: 500; }
 /* First header row sticky at top */
 #fwar-tab-hitting thead tr:first-child th,
 #fwar-tab-pitching thead tr:first-child th { position: sticky; top: 0; z-index: 3; background: var(--bg); }
-/* League avg row (second thead row) sticky just below first header row */
+/* League avg row (second thead row) - top set dynamically by JS */
 #fwar-tab-hitting thead tr:nth-child(2) td,
-#fwar-tab-pitching thead tr:nth-child(2) td { position: sticky; top: 38px; z-index: 2; }
+#fwar-tab-pitching thead tr:nth-child(2) td { position: sticky; z-index: 2; }
 /* Sticky first column */
 #fwar-tab-hitting tr td:nth-child(1),
 #fwar-tab-hitting tr th:nth-child(1),
@@ -626,6 +626,17 @@ function buildStandingsTable(table, teamInfo) {
   return html;
 }
 
+function fixStickyLgRow(type) {
+  var tabId = type === 'hit' ? 'fwar-tab-hitting' : 'fwar-tab-pitching';
+  var tab = document.getElementById(tabId);
+  if (!tab) return;
+  var headerRow = tab.querySelector('thead tr:first-child');
+  var lgRow     = tab.querySelector('thead tr:nth-child(2)');
+  if (!headerRow || !lgRow) return;
+  var h = headerRow.getBoundingClientRect().height;
+  lgRow.querySelectorAll('td').forEach(function(td) { td.style.top = h + 'px'; });
+}
+
 function loadPlayers(data, type) {
   var d = data.data || {};
   var rows = d.statsTable || [];
@@ -860,6 +871,8 @@ function drawPlayers(type) {
 
   html += '</tbody></table>';
   document.getElementById(id).innerHTML = html;
+  // Set league avg row top offset dynamically based on actual header height
+  requestAnimationFrame(function() { fixStickyLgRow(type); });
 }
 
 // Get numeric sort value for a player entry given a sort column key
