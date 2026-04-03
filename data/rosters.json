@@ -613,6 +613,7 @@
                     "urlName": "luis-arraez",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03mew_96_10.png",
                     "scorerId": "03mew",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002",
@@ -623,8 +624,12 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
+                      {
                         "tooltip": "Apr 1, 5:30 PM: Arraez went 3-for-4 with a double, a...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -2146,7 +2151,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 3:26 PM: Boyd (1-1) earned the win Wednesday...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -3771,8 +3776,8 @@
                         "typeId": "2"
                       },
                       {
-                        "tooltip": "Mar 30, 2:48 PM: Strider (oblique) will travel with...",
-                        "typeId": "9"
+                        "tooltip": "Apr 2, 7:04 PM: Strider (oblique) will throw a bullpen...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -5877,6 +5882,7 @@
                     "urlName": "drake-baldwin",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs0630d_96_2.png",
                     "scorerId": "0630d",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "001"
@@ -5885,6 +5891,10 @@
                     "posShortNames": "C",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
                       {
                         "tooltip": "Apr 1, 2:12 PM: Baldwin went 2-for-3 with a walk, a...",
                         "typeId": "9"
@@ -6237,6 +6247,7 @@
                     "urlName": "carson-benge",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs06aly_96_2.png",
                     "scorerId": "06aly",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -6245,6 +6256,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
                       {
                         "tooltip": "Apr 1, 11:07 AM: Benge is out of the lineup for...",
                         "typeId": "9"
@@ -6774,6 +6789,7 @@
                     "urlName": "jordan-lawlar",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05r1m_96_2.png",
                     "scorerId": "05r1m",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "004"
@@ -6782,6 +6798,10 @@
                     "posShortNames": "3B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 8",
+                        "typeId": "28"
+                      },
                       {
                         "tooltip": "Mar 28, 4:13 PM: Lawlar isn't in the lineup for...",
                         "typeId": "9"
@@ -6898,7 +6918,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 4:20 PM: Shaw went 2-for-4 with two RBI in...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -8964,7 +8984,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 4:27 PM: Palencia worked around a hit to pitch a...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -10874,6 +10894,7 @@
                     "urlName": "juan-soto",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03ynj_96_13.png",
                     "scorerId": "03ynj",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -10882,6 +10903,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
                       {
                         "tooltip": "Apr 1, 8:20 PM: Soto went 1-for-5 with a solo home run...",
                         "typeId": "14"
@@ -11487,6 +11512,7 @@
                     "urlName": "matt-olson",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02mwm_96_15.png",
                     "scorerId": "02mwm",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002"
@@ -11495,6 +11521,10 @@
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
+                      },
                       {
                         "tooltip": "Mar 24, 10:01 AM: Olson went 2-for-3 with two solo home...",
                         "typeId": "8"
@@ -13735,7 +13765,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 4:01 PM: Peralta (1-0) did not factor into the...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -15942,6 +15972,7 @@
                     "urlName": "bo-bichette",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs041qb_96_10.png",
                     "scorerId": "041qb",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "005"
@@ -15950,6 +15981,10 @@
                     "posShortNames": "SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
+                      },
                       {
                         "tooltip": "Mar 30, 10:55 AM: Bichette went 0-for-5 with three...",
                         "typeId": "9"
@@ -16903,6 +16938,7 @@
                     "urlName": "heliot-ramos",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04ee8_96_8.png",
                     "scorerId": "04ee8",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -16911,6 +16947,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
+                      },
                       {
                         "tooltip": "Mar 28, 11:28 AM: Ramos went 1-for-3 with a double in...",
                         "typeId": "9"
@@ -17021,7 +17061,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 4:14 PM: Busch went 2-for-3 with a walk and a...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -17917,7 +17957,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 3:56 PM: Crochet (1-1) took the loss Wednesday...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -21595,6 +21635,7 @@
                     "urlName": "willy-adames",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03atq_96_14.png",
                     "scorerId": "03atq",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "005"
@@ -21603,6 +21644,10 @@
                     "posShortNames": "SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 1",
+                        "typeId": "21"
+                      },
                       {
                         "tooltip": "Apr 1, 1:34 AM: Adames went 4-for-5 with a home run, a...",
                         "typeId": "9"
@@ -22045,7 +22090,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 4:10 PM: Hoerner went 3-for-5 with two doubles,...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -22365,6 +22410,7 @@
                     "urlName": "luis-robert-jr",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs047l7_96_10.png",
                     "scorerId": "047l7",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -22373,6 +22419,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 5",
+                        "typeId": "25"
+                      },
                       {
                         "tooltip": "Mar 30, 2:35 PM: Robert is absent from the lineup for...",
                         "typeId": "9"
@@ -22564,7 +22614,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 4:46 PM: Dodgers manager Dave Roberts told...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -22934,7 +22984,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 4:46 PM: Dodgers manager Dave Roberts told...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -25332,7 +25382,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 3:41 PM: Manager Dave Roberts told reporters...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -27162,6 +27212,7 @@
                     "urlName": "brett-baty",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04yib_96_6.png",
                     "scorerId": "04yib",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "003",
@@ -27171,6 +27222,10 @@
                     "posShortNames": "2B,3B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
                       {
                         "tooltip": "Apr 1, 11:09 AM: Baty is out of the lineup for...",
                         "typeId": "9"
@@ -27364,6 +27419,7 @@
                     "urlName": "rafael-devers",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs030uc_96_14.png",
                     "scorerId": "030uc",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002"
@@ -27372,6 +27428,10 @@
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
                       {
                         "tooltip": "Mar 29, 11:50 AM: Devers went 2-for-4 with a double in...",
                         "typeId": "9"
@@ -29334,7 +29394,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 5:12 PM: Gallen (1-1) notched the win Wednesday...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -29661,7 +29721,7 @@
                         "typeId": "2"
                       },
                       {
-                        "tooltip": "Apr 2, 5:58 AM: Lodolo (blister) is scheduled to throw...",
+                        "tooltip": "Apr 2, 5:53 PM: Lodolo (blister) exited his...",
                         "typeId": "14"
                       },
                       {
@@ -30380,7 +30440,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 5:39 PM: Schlittler (2-0) notched the win...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -32585,6 +32645,7 @@
                     "urlName": "geraldo-perdomo",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04pbq_96_9.png",
                     "scorerId": "04pbq",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "005"
@@ -32593,6 +32654,10 @@
                     "posShortNames": "SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
+                      },
                       {
                         "tooltip": "Mar 27, 6:45 AM: Perdomo went 2-for-4 with a two-run...",
                         "typeId": "9"
@@ -32782,6 +32847,7 @@
                     "urlName": "matt-chapman",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03d6s_96_11.png",
                     "scorerId": "03d6s",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "004"
@@ -32790,6 +32856,10 @@
                     "posShortNames": "3B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 5",
+                        "typeId": "25"
+                      },
                       {
                         "tooltip": "Apr 1, 11:21 AM: Chapman went 2-for-5 with a solo home...",
                         "typeId": "9"
@@ -33319,6 +33389,7 @@
                     "urlName": "jorge-polanco",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02yd1_96_16.png",
                     "scorerId": "02yd1",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "003"
@@ -33327,6 +33398,10 @@
                     "posShortNames": "2B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
                       {
                         "tooltip": "Mar 31, 3:15 PM: Polanco isn't in the lineup for...",
                         "typeId": "9"
@@ -35630,8 +35705,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Mar 28, 8:10 PM: Wacha took a no-decision Saturday...",
-                        "typeId": "9"
+                        "tooltip": "Illness - Day-to-Day",
+                        "typeId": "1"
+                      },
+                      {
+                        "tooltip": "Apr 2, 6:00 PM: Wacha (illness) will be forced to miss...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -39286,7 +39365,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 3:52 PM: Burrows (1-1) earned the win Wednesday...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -40486,7 +40565,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 3:32 PM: Misiorowski (1-0) did not factor into...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -40584,7 +40663,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 5:08 PM: Pivetta (1-1) allowed one hit and two...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "On this team's trade block",
@@ -40686,7 +40765,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 3:39 PM: Rasmussen allowed two runs (one earned)...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -40993,7 +41072,7 @@
                       },
                       {
                         "tooltip": "Apr 1, 4:55 PM: Manager Dave Roberts told reporters...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "On this team's trade block",
@@ -42648,6 +42727,7 @@
                     "urlName": "michael-harris-ii",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs0512v_96_8.png",
                     "scorerId": "0512v",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -42656,6 +42736,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 7",
+                        "typeId": "27"
+                      },
                       {
                         "tooltip": "Mar 28, 9:23 AM: Harris went 1-for-4 with a two-run home...",
                         "typeId": "9"
@@ -42756,6 +42840,7 @@
                     "urlName": "ketel-marte",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs0326s_96_15.png",
                     "scorerId": "0326s",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "003"
@@ -42764,6 +42849,10 @@
                     "posShortNames": "2B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 1",
+                        "typeId": "21"
+                      },
                       {
                         "tooltip": "Mar 28, 12:35 AM: Marte went 2-for-5 with a solo home run...",
                         "typeId": "9"
@@ -42950,6 +43039,7 @@
                     "urlName": "francisco-lindor",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02611_96_16.png",
                     "scorerId": "02611",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "005"
@@ -42958,6 +43048,10 @@
                     "posShortNames": "SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 1",
+                        "typeId": "21"
+                      },
                       {
                         "tooltip": "Mar 27, 9:44 AM: Lindor went 0-for-2 with three walks...",
                         "typeId": "9"
@@ -43148,6 +43242,7 @@
                     "urlName": "austin-riley",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03pom_96_12.png",
                     "scorerId": "03pom",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "004"
@@ -43156,6 +43251,10 @@
                     "posShortNames": "3B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
                       {
                         "tooltip": "Mar 28, 9:30 AM: Riley went 3-for-3 with a walk and a...",
                         "typeId": "9"
@@ -43340,6 +43439,7 @@
                     "urlName": "ronald-acuna-jr",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03wha_96_11.png",
                     "scorerId": "03wha",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -43348,6 +43448,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 1",
+                        "typeId": "21"
+                      },
                       {
                         "tooltip": "Mar 30, 9:43 PM: Acuna went 2-for-2 with one double, one...",
                         "typeId": "9"
@@ -43697,6 +43801,7 @@
                     "urlName": "francisco-alvarez",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04qnc_96_5.png",
                     "scorerId": "04qnc",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "001"
@@ -43705,6 +43810,10 @@
                     "posShortNames": "C",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 8",
+                        "typeId": "28"
+                      },
                       {
                         "tooltip": "Mar 31, 3:13 PM: Alvarez isn't in the lineup for...",
                         "typeId": "9"
@@ -44287,7 +44396,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 5:25 PM: Bednar earned the save Wednesday...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -45457,7 +45566,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 5:23 PM: Miller allowed a hit and struck out...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -45684,8 +45793,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 1, 2:08 PM: Sale (2-0) allowed one run on one hit...",
-                        "typeId": "9"
+                        "tooltip": "Illness - Day-to-Day",
+                        "typeId": "1"
+                      },
+                      {
+                        "tooltip": "Apr 2, 7:09 PM: Sale (illness) may not be in attendance...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -48592,6 +48705,7 @@
                     "urlName": "ozzie-albies",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03fi0_96_14.png",
                     "scorerId": "03fi0",
+                    "upcomingEventStatusId": "1",
                     "posIdsNoFlex": [
                       "003"
                     ],
@@ -48599,6 +48713,10 @@
                     "posShortNames": "2B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 6",
+                        "typeId": "26"
+                      },
                       {
                         "tooltip": "Mar 28, 9:27 AM: Albies went 2-for-4 with a solo home...",
                         "typeId": "9"
@@ -48665,7 +48783,7 @@
                       "content": "3"
                     },
                     {
-                      "content": "5"
+                      "content": "6"
                     },
                     {
                       "content": "1"
@@ -48677,7 +48795,7 @@
                       "content": "0"
                     },
                     {
-                      "content": ".227"
+                      "content": ".273"
                     },
                     {
                       "content": "6"
@@ -48795,6 +48913,7 @@
                     "urlName": "corbin-carroll",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04y4e_96_4.png",
                     "scorerId": "04y4e",
+                    "upcomingEventStatusId": "1",
                     "posIdsNoFlex": [
                       "012"
                     ],
@@ -48802,6 +48921,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
                       {
                         "tooltip": "Apr 1, 8:21 PM: Carroll went 2-for-3 with a home run...",
                         "typeId": "14"
@@ -49659,7 +49782,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 3:47 PM: Abreu earned the save in Wednesday's...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -51084,7 +51207,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 5:04 PM: Skubal (0-1) took the loss Wednesday...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
