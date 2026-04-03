@@ -1781,9 +1781,12 @@ function buildMatchupPage(stats, fullSchedule) {
   // Determine current/next period (first period with no actual data yet = period > maxPeriod)
   var currentPeriod = periods.find(function(p) { return p > maxPeriod; }) || periods[0];
 
-  var html = '';
+  // Store for dashboard access
+  window._currentPeriod = currentPeriod;
+  window._byTeamPeriod  = byTeamPeriod;
+  window._maxPeriod     = maxPeriod;
 
-  // Season record prediction summary per team
+  var html = '';
   var teamRecords = {};
   predictions.forEach(function(p) {
     [p.away, p.home].forEach(function(t) {
@@ -3445,23 +3448,15 @@ function assembleDashboard(teamId, el) {
   html += '</div></div>';
 
   // ── Current matchup card ──────────────────────────────────────────────────
-  // Find the current/next unplayed period for this team
-  var allSchedule = window._scheduleData || [];
-  var joeData     = window._joeByTeamWeek || [];
-  var playedWeeks = {};
-  joeData.filter(function(r){ return r.actual != null; }).forEach(function(r){ playedWeeks[r.week] = true; });
+  var currentPeriod = window._currentPeriod || null;
+  var byTeamPeriod  = window._byTeamPeriod  || {};
+  var maxPeriod     = window._maxPeriod     || 0;
 
-  var currentMatch = null;
-  var allMyMatches = (window._mpPredictions || [])
-    .filter(function(m){ return m.away === teamName || m.home === teamName; })
-    .sort(function(a,b){ return a.period - b.period; });
-
-  // Find first unplayed period
-  for (var mi = 0; mi < allMyMatches.length; mi++) {
-    if (!playedWeeks[allMyMatches[mi].period]) { currentMatch = allMyMatches[mi]; break; }
-  }
-  // Fall back to last played if all played
-  if (!currentMatch && allMyMatches.length) currentMatch = allMyMatches[allMyMatches.length - 1];
+  var currentMatch = currentPeriod
+    ? (window._mpPredictions || []).find(function(m) {
+        return m.period === currentPeriod && (m.away === teamName || m.home === teamName);
+      })
+    : null;
 
   if (currentMatch) {
     var cm      = currentMatch;
@@ -3476,63 +3471,66 @@ function assembleDashboard(teamId, el) {
     var predCol = predWin ? '#1e6b3a' : predTie ? '#b7791f' : '#c0392b';
     var predLbl = predWin ? 'Projected Win' : predTie ? 'Projected Tie' : 'Projected Loss';
     var predBg  = predWin ? '#e8f0eb' : predTie ? '#fef3e2' : '#fce8e8';
-    var isPlayed = !!playedWeeks[cm.period];
+    var isLivePeriod = currentPeriod > maxPeriod;
 
-    // Get opponent team info for logo
     var oppTi = {};
     Object.keys(S.teamInfo).forEach(function(id){ if ((S.teamInfo[id].name||'') === opp) oppTi = S.teamInfo[id]; });
     var oppLogo = oppTi.logoUrl512 || '';
 
+    // Use actual period stats if available, otherwise fall back to cumulative averages
+    var myActual  = byTeamPeriod[teamName] && byTeamPeriod[teamName][currentPeriod];
+    var oppActual = byTeamPeriod[opp] && byTeamPeriod[opp][currentPeriod];
+
     html += '<div class="card" style="margin-bottom:20px">';
     html += '<div class="card-header">';
-    html += '<span class="card-title">' + (isPlayed ? 'Last matchup' : 'Current matchup') + ' — Period ' + cm.period + '</span>';
+    html += '<span class="card-title">Current matchup — Period ' + currentPeriod + '</span>';
+    html += '<div style="display:flex;align-items:center;gap:8px">';
+    if (isLivePeriod) html += '<span style="font-size:11px;background:#e8f0eb;color:#2d5a3d;padding:3px 8px;border-radius:10px;font-weight:600">LIVE</span>';
     html += '<span style="font-size:12px;padding:4px 12px;border-radius:12px;font-weight:600;background:' + predBg + ';color:' + predCol + '">' + predLbl + '</span>';
-    html += '</div>';
+    html += '</div></div>';
     html += '<div class="card-body" style="padding:16px 20px">';
 
     // Score summary
     html += '<div style="display:flex;align-items:center;gap:20px;margin-bottom:20px;flex-wrap:wrap">';
-
-    // My side
     html += '<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:160px">';
     if (logo) html += '<img src="' + logo + '" style="width:40px;height:40px;border-radius:50%;border:1px solid var(--border)" alt="">';
     html += '<div><div style="font-weight:600;font-size:14px">' + teamName + '</div>';
-    html += '<div style="font-size:28px;font-weight:700;color:' + (predWin?'var(--accent)':predTie?'#b7791f':'#c0392b') + '">' + myPts.toFixed(1) + '</div></div></div>';
-
-    // VS
+    html += '<div style="font-size:28px;font-weight:700;color:' + predCol + '">' + myPts.toFixed(1) + '</div>';
+    html += '<div style="font-size:10px;color:var(--muted)">projected cats</div></div></div>';
     html += '<div style="font-size:13px;font-weight:500;color:var(--muted);text-align:center">vs</div>';
-
-    // Opponent
+    var oppCol = !predWin && !predTie ? '#1e6b3a' : predTie ? '#b7791f' : '#c0392b';
     html += '<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:160px;justify-content:flex-end">';
     html += '<div style="text-align:right"><div style="font-weight:600;font-size:14px">' + opp + '</div>';
-    html += '<div style="font-size:28px;font-weight:700;color:' + (!predWin&&!predTie?'var(--accent)':predTie?'#b7791f':'#c0392b') + '">' + oppPts.toFixed(1) + '</div></div>';
+    html += '<div style="font-size:28px;font-weight:700;color:' + oppCol + '">' + oppPts.toFixed(1) + '</div>';
+    html += '<div style="font-size:10px;color:var(--muted)">projected cats</div></div>';
     if (oppLogo) html += '<img src="' + oppLogo + '" style="width:40px;height:40px;border-radius:50%;border:1px solid var(--border)" alt="" onerror="this.style.display=\'none\'">';
     html += '</div></div>';
 
-    // Category breakdown grid
-    if (cats.length) {
-      html += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">';
-      cats.forEach(function(c) {
-        var myVal  = isAway ? c.awayVal : c.homeVal;
-        var oppVal = isAway ? c.homeVal : c.awayVal;
-        var myRes  = isAway ? c.result === 'away' : c.result === 'home';
-        var oppRes = isAway ? c.result === 'home' : c.result === 'away';
-        var isTie  = c.result === 'tie';
-        var bg     = myRes ? '#e8f0eb' : oppRes ? '#fce8e8' : '#fef3e2';
-        var valFmt = function(v, cat) {
-          if (cat === 'AVG') return v.toFixed(3);
-          if (cat === 'ERA' || cat === 'WHIP') return v.toFixed(2);
-          return Math.round(v);
-        };
-        html += '<div style="background:' + bg + ';border-radius:var(--radius);padding:8px;text-align:center">';
-        html += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px">' + c.cat + '</div>';
-        html += '<div style="font-size:13px;font-weight:700;color:' + (myRes?'#1e6b3a':oppRes?'#c0392b':'#b7791f') + '">' + valFmt(myVal, c.cat) + '</div>';
-        html += '<div style="font-size:10px;color:var(--muted)">' + valFmt(oppVal, c.cat) + '</div>';
-        html += '<div style="font-size:9px;margin-top:2px;font-weight:600;color:' + (myRes?'#1e6b3a':oppRes?'#c0392b':'#b7791f') + '">' + (myRes?'W':oppRes?'L':'T') + '</div>';
-        html += '</div>';
-      });
+    // Category grid
+    html += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">';
+    cats.forEach(function(c) {
+      var myVal  = myActual  && myActual[c.cat]  != null ? myActual[c.cat]  : (isAway ? c.awayVal : c.homeVal);
+      var oppVal = oppActual && oppActual[c.cat] != null ? oppActual[c.cat] : (isAway ? c.homeVal : c.awayVal);
+      var isLow  = ['ERA','WHIP'].indexOf(c.cat) !== -1;
+      var myWin  = isLow ? myVal < oppVal : myVal > oppVal;
+      var oppWin = isLow ? oppVal < myVal : oppVal > myVal;
+      var bg     = myWin ? '#e8f0eb' : oppWin ? '#fce8e8' : '#fef3e2';
+      var valCol = myWin ? '#1e6b3a' : oppWin ? '#c0392b' : '#b7791f';
+      var valFmt = function(v, cat) {
+        if (cat === 'AVG') return v.toFixed(3);
+        if (cat === 'ERA' || cat === 'WHIP') return v.toFixed(2);
+        return Math.round(v);
+      };
+      html += '<div style="background:' + bg + ';border-radius:var(--radius);padding:8px;text-align:center">';
+      html += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px">' + c.cat + '</div>';
+      html += '<div style="font-size:13px;font-weight:700;color:' + valCol + '">' + valFmt(myVal, c.cat) + '</div>';
+      html += '<div style="font-size:10px;color:var(--muted)">' + valFmt(oppVal, c.cat) + '</div>';
+      html += '<div style="font-size:9px;margin-top:2px;font-weight:600;color:' + valCol + '">' + (myWin ? 'W' : oppWin ? 'L' : 'T') + '</div>';
       html += '</div>';
-    }
+    });
+    html += '</div>';
+
+    if (isLivePeriod) html += '<div style="margin-top:10px;font-size:11px;color:var(--muted)">Projected using cumulative season averages — current period stats not yet available.</div>';
 
     html += '</div></div>';
   }
