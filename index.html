@@ -89,22 +89,21 @@ td.neg { color: #c0392b; font-weight: 500; }
 #page-rosters table { min-width: max-content; }
 #fwar-tab-hitting .table-wrap,
 #fwar-tab-pitching .table-wrap { max-height: 75vh; overflow-y: auto; overflow-x: auto; }
-/* First header row sticky at top */
-#fwar-tab-hitting thead tr:first-child th,
-#fwar-tab-pitching thead tr:first-child th { position: sticky; top: 0; z-index: 3; background: var(--bg); }
-/* League avg row (second thead row) - top set dynamically by JS */
-#fwar-tab-hitting thead tr:nth-child(2) td,
-#fwar-tab-pitching thead tr:nth-child(2) td { position: sticky; z-index: 2; }
+/* Single header row sticky at top */
+#fwar-tab-hitting thead th,
+#fwar-tab-pitching thead th { position: sticky; top: 0; z-index: 3; background: var(--bg); }
 /* Sticky first column */
 #fwar-tab-hitting tr td:nth-child(1),
 #fwar-tab-hitting tr th:nth-child(1),
 #fwar-tab-pitching tr td:nth-child(1),
 #fwar-tab-pitching tr th:nth-child(1) { position: sticky; left: 0; background: var(--surface); z-index: 1; box-shadow: 2px 0 4px rgba(0,0,0,0.04); }
-/* First column in header rows needs higher z-index to overlap both axes */
-#fwar-tab-hitting thead tr:first-child th:first-child,
-#fwar-tab-pitching thead tr:first-child th:first-child { z-index: 5; background: var(--bg); }
-#fwar-tab-hitting thead tr:nth-child(2) td:first-child,
-#fwar-tab-pitching thead tr:nth-child(2) td:first-child { z-index: 4; }
+#fwar-tab-hitting thead th:first-child,
+#fwar-tab-pitching thead th:first-child { z-index: 5; background: var(--bg); }
+/* League avg sticky row in tbody */
+#fwar-tab-hitting tbody tr.lg-avg-row td,
+#fwar-tab-pitching tbody tr.lg-avg-row td { position: sticky; top: 0; z-index: 2; background: #e8f4fd; }
+#fwar-tab-hitting tbody tr.lg-avg-row td:first-child,
+#fwar-tab-pitching tbody tr.lg-avg-row td:first-child { z-index: 4; background: #e8f4fd; }
 .zscore-note { font-size: 11px; color: var(--muted); margin-bottom: 16px; }
 .joe-info { background: var(--accent-light); border: 1px solid #c8ddd0; border-radius: var(--radius); padding: 12px 16px; font-size: 12px; color: #2d5a3d; line-height: 1.7; margin-bottom: 20px; }
 .joe-info strong { font-weight: 500; }
@@ -630,10 +629,10 @@ function fixStickyLgRow(type) {
   var tabId = type === 'hit' ? 'fwar-tab-hitting' : 'fwar-tab-pitching';
   var tab = document.getElementById(tabId);
   if (!tab) return;
-  var headerRow = tab.querySelector('thead tr:first-child');
-  var lgRow     = tab.querySelector('thead tr:nth-child(2)');
-  if (!headerRow || !lgRow) return;
-  var h = headerRow.getBoundingClientRect().height;
+  var thead = tab.querySelector('thead');
+  var lgRow = tab.querySelector('tbody tr.lg-avg-row');
+  if (!thead || !lgRow) return;
+  var h = thead.getBoundingClientRect().height;
   lgRow.querySelectorAll('td').forEach(function(td) { td.style.top = h + 'px'; });
 }
 
@@ -797,20 +796,20 @@ function drawPlayers(type) {
   }
   html += '</tr>';
 
-  // League average row in thead using th elements so it sticks properly
+  html += '</thead><tbody>';
+
+  // League average as first sticky tbody row
   if (hasFG && fgLeague && Object.keys(fgLeague).length > 0) {
-    html += '<tr style="background:#e8f4fd;border-bottom:2px solid #2980b9">';
-    html += '<th style="text-align:left;font-weight:600;font-size:11px;color:#2980b9;white-space:nowrap;position:sticky;left:0;background:#e8f4fd;z-index:5" colspan="3">MLB Avg (Savant)</th>';
-    if (hasFWAR) html += '<th></th><th></th><th></th><th></th><th></th>';
-    ftxCols.forEach(function() { html += '<th></th>'; });
+    html += '<tr class="lg-avg-row" style="border-bottom:2px solid #2980b9">';
+    html += '<td class="left" style="font-weight:600;font-size:11px;color:#2980b9;white-space:nowrap" colspan="3">MLB Avg (Savant)</td>';
+    if (hasFWAR) html += '<td></td><td></td><td></td><td></td><td></td>';
+    ftxCols.forEach(function() { html += '<td></td>'; });
     fgCols.forEach(function(c) {
       var v = fgLeague[c];
-      html += '<th style="font-weight:600;color:#2980b9;font-size:12px;text-align:right">' + (v != null ? fmtFG(v, c) : '—') + '</th>';
+      html += '<td style="font-weight:600;color:#2980b9;font-size:12px;text-align:right">' + (v != null ? fmtFG(v, c) : '—') + '</td>';
     });
     html += '</tr>';
   }
-
-  html += '</thead><tbody>';
 
   // ── Player rows ───────────────────────────────────────────────────────────
   filtered.forEach(function(e) {
