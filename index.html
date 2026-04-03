@@ -248,6 +248,7 @@ td.neg { color: #c0392b; font-weight: 500; }
   <button onclick="showPage('fwar',this)">fWAR</button>
   <button onclick="showPage('trade',this)">Player Trade &amp; Market</button>
   <button onclick="showPage('historic',this)">Historic League Data</button>
+  <button onclick="showPage('leaders',this)">League Leaders</button>
 </nav>
 
 <main>
@@ -481,6 +482,11 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div class="page-subtitle">Season-by-season standings, stats, and SPG analysis (2021–2025).</div>
     <div id="historic-body"><div class="loading">Loading...</div></div>
   </div>
+  <div class="page" id="page-leaders">
+    <div class="page-title">League Leaders</div>
+    <div class="page-subtitle">Top players and teams across every scoring category.</div>
+    <div id="leaders-body"><div class="loading">Loading...</div></div>
+  </div>
 
 </main>
 
@@ -541,6 +547,7 @@ function showPage(name, btn) {
   if (name === 'fwar') renderFWARPage();
   if (name === 'trade') renderTradeAnalyzer();
   if (name === 'historic') renderHistoricPage();
+  if (name === 'leaders') renderLeadersPage();
   // Expand main to full width for wide-table pages
   document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'rosters' || name === 'historic') ? 'none' : '';
   if (name === 'trade' && (TA.activeTab === 'sgp-hit' || TA.activeTab === 'sgp-pit')) {
@@ -6142,6 +6149,241 @@ function drawSGPTable(type) {
   });
 
   html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+var leadersRendered = false;
+
+function renderLeadersPage() {
+  // Re-render each time so fWAR updates are reflected
+  var el = document.getElementById('leaders-body');
+  if (!el) return;
+
+  var hitIdx = buildStatIdx(S.hitHeaders);
+  var pitIdx = buildStatIdx(S.pitHeaders);
+
+  function gv(cells, key, idx) {
+    var i = idx[key.toUpperCase()];
+    if (i == null) return null;
+    var v = parseFloat((cells[i]||{}).content);
+    return isNaN(v) ? null : v;
+  }
+
+  // ── Rostered hitters & pitchers ──────────────────────────────────────────
+  var rosteredHitters  = S.hitRows.filter(function(r){ return ((r.cells||[])[1]||{}).teamId; });
+  var rosteredPitchers = S.pitRows.filter(function(r){ return ((r.cells||[])[1]||{}).teamId; });
+
+  // Build fWAR lookups
+  var hitFWAR = {}, pitFWAR = {};
+  FWAR.hitResults.forEach(function(p){ hitFWAR[p.name] = p; });
+  FWAR.pitResults.forEach(function(p){ pitFWAR[p.name] = p; });
+
+  function teamBadge(ftId) {
+    var ti = S.teamInfo[ftId] || {};
+    var logo = ti.logoUrl512 || '';
+    var name = ti.shortName || ti.name || '';
+    if (logo) return '<img src="' + logo + '" style="width:20px;height:20px;border-radius:50%;object-fit:cover;border:1px solid var(--border);flex-shrink:0" alt="" onerror="this.style.display=\'none\'">&nbsp;' + name;
+    return '<div style="width:20px;height:20px;border-radius:50%;background:var(--accent-light);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:500;color:var(--accent);flex-shrink:0">' + (name[0]||'?') + '</div>&nbsp;' + name;
+  }
+
+  // ── Player tile builder ───────────────────────────────────────────────────
+  function playerTile(label, color, player, valueStr, ftId, hs, pos) {
+    var ti = S.teamInfo[ftId] || {};
+    var logo = ti.logoUrl512 || '';
+    var teamName = ti.shortName || ti.name || 'FA';
+    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column">' +
+      '<div style="padding:8px 12px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">' +
+        '<span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:' + color + '">' + label + '</span>' +
+        '<span style="font-size:10px;color:var(--muted)">' + pos + '</span>' +
+      '</div>' +
+      '<div style="padding:14px 12px;display:flex;align-items:center;gap:10px;flex:1">' +
+        (hs ? '<img src="' + hs + '" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:1px solid var(--border);flex-shrink:0" alt="" onerror="this.style.display=\'none\'">'
+            : '<div style="width:44px;height:44px;border-radius:50%;background:var(--bg);border:1px solid var(--border);flex-shrink:0"></div>') +
+        '<div style="min-width:0">' +
+          '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + player + '</div>' +
+          '<div style="display:flex;align-items:center;gap:4px;margin-top:2px;font-size:11px;color:var(--muted)">' +
+            (logo ? '<img src="' + logo + '" style="width:14px;height:14px;border-radius:50%;object-fit:cover" alt="" onerror="this.style.display=\'none\'">' : '') +
+            '<span>' + teamName + '</span>' +
+          '</div>' +
+          '<div style="font-size:22px;font-weight:700;color:' + color + ';margin-top:4px;line-height:1">' + valueStr + '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  // ── Team tile builder ─────────────────────────────────────────────────────
+  function teamTile(label, color, teamId, valueStr) {
+    var ti = S.teamInfo[teamId] || {};
+    var logo = ti.logoUrl512 || '';
+    var name = ti.name || ti.shortName || '';
+    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column">' +
+      '<div style="padding:8px 12px;background:var(--bg);border-bottom:1px solid var(--border)">' +
+        '<span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:' + color + '">' + label + '</span>' +
+      '</div>' +
+      '<div style="padding:14px 12px;display:flex;align-items:center;gap:10px;flex:1">' +
+        (logo ? '<img src="' + logo + '" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:1px solid var(--border);flex-shrink:0" alt="" onerror="this.style.display=\'none\'">'
+              : '<div style="width:44px;height:44px;border-radius:50%;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:var(--muted);flex-shrink:0">' + (name[0]||'?') + '</div>') +
+        '<div style="min-width:0">' +
+          '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + name + '</div>' +
+          '<div style="font-size:22px;font-weight:700;color:' + color + ';margin-top:4px;line-height:1">' + valueStr + '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  var ACCENT = 'var(--accent)';
+  var GOLD   = '#c8a96e';
+  var BLUE   = '#2980b9';
+  var RED    = '#c0392b';
+
+  var html = '';
+
+  // ══ SECTION 1: PLAYER LEADERS ═══════════════════════════════════════════
+
+  html += '<div style="font-family:var(--font-display);font-size:18px;margin-bottom:12px;color:var(--text)">Player Leaders</div>';
+
+  // ── fWAR leaders (hitters + pitchers combined) ────────────────────────────
+  html += '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Calculated Stats</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:24px">';
+
+  var allFWAR = FWAR.hitResults.concat(FWAR.pitResults).filter(function(p){ return p.ftId; });
+
+  // fWAR
+  var topFWAR = allFWAR.slice().sort(function(a,b){return (b.fWAR||0)-(a.fWAR||0);})[0];
+  if (topFWAR) html += playerTile('fWAR', ACCENT, topFWAR.name, (topFWAR.fWAR>=0?'+':'')+topFWAR.fWAR.toFixed(2), topFWAR.ftId, topFWAR.hs, topFWAR.assignedSlot||topFWAR.pos||'');
+
+  // fWAR-W
+  var topFWARW = allFWAR.filter(function(p){return p.fWAR_W!=null;}).sort(function(a,b){return b.fWAR_W-a.fWAR_W;})[0];
+  if (topFWARW) html += playerTile('fWAR-W', '#4a9a68', topFWARW.name, (topFWARW.fWAR_W>=0?'+':'')+topFWARW.fWAR_W.toFixed(2), topFWARW.ftId, topFWARW.hs, topFWARW.assignedSlot||'');
+
+  // fWAR-Pts
+  var topFWARP = allFWAR.filter(function(p){return p.fWAR_Pts!=null;}).sort(function(a,b){return b.fWAR_Pts-a.fWAR_Pts;})[0];
+  if (topFWARP) html += playerTile('fWAR-Pts', GOLD, topFWARP.name, (topFWARP.fWAR_Pts>=0?'+':'')+topFWARP.fWAR_Pts.toFixed(1), topFWARP.ftId, topFWARP.hs, topFWARP.assignedSlot||'');
+
+  html += '</div>';
+
+  // ── Hitting leaders ───────────────────────────────────────────────────────
+  html += '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Hitting</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:24px">';
+
+  var HIT_CATS = [
+    {key:'HR',  label:'Home Runs',    color:RED,    fmt:function(v){return Math.round(v);},    min:0},
+    {key:'R',   label:'Runs',         color:ACCENT, fmt:function(v){return Math.round(v);},    min:0},
+    {key:'RBI', label:'RBI',          color:ACCENT, fmt:function(v){return Math.round(v);},    min:0},
+    {key:'SB',  label:'Stolen Bases', color:'#8e44ad', fmt:function(v){return Math.round(v);}, min:0},
+    {key:'AVG', label:'Batting Avg',  color:BLUE,   fmt:function(v){return v.toFixed(3);},     min:20, minKey:'AB'},
+    {key:'H',   label:'Hits',         color:ACCENT, fmt:function(v){return Math.round(v);},    min:0},
+    {key:'AB',  label:'At Bats',      color:'var(--muted)', fmt:function(v){return Math.round(v);}, min:0}
+  ];
+
+  HIT_CATS.forEach(function(cat) {
+    var best = null, bestVal = -Infinity;
+    rosteredHitters.forEach(function(row) {
+      var cells = row.cells || [];
+      var scorer = row.scorer || {};
+      var val = gv(cells, cat.key, hitIdx);
+      if (val == null) return;
+      if (cat.min && cat.minKey) {
+        var qualifier = gv(cells, cat.minKey, hitIdx) || 0;
+        if (qualifier < cat.min) return;
+      }
+      if (val > bestVal) {
+        bestVal = val;
+        best = { name: scorer.name||'', ftId: (cells[1]&&cells[1].teamId)||'', hs: scorer.headshotUrl||'', pos: scorer.posShortNames||'' };
+      }
+    });
+    if (best) html += playerTile(cat.label, cat.color, best.name, cat.fmt(bestVal), best.ftId, best.hs, best.pos);
+  });
+
+  html += '</div>';
+
+  // ── Pitching leaders ──────────────────────────────────────────────────────
+  html += '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Pitching</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:32px">';
+
+  var PIT_CATS = [
+    {key:'K',    label:'Strikeouts', color:RED,    fmt:function(v){return Math.round(v);},  min:0,  hi:true},
+    {key:'W',    label:'Wins',       color:ACCENT, fmt:function(v){return Math.round(v);},  min:0,  hi:true},
+    {key:'SVH3', label:'SVH3',       color:'#8e44ad', fmt:function(v){return v.toFixed(1);}, min:0, hi:true},
+    {key:'ERA',  label:'ERA',        color:BLUE,   fmt:function(v){return v.toFixed(2);},   min:5,  hi:false, minKey:'IP'},
+    {key:'WHIP', label:'WHIP',       color:BLUE,   fmt:function(v){return v.toFixed(2);},   min:5,  hi:false, minKey:'IP'},
+    {key:'IP',   label:'Innings Pitched', color:'var(--muted)', fmt:function(v){return v.toFixed(1);}, min:0, hi:true}
+  ];
+
+  PIT_CATS.forEach(function(cat) {
+    var best = null, bestVal = cat.hi ? -Infinity : Infinity;
+    rosteredPitchers.forEach(function(row) {
+      var cells = row.cells || [];
+      var scorer = row.scorer || {};
+      var val = gv(cells, cat.key, pitIdx);
+      if (val == null) return;
+      if (cat.min && cat.minKey) {
+        var qualifier = gv(cells, cat.minKey, pitIdx) || 0;
+        if (qualifier < cat.min) return;
+      }
+      var better = cat.hi ? val > bestVal : val < bestVal;
+      if (better) {
+        bestVal = val;
+        best = { name: scorer.name||'', ftId: (cells[1]&&cells[1].teamId)||'', hs: scorer.headshotUrl||'', pos: scorer.posShortNames||'' };
+      }
+    });
+    if (best) html += playerTile(cat.label, cat.color, best.name, cat.fmt(bestVal), best.ftId, best.hs, best.pos);
+  });
+
+  html += '</div>';
+
+  // ══ SECTION 2: TEAM LEADERS ══════════════════════════════════════════════
+  html += '<div style="font-family:var(--font-display);font-size:18px;margin-bottom:12px;color:var(--text)">Team Leaders</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:24px">';
+
+  // Pull from Standings - Point Totals table
+  var tables2 = (S.seasonData && S.seasonData.data && S.seasonData.data.tableList) || [];
+  var ptTable2 = null;
+  for (var ti2=0; ti2<tables2.length; ti2++) {
+    if ((tables2[ti2].caption||'').toLowerCase().indexOf('point total') !== -1) { ptTable2 = tables2[ti2]; break; }
+  }
+
+  if (ptTable2) {
+    var ph = {};
+    ((ptTable2.header&&ptTable2.header.cells)||[]).forEach(function(h,i){
+      if (h.key) ph[h.key.toUpperCase()]=i;
+      if (h.shortName) ph[h.shortName.toUpperCase()]=i;
+      if (h.name) ph[h.name.toUpperCase()]=i;
+    });
+
+    var TEAM_CATS = [
+      {key:'R',   label:'Runs',           color:ACCENT, hi:true,  fmt:function(v){return Math.round(v);}},
+      {key:'HR',  label:'Home Runs',       color:RED,    hi:true,  fmt:function(v){return Math.round(v);}},
+      {key:'RBI', label:'RBI',             color:ACCENT, hi:true,  fmt:function(v){return Math.round(v);}},
+      {key:'SB',  label:'Stolen Bases',    color:'#8e44ad', hi:true, fmt:function(v){return Math.round(v);}},
+      {key:'AVG', label:'Batting Avg',     color:BLUE,   hi:true,  fmt:function(v){return v.toFixed(3);}},
+      {key:'W',   label:'Wins',            color:ACCENT, hi:true,  fmt:function(v){return Math.round(v);}},
+      {key:'K',   label:'Strikeouts',      color:RED,    hi:true,  fmt:function(v){return Math.round(v);}},
+      {key:'SVH3',label:'SVH3',            color:'#8e44ad', hi:true, fmt:function(v){return v.toFixed(1);}},
+      {key:'ERA', label:'ERA',             color:BLUE,   hi:false, fmt:function(v){return v.toFixed(2);}},
+      {key:'WHIP',label:'WHIP',            color:BLUE,   hi:false, fmt:function(v){return v.toFixed(2);}}
+    ];
+
+    TEAM_CATS.forEach(function(cat) {
+      var colIdx = ph[cat.key];
+      if (colIdx == null) return;
+      var best = null, bestVal = cat.hi ? -Infinity : Infinity;
+      (ptTable2.rows||[]).forEach(function(row) {
+        var fc = row.fixedCells||[], cells = row.cells||[];
+        var teamId = (fc[1]&&fc[1].teamId)||'';
+        if (!teamId) return;
+        var v = parseFloat((cells[colIdx]||{}).content);
+        if (isNaN(v)) return;
+        var better = cat.hi ? v > bestVal : v < bestVal;
+        if (better) { bestVal = v; best = teamId; }
+      });
+      if (best) html += teamTile(cat.label, cat.color, best, cat.fmt(bestVal));
+    });
+  } else {
+    html += '<div style="color:var(--muted);font-size:13px">Standings data not loaded yet.</div>';
+  }
+
+  html += '</div>';
   el.innerHTML = html;
 }
 
