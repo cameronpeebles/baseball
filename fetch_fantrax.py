@@ -698,7 +698,16 @@ def fetch_csv(url, label):
         content = r.content
         if content[:2] == b'\x1f\x8b':
             content = gzip.decompress(content)
-        return parse_savant_csv(content.decode('utf-8', errors='replace'))
+        text = content.decode('utf-8', errors='replace')
+        if text.startswith('\ufeff'):
+            text = text[1:]
+        # Print ALL column names so we know exactly what's available
+        reader = csv.DictReader(io.StringIO(text))
+        rows_raw = list(reader)
+        print(f"  Columns: {list(reader.fieldnames or [])}")
+        if rows_raw:
+            print(f"  First row sample: { {k:v for k,v in list(rows_raw[0].items())[:20]} }")
+        return parse_savant_csv(text)
     except Exception as e:
         print(f"  Error: {e}")
         return []
@@ -743,26 +752,76 @@ def safe_float(row, *keys):
             except: pass
     return None
 
+def pick_yoy_values(row, stat_name):
+    """
+    Savant year-to-year CSVs use various column naming conventions.
+    Try every known pattern and fall back to scanning numeric columns.
+    Returns (current_year_val, prior_year_val) or (None, None).
+    """
+    # Known patterns for current (2026) and prior (2025) year values
+    current_keys = [
+        stat_name,                        # e.g. 'babip'
+        stat_name + '_2',                 # babip_2
+        stat_name + '_current',           # babip_current
+        'current_year_value',
+        'n_value',                        # Savant sometimes uses n/p
+        'value_2',
+        'y2',
+        'r2',
+        'year2',
+    ]
+    prior_keys = [
+        stat_name + '_1',                 # babip_1
+        stat_name + '_prior',             # babip_prior
+        'prior_year_value',
+        'p_value',
+        'value_1',
+        'y1',
+        'r1',
+        'year1',
+    ]
+    cur = safe_float(row, *current_keys)
+    pri = safe_float(row, *prior_keys)
+
+    # Fallback: scan all columns for numeric values, pick first two
+    if cur is None or pri is None:
+        numeric_cols = []
+        for k, v in row.items():
+            k_low = k.lower().strip()
+            # Skip name/id/pa columns
+            if any(x in k_low for x in ['name','first','last','player_id','mlbam','pa','ab','season','year','team','pos']):
+                continue
+            v = (v or "").strip()
+            if v and v not in ("null",""):
+                try:
+                    float(v)
+                    numeric_cols.append((k, float(v)))
+                except:
+                    pass
+        # First numeric col = current year, second = prior year (Savant orders newest first)
+        if len(numeric_cols) >= 2 and cur is None:
+            cur = numeric_cols[0][1]
+        if len(numeric_cols) >= 2 and pri is None:
+            pri = numeric_cols[1][1]
+
+    return cur, pri
+
 # Merge by player name
 all_names = set(xwoba_lkp.keys()) | set(babip_lkp.keys()) | set(barrel_lkp.keys())
 targets = []
 for name_lower in all_names:
-    xr = xwoba_lkp.get(name_lower, {})
-    br = babip_lkp.get(name_lower, {})
+    xr  = xwoba_lkp.get(name_lower, {})
+    br  = babip_lkp.get(name_lower, {})
     blr = barrel_lkp.get(name_lower, {})
 
-    # Reconstruct display name from whichever source has it
     display_name = name_lower.title()
 
-    xwoba  = safe_float(xr,  'est_woba', 'xwoba', 'expected_woba')
-    woba   = safe_float(xr,  'woba')
-    pa_26  = safe_float(xr,  'pa', 'ab')
+    xwoba = safe_float(xr, 'est_woba', 'xwoba', 'expected_woba', 'est_woba_using_speedangle')
+    woba  = safe_float(xr, 'woba')
+    pa_26 = safe_float(xr, 'pa', 'ab', 'attempts')
 
-    babip_26 = safe_float(br,  'babip_current', 'babip_2', 'current_year_value')
-    babip_25 = safe_float(br,  'babip_prior',   'babip_1', 'prior_year_value')
-
-    barrel_26 = safe_float(blr, 'barrel_batted_rate_current', 'barrel_current', 'current_year_value')
-    barrel_25 = safe_float(blr, 'barrel_batted_rate_prior',   'barrel_prior',   'prior_year_value')
+    babip_26,  babip_25  = pick_yoy_values(br,  'babip')
+    barrel_26, barrel_25 = pick_yoy_values(blr, 'barrel_batted_rate')
 
     # Skip if we have none of the key metrics
     if xwoba is None and babip_26 is None and barrel_26 is None:
