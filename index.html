@@ -249,6 +249,7 @@ td.neg { color: #c0392b; font-weight: 500; }
   <button onclick="showPage('trade',this)">Player Trade &amp; Market</button>
   <button onclick="showPage('historic',this)">Historic League Data</button>
   <button onclick="showPage('leaders',this)">League Leaders</button>
+  <button onclick="showPage('targets',this)">Targets</button>
 </nav>
 
 <main>
@@ -487,6 +488,11 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div class="page-subtitle">Top players and teams across every scoring category.</div>
     <div id="leaders-body"><div class="loading">Loading...</div></div>
   </div>
+  <div class="page" id="page-targets">
+    <div class="page-title">Waiver Targets</div>
+    <div class="page-subtitle">Buy low / sell high based on expected vs actual performance metrics.</div>
+    <div id="targets-body"><div class="loading">Loading...</div></div>
+  </div>
 
 </main>
 
@@ -548,8 +554,9 @@ function showPage(name, btn) {
   if (name === 'trade') renderTradeAnalyzer();
   if (name === 'historic') renderHistoricPage();
   if (name === 'leaders') renderLeadersPage();
+  if (name === 'targets') renderTargetsPage();
   // Expand main to full width for wide-table pages
-  document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'rosters' || name === 'historic') ? 'none' : '';
+  document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'rosters' || name === 'historic' || name === 'targets') ? 'none' : '';
   if (name === 'trade' && (TA.activeTab === 'sgp-hit' || TA.activeTab === 'sgp-pit')) {
     document.querySelector('main').style.maxWidth = 'none';
   }
@@ -6401,6 +6408,204 @@ function renderLeadersPage() {
   html += '</div>';
   el.innerHTML = html;
 }
+
+// ── Waiver Targets Page ───────────────────────────────────────────────────────
+
+var targetsRendered = false;
+var targetsData = null;
+var TARGETS_STATE = { filter: 'ALL', sort: 'delta_xwoba', sortDir: -1 };
+
+function renderTargetsPage() {
+  var el = document.getElementById('targets-body');
+  if (!el) return;
+  if (targetsData) { drawTargetsTable(); return; }
+  el.innerHTML = '<div class="loading">Loading targets data...</div>';
+  loadJSON('targets_hitting.json').then(function(data) {
+    targetsData = data;
+    drawTargetsTable();
+  }).catch(function() {
+    el.innerHTML = '<div class="error-msg">targets_hitting.json not found — run the GitHub Action first.</div>';
+  });
+}
+
+function drawTargetsTable() {
+  var el = document.getElementById('targets-body');
+  if (!el || !targetsData) return;
+
+  // Build fWAR lookup for rostered players
+  var fwarLookup = {};
+  FWAR.hitResults.forEach(function(p){ fwarLookup[p.name.toLowerCase()] = p; });
+
+  // Rostered player lookup
+  var rosteredNames = {};
+  S.hitRows.forEach(function(row) {
+    var cells = row.cells || [];
+    var ftId  = (cells[1] && cells[1].teamId) || '';
+    var name  = (row.scorer || {}).name || '';
+    if (ftId && name) rosteredNames[name.toLowerCase()] = { ftId: ftId, hs: (row.scorer||{}).headshotUrl||'' };
+  });
+
+  // Merge fantrax roster info into targets
+  var enriched = targetsData.map(function(t) {
+    var nameLow = (t.name||'').toLowerCase();
+    var roster  = rosteredNames[nameLow] || null;
+    var fw      = fwarLookup[nameLow] || null;
+    var ti      = roster ? (S.teamInfo[roster.ftId] || {}) : null;
+    return { t:t, roster:roster, fw:fw, ti:ti };
+  });
+
+  // Filter
+  var filter = TARGETS_STATE.filter;
+  var filtered = enriched.filter(function(e) {
+    if (filter === 'ALL')           return true;
+    if (filter === 'UNDERPERFORMING') return e.t.signal === 'Underperforming';
+    if (filter === 'OVERPERFORMING')  return e.t.signal === 'Overperforming';
+    if (filter === 'ROSTERED')      return !!e.roster;
+    if (filter === 'FA')            return !e.roster;
+    return true;
+  });
+
+  // Sort
+  var sk = TARGETS_STATE.sort, sd = TARGETS_STATE.sortDir;
+  filtered.sort(function(a, b) {
+    var va = a.t[sk], vb = b.t[sk];
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    return (va - vb) * sd;
+  });
+
+  function fmtD(v, dec) {
+    if (v == null) return '<span style="color:var(--muted)">—</span>';
+    var s = v >= 0 ? '+' : '';
+    return s + v.toFixed(dec);
+  }
+  function deltaColor(v, positiveGood) {
+    if (v == null) return 'var(--text)';
+    var good = positiveGood ? v > 0 : v < 0;
+    var bad  = positiveGood ? v < 0 : v > 0;
+    return good ? '#1e6b3a' : bad ? '#c0392b' : 'var(--muted)';
+  }
+
+  var html = '';
+
+  // Controls
+  html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">';
+  html += '<div class="pill-group" id="targets-pills">';
+  [{v:'ALL',l:'All'},{v:'UNDERPERFORMING',l:'🟢 Underperforming'},{v:'OVERPERFORMING',l:'🔴 Overperforming'},{v:'ROSTERED',l:'Rostered'},{v:'FA',l:'Free Agents'}]
+    .forEach(function(opt) {
+      var active = TARGETS_STATE.filter === opt.v ? ' active' : '';
+      html += '<button class="pill' + active + '" onclick="setTargetsFilter(\'' + opt.v + '\',this)">' + opt.l + '</button>';
+    });
+  html += '</div>';
+  html += '<span style="font-size:12px;color:var(--muted)">' + filtered.length + ' players</span>';
+  html += '</div>';
+
+  // Table
+  html += '<div class="card"><div class="table-wrap" style="max-height:80vh;overflow-y:auto;overflow-x:auto">';
+  html += '<table style="min-width:max-content;width:100%"><thead><tr>';
+
+  var cols = [
+    {key:'name',         label:'Player',       sort:false},
+    {key:'signal',       label:'Signal',       sort:false},
+    {key:'fwar',         label:'fWAR',         sort:true},
+    {key:'xwoba',        label:'xwOBA',        sort:true},
+    {key:'woba',         label:'wOBA',         sort:true},
+    {key:'delta_xwoba',  label:'Δ xwOBA-wOBA', sort:true},
+    {key:'babip_2026',   label:'BABIP 2026',   sort:true},
+    {key:'babip_2025',   label:'BABIP 2025',   sort:true},
+    {key:'delta_babip',  label:'ΔBABIP',       sort:true},
+    {key:'barrel_2026',  label:'Barrel% 2026', sort:true},
+    {key:'barrel_2025',  label:'Barrel% 2025', sort:true},
+    {key:'delta_barrel', label:'ΔBarrel%',     sort:true},
+    {key:'pa_2026',      label:'PA',           sort:true}
+  ];
+
+  cols.forEach(function(c) {
+    var isSorted = TARGETS_STATE.sort === c.key;
+    var arrow = isSorted ? (TARGETS_STATE.sortDir === -1 ? ' ↓' : ' ↑') : '';
+    var style = isSorted ? 'color:var(--accent)' : '';
+    if (c.key === 'delta_xwoba') style = 'color:#4a9a68;font-weight:700' + (isSorted?';text-decoration:underline':'');
+    var click = c.sort ? ' style="cursor:pointer;' + style + '" onclick="sortTargets(\'' + c.key + '\')"' : (style ? ' style="' + style + '"' : '');
+    html += '<th' + click + '>' + c.label + arrow + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+
+  filtered.forEach(function(e, i) {
+    var t = e.t;
+    var bg = i%2===1 ? 'background:var(--bg)' : '';
+    var sigBg = t.signal === 'Underperforming' ? '#e8f0eb' : t.signal === 'Overperforming' ? '#fce8e8' : '';
+    var sigCol = t.signal === 'Underperforming' ? '#1e6b3a' : t.signal === 'Overperforming' ? '#c0392b' : 'var(--muted)';
+    var sigIcon = t.signal === 'Underperforming' ? '🟢' : t.signal === 'Overperforming' ? '🔴' : '⚪';
+
+    html += '<tr style="border-bottom:1px solid var(--border);' + bg + '">';
+
+    // Player
+    html += '<td style="white-space:nowrap;min-width:160px"><div class="team-cell">';
+    if (e.roster && e.roster.hs) html += '<img class="player-hs" src="' + e.roster.hs + '" alt="" onerror="this.style.display=\'none\'">';
+    html += '<div><div style="font-size:13px;font-weight:500">' + t.name + '</div>';
+    if (e.ti) {
+      var tlogo = e.ti.logoUrl512 || '';
+      html += '<div style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)">';
+      if (tlogo) html += '<img src="' + tlogo + '" style="width:12px;height:12px;border-radius:50%" alt="">';
+      html += (e.ti.shortName || e.ti.name || '') + '</div>';
+    } else {
+      html += '<div style="font-size:10px;color:var(--muted)">FA</div>';
+    }
+    html += '</div></div></td>';
+
+    // Signal
+    html += '<td><span style="padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;background:' + (sigBg||'var(--bg)') + ';color:' + sigCol + '">' + sigIcon + ' ' + t.signal + '</span></td>';
+
+    // fWAR
+    if (e.fw) {
+      var fc = e.fw.fWAR>=2?'#1e6b3a':e.fw.fWAR>=0?'#4a9a68':e.fw.fWAR>=-1?'#b7791f':'#c0392b';
+      html += '<td style="font-weight:600;color:' + fc + '">' + (e.fw.fWAR>=0?'+':'') + e.fw.fWAR.toFixed(2) + '</td>';
+    } else html += '<td style="color:var(--muted)">—</td>';
+
+    // xwOBA
+    html += '<td>' + (t.xwoba != null ? t.xwoba.toFixed(3) : '—') + '</td>';
+    // wOBA
+    html += '<td>' + (t.woba  != null ? t.woba.toFixed(3)  : '—') + '</td>';
+    // Δ xwOBA-wOBA (key metric — color coded)
+    var dxCol = t.delta_xwoba == null ? 'var(--muted)' : t.delta_xwoba >= 0.020 ? '#1e6b3a' : t.delta_xwoba <= -0.020 ? '#c0392b' : 'var(--text)';
+    html += '<td style="font-weight:700;color:' + dxCol + '">' + fmtD(t.delta_xwoba, 3) + '</td>';
+    // BABIP 2026
+    html += '<td>' + (t.babip_2026 != null ? t.babip_2026.toFixed(3) : '—') + '</td>';
+    // BABIP 2025
+    html += '<td style="color:var(--muted)">' + (t.babip_2025 != null ? t.babip_2025.toFixed(3) : '—') + '</td>';
+    // ΔBABIP
+    var dbCol = t.delta_babip == null ? 'var(--muted)' : t.delta_babip <= -0.020 ? '#1e6b3a' : t.delta_babip >= 0.020 ? '#c0392b' : 'var(--text)';
+    html += '<td style="font-weight:600;color:' + dbCol + '">' + fmtD(t.delta_babip, 3) + '</td>';
+    // Barrel% 2026
+    html += '<td>' + (t.barrel_2026 != null ? t.barrel_2026.toFixed(1)+'%' : '—') + '</td>';
+    // Barrel% 2025
+    html += '<td style="color:var(--muted)">' + (t.barrel_2025 != null ? t.barrel_2025.toFixed(1)+'%' : '—') + '</td>';
+    // ΔBarrel%
+    var dbarCol = t.delta_barrel == null ? 'var(--muted)' : t.delta_barrel >= 0 ? '#1e6b3a' : '#c0392b';
+    html += '<td style="font-weight:600;color:' + dbarCol + '">' + fmtD(t.delta_barrel, 1) + '</td>';
+    // PA
+    html += '<td style="color:var(--muted)">' + (t.pa_2026 != null ? t.pa_2026 : '—') + '</td>';
+
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div></div>';
+  el.innerHTML = html;
+}
+
+window.setTargetsFilter = function(filter, btn) {
+  TARGETS_STATE.filter = filter;
+  document.getElementById('targets-pills').querySelectorAll('.pill').forEach(function(p){p.classList.remove('active');});
+  btn.classList.add('active');
+  drawTargetsTable();
+};
+
+window.sortTargets = function(key) {
+  if (TARGETS_STATE.sort === key) TARGETS_STATE.sortDir *= -1;
+  else { TARGETS_STATE.sort = key; TARGETS_STATE.sortDir = -1; }
+  drawTargetsTable();
+};
 
 init();
 </script>
