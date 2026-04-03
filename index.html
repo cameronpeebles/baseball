@@ -5551,162 +5551,150 @@ function renderHistoricPage() {
 
   var years = [2025, 2024, 2023, 2022, 2021];
 
-  // ── Compute SPG weights from all historical data ──────────────────────────
-  // Flatten all team-seasons into one dataset
-  var allRows = [];
-  years.forEach(function(yr) {
-    HISTORIC_DATA[yr].forEach(function(row) {
-      allRows.push({ year: yr, pts: row.pts, row: row });
+  // ── SGP denominators (avg gap between adjacent teams, pre-calculated) ──────
+  var SGP_DENOM = {
+    r:    65.4,
+    hr:   21.2,
+    rbi:  54.8,
+    sb:   17.0,
+    avg:  0.00178,
+    w:    15.3,
+    k:    216.8,
+    sv:   18.5,
+    era:  0.106,
+    whip: 0.0191
+  };
+
+  // SGP for a team-season row (team-level, using season totals)
+  // For counting stats: stat / denom
+  // For AVG: ((team_avg - league_avg) * team_AB) / denom  — at team level, use own avg vs league avg
+  // For ERA/WHIP: rate-based impact scaled by IP
+  function computeSGP(row, lgAvgRow) {
+    var sgp = 0;
+    // Counting stats
+    ['r','hr','rbi','sb','w','k','sv'].forEach(function(cat) {
+      sgp += (row[cat] || 0) / SGP_DENOM[cat];
     });
-  });
+    // AVG: impact = (row_avg - lg_avg) * row_ab / denom
+    var lgAvg = lgAvgRow ? lgAvgRow.avg : row.avg;
+    sgp += ((row.avg - lgAvg) * row.ab) / SGP_DENOM.avg;
+    // ERA: lower is better → (lg_era - row_era) * row_ip / denom
+    var lgEra = lgAvgRow ? lgAvgRow.era : row.era;
+    sgp += ((lgEra - row.era) * row.ip) / SGP_DENOM.era;
+    // WHIP: lower is better → (lg_whip - row_whip) * row_ip / denom
+    var lgWhip = lgAvgRow ? lgAvgRow.whip : row.whip;
+    sgp += ((lgWhip - row.whip) * row.ip) / SGP_DENOM.whip;
+    return sgp;
+  }
 
   function mean(arr) { return arr.length ? arr.reduce(function(a,b){return a+b;})/arr.length : 0; }
   function std(arr, m) {
     if (arr.length < 2) return 1;
     return Math.sqrt(arr.reduce(function(s,v){return s+(v-m)*(v-m);},0)/(arr.length-1)) || 1;
   }
-  function pearson(pairs) {
-    var n = pairs.length; if (n < 3) return 0;
-    var sx=0,sy=0,sxy=0,sx2=0,sy2=0;
-    pairs.forEach(function(p){sx+=p[0];sy+=p[1];sxy+=p[0]*p[1];sx2+=p[0]*p[0];sy2+=p[1]*p[1];});
-    var den=Math.sqrt((n*sx2-sx*sx)*(n*sy2-sy*sy));
-    return den===0?0:(n*sxy-sx*sy)/den;
-  }
-
-  // Per-cat: mean, std, correlation with pts across all 50 team-seasons
-  var catStats = {};
-  CATS.forEach(function(cat) {
-    var vals = allRows.map(function(d){ return d.row[cat]; });
-    var m = mean(vals);
-    var s = std(vals, m);
-    var pairs = allRows.map(function(d){ return [d.row[cat], d.pts]; });
-    var r = pearson(pairs);
-    if (LOW_CATS.indexOf(cat) !== -1) r = -r; // flip so positive = good
-    catStats[cat] = { mean: m, std: s, r: r };
-  });
-
-  // Normalize weights: each cat weight = |r| / sum(|r|) × 10 (so total = 10 points of signal)
-  var totalR = CATS.reduce(function(s,c){ return s + Math.abs(catStats[c].r); }, 0);
-  CATS.forEach(function(cat) {
-    catStats[cat].weight = totalR > 0 ? Math.abs(catStats[cat].r) / totalR * 10 : 1;
-  });
-
-  // SPG for a team row = sum over cats: weight × (val - mean) / std
-  // For ERA/WHIP: negate before z-score so more positive = better
-  function computeSPG(row) {
-    return CATS.reduce(function(s, cat) {
-      var cs = catStats[cat];
-      var v = row[cat];
-      var z = (v - cs.mean) / cs.std;
-      if (LOW_CATS.indexOf(cat) !== -1) z = -z;
-      return s + cs.weight * z;
-    }, 0);
-  }
 
   // ── Build HTML ────────────────────────────────────────────────────────────
   var html = '';
 
-  // ── Section 1: SPG weights table ─────────────────────────────────────────
+  // ── Section 1: SGP denominators table ────────────────────────────────────
   html += '<div class="card" style="margin-bottom:24px">';
-  html += '<div class="card-header"><span class="card-title">SPG category weights (all seasons combined)</span>';
-  html += '<span style="font-size:12px;color:var(--muted)">Based on correlation with fantasy points across 50 team-seasons (2021–2025)</span></div>';
+  html += '<div class="card-header"><span class="card-title">SGP denominators</span>';
+  html += '<span style="font-size:12px;color:var(--muted)">Average gap between adjacent teams per category — one standings point per denominator unit</span></div>';
   html += '<div class="table-wrap"><table><thead><tr>';
-  html += '<th class="left">Category</th><th>r vs Pts</th><th>Weight</th><th>Direction</th><th>Mean</th><th>Std Dev</th>';
-  html += '</tr></thead><tbody>';
-  var sortedCats = CATS.slice().sort(function(a,b){ return catStats[b].weight - catStats[a].weight; });
-  sortedCats.forEach(function(cat, i) {
-    var cs = catStats[cat];
-    var rCol = Math.abs(cs.r) >= 0.7 ? '#1e6b3a' : Math.abs(cs.r) >= 0.4 ? '#4a9a68' : '#b7791f';
-    html += '<tr' + (i%2===1?' style="background:var(--bg)"':'') + '>';
-    html += '<td class="left"><strong>' + CAT_LABELS[cat] + '</strong></td>';
-    html += '<td style="font-weight:600;color:' + rCol + '">' + (cs.r>=0?'+':'') + cs.r.toFixed(3) + '</td>';
-    html += '<td style="font-weight:600">' + cs.weight.toFixed(3) + '</td>';
-    html += '<td style="font-size:11px;color:var(--muted)">' + (LOW_CATS.indexOf(cat)!==-1?'Lower = better':'Higher = better') + '</td>';
-    var fmt = (cat==='avg'||cat==='era'||cat==='whip') ? cs.mean.toFixed(3) : Math.round(cs.mean);
-    var fmts = (cat==='avg'||cat==='era'||cat==='whip') ? cs.std.toFixed(3) : Math.round(cs.std);
-    html += '<td>' + fmt + '</td><td>' + fmts + '</td>';
-    html += '</tr>';
+  CATS.forEach(function(cat) { html += '<th>' + CAT_LABELS[cat] + '</th>'; });
+  html += '</tr></thead><tbody><tr>';
+  CATS.forEach(function(cat) {
+    var d = SGP_DENOM[cat];
+    var fmt = (cat==='avg'||cat==='whip') ? d.toFixed(5) : (cat==='era') ? d.toFixed(3) : d.toFixed(1);
+    html += '<td style="font-weight:600">' + fmt + '</td>';
   });
-  html += '</tbody></table></div></div>';
+  html += '</tr></tbody></table></div></div>';
 
-  // ── Section 2: Per-year standings + SPG ──────────────────────────────────
+  // ── Section 2: Per-year standings + SGP ──────────────────────────────────
   years.forEach(function(yr) {
     var teams = HISTORIC_DATA[yr];
-    // Compute per-year means and stds for z-score display
-    var yrCatStats = {};
+
+    // Compute league average row for this year
+    var lgAvgRow = {};
     CATS.forEach(function(cat) {
-      var vals = teams.map(function(t){return t[cat];});
-      var m = mean(vals); var s = std(vals, m);
-      yrCatStats[cat] = {mean:m, std:s};
+      lgAvgRow[cat] = mean(teams.map(function(t){return t[cat];}));
     });
-    // Add SPG to each team
-    var teamsWithSPG = teams.map(function(t) {
-      return { t: t, spg: computeSPG(t) };
-    }).sort(function(a,b){return b.spg-a.spg;});
+
+    // Compute SGP for each team using this year's league averages
+    var teamsWithSGP = teams.map(function(t) {
+      return { t: t, sgp: computeSGP(t, lgAvgRow) };
+    }).sort(function(a,b){return b.sgp-a.sgp;});
 
     html += '<div class="card" style="margin-bottom:24px">';
     html += '<div class="card-header"><span class="card-title">' + yr + ' Season</span></div>';
     html += '<div class="table-wrap"><table><thead><tr>';
     html += '<th class="left">Rank</th><th>Pts</th>';
     CATS.forEach(function(cat){ html += '<th>' + CAT_LABELS[cat] + '</th>'; });
-    html += '<th style="color:var(--accent);font-weight:700">SPG</th>';
+    html += '<th style="color:var(--accent);font-weight:700">SGP</th>';
     html += '</tr></thead><tbody>';
 
     // League avg row
-    html += '<tr style="background:#e8f4fd;border-bottom:2px solid #2980b9">';
+    html += '<tr class="lg-avg-row" style="background:#e8f4fd;border-bottom:2px solid #2980b9">';
     html += '<td class="left" style="font-weight:600;font-size:11px;color:#2980b9">League Avg</td><td></td>';
     CATS.forEach(function(cat) {
-      var m = yrCatStats[cat].mean;
+      var m = lgAvgRow[cat];
       var fmt = (cat==='avg'||cat==='era'||cat==='whip') ? m.toFixed(3) : Math.round(m);
       html += '<td style="font-weight:600;color:#2980b9;font-size:12px">' + fmt + '</td>';
     });
-    html += '<td style="color:#2980b9;font-weight:600">0.000</td>';
+    html += '<td style="color:#2980b9;font-weight:600">—</td>';
     html += '</tr>';
 
-    teamsWithSPG.forEach(function(d, i) {
+    teamsWithSGP.forEach(function(d, i) {
       var t = d.t;
-      var spgCol = d.spg >= 1 ? '#1e6b3a' : d.spg >= 0 ? '#4a9a68' : d.spg >= -1 ? '#b7791f' : '#c0392b';
+      var sgpCol = d.sgp >= 5 ? '#1e6b3a' : d.sgp >= 0 ? '#4a9a68' : d.sgp >= -5 ? '#b7791f' : '#c0392b';
+      // Color each stat cell vs league avg
       html += '<tr' + (i%2===1?' style="background:var(--bg)"':'') + '>';
-      html += '<td class="left"><span class="rank' + (t.rank<=3?' top':'') + '">' + t.rank + '</span> <span style="font-size:11px;color:var(--muted)">' + t.pts + ' pts</span></td>';
+      html += '<td class="left"><span class="rank' + (t.rank<=3?' top':'') + '">' + t.rank + '</span></td>';
       html += '<td style="font-weight:600">' + t.pts + '</td>';
       CATS.forEach(function(cat) {
         var v = t[cat];
-        var cs = yrCatStats[cat];
-        var z = (v - cs.mean) / cs.std;
-        if (LOW_CATS.indexOf(cat)!==-1) z=-z;
-        var col = z >= 0.5 ? '#1e6b3a' : z <= -0.5 ? '#c0392b' : 'var(--text)';
+        var lg = lgAvgRow[cat];
+        var isLow = LOW_CATS.indexOf(cat) !== -1;
+        var better = isLow ? v < lg : v > lg;
+        var worse  = isLow ? v > lg : v < lg;
+        var col = better ? '#1e6b3a' : worse ? '#c0392b' : 'var(--text)';
         var fmt = (cat==='avg'||cat==='era'||cat==='whip') ? v.toFixed(3) : v;
         html += '<td style="color:' + col + '">' + fmt + '</td>';
       });
-      html += '<td style="font-weight:700;color:' + spgCol + '">' + (d.spg>=0?'+':'') + d.spg.toFixed(2) + '</td>';
+      html += '<td style="font-weight:700;color:' + sgpCol + '">' + (d.sgp>=0?'+':'') + d.sgp.toFixed(1) + '</td>';
       html += '</tr>';
     });
     html += '</tbody></table></div></div>';
   });
 
-  // ── Section 3: Multi-year SPG combined ───────────────────────────────────
+  // ── Section 3: Multi-year SGP rank comparison ─────────────────────────────
   html += '<div class="card" style="margin-bottom:24px">';
-  html += '<div class="card-header"><span class="card-title">SPG rank by season</span>';
-  html += '<span style="font-size:12px;color:var(--muted)">SPG ranking (1=best) for each season — shows consistency of dominance</span></div>';
+  html += '<div class="card-header"><span class="card-title">SGP rank by season</span>';
+  html += '<span style="font-size:12px;color:var(--muted)">SGP ranking (1=best) for each season — shows consistency of dominance</span></div>';
   html += '<div class="table-wrap"><table><thead><tr>';
-  html += '<th class="left">Rank</th>';
+  html += '<th class="left">Pts Rank</th>';
   years.forEach(function(yr){ html += '<th colspan="2" style="text-align:center">' + yr + '</th>'; });
-  html += '</tr><tr><th class="left">by Pts</th>';
-  years.forEach(function(){ html += '<th style="font-size:10px;color:var(--muted)">Pts</th><th style="font-size:10px;color:var(--accent)">SPG</th>'; });
+  html += '</tr><tr><th class="left"></th>';
+  years.forEach(function(){ html += '<th style="font-size:10px;color:var(--muted)">Pts</th><th style="font-size:10px;color:var(--accent)">SGP</th>'; });
   html += '</tr></thead><tbody>';
 
   for (var rank = 1; rank <= 10; rank++) {
     html += '<tr' + (rank%2===0?' style="background:var(--bg)"':'') + '>';
     html += '<td class="left"><span class="rank' + (rank<=3?' top':'') + '">' + rank + '</span></td>';
     years.forEach(function(yr) {
-      var team = HISTORIC_DATA[yr].find(function(t){return t.rank===rank;});
+      var teams = HISTORIC_DATA[yr];
+      var lgAvgRow2 = {};
+      CATS.forEach(function(cat) { lgAvgRow2[cat] = mean(teams.map(function(t){return t[cat];})); });
+      var allSGP = teams.map(function(t){
+        return {pts:t.pts, rank:t.rank, sgp:computeSGP(t, lgAvgRow2)};
+      }).sort(function(a,b){return b.sgp-a.sgp;});
+      var team = teams.find(function(t){return t.rank===rank;});
       if (!team) { html += '<td>—</td><td>—</td>'; return; }
-      var spg = computeSPG(team);
-      var allSPG = HISTORIC_DATA[yr].map(function(t){return {pts:t.pts, spg:computeSPG(t)};}).sort(function(a,b){return b.spg-a.spg;});
-      var spgRank = allSPG.findIndex(function(d){return d.pts===team.pts;})+1;
-      var spgCol = spgRank <= 3 ? '#1e6b3a' : spgRank >= 8 ? '#c0392b' : 'var(--text)';
+      var sgp = computeSGP(team, lgAvgRow2);
+      var sgpRank = allSGP.findIndex(function(d){return d.rank===rank;})+1;
+      var sgpCol = sgpRank <= 3 ? '#1e6b3a' : sgpRank >= 8 ? '#c0392b' : 'var(--text)';
       html += '<td>' + team.pts + '</td>';
-      html += '<td style="font-weight:600;color:' + spgCol + '">#' + spgRank + ' (' + (spg>=0?'+':'') + spg.toFixed(1) + ')</td>';
+      html += '<td style="font-weight:600;color:' + sgpCol + '">#' + sgpRank + ' (' + (sgp>=0?'+':'') + sgp.toFixed(0) + ')</td>';
     });
     html += '</tr>';
   }
