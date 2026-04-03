@@ -331,7 +331,13 @@ td.neg { color: #c0392b; font-weight: 500; }
           </div>
         </div>
       </div>
-      <div style="margin-top:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="margin-top:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Presets:</span>
+        <button id="fwar-preset-pitcher" class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('pitcher')">⚾ Pitcher Heavy</button>
+        <button id="fwar-preset-hybrid"  class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('hybrid')">⚖️ Hybrid</button>
+        <button id="fwar-preset-hitter"  class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('hitter')">🏏 Hitter Heavy</button>
+      </div>
+      <div style="margin-top:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <button class="pill active" style="padding:10px 28px;font-size:13px" onclick="recalculateFWAR()">Recalculate fWAR</button>
         <button class="pill" style="padding:10px 20px;font-size:13px;background:var(--accent2);border-color:var(--accent2);color:white" onclick="autoWeightFromCorrelations()">Auto-weight from correlations</button>
         <button class="pill" style="padding:10px 20px;font-size:13px" onclick="resetFWARDefaults()">Reset defaults</button>
@@ -4599,8 +4605,14 @@ function buildCorrelations(el) {
 
 // ── fWAR Engine ──────────────────────────────────────────────────────────────
 
+var FWAR_PRESETS = {
+  pitcher: { C:16, '1B':20, '2B':16, '3B':21, SS:25, OF:68,  P:210 },
+  hybrid:  { C:17, '1B':23, '2B':18, '3B':25, SS:32, OF:85,  P:176 },
+  hitter:  { C:18, '1B':26, '2B':20, '3B':28, SS:38, OF:100, P:140 }
+};
+
 var FWAR_DEFAULTS = {
-  repRanks: { C:18, '1B':24, '2B':20, '3B':22, SS:20, CI:30, MI:28, OF:96, P:140 },
+  repRanks:   { C:17, '1B':23, '2B':18, '3B':25, SS:32, OF:85, P:176 },
   hitWeights: { R:1, HR:1, RBI:1, SB:1, AVG:1 },
   pitWeights: { W:1, SVH3:1, K:1, ERA:1, WHIP:1 }
 };
@@ -4633,11 +4645,11 @@ function buildFWARModelInputs() {
   // Replacement rank inputs
   var repEl = document.getElementById('fwar-rep-inputs');
   if (!repEl) return;
-  var positions = ['C','1B','2B','3B','SS','CI','MI','OF','P'];
+  var positions = ['C','1B','2B','3B','SS','OF','P'];
   repEl.innerHTML = positions.map(function(pos) {
     return '<div class="fwar-input-group">' +
       '<label class="fwar-input-label">' + pos + '</label>' +
-      '<input class="fwar-input" type="number" min="1" max="500" id="fwar-rep-' + pos.replace(/\//g,'-') + '" value="' + FWAR.repRanks[pos] + '">' +
+      '<input class="fwar-input" type="number" min="1" max="500" id="fwar-rep-' + pos.replace(/\//g,'-') + '" value="' + (FWAR.repRanks[pos] || '') + '">' +
       '</div>';
   }).join('');
 
@@ -4672,9 +4684,23 @@ window.resetFWARDefaults = function() {
   document.getElementById('fwar-status').textContent = 'Defaults restored — click Recalculate.';
 };
 
+window.applyFWARPreset = function(preset) {
+  var ranks = FWAR_PRESETS[preset];
+  if (!ranks) return;
+  FWAR.repRanks = JSON.parse(JSON.stringify(ranks));
+  buildFWARModelInputs();
+  var labels = { pitcher: 'Pitcher Heavy', hybrid: 'Pitcher/Hitter Hybrid', hitter: 'Hitter Heavy' };
+  document.getElementById('fwar-status').textContent = labels[preset] + ' preset applied — click Recalculate.';
+  // Highlight active preset button
+  ['pitcher','hybrid','hitter'].forEach(function(p) {
+    var btn = document.getElementById('fwar-preset-' + p);
+    if (btn) btn.classList.toggle('active', p === preset);
+  });
+};
+
 window.recalculateFWAR = function() {
   // Read current inputs
-  var positions = ['C','1B','2B','3B','SS','CI','MI','OF','P'];
+  var positions = ['C','1B','2B','3B','SS','OF','P'];
   positions.forEach(function(pos) {
     var el = document.getElementById('fwar-rep-' + pos.replace(/\//g,'-'));
     if (el) FWAR.repRanks[pos] = Math.max(1, parseInt(el.value) || FWAR_DEFAULTS.repRanks[pos]);
@@ -4849,8 +4875,6 @@ window.recalculateFWAR = function() {
     '2B': ['2B'],
     '3B': ['3B'],
     'SS': ['SS'],
-    'CI': ['1B','3B','CI'],
-    'MI': ['2B','SS','MI'],
     'OF': ['OF','LF','CF','RF']
   };
 
@@ -4867,7 +4891,7 @@ window.recalculateFWAR = function() {
   var sortedPitchers = allPitchers.slice().sort(function(a,b){return b.totalZ-a.totalZ;});
 
   var replZ = {};
-  var hitSlots = ['C','1B','2B','3B','SS','CI','MI','OF'];
+  var hitSlots = ['C','1B','2B','3B','SS','OF'];
   hitSlots.forEach(function(slot) {
     var eligible = sortedHitters.filter(function(p){ return isEligible(p.pos, slot); });
     var rank = FWAR.repRanks[slot] || 18;
@@ -4878,10 +4902,7 @@ window.recalculateFWAR = function() {
   replZ['P'] = sortedPitchers[pitRank - 1] ? sortedPitchers[pitRank - 1].totalZ : 0;
 
   // ── Assign each hitter to their best slot and compute fWAR ───────────────
-  // UT is no longer a standalone slot — its demand is redistributed into
-  // 1B (+4), 3B (+2), and OF (+4) replacement ranks.
-  // Players listed as UT-eligible are assigned to their best specific position.
-  var specificSlots = ['C','1B','2B','3B','SS','CI','MI','OF'];
+  var specificSlots = ['C','1B','2B','3B','SS','OF'];
 
   allHitters.forEach(function(p) {
     var bestSlot = null, bestFWAR = -Infinity;
@@ -5020,7 +5041,7 @@ window.recalculateFWAR = function() {
   if (sumEl) {
     var html = '<div class="card" style="margin-bottom:16px"><div class="card-header"><span class="card-title">Replacement level summary</span></div>';
     html += '<div class="card-body" style="padding:14px 20px"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">';
-    var allSlots = ['C','1B','2B','3B','SS','CI','MI','OF','P'];
+    var allSlots = ['C','1B','2B','3B','SS','OF','P'];
     allSlots.forEach(function(slot) {
       var rz = replZ[slot] != null ? replZ[slot].toFixed(2) : '—';
       var rank = FWAR.repRanks[slot];
