@@ -5892,15 +5892,30 @@ function drawSGPTable(type) {
   var myWHIP = myTotH.ip>0 ? (myTotH.bh/myTotH.ip) : 1.25;
 
   // ── Compute SGP for each player ───────────────────────────────────────────
+  // SGP denominators are team-level (avg gap between adjacent teams).
+  // For counting stats we use the raw denominator directly.
+  // For rate stats (AVG, ERA, WHIP) the impact formula already scales by AB/IP,
+  // so the denominator should also be team-level — but we normalise by
+  // the fraction of team AB/IP this player represents so the numbers make sense.
+  var TEAM_AB = 7500;  // typical team season AB
+  var TEAM_IP = 1800;  // typical team season IP
+
   function computePlayerSGP(p) {
     if (isHit) {
       var sgp = p.ros.r/SGP_D.r + p.ros.hr/SGP_D.hr + p.ros.rbi/SGP_D.rbi + p.ros.sb/SGP_D.sb;
-      sgp += ((p.ros.avg - myAvg) * p.ros.ab) / SGP_D.avg;
+      // AVG impact: scale denominator by player's AB share of team AB
+      var abShare = p.ros.ab / TEAM_AB;
+      var avgDenom = SGP_D.avg / (abShare > 0 ? abShare : 1);
+      sgp += ((p.ros.avg - myAvg) * p.ros.ab) / avgDenom;
       return sgp;
     } else {
       var sgp2 = p.ros.w/SGP_D.w + p.ros.k/SGP_D.k + p.ros.sv/SGP_D.sv;
-      sgp2 += ((myERA  - p.ros.era)  * p.ros.ip) / SGP_D.era;
-      sgp2 += ((myWHIP - p.ros.whip) * p.ros.ip) / SGP_D.whip;
+      // ERA/WHIP impact: scale denominator by player's IP share of team IP
+      var ipShare = p.ros.ip / TEAM_IP;
+      var eraDenom  = SGP_D.era  / (ipShare > 0 ? ipShare : 1);
+      var whipDenom = SGP_D.whip / (ipShare > 0 ? ipShare : 1);
+      sgp2 += ((myERA  - p.ros.era)  * p.ros.ip) / eraDenom;
+      sgp2 += ((myWHIP - p.ros.whip) * p.ros.ip) / whipDenom;
       return sgp2;
     }
   }
@@ -5941,20 +5956,25 @@ function drawSGPTable(type) {
   // ── Category breakdown for profile ───────────────────────────────────────
   function getCatSGPs(p) {
     if (isHit) {
+      var abShare = p.ros.ab / TEAM_AB;
+      var avgDenom = SGP_D.avg / (abShare > 0 ? abShare : 1);
       return [
         {cat:'R',  v:p.ros.r/SGP_D.r},
         {cat:'HR', v:p.ros.hr/SGP_D.hr},
         {cat:'RBI',v:p.ros.rbi/SGP_D.rbi},
         {cat:'SB', v:p.ros.sb/SGP_D.sb},
-        {cat:'AVG',v:((p.ros.avg-myAvg)*p.ros.ab)/SGP_D.avg}
+        {cat:'AVG',v:((p.ros.avg-myAvg)*p.ros.ab)/avgDenom}
       ];
     } else {
+      var ipShare = p.ros.ip / TEAM_IP;
+      var eraDenom  = SGP_D.era  / (ipShare > 0 ? ipShare : 1);
+      var whipDenom = SGP_D.whip / (ipShare > 0 ? ipShare : 1);
       return [
         {cat:'W',   v:p.ros.w/SGP_D.w},
         {cat:'K',   v:p.ros.k/SGP_D.k},
         {cat:'SV',  v:p.ros.sv/SGP_D.sv},
-        {cat:'ERA', v:((myERA-p.ros.era)*p.ros.ip)/SGP_D.era},
-        {cat:'WHIP',v:((myWHIP-p.ros.whip)*p.ros.ip)/SGP_D.whip}
+        {cat:'ERA', v:((myERA-p.ros.era)*p.ros.ip)/eraDenom},
+        {cat:'WHIP',v:((myWHIP-p.ros.whip)*p.ros.ip)/whipDenom}
       ];
     }
   }
