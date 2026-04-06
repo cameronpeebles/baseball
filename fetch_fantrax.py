@@ -732,10 +732,28 @@ def fetch_csv(url, label):
         print(f"  Error: {e}")
         return []
 
+def normalize_name(n):
+    """Lowercase, strip punctuation/accents for fuzzy matching."""
+    import unicodedata
+    n = n.lower().strip()
+    # Remove accents
+    n = ''.join(c for c in unicodedata.normalize('NFD', n) if unicodedata.category(c) != 'Mn')
+    # Remove punctuation except spaces
+    n = ''.join(c for c in n if c.isalpha() or c == ' ')
+    # Collapse whitespace
+    return ' '.join(n.split())
+
 def build_lookup(rows):
     d = {}
     for name, row in rows:
-        d[name.lower()] = row
+        key = normalize_name(name)
+        d[key] = row
+        # Also index by "last first" in case order differs
+        parts = name.strip().split()
+        if len(parts) >= 2:
+            alt = normalize_name(parts[-1] + ' ' + ' '.join(parts[:-1]))
+            if alt not in d:
+                d[alt] = row
     return d
 
 def safe_float(row, *keys):
@@ -786,13 +804,14 @@ all_names = (set(xwoba_lkp.keys()) | set(babip_lkp.keys()) |
              set(barrel_lkp.keys()) | set(hardhit_lkp.keys()))
 targets = []
 
-for name_lower in all_names:
-    xr  = xwoba_lkp.get(name_lower,   {})
-    br  = babip_lkp.get(name_lower,    {})
-    blr = barrel_lkp.get(name_lower,   {})
-    hr  = hardhit_lkp.get(name_lower,  {})
+for name_key in all_names:
+    xr  = xwoba_lkp.get(name_key,   {})
+    br  = babip_lkp.get(name_key,    {})
+    blr = barrel_lkp.get(name_key,   {})
+    hr  = hardhit_lkp.get(name_key,  {})
 
-    display_name = name_lower.title()
+    # Reconstruct display name from the first source that has it
+    display_name = name_key.title()
 
     xwoba = safe_float(xr, 'est_woba', 'xwoba', 'expected_woba', 'est_woba_using_speedangle')
     woba  = safe_float(xr, 'woba')
@@ -847,6 +866,7 @@ for name_lower in all_names:
 
     targets.append({
         "name":           display_name,
+        "name_key":       name_key,
         "pa_2026":        int(pa_26) if pa_26 is not None else None,
         "xwoba":          xwoba,
         "woba":           woba,
