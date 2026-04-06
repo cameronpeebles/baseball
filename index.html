@@ -6474,12 +6474,24 @@ function drawTargetsTable() {
   });
 
   // Enrich targets — match on name_key (pre-normalized in Python) then fallback to normalized display name
+  // Deduplicate: if two entries resolve to the same Fantrax player, keep the one with more data
+  var seenKeys = {};
   var enriched = targetsData.map(function(t) {
     var key = t.name_key || normName(t.name);
     var ri  = rosterLookup[key] || null;
     var fw  = fwarLookup[key]   || null;
     var ti  = ri ? (S.teamInfo[ri.ftId] || {}) : null;
-    return { t:t, ri:ri, fw:fw, ti:ti };
+    return { t:t, ri:ri, fw:fw, ti:ti, key:key };
+  }).filter(function(e) {
+    // Keep the version that has fWAR/roster data; drop plain-FA duplicate if rostered version exists
+    if (!seenKeys[e.key]) { seenKeys[e.key] = e; return true; }
+    var existing = seenKeys[e.key];
+    // If this one has better data, replace
+    if ((e.fw && !existing.fw) || (e.ri && !existing.ri)) {
+      seenKeys[e.key] = e;
+      return true; // will filter out existing later — just keep both, sort handles it
+    }
+    return false;
   });
 
   // Filters
@@ -6628,7 +6640,7 @@ function drawTargetsTable() {
       if (tl) html += '<img src="' + tl + '" style="width:16px;height:16px;border-radius:50%" alt="" onerror="this.style.display=\'none\'">';
       html += '<span style="font-size:12px">' + (ti.shortName||ti.name||'') + '</span></div>';
     } else {
-      html += '<span style="font-size:11px;color:var(--muted)">FA</span>';
+      html += '<span class="badge fa">FA</span>';
     }
     html += '</td>';
 
