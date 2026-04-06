@@ -667,25 +667,46 @@ TARGETS_HEADERS = {
 }
 
 def parse_savant_csv(text):
-    """Parse a Savant CSV, handling BOM and combined name fields."""
+    """Parse a Savant CSV, handling BOM and all name field formats."""
     if text.startswith('\ufeff'):
         text = text[1:]
     reader = csv.DictReader(io.StringIO(text))
     rows = list(reader)
-    fieldnames = reader.fieldnames or []
+    fieldnames = [f.strip() for f in (reader.fieldnames or [])]
+    print(f"    parse_savant_csv: {len(rows)} rows, fields: {fieldnames[:15]}")
+
+    # Detect name column format
     combined = next((f for f in fieldnames if 'last_name' in f.lower() and 'first_name' in f.lower()), None)
+    has_first_last = ('first_name' in fieldnames or 'first_name ' in fieldnames) and \
+                     ('last_name' in fieldnames or 'last_name ' in fieldnames)
+    name_col = next((f for f in fieldnames if f.strip().lower() in ('name', 'player_name', 'playername')), None)
+
     result = []
     for row in rows:
+        # Normalise keys — strip whitespace
+        row = {k.strip(): v for k, v in row.items()}
+        name = ''
         if combined:
-            parts = (row.get(combined) or "").strip().split(",", 1)
+            parts = (row.get(combined) or '').strip().split(',', 1)
             last  = parts[0].strip()
-            first = parts[1].strip() if len(parts) > 1 else ""
+            first = parts[1].strip() if len(parts) > 1 else ''
+            name  = (first + ' ' + last).strip()
+        elif has_first_last:
+            first = (row.get('first_name') or '').strip()
+            last  = (row.get('last_name')  or '').strip()
+            name  = (first + ' ' + last).strip()
+        elif name_col:
+            name = (row.get(name_col) or '').strip()
         else:
-            first = (row.get("first_name") or "").strip()
-            last  = (row.get("last_name")  or "").strip()
-        name = (first + " " + last).strip()
-        if not name: continue
+            # Last resort: try common single-field names
+            for k in ('name', 'player_name', 'Name', 'Player'):
+                if row.get(k):
+                    name = row[k].strip()
+                    break
+        if not name:
+            continue
         result.append((name, row))
+    print(f"    parsed {len(result)} named players")
     return result
 
 def fetch_csv(url, label):
@@ -750,6 +771,15 @@ xwoba_lkp   = build_lookup(xwoba_rows)
 babip_lkp   = build_lookup(babip_rows)
 barrel_lkp  = build_lookup(barrel_rows)
 hardhit_lkp = build_lookup(hardhit_rows)
+
+print(f"  Lookups: xwoba={len(xwoba_lkp)}, babip={len(babip_lkp)}, barrel={len(barrel_lkp)}, hardhit={len(hardhit_lkp)}")
+# Print a few sample keys from each to verify name format
+for label, lkp in [('xwoba', xwoba_lkp), ('babip', babip_lkp), ('barrel', barrel_lkp), ('hardhit', hardhit_lkp)]:
+    keys = list(lkp.keys())[:3]
+    print(f"    {label} sample keys: {keys}")
+    if keys:
+        sample = lkp[keys[0]]
+        print(f"    {label} first row values: { {k:v for k,v in list(sample.items())[:10]} }")
 
 # Merge all sources by player name
 all_names = (set(xwoba_lkp.keys()) | set(babip_lkp.keys()) |
