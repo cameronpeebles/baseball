@@ -667,46 +667,38 @@ TARGETS_HEADERS = {
 }
 
 def parse_savant_csv(text):
-    """Parse a Savant CSV, handling BOM and all name field formats."""
+    """Parse Savant CSV. Returns list of (player_id, display_name, row_dict)."""
     if text.startswith('\ufeff'):
         text = text[1:]
     reader = csv.DictReader(io.StringIO(text))
     rows = list(reader)
     fieldnames = [f.strip() for f in (reader.fieldnames or [])]
-    print(f"    parse_savant_csv: {len(rows)} rows, fields: {fieldnames[:15]}")
+    print(f"    fields: {fieldnames[:15]}, rows: {len(rows)}")
 
-    # Detect name column format
-    combined = next((f for f in fieldnames if 'last_name' in f.lower() and 'first_name' in f.lower()), None)
-    has_first_last = ('first_name' in fieldnames or 'first_name ' in fieldnames) and \
-                     ('last_name' in fieldnames or 'last_name ' in fieldnames)
-    name_col = next((f for f in fieldnames if f.strip().lower() in ('name', 'player_name', 'playername')), None)
+    id_col = next((f for f in fieldnames
+                   if f.strip().lower() in ('player_id','mlbam_id','batter','pitcher','id','mlbam')), None)
+    combined = next((f for f in fieldnames
+                     if 'last_name' in f.lower() and 'first_name' in f.lower()), None)
+    has_sep  = 'first_name' in fieldnames and 'last_name' in fieldnames
+    name_col = next((f for f in fieldnames
+                     if f.strip().lower() in ('name','player_name')), None)
 
     result = []
     for row in rows:
-        # Normalise keys — strip whitespace
-        row = {k.strip(): v for k, v in row.items()}
-        name = ''
+        row = {k.strip(): (v.strip() if isinstance(v, str) else v) for k, v in row.items()}
+        pid = str(row.get(id_col, '') or '').strip() if id_col else ''
         if combined:
-            parts = (row.get(combined) or '').strip().split(',', 1)
-            last  = parts[0].strip()
-            first = parts[1].strip() if len(parts) > 1 else ''
-            name  = (first + ' ' + last).strip()
-        elif has_first_last:
-            first = (row.get('first_name') or '').strip()
-            last  = (row.get('last_name')  or '').strip()
-            name  = (first + ' ' + last).strip()
+            parts = (row.get(combined) or '').split(',', 1)
+            name = ((parts[1].strip() if len(parts)>1 else '') + ' ' + parts[0].strip()).strip()
+        elif has_sep:
+            name = ((row.get('first_name') or '') + ' ' + (row.get('last_name') or '')).strip()
         elif name_col:
             name = (row.get(name_col) or '').strip()
         else:
-            # Last resort: try common single-field names
-            for k in ('name', 'player_name', 'Name', 'Player'):
-                if row.get(k):
-                    name = row[k].strip()
-                    break
-        if not name:
-            continue
-        result.append((name, row))
-    print(f"    parsed {len(result)} named players")
+            name = ''
+        if pid or name:
+            result.append((pid, name, row))
+    print(f"    parsed {len(result)} rows, id_col={id_col}")
     return result
 
 def fetch_csv(url, label):
@@ -722,46 +714,54 @@ def fetch_csv(url, label):
         text = content.decode('utf-8', errors='replace')
         if text.startswith('\ufeff'):
             text = text[1:]
-        reader = csv.DictReader(io.StringIO(text))
-        rows_raw = list(reader)
-        print(f"  Columns: {list(reader.fieldnames or [])}")
+        rows_raw = list(csv.DictReader(io.StringIO(text)))
         if rows_raw:
-            print(f"  First row sample: { {k:v for k,v in list(rows_raw[0].items())[:20]} }")
+            print(f"  First row: { {k:v for k,v in list(rows_raw[0].items())[:12]} }")
         return parse_savant_csv(text)
     except Exception as e:
         print(f"  Error: {e}")
         return []
 
 def normalize_name(n):
-    """Lowercase, strip punctuation/accents for fuzzy matching."""
     import unicodedata
     n = n.lower().strip()
-    # Remove accents
     n = ''.join(c for c in unicodedata.normalize('NFD', n) if unicodedata.category(c) != 'Mn')
-    # Remove punctuation except spaces
+    return ' '.join(c for c in n if c.isalpha() or c == ' ').split().__str__().strip("[]'").replace("', '", ' ')
+
+def normalize_name(n):
+    import unicodedata
+    n = n.lower().strip()
+    n = ''.join(c for c in unicodedata.normalize('NFD', n) if unicodedata.category(c) != 'Mn')
     n = ''.join(c for c in n if c.isalpha() or c == ' ')
-    # Collapse whitespace
     return ' '.join(n.split())
 
 def build_lookup(rows):
-    d = {}
-    for name, row in rows:
+    """Keyed by player_id (primary) and normalized name (fallback)."""
+    by_id   = {}
+    by_name = {}
+    for pid, name, row in rows:
+        if pid:
+            by_id[pid] = (name, row)
+        if name:
+            key = normalize_name(name)
+            if key and key not in by_name:
+                by_name[key] = (name, row)
+    return by_id, by_name
+
+def lookup_row(by_id, by_name, pid, name):
+    """Find a row by id first, name second. Returns (display_name, row) or ('', {})."""
+    if pid and pid in by_id:
+        return by_id[pid]
+    if name:
         key = normalize_name(name)
-        if not key:
-            continue
-        d[key] = row
-        # Also store reversed order (last first → first last) so both formats match
-        parts = key.split()
-        if len(parts) >= 2:
-            reversed_key = ' '.join(parts[1:]) + ' ' + parts[0]
-            if reversed_key not in d:
-                d[reversed_key] = row
-    return d
+        if key in by_name:
+            return by_name[key]
+    return ('', {})
 
 def safe_float(row, *keys):
     for k in keys:
-        v = (row.get(k) or "").strip()
-        if v and v not in ("null", ""):
+        v = (row.get(k) or '').strip()
+        if v and v not in ('null', ''):
             try: return float(v)
             except: pass
     return None
@@ -787,35 +787,38 @@ hardhit_rows = fetch_csv(
     "?type=hard_hit_percent&group=Batter&year=2025&sort=hard_hit_percent_diff_2025&sortDir=desc&csv=true",
     "HardHit% YoY")
 
-xwoba_lkp   = build_lookup(xwoba_rows)
-babip_lkp   = build_lookup(babip_rows)
-barrel_lkp  = build_lookup(barrel_rows)
-hardhit_lkp = build_lookup(hardhit_rows)
+xwoba_rows   = fetch_csv(
+    "https://baseballsavant.mlb.com/leaderboard/expected_statistics"
+    "?type=batter&year=2026&position=&team=&filterType=bip&min=q&csv=true",
+    "xwOBA/wOBA 2026")
+babip_rows   = fetch_csv(
+    "https://baseballsavant.mlb.com/leaderboard/statcast-year-to-year"
+    "?type=babip&group=Batter&year=2025&csv=true",
+    "BABIP YoY")
+barrel_rows  = fetch_csv(
+    "https://baseballsavant.mlb.com/leaderboard/statcast-year-to-year"
+    "?type=barrel_batted_rate&group=Batter&year=2025&csv=true",
+    "Barrel% YoY")
+hardhit_rows = fetch_csv(
+    "https://baseballsavant.mlb.com/leaderboard/statcast-year-to-year"
+    "?type=hard_hit_percent&group=Batter&year=2025&sort=hard_hit_percent_diff_2025&sortDir=desc&csv=true",
+    "HardHit% YoY")
 
-print(f"  Lookups: xwoba={len(xwoba_lkp)}, babip={len(babip_lkp)}, barrel={len(barrel_lkp)}, hardhit={len(hardhit_lkp)}")
-# Print a few sample keys from each to verify name format
-for label, lkp in [('xwoba', xwoba_lkp), ('babip', babip_lkp), ('barrel', barrel_lkp), ('hardhit', hardhit_lkp)]:
-    keys = list(lkp.keys())[:3]
-    print(f"    {label} sample keys: {keys}")
-    if keys:
-        sample = lkp[keys[0]]
-        print(f"    {label} first row values: { {k:v for k,v in list(sample.items())[:10]} }")
+xwoba_id,  xwoba_nm  = build_lookup(xwoba_rows)
+babip_id,  babip_nm  = build_lookup(babip_rows)
+barrel_id, barrel_nm = build_lookup(barrel_rows)
+hh_id,     hh_nm     = build_lookup(hardhit_rows)
 
-# Drive iteration from xwOBA keys only (canonical "First Last" format).
-# The yoy lookups now index both "first last" AND "last first" via build_lookup,
-# so every player in xwOBA will find their yoy data regardless of Savant's name order.
-all_names = list(xwoba_lkp.keys())
+print(f"  xwoba={len(xwoba_id)} ids/{len(xwoba_nm)} names, babip={len(babip_id)}/{len(babip_nm)}, barrel={len(barrel_id)}/{len(barrel_nm)}, hh={len(hh_id)}/{len(hh_nm)}")
 
+# Iterate over xwOBA entries — one row per player, no duplicates
 targets = []
+for pid, name, xr in xwoba_rows:
+    _, br  = lookup_row(babip_id,  babip_nm,  pid, name)
+    _, blr = lookup_row(barrel_id, barrel_nm, pid, name)
+    _, hr  = lookup_row(hh_id,     hh_nm,     pid, name)
 
-for name_key in all_names:
-    xr  = xwoba_lkp.get(name_key, {})
-    br  = babip_lkp.get(name_key,  {})
-    blr = barrel_lkp.get(name_key, {})
-    hr  = hardhit_lkp.get(name_key,{})
-
-    # Reconstruct display name from the first source that has it
-    display_name = name_key.title()
+    display_name = name if name else pid
 
     xwoba = safe_float(xr, 'est_woba', 'xwoba', 'expected_woba', 'est_woba_using_speedangle')
     woba  = safe_float(xr, 'woba')
@@ -870,7 +873,8 @@ for name_key in all_names:
 
     targets.append({
         "name":           display_name,
-        "name_key":       name_key,
+        "name_key":       normalize_name(name),
+        "mlbam_id":       pid,
         "pa_2026":        int(pa_26) if pa_26 is not None else None,
         "xwoba":          xwoba,
         "woba":           woba,
