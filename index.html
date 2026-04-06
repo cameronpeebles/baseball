@@ -6447,31 +6447,37 @@ function drawTargetsTable() {
   var el = document.getElementById('targets-body');
   if (!el || !targetsData) return;
 
+  // Name normalization — strip accents, lowercase, alpha only
+  function normName(n) {
+    return (n||'').toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
+  }
+
   // fWAR lookup
   var fwarLookup = {};
-  FWAR.hitResults.forEach(function(p){ fwarLookup[p.name.toLowerCase()] = p; });
+  FWAR.hitResults.forEach(function(p){ fwarLookup[normName(p.name)] = p; });
 
-  // Fantrax roster lookup — include position
+  // Fantrax roster lookup — indexed by normalized name
   var rosterLookup = {};
-  var hitIdx = buildStatIdx(S.hitHeaders);
   S.hitRows.forEach(function(row) {
     var cells  = row.cells || [];
     var scorer = row.scorer || {};
     var ftId   = (cells[1] && cells[1].teamId) || '';
     var name   = scorer.name || '';
     if (!name) return;
-    rosterLookup[name.toLowerCase()] = {
+    rosterLookup[normName(name)] = {
       ftId: ftId,
       hs:   scorer.headshotUrl || '',
       pos:  scorer.posShortNames || ''
     };
   });
 
-  // Enrich targets with fantrax data
+  // Enrich targets — match on name_key (pre-normalized in Python) then fallback to normalized display name
   var enriched = targetsData.map(function(t) {
-    var nl  = (t.name||'').toLowerCase();
-    var ri  = rosterLookup[nl] || null;
-    var fw  = fwarLookup[nl]   || null;
+    var key = t.name_key || normName(t.name);
+    var ri  = rosterLookup[key] || null;
+    var fw  = fwarLookup[key]   || null;
     var ti  = ri ? (S.teamInfo[ri.ftId] || {}) : null;
     return { t:t, ri:ri, fw:fw, ti:ti };
   });
