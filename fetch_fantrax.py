@@ -747,13 +747,8 @@ def build_lookup(rows):
     d = {}
     for name, row in rows:
         key = normalize_name(name)
-        d[key] = row
-        # Also index by "last first" in case order differs
-        parts = name.strip().split()
-        if len(parts) >= 2:
-            alt = normalize_name(parts[-1] + ' ' + ' '.join(parts[:-1]))
-            if alt not in d:
-                d[alt] = row
+        if key:
+            d[key] = row
     return d
 
 def safe_float(row, *keys):
@@ -799,12 +794,19 @@ for label, lkp in [('xwoba', xwoba_lkp), ('babip', babip_lkp), ('barrel', barrel
         sample = lkp[keys[0]]
         print(f"    {label} first row values: { {k:v for k,v in list(sample.items())[:10]} }")
 
-# Merge all sources by player name
-all_names = (set(xwoba_lkp.keys()) | set(babip_lkp.keys()) |
-             set(barrel_lkp.keys()) | set(hardhit_lkp.keys()))
+# Use xwOBA keys as canonical (Savant expected_statistics uses "First Last" format)
+# Fall back to including babip/barrel/hardhit-only players too, but deduplicate
+canonical = set(xwoba_lkp.keys())
+yoy_only   = (set(babip_lkp.keys()) | set(barrel_lkp.keys()) | set(hardhit_lkp.keys())) - canonical
+all_names  = canonical | yoy_only
+
 targets = []
+seen_keys = set()
 
 for name_key in all_names:
+    if name_key in seen_keys:
+        continue
+    seen_keys.add(name_key)
     xr  = xwoba_lkp.get(name_key,   {})
     br  = babip_lkp.get(name_key,    {})
     blr = barrel_lkp.get(name_key,   {})
