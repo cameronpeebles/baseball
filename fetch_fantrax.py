@@ -654,7 +654,7 @@ save("fangraphs_pitching.json", {
 print("\nAdvanced stats fetch complete!")
 
 # ---------------------------------------------------------------------------
-# Waiver Targets — xwOBA vs wOBA, BABIP YoY, Barrel% YoY
+# Waiver Targets — xwOBA vs wOBA, BABIP YoY, Barrel% YoY, HardHit% YoY
 # ---------------------------------------------------------------------------
 print("\n=== Fetching waiver target data ===")
 
@@ -701,7 +701,6 @@ def fetch_csv(url, label):
         text = content.decode('utf-8', errors='replace')
         if text.startswith('\ufeff'):
             text = text[1:]
-        # Print ALL column names so we know exactly what's available
         reader = csv.DictReader(io.StringIO(text))
         rows_raw = list(reader)
         print(f"  Columns: {list(reader.fieldnames or [])}")
@@ -712,37 +711,11 @@ def fetch_csv(url, label):
         print(f"  Error: {e}")
         return []
 
-# 1. xwOBA vs wOBA (2026, batters, min BIP qualifier)
-xwoba_url = (
-    "https://baseballsavant.mlb.com/leaderboard/expected_statistics"
-    "?type=batter&year=2026&position=&team=&filterType=bip&min=q&csv=true"
-)
-xwoba_rows = fetch_csv(xwoba_url, "xwOBA/wOBA 2026")
-
-# 2. BABIP year-to-year (batters, 2025 = prior year)
-babip_url = (
-    "https://baseballsavant.mlb.com/leaderboard/statcast-year-to-year"
-    "?type=babip&group=Batter&year=2025&csv=true"
-)
-babip_rows = fetch_csv(babip_url, "BABIP YoY 2025→2026")
-
-# 3. Barrel% year-to-year (batters, 2025 = prior year)
-barrel_url = (
-    "https://baseballsavant.mlb.com/leaderboard/statcast-year-to-year"
-    "?type=barrel_batted_rate&group=Batter&year=2025&csv=true"
-)
-barrel_rows = fetch_csv(barrel_url, "Barrel% YoY 2025→2026")
-
-# Build lookup by name
 def build_lookup(rows):
     d = {}
     for name, row in rows:
         d[name.lower()] = row
     return d
-
-xwoba_lkp  = build_lookup(xwoba_rows)
-babip_lkp  = build_lookup(babip_rows)
-barrel_lkp = build_lookup(barrel_rows)
 
 def safe_float(row, *keys):
     for k in keys:
@@ -752,13 +725,42 @@ def safe_float(row, *keys):
             except: pass
     return None
 
-# Merge by player name
-all_names = set(xwoba_lkp.keys()) | set(babip_lkp.keys()) | set(barrel_lkp.keys())
+# Fetch all four sources
+xwoba_rows  = fetch_csv(
+    "https://baseballsavant.mlb.com/leaderboard/expected_statistics"
+    "?type=batter&year=2026&position=&team=&filterType=bip&min=q&csv=true",
+    "xwOBA/wOBA 2026")
+
+babip_rows  = fetch_csv(
+    "https://baseballsavant.mlb.com/leaderboard/statcast-year-to-year"
+    "?type=babip&group=Batter&year=2025&csv=true",
+    "BABIP YoY")
+
+barrel_rows = fetch_csv(
+    "https://baseballsavant.mlb.com/leaderboard/statcast-year-to-year"
+    "?type=barrel_batted_rate&group=Batter&year=2025&csv=true",
+    "Barrel% YoY")
+
+hardhit_rows = fetch_csv(
+    "https://baseballsavant.mlb.com/leaderboard/statcast-year-to-year"
+    "?type=hard_hit_percent&group=Batter&year=2025&sort=hard_hit_percent_diff_2025&sortDir=desc&csv=true",
+    "HardHit% YoY")
+
+xwoba_lkp   = build_lookup(xwoba_rows)
+babip_lkp   = build_lookup(babip_rows)
+barrel_lkp  = build_lookup(barrel_rows)
+hardhit_lkp = build_lookup(hardhit_rows)
+
+# Merge all sources by player name
+all_names = (set(xwoba_lkp.keys()) | set(babip_lkp.keys()) |
+             set(barrel_lkp.keys()) | set(hardhit_lkp.keys()))
 targets = []
+
 for name_lower in all_names:
-    xr  = xwoba_lkp.get(name_lower, {})
-    br  = babip_lkp.get(name_lower, {})
-    blr = barrel_lkp.get(name_lower, {})
+    xr  = xwoba_lkp.get(name_lower,   {})
+    br  = babip_lkp.get(name_lower,    {})
+    blr = barrel_lkp.get(name_lower,   {})
+    hr  = hardhit_lkp.get(name_lower,  {})
 
     display_name = name_lower.title()
 
@@ -766,46 +768,75 @@ for name_lower in all_names:
     woba  = safe_float(xr, 'woba')
     pa_26 = safe_float(xr, 'pa', 'ab', 'attempts')
 
-    # Savant year-to-year columns are literally named '2026', '2025', 'delta_2025_2026'
-    babip_26  = safe_float(br,  '2026')
-    babip_25  = safe_float(br,  '2025')
-    barrel_26 = safe_float(blr, '2026')
-    barrel_25 = safe_float(blr, '2025')
+    # Year-to-year columns are named '2026', '2025', 'delta_2025_2026'
+    babip_26    = safe_float(br,  '2026')
+    babip_25    = safe_float(br,  '2025')
+    delta_babip = safe_float(br,  'delta_2025_2026')
+    if delta_babip is None and babip_26 is not None and babip_25 is not None:
+        delta_babip = round(babip_26 - babip_25, 3)
 
-    # Skip if we have none of the key metrics
-    if xwoba is None and babip_26 is None and barrel_26 is None:
+    barrel_26    = safe_float(blr, '2026')
+    barrel_25    = safe_float(blr, '2025')
+    delta_barrel = safe_float(blr, 'delta_2025_2026')
+    if delta_barrel is None and barrel_26 is not None and barrel_25 is not None:
+        delta_barrel = round(barrel_26 - barrel_25, 1)
+
+    hardhit_26    = safe_float(hr, '2026')
+    hardhit_25    = safe_float(hr, '2025')
+    delta_hardhit = safe_float(hr, 'delta_2025_2026')
+    if delta_hardhit is None and hardhit_26 is not None and hardhit_25 is not None:
+        delta_hardhit = round(hardhit_26 - hardhit_25, 1)
+
+    # Skip if nothing useful
+    if xwoba is None and babip_26 is None and barrel_26 is None and hardhit_26 is None:
         continue
 
-    delta_xwoba  = round(xwoba - woba, 3) if xwoba is not None and woba is not None else None
-    delta_babip  = safe_float(br,  'delta_2025_2026') or (round(babip_26  - babip_25,  3) if babip_26  is not None and babip_25  is not None else None)
-    delta_barrel = safe_float(blr, 'delta_2025_2026') or (round(barrel_26 - barrel_25, 1) if barrel_26 is not None and barrel_25 is not None else None)
+    delta_xwoba = round(xwoba - woba, 3) if xwoba is not None and woba is not None else None
 
-    # Signal
-    signal = "Neutral"
-    if (delta_xwoba  is not None and delta_xwoba  >= 0.020 and
-        delta_babip  is not None and delta_babip  <= -0.020 and
-        delta_barrel is not None and delta_barrel >= 0.0):
-        signal = "Underperforming"
-    elif (delta_xwoba  is not None and delta_xwoba  <= -0.020 and
-          delta_babip  is not None and delta_babip  >= 0.020 and
-          delta_barrel is not None and delta_barrel <= 0.0):
-        signal = "Overperforming"
+    # Under/Overperforming
+    is_under = (delta_xwoba  is not None and delta_xwoba  >= 0.020 and
+                delta_babip  is not None and delta_babip  <= -0.020 and
+                delta_barrel is not None and delta_barrel >= 0.0)
+    is_over  = (delta_xwoba  is not None and delta_xwoba  <= -0.020 and
+                delta_babip  is not None and delta_babip  >= 0.020 and
+                delta_barrel is not None and delta_barrel <= 0.0)
+
+    signal = "Underperforming" if is_under else "Overperforming" if is_over else "Neutral"
+
+    # Buy/Sell grade using HardHit delta
+    grade = "—"
+    dh = delta_hardhit
+    if is_under and dh is not None:
+        if   dh >= 4.0: grade = "Elite Buy Low"
+        elif dh >= 3.0: grade = "Good Buy Low"
+        elif dh >= 2.0: grade = "Buy Low"
+    elif is_over and dh is not None:
+        if   dh <= -4.0: grade = "Elite Sell High"
+        elif dh <= -3.0: grade = "Good Sell High"
+        elif dh <= -2.0: grade = "Sell High"
 
     targets.append({
-        "name":         display_name,
-        "pa_2026":      int(pa_26) if pa_26 is not None else None,
-        "xwoba":        xwoba,
-        "woba":         woba,
-        "delta_xwoba":  delta_xwoba,
-        "babip_2026":   babip_26,
-        "babip_2025":   babip_25,
-        "delta_babip":  delta_babip,
-        "barrel_2026":  barrel_26,
-        "barrel_2025":  barrel_25,
-        "delta_barrel": delta_barrel,
-        "signal":       signal
+        "name":           display_name,
+        "pa_2026":        int(pa_26) if pa_26 is not None else None,
+        "xwoba":          xwoba,
+        "woba":           woba,
+        "delta_xwoba":    delta_xwoba,
+        "babip_2026":     babip_26,
+        "babip_2025":     babip_25,
+        "delta_babip":    delta_babip,
+        "barrel_2026":    barrel_26,
+        "barrel_2025":    barrel_25,
+        "delta_barrel":   delta_barrel,
+        "hardhit_2026":   hardhit_26,
+        "hardhit_2025":   hardhit_25,
+        "delta_hardhit":  delta_hardhit,
+        "signal":         signal,
+        "grade":          grade,
     })
 
-print(f"  Merged {len(targets)} players, {sum(1 for t in targets if t['signal']=='Underperforming')} underperforming, {sum(1 for t in targets if t['signal']=='Overperforming')} overperforming")
+n_under = sum(1 for t in targets if t['signal'] == 'Underperforming')
+n_over  = sum(1 for t in targets if t['signal'] == 'Overperforming')
+n_grade = sum(1 for t in targets if t['grade'] != '—')
+print(f"  Merged {len(targets)} players — {n_under} underperforming, {n_over} overperforming, {n_grade} graded")
 save("targets_hitting.json", targets)
 print("Targets fetch complete!")
