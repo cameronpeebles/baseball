@@ -187,12 +187,6 @@ schedule  = []    # one entry per matchup: {week, away, home}
 
 MAX_PERIODS = 20
 
-# Store cumulative stats per team per period so we can subtract to get weekly-only stats
-cumulative = {}  # {team_name: {R, HR, RBI, SB, AVG_num (H), AVG_den (AB), K, W, SV, ERA_num (ER), ERA_den (IP), WHIP_num (BB+H), WHIP_den (IP)}}
-# We track H/AB for AVG and ER/IP for ERA/WHIP since they need separate numerator/denominator
-
-STAT_KEYS = ["R","HR","RBI","SB","H","AB","K","W","SV","ER","IP","BF"]
-
 for period in range(1, MAX_PERIODS + 1):
     r = fetch(
         [{"method": "getStandings", "data": {
@@ -205,7 +199,6 @@ for period in range(1, MAX_PERIODS + 1):
     sp_data = r[0]
     tables = (sp_data.get("data") or {}).get("tableList") or []
 
-    # Collect ALL non-heading tables
     stat_tables = []
     for t in tables:
         if t.get("tableType") == "SECTION_HEADING":
@@ -226,12 +219,15 @@ for period in range(1, MAX_PERIODS + 1):
         print(f"  Period {period}: empty rows, stopping.")
         break
 
-    # Build key → column-index map from headers
+    # Build key -> column-index map from headers
     idx = {}
     for i, h in enumerate(var_headers):
         if h.get("key"):       idx[h["key"].upper()]       = i
         if h.get("name"):      idx[h["name"].upper()]      = i
         if h.get("shortName"): idx[h["shortName"].upper()] = i
+
+    if period == 1:
+        print(f"  DEBUG period 1 idx keys: {sorted(idx.keys())}")
 
     def get_stat(cells, key, default=0):
         i = idx.get(key.upper())
@@ -244,6 +240,7 @@ for period in range(1, MAX_PERIODS + 1):
             return default
 
     period_teams = []
+    seen_teams = set()  # deduplicate - take first row per team
 
     for row in all_rows:
         fc    = row.get("fixedCells") or []
@@ -255,98 +252,31 @@ for period in range(1, MAX_PERIODS + 1):
                 ti = team_info.get(fc_cell["teamId"]) or {}
                 team_name = ti.get("name") or fc_cell.get("content") or ""
                 break
-        if not team_name:
+        if not team_name or team_name in seen_teams:
             continue
-
-        # Read cumulative stats from Fantrax for this period
-        cum_r   = get_stat(cells, "R")
-        cum_hr  = get_stat(cells, "HR")
-        cum_rbi = get_stat(cells, "RBI")
-        cum_sb  = get_stat(cells, "SB")
-        cum_avg = get_stat(cells, "AVG")
-        cum_k   = get_stat(cells, "K")
-        cum_era = get_stat(cells, "ERA")
-        cum_whip= get_stat(cells, "WHIP")
-        cum_sv  = get_stat(cells, "SV") or get_stat(cells, "SVH3") or get_stat(cells, "SVH")
-        cum_ip  = get_stat(cells, "IP")
-        # For rate stats we need AB and IP to back-calculate H and ER
-        cum_ab  = get_stat(cells, "AB")
-        cum_h   = round(cum_avg * cum_ab) if cum_ab > 0 else 0
-        cum_er  = round(cum_era * cum_ip / 9) if cum_ip > 0 else 0
-        cum_bh  = round(cum_whip * cum_ip) if cum_ip > 0 else 0  # BB+H allowed
-
-        prev = cumulative.get(team_name, {})
-
-        # Weekly stats = cumulative this period - cumulative last period
-        week_r   = cum_r   - prev.get("R",   0)
-        week_hr  = cum_hr  - prev.get("HR",  0)
-        week_rbi = cum_rbi - prev.get("RBI", 0)
-        week_sb  = cum_sb  - prev.get("SB",  0)
-        week_k   = cum_k   - prev.get("K",   0)
-        week_sv  = cum_sv  - prev.get("SV",  0)
-        week_ip  = cum_ip  - prev.get("IP",  0)
-        week_ab  = cum_ab  - prev.get("AB",  0)
-        week_h   = cum_h   - prev.get("H",   0)
-        week_er  = cum_er  - prev.get("ER",  0)
-        week_bh  = cum_bh  - prev.get("BH",  0)
-
-        # Derive rate stats from weekly counts
-        week_avg  = (week_h  / week_ab) if week_ab  > 0 else cum_avg
-        week_era  = (week_er * 9 / week_ip) if week_ip > 0 else cum_era
-        week_whip = (week_bh / week_ip) if week_ip > 0 else cum_whip
+        seen_teams.add(team_name)
 
         entry = {
             "team": team_name,
             "week": period,
-            "R":    week_r,
-            "HR":   week_hr,
-            "RBI":  week_rbi,
-            "SB":   week_sb,
-            "AVG":  round(week_avg, 3),
-            "K":    week_k,
-            "W":    get_stat(cells, "W"),   # Wins are already per-period from SCORING_PERIOD view
-            "SV":   week_sv,
-            "ERA":  round(week_era, 2),
-            "WHIP": round(week_whip, 3),
+            "R":    get_stat(cells, "R"),
+            "HR":   get_stat(cells, "HR"),
+            "RBI":  get_stat(cells, "RBI"),
+            "SB":   get_stat(cells, "SB"),
+            "AVG":  get_stat(cells, "AVG"),
+            "K":    get_stat(cells, "K"),
+            "W":    get_stat(cells, "W"),
+            "SV":   get_stat(cells, "SV") or get_stat(cells, "SVH3") or get_stat(cells, "SVH"),
+            "ERA":  get_stat(cells, "ERA"),
+            "WHIP": get_stat(cells, "WHIP"),
         }
         joe_stats.append(entry)
 
-        # Update cumulative tracker
-        cumulative[team_name] = {
-            "R": cum_r, "HR": cum_hr, "RBI": cum_rbi, "SB": cum_sb,
-            "K": cum_k, "SV": cum_sv, "IP": cum_ip, "AB": cum_ab,
-            "H": cum_h, "ER": cum_er, "BH": cum_bh,
-        }
-
         # Collect W/L/T for schedule derivation
-        # In SCORING_PERIOD view the match record columns are typically
-        # named differently from pitching W — print idx once to debug
-        if period == 1 and team_name == list(cumulative.keys())[0] if cumulative else True:
-            print(f"  DEBUG idx keys: {sorted(idx.keys())[:20]}")
-        # Try dedicated match record keys, then fall back
-        match_w = get_stat(cells, "PW") or get_stat(cells, "MW") or get_stat(cells, "WW") or get_stat(cells, "WIN")
-        match_l = get_stat(cells, "PL") or get_stat(cells, "ML") or get_stat(cells, "LL") or get_stat(cells, "LOSS")
-        match_t = get_stat(cells, "PT") or get_stat(cells, "MT") or get_stat(cells, "TT") or get_stat(cells, "TIE")
-        # If nothing found, try W/L/T directly (original approach)
-        if match_w == 0 and match_l == 0:
-            match_w = get_stat(cells, "W")
-            match_l = get_stat(cells, "L")
-            match_t = get_stat(cells, "T")
-        period_teams.append({"team": team_name, "W": match_w, "L": match_l, "T": match_t})
-
-    # Derive matchups: two teams played each other when W_a + W_b + T = 10
-    paired = set()
-    for i, a in enumerate(period_teams):
-        if a["team"] in paired:
-            continue
-        for b in period_teams[i+1:]:
-            if b["team"] in paired:
-                continue
-            if abs(a["T"] - b["T"]) < 0.01 and abs(a["W"] + b["W"] + a["T"] - 10) < 0.01:
-                schedule.append({"week": period, "away": a["team"], "home": b["team"]})
-                paired.add(a["team"])
-                paired.add(b["team"])
-                break
+        w = get_stat(cells, "W")
+        l = get_stat(cells, "L")
+        t = get_stat(cells, "T")
+        period_teams.append({"team": team_name, "W": w, "L": l, "T": t})
 
     print(f"  Period {period}: {len(period_teams)} teams across {len(stat_tables)} table(s), {len(period_teams)//2} matchups")
 
