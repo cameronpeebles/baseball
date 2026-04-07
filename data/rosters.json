@@ -268,6 +268,125 @@
               "rows": [
                 {
                   "scorer": {
+                    "teamName": "San Francisco Giants",
+                    "urlName": "luis-arraez",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03mew_96_10.png",
+                    "scorerId": "03mew",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "002",
+                      "003"
+                    ],
+                    "defaultPosId": "002",
+                    "posShortNames": "1B,2B",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
+                      {
+                        "tooltip": "Apr 3, 11:06 AM: Arraez went 2-for-5 with two runs...",
+                        "typeId": "9"
+                      },
+                      {
+                        "tooltip": "Bats Left",
+                        "typeId": "16"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "002",
+                      "003",
+                      "006",
+                      "007",
+                      "014"
+                    ],
+                    "teamId": "10300",
+                    "name": "Luis Arraez",
+                    "teamShortName": "SF",
+                    "shortName": "L. Arraez"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "006",
+                  "cells": [
+                    {
+                      "content": "28"
+                    },
+                    {
+                      "content": "PHI<br/>Tue 7:45PM",
+                      "eventId": "06jkc",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "cristopher-sanchez",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs052c8_96_8.png",
+                          "scorerId": "052c8",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "Apr 2, 4:58 AM: Sanchez didn't factor into the decision...",
+                              "typeId": "9"
+                            },
+                            {
+                              "tooltip": "LHP",
+                              "typeId": "16"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "Cristopher Sanchez",
+                          "shortName": "C. Sanchez"
+                        },
+                        "header": "Probable Starter for Philadelphia:",
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 11.1 &nbsp;<b>K</b> 17 &nbsp;<b>ERA</b> 0.79 &nbsp;<b>WHIP</b> 0.971 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "42"
+                    },
+                    {
+                      "content": "4"
+                    },
+                    {
+                      "content": "13"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "3"
+                    },
+                    {
+                      "content": "2"
+                    },
+                    {
+                      "content": ".310"
+                    },
+                    {
+                      "content": "11"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "002",
+                    "003",
+                    "014",
+                    "006",
+                    "007"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
                     "teamName": "Los Angeles Dodgers",
                     "urlName": "freddie-freeman",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs01cgo_96_16.png",
@@ -373,125 +492,6 @@
                     "002",
                     "014",
                     "006"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
-                    "teamName": "San Francisco Giants",
-                    "urlName": "luis-arraez",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03mew_96_10.png",
-                    "scorerId": "03mew",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "002",
-                      "003"
-                    ],
-                    "defaultPosId": "002",
-                    "posShortNames": "1B,2B",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 2",
-                        "typeId": "22"
-                      },
-                      {
-                        "tooltip": "Apr 3, 11:06 AM: Arraez went 2-for-5 with two runs...",
-                        "typeId": "9"
-                      },
-                      {
-                        "tooltip": "Bats Left",
-                        "typeId": "16"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "002",
-                      "003",
-                      "006",
-                      "007",
-                      "014"
-                    ],
-                    "teamId": "10300",
-                    "name": "Luis Arraez",
-                    "teamShortName": "SF",
-                    "shortName": "L. Arraez"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "006",
-                  "cells": [
-                    {
-                      "content": "28"
-                    },
-                    {
-                      "content": "PHI<br/>Tue 7:45PM",
-                      "eventId": "06jkc",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "cristopher-sanchez",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs052c8_96_8.png",
-                          "scorerId": "052c8",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "Apr 2, 4:58 AM: Sanchez didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "LHP",
-                              "typeId": "16"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Cristopher Sanchez",
-                          "shortName": "C. Sanchez"
-                        },
-                        "header": "Probable Starter for Philadelphia:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 11.1 &nbsp;<b>K</b> 17 &nbsp;<b>ERA</b> 0.79 &nbsp;<b>WHIP</b> 0.971 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "41"
-                    },
-                    {
-                      "content": "3"
-                    },
-                    {
-                      "content": "12"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": "3"
-                    },
-                    {
-                      "content": "2"
-                    },
-                    {
-                      "content": ".293"
-                    },
-                    {
-                      "content": "11"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "002",
-                    "003",
-                    "014",
-                    "006",
-                    "007"
                   ],
                   "actions": [
                     {
@@ -1364,7 +1364,7 @@
                       }
                     },
                     {
-                      "content": "33"
+                      "content": "34"
                     },
                     {
                       "content": "4"
@@ -1382,7 +1382,7 @@
                       "content": "0"
                     },
                     {
-                      "content": ".182"
+                      "content": ".176"
                     },
                     {
                       "content": "10"
@@ -6771,6 +6771,118 @@
                 },
                 {
                   "scorer": {
+                    "teamName": "Houston Astros",
+                    "urlName": "yainer-diaz",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs0524l_96_4.png",
+                    "scorerId": "0524l",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "001"
+                    ],
+                    "defaultPosId": "001",
+                    "posShortNames": "C",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 8",
+                        "typeId": "28"
+                      },
+                      {
+                        "tooltip": "Apr 1, 9:10 AM: Diaz is out of the lineup for...",
+                        "typeId": "9"
+                      },
+                      {
+                        "tooltip": "Bats Right",
+                        "typeId": "17"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "001",
+                      "014"
+                    ],
+                    "teamId": "10105",
+                    "name": "Yainer Diaz",
+                    "teamShortName": "HOU",
+                    "shortName": "Y. Diaz"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "001",
+                  "cells": [
+                    {
+                      "content": "27"
+                    },
+                    {
+                      "content": "@COL<br/>Tue 6:40PM",
+                      "eventId": "06k1b",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "kyle-freeland",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03ca3_96_15.png",
+                          "scorerId": "03ca3",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "Apr 2, 3:40 AM: Freeland didn't factor into the...",
+                              "typeId": "9"
+                            },
+                            {
+                              "tooltip": "LHP",
+                              "typeId": "16"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "Kyle Freeland",
+                          "shortName": "K. Freeland"
+                        },
+                        "header": "Probable Starter for Colorado:",
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b> 1 &nbsp;<b>IP</b> 9.1 &nbsp;<b>K</b> 8 &nbsp;<b>ERA</b> 2.89 &nbsp;<b>WHIP</b> 1.393 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "36"
+                    },
+                    {
+                      "content": "3"
+                    },
+                    {
+                      "content": "8"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "6"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": ".222"
+                    },
+                    {
+                      "content": "9"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "001",
+                    "014"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
                     "teamName": "San Diego Padres",
                     "urlName": "jackson-merrill",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05ua7_96_3.png",
@@ -7116,118 +7228,6 @@
                 },
                 {
                   "scorer": {
-                    "teamName": "Houston Astros",
-                    "urlName": "yainer-diaz",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs0524l_96_4.png",
-                    "scorerId": "0524l",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "001"
-                    ],
-                    "defaultPosId": "001",
-                    "posShortNames": "C",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 8",
-                        "typeId": "28"
-                      },
-                      {
-                        "tooltip": "Apr 1, 9:10 AM: Diaz is out of the lineup for...",
-                        "typeId": "9"
-                      },
-                      {
-                        "tooltip": "Bats Right",
-                        "typeId": "17"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "001",
-                      "014"
-                    ],
-                    "teamId": "10105",
-                    "name": "Yainer Diaz",
-                    "teamShortName": "HOU",
-                    "shortName": "Y. Diaz"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "001",
-                  "cells": [
-                    {
-                      "content": "27"
-                    },
-                    {
-                      "content": "@COL<br/>Tue 6:40PM",
-                      "eventId": "06k1b",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "kyle-freeland",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03ca3_96_15.png",
-                          "scorerId": "03ca3",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "Apr 2, 3:40 AM: Freeland didn't factor into the...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "LHP",
-                              "typeId": "16"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Kyle Freeland",
-                          "shortName": "K. Freeland"
-                        },
-                        "header": "Probable Starter for Colorado:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b> 1 &nbsp;<b>IP</b> 9.1 &nbsp;<b>K</b> 8 &nbsp;<b>ERA</b> 2.89 &nbsp;<b>WHIP</b> 1.393 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "35"
-                    },
-                    {
-                      "content": "3"
-                    },
-                    {
-                      "content": "8"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": "6"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": ".229"
-                    },
-                    {
-                      "content": "9"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "001",
-                    "014"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
                     "teamName": "St. Louis Cardinals",
                     "urlName": "ivan-herrera",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04hyc_96_9.png",
@@ -7359,7 +7359,7 @@
                       },
                       {
                         "tooltip": "Apr 5, 8:29 PM: Smith went 2-for-5 with three RBI, one...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -10722,13 +10722,13 @@
                       }
                     },
                     {
-                      "content": "7.1"
+                      "content": "8.1"
                     },
                     {
-                      "content": "1.23"
+                      "content": "4.32"
                     },
                     {
-                      "content": "1.091"
+                      "content": "1.440"
                     },
                     {
                       "content": "9"
@@ -12720,6 +12720,118 @@
               "rows": [
                 {
                   "scorer": {
+                    "teamName": "Seattle Mariners",
+                    "urlName": "cal-raleigh",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04my4_96_10.png",
+                    "scorerId": "04my4",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "001"
+                    ],
+                    "defaultPosId": "001",
+                    "posShortNames": "C",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
+                      {
+                        "tooltip": "Mar 31, 12:48 AM: Raleigh went 1-for-2 with a walk-off...",
+                        "typeId": "9"
+                      },
+                      {
+                        "tooltip": "Switch Hitter",
+                        "typeId": "18"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "001",
+                      "014"
+                    ],
+                    "teamId": "10130",
+                    "name": "Cal Raleigh",
+                    "teamShortName": "SEA",
+                    "shortName": "C. Raleigh"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "001",
+                  "cells": [
+                    {
+                      "content": "29"
+                    },
+                    {
+                      "content": "@TEX<br/>Tue 6:05PM",
+                      "eventId": "06ive",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "nathan-eovaldi",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs01ut7_96_16.png",
+                          "scorerId": "01ut7",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "Apr 1, 2:20 PM: Eovaldi (0-2) took the loss Wednesday,...",
+                              "typeId": "9"
+                            },
+                            {
+                              "tooltip": "RHP",
+                              "typeId": "17"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "Nathan Eovaldi",
+                          "shortName": "N. Eovaldi"
+                        },
+                        "header": "Probable Starter for Texas:",
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 8.2 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 11.42 &nbsp;<b>WHIP</b> 2.192 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "41"
+                    },
+                    {
+                      "content": "2"
+                    },
+                    {
+                      "content": "6"
+                    },
+                    {
+                      "content": "1"
+                    },
+                    {
+                      "content": "5"
+                    },
+                    {
+                      "content": "1"
+                    },
+                    {
+                      "content": ".146"
+                    },
+                    {
+                      "content": "11"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "001",
+                    "014"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
                     "teamName": "Cleveland Guardians",
                     "urlName": "jose-ramirez",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs01ub6_96_16.png",
@@ -12834,82 +12946,89 @@
                 },
                 {
                   "scorer": {
-                    "teamName": "Seattle Mariners",
-                    "urlName": "cal-raleigh",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04my4_96_10.png",
-                    "scorerId": "04my4",
+                    "teamName": "Atlanta Braves",
+                    "urlName": "matt-olson",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02mwm_96_15.png",
+                    "scorerId": "02mwm",
                     "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
-                      "001"
+                      "002"
                     ],
-                    "defaultPosId": "001",
-                    "posShortNames": "C",
+                    "defaultPosId": "002",
+                    "posShortNames": "1B",
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Batting Order: 2",
-                        "typeId": "22"
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
                       },
                       {
-                        "tooltip": "Mar 31, 12:48 AM: Raleigh went 1-for-2 with a walk-off...",
+                        "tooltip": "Apr 3, 10:42 PM: Olson went 1-for-4 with a solo home run...",
                         "typeId": "9"
                       },
                       {
-                        "tooltip": "Switch Hitter",
-                        "typeId": "18"
+                        "tooltip": "Bats Left",
+                        "typeId": "16"
                       }
                     ],
                     "rookie": false,
                     "minorsEligible": false,
                     "posIds": [
-                      "001",
+                      "002",
+                      "006",
                       "014"
                     ],
-                    "teamId": "10130",
-                    "name": "Cal Raleigh",
-                    "teamShortName": "SEA",
-                    "shortName": "C. Raleigh"
+                    "teamId": "10150",
+                    "name": "Matt Olson",
+                    "teamShortName": "ATL",
+                    "shortName": "M. Olson"
                   },
                   "eligibleStatusIds": [
                     "1",
                     "2"
                   ],
-                  "posId": "001",
+                  "posId": "002",
                   "cells": [
                     {
-                      "content": "29"
+                      "content": "32"
                     },
                     {
-                      "content": "@TEX<br/>Tue 6:05PM",
-                      "eventId": "06ive",
+                      "content": "@LAA<br/>Tue 7:38PM",
+                      "eventId": "06jsm",
                       "popOver": {
                         "scorer": {
-                          "urlName": "nathan-eovaldi",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs01ut7_96_16.png",
-                          "scorerId": "01ut7",
+                          "urlName": "yusei-kikuchi",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04ml0_96_10.png",
+                          "scorerId": "04ml0",
                           "team": false,
                           "icons": [
                             {
-                              "tooltip": "Apr 1, 2:20 PM: Eovaldi (0-2) took the loss Wednesday,...",
+                              "tooltip": "Apr 1, 3:34 PM: Kikuchi (0-1) took the loss Wednesday...",
                               "typeId": "9"
                             },
                             {
-                              "tooltip": "RHP",
-                              "typeId": "17"
+                              "tooltip": "LHP",
+                              "typeId": "16"
                             }
                           ],
                           "rookie": false,
                           "minorsEligible": false,
-                          "name": "Nathan Eovaldi",
-                          "shortName": "N. Eovaldi"
+                          "name": "Yusei Kikuchi",
+                          "shortName": "Y. Kikuchi"
                         },
-                        "header": "Probable Starter for Texas:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 8.2 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 11.42 &nbsp;<b>WHIP</b> 2.192 &nbsp;"
+                        "header": "Probable Starter for LA Angels:",
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b> 1 &nbsp;<b>IP</b> 9.2 &nbsp;<b>K</b> 8 &nbsp;<b>ERA</b> 6.52 &nbsp;<b>WHIP</b> 1.966 &nbsp;"
                       }
                     },
                     {
                       "content": "40"
+                    },
+                    {
+                      "content": "6"
+                    },
+                    {
+                      "content": "12"
                     },
                     {
                       "content": "2"
@@ -12918,16 +13037,10 @@
                       "content": "6"
                     },
                     {
-                      "content": "1"
+                      "content": "0"
                     },
                     {
-                      "content": "5"
-                    },
-                    {
-                      "content": "1"
-                    },
-                    {
-                      "content": ".150"
+                      "content": ".300"
                     },
                     {
                       "content": "11"
@@ -12935,8 +13048,123 @@
                   ],
                   "statusId": "1",
                   "eligiblePosIds": [
-                    "001",
-                    "014"
+                    "002",
+                    "014",
+                    "006"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
+                    "teamName": "Philadelphia Phillies",
+                    "urlName": "trea-turner",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02c68_96_15.png",
+                    "scorerId": "02c68",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "005"
+                    ],
+                    "defaultPosId": "005",
+                    "posShortNames": "SS",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 1",
+                        "typeId": "21"
+                      },
+                      {
+                        "tooltip": "Mar 12, 7:34 PM: Turner went 2-for-4 with two doubles...",
+                        "typeId": "8"
+                      },
+                      {
+                        "tooltip": "Bats Right",
+                        "typeId": "17"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "005",
+                      "007",
+                      "014"
+                    ],
+                    "teamId": "10180",
+                    "name": "Trea Turner",
+                    "teamShortName": "PHI",
+                    "shortName": "T. Turner"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "014",
+                  "cells": [
+                    {
+                      "content": "32"
+                    },
+                    {
+                      "content": "@SF<br/>Tue 7:45PM",
+                      "eventId": "06jkc",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "robbie-ray",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs025j1_96_16.png",
+                          "scorerId": "025j1",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "Apr 2, 11:45 PM: Ray (1-1) earned the win over the Mets...",
+                              "typeId": "9"
+                            },
+                            {
+                              "tooltip": "LHP",
+                              "typeId": "16"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "Robbie Ray",
+                          "shortName": "R. Ray"
+                        },
+                        "header": "Probable Starter for San Francisco:",
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b> 1 &nbsp;<b>IP</b> 10.2 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 3.38 &nbsp;<b>WHIP</b> 1.031 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "40"
+                    },
+                    {
+                      "content": "8"
+                    },
+                    {
+                      "content": "11"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "2"
+                    },
+                    {
+                      "content": "1"
+                    },
+                    {
+                      "content": ".275"
+                    },
+                    {
+                      "content": "10"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "014",
+                    "005",
+                    "007"
                   ],
                   "actions": [
                     {
@@ -13049,234 +13277,6 @@
                   "eligiblePosIds": [
                     "012",
                     "014"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
-                    "teamName": "Atlanta Braves",
-                    "urlName": "matt-olson",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02mwm_96_15.png",
-                    "scorerId": "02mwm",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "002"
-                    ],
-                    "defaultPosId": "002",
-                    "posShortNames": "1B",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 3",
-                        "typeId": "23"
-                      },
-                      {
-                        "tooltip": "Apr 3, 10:42 PM: Olson went 1-for-4 with a solo home run...",
-                        "typeId": "9"
-                      },
-                      {
-                        "tooltip": "Bats Left",
-                        "typeId": "16"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "002",
-                      "006",
-                      "014"
-                    ],
-                    "teamId": "10150",
-                    "name": "Matt Olson",
-                    "teamShortName": "ATL",
-                    "shortName": "M. Olson"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "002",
-                  "cells": [
-                    {
-                      "content": "32"
-                    },
-                    {
-                      "content": "@LAA<br/>Tue 7:38PM",
-                      "eventId": "06jsm",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "yusei-kikuchi",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04ml0_96_10.png",
-                          "scorerId": "04ml0",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "Apr 1, 3:34 PM: Kikuchi (0-1) took the loss Wednesday...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "LHP",
-                              "typeId": "16"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Yusei Kikuchi",
-                          "shortName": "Y. Kikuchi"
-                        },
-                        "header": "Probable Starter for LA Angels:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b> 1 &nbsp;<b>IP</b> 9.2 &nbsp;<b>K</b> 8 &nbsp;<b>ERA</b> 6.52 &nbsp;<b>WHIP</b> 1.966 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "39"
-                    },
-                    {
-                      "content": "6"
-                    },
-                    {
-                      "content": "12"
-                    },
-                    {
-                      "content": "2"
-                    },
-                    {
-                      "content": "6"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": ".308"
-                    },
-                    {
-                      "content": "11"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "002",
-                    "014",
-                    "006"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
-                    "teamName": "Philadelphia Phillies",
-                    "urlName": "trea-turner",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02c68_96_15.png",
-                    "scorerId": "02c68",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "005"
-                    ],
-                    "defaultPosId": "005",
-                    "posShortNames": "SS",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 1",
-                        "typeId": "21"
-                      },
-                      {
-                        "tooltip": "Mar 12, 7:34 PM: Turner went 2-for-4 with two doubles...",
-                        "typeId": "8"
-                      },
-                      {
-                        "tooltip": "Bats Right",
-                        "typeId": "17"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "005",
-                      "007",
-                      "014"
-                    ],
-                    "teamId": "10180",
-                    "name": "Trea Turner",
-                    "teamShortName": "PHI",
-                    "shortName": "T. Turner"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "014",
-                  "cells": [
-                    {
-                      "content": "32"
-                    },
-                    {
-                      "content": "@SF<br/>Tue 7:45PM",
-                      "eventId": "06jkc",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "robbie-ray",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs025j1_96_16.png",
-                          "scorerId": "025j1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "Apr 2, 11:45 PM: Ray (1-1) earned the win over the Mets...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "LHP",
-                              "typeId": "16"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Robbie Ray",
-                          "shortName": "R. Ray"
-                        },
-                        "header": "Probable Starter for San Francisco:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b> 1 &nbsp;<b>IP</b> 10.2 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 3.38 &nbsp;<b>WHIP</b> 1.031 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "39"
-                    },
-                    {
-                      "content": "8"
-                    },
-                    {
-                      "content": "11"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": "2"
-                    },
-                    {
-                      "content": "1"
-                    },
-                    {
-                      "content": ".282"
-                    },
-                    {
-                      "content": "10"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "014",
-                    "005",
-                    "007"
                   ],
                   "actions": [
                     {
@@ -13725,7 +13725,7 @@
                       "content": "6"
                     },
                     {
-                      "content": "0"
+                      "content": "1"
                     },
                     {
                       "content": ".270"
@@ -13738,6 +13738,123 @@
                   "eligiblePosIds": [
                     "014",
                     "005",
+                    "007"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
+                    "teamName": "Houston Astros",
+                    "urlName": "jose-altuve",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs024m0_96_16.png",
+                    "scorerId": "024m0",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "003",
+                      "012"
+                    ],
+                    "defaultPosId": "003",
+                    "posShortNames": "2B,OF",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
+                      },
+                      {
+                        "tooltip": "Apr 5, 8:00 PM: Altuve went 2-for-4 with an RBI double,...",
+                        "typeId": "9"
+                      },
+                      {
+                        "tooltip": "Bats Right",
+                        "typeId": "17"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "003",
+                      "007",
+                      "012",
+                      "014"
+                    ],
+                    "teamId": "10105",
+                    "name": "Jose Altuve",
+                    "teamShortName": "HOU",
+                    "shortName": "J. Altuve"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "003",
+                  "cells": [
+                    {
+                      "content": "35"
+                    },
+                    {
+                      "content": "@COL<br/>Tue 6:40PM",
+                      "eventId": "06k1b",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "kyle-freeland",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03ca3_96_15.png",
+                          "scorerId": "03ca3",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "Apr 2, 3:40 AM: Freeland didn't factor into the...",
+                              "typeId": "9"
+                            },
+                            {
+                              "tooltip": "LHP",
+                              "typeId": "16"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "Kyle Freeland",
+                          "shortName": "K. Freeland"
+                        },
+                        "header": "Probable Starter for Colorado:",
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b> 1 &nbsp;<b>IP</b> 9.1 &nbsp;<b>K</b> 8 &nbsp;<b>ERA</b> 2.89 &nbsp;<b>WHIP</b> 1.393 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "36"
+                    },
+                    {
+                      "content": "12"
+                    },
+                    {
+                      "content": "14"
+                    },
+                    {
+                      "content": "2"
+                    },
+                    {
+                      "content": "6"
+                    },
+                    {
+                      "content": "1"
+                    },
+                    {
+                      "content": ".389"
+                    },
+                    {
+                      "content": "11"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "012",
+                    "003",
+                    "014",
                     "007"
                   ],
                   "actions": [
@@ -13846,123 +13963,6 @@
                   "eligiblePosIds": [
                     "012",
                     "014"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
-                    "teamName": "Houston Astros",
-                    "urlName": "jose-altuve",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs024m0_96_16.png",
-                    "scorerId": "024m0",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "003",
-                      "012"
-                    ],
-                    "defaultPosId": "003",
-                    "posShortNames": "2B,OF",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 3",
-                        "typeId": "23"
-                      },
-                      {
-                        "tooltip": "Apr 5, 8:00 PM: Altuve went 2-for-4 with an RBI double,...",
-                        "typeId": "9"
-                      },
-                      {
-                        "tooltip": "Bats Right",
-                        "typeId": "17"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "003",
-                      "007",
-                      "012",
-                      "014"
-                    ],
-                    "teamId": "10105",
-                    "name": "Jose Altuve",
-                    "teamShortName": "HOU",
-                    "shortName": "J. Altuve"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "003",
-                  "cells": [
-                    {
-                      "content": "35"
-                    },
-                    {
-                      "content": "@COL<br/>Tue 6:40PM",
-                      "eventId": "06k1b",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "kyle-freeland",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03ca3_96_15.png",
-                          "scorerId": "03ca3",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "Apr 2, 3:40 AM: Freeland didn't factor into the...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "LHP",
-                              "typeId": "16"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Kyle Freeland",
-                          "shortName": "K. Freeland"
-                        },
-                        "header": "Probable Starter for Colorado:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b> 1 &nbsp;<b>IP</b> 9.1 &nbsp;<b>K</b> 8 &nbsp;<b>ERA</b> 2.89 &nbsp;<b>WHIP</b> 1.393 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "35"
-                    },
-                    {
-                      "content": "11"
-                    },
-                    {
-                      "content": "13"
-                    },
-                    {
-                      "content": "2"
-                    },
-                    {
-                      "content": "5"
-                    },
-                    {
-                      "content": "1"
-                    },
-                    {
-                      "content": ".371"
-                    },
-                    {
-                      "content": "11"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "012",
-                    "003",
-                    "014",
-                    "007"
                   ],
                   "actions": [
                     {
@@ -22976,7 +22976,7 @@
                       "content": "17"
                     },
                     {
-                      "content": "0"
+                      "content": "1"
                     },
                     {
                       "content": "0.0"
@@ -25083,6 +25083,120 @@
               "rows": [
                 {
                   "scorer": {
+                    "teamName": "San Francisco Giants",
+                    "urlName": "willy-adames",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03atq_96_14.png",
+                    "scorerId": "03atq",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "005"
+                    ],
+                    "defaultPosId": "005",
+                    "posShortNames": "SS",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 1",
+                        "typeId": "21"
+                      },
+                      {
+                        "tooltip": "Apr 1, 1:34 AM: Adames went 4-for-5 with a home run, a...",
+                        "typeId": "9"
+                      },
+                      {
+                        "tooltip": "Bats Right",
+                        "typeId": "17"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "005",
+                      "007",
+                      "014"
+                    ],
+                    "teamId": "10300",
+                    "name": "Willy Adames",
+                    "teamShortName": "SF",
+                    "shortName": "W. Adames"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "005",
+                  "cells": [
+                    {
+                      "content": "30"
+                    },
+                    {
+                      "content": "PHI<br/>Tue 7:45PM",
+                      "eventId": "06jkc",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "cristopher-sanchez",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs052c8_96_8.png",
+                          "scorerId": "052c8",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "Apr 2, 4:58 AM: Sanchez didn't factor into the decision...",
+                              "typeId": "9"
+                            },
+                            {
+                              "tooltip": "LHP",
+                              "typeId": "16"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "Cristopher Sanchez",
+                          "shortName": "C. Sanchez"
+                        },
+                        "header": "Probable Starter for Philadelphia:",
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 11.1 &nbsp;<b>K</b> 17 &nbsp;<b>ERA</b> 0.79 &nbsp;<b>WHIP</b> 0.971 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "40"
+                    },
+                    {
+                      "content": "3"
+                    },
+                    {
+                      "content": "8"
+                    },
+                    {
+                      "content": "1"
+                    },
+                    {
+                      "content": "3"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": ".200"
+                    },
+                    {
+                      "content": "11"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "014",
+                    "005",
+                    "007"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
                     "teamName": "Chicago Cubs",
                     "urlName": "alex-bregman",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02w7p_96_15.png",
@@ -25300,120 +25414,6 @@
                   "eligiblePosIds": [
                     "012",
                     "014"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
-                    "teamName": "San Francisco Giants",
-                    "urlName": "willy-adames",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03atq_96_14.png",
-                    "scorerId": "03atq",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "005"
-                    ],
-                    "defaultPosId": "005",
-                    "posShortNames": "SS",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 1",
-                        "typeId": "21"
-                      },
-                      {
-                        "tooltip": "Apr 1, 1:34 AM: Adames went 4-for-5 with a home run, a...",
-                        "typeId": "9"
-                      },
-                      {
-                        "tooltip": "Bats Right",
-                        "typeId": "17"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "005",
-                      "007",
-                      "014"
-                    ],
-                    "teamId": "10300",
-                    "name": "Willy Adames",
-                    "teamShortName": "SF",
-                    "shortName": "W. Adames"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "005",
-                  "cells": [
-                    {
-                      "content": "30"
-                    },
-                    {
-                      "content": "PHI<br/>Tue 7:45PM",
-                      "eventId": "06jkc",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "cristopher-sanchez",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs052c8_96_8.png",
-                          "scorerId": "052c8",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "Apr 2, 4:58 AM: Sanchez didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "LHP",
-                              "typeId": "16"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Cristopher Sanchez",
-                          "shortName": "C. Sanchez"
-                        },
-                        "header": "Probable Starter for Philadelphia:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 11.1 &nbsp;<b>K</b> 17 &nbsp;<b>ERA</b> 0.79 &nbsp;<b>WHIP</b> 0.971 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "39"
-                    },
-                    {
-                      "content": "2"
-                    },
-                    {
-                      "content": "7"
-                    },
-                    {
-                      "content": "1"
-                    },
-                    {
-                      "content": "3"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": ".179"
-                    },
-                    {
-                      "content": "11"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "014",
-                    "005",
-                    "007"
                   ],
                   "actions": [
                     {
@@ -25760,6 +25760,120 @@
                 },
                 {
                   "scorer": {
+                    "teamName": "Philadelphia Phillies",
+                    "urlName": "bryce-harper",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs01fh9_96_19.png",
+                    "scorerId": "01fh9",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "002"
+                    ],
+                    "defaultPosId": "002",
+                    "posShortNames": "1B",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
+                      },
+                      {
+                        "tooltip": "Apr 3, 6:57 PM: Harper went 2-for-3 with a walk, a...",
+                        "typeId": "9"
+                      },
+                      {
+                        "tooltip": "Bats Left",
+                        "typeId": "16"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "002",
+                      "006",
+                      "014"
+                    ],
+                    "teamId": "10180",
+                    "name": "Bryce Harper",
+                    "teamShortName": "PHI",
+                    "shortName": "B. Harper"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "006",
+                  "cells": [
+                    {
+                      "content": "33"
+                    },
+                    {
+                      "content": "@SF<br/>Tue 7:45PM",
+                      "eventId": "06jkc",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "robbie-ray",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs025j1_96_16.png",
+                          "scorerId": "025j1",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "Apr 2, 11:45 PM: Ray (1-1) earned the win over the Mets...",
+                              "typeId": "9"
+                            },
+                            {
+                              "tooltip": "LHP",
+                              "typeId": "16"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "Robbie Ray",
+                          "shortName": "R. Ray"
+                        },
+                        "header": "Probable Starter for San Francisco:",
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b> 1 &nbsp;<b>IP</b> 10.2 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 3.38 &nbsp;<b>WHIP</b> 1.031 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "38"
+                    },
+                    {
+                      "content": "4"
+                    },
+                    {
+                      "content": "6"
+                    },
+                    {
+                      "content": "2"
+                    },
+                    {
+                      "content": "4"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": ".158"
+                    },
+                    {
+                      "content": "10"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "002",
+                    "014",
+                    "006"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
                     "teamName": "Athletics",
                     "urlName": "jacob-wilson",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs0622t_96_2.png",
@@ -25860,120 +25974,6 @@
                     "014",
                     "005",
                     "007"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
-                    "teamName": "Philadelphia Phillies",
-                    "urlName": "bryce-harper",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs01fh9_96_19.png",
-                    "scorerId": "01fh9",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "002"
-                    ],
-                    "defaultPosId": "002",
-                    "posShortNames": "1B",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 3",
-                        "typeId": "23"
-                      },
-                      {
-                        "tooltip": "Apr 3, 6:57 PM: Harper went 2-for-3 with a walk, a...",
-                        "typeId": "9"
-                      },
-                      {
-                        "tooltip": "Bats Left",
-                        "typeId": "16"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "002",
-                      "006",
-                      "014"
-                    ],
-                    "teamId": "10180",
-                    "name": "Bryce Harper",
-                    "teamShortName": "PHI",
-                    "shortName": "B. Harper"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "006",
-                  "cells": [
-                    {
-                      "content": "33"
-                    },
-                    {
-                      "content": "@SF<br/>Tue 7:45PM",
-                      "eventId": "06jkc",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "robbie-ray",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs025j1_96_16.png",
-                          "scorerId": "025j1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "Apr 2, 11:45 PM: Ray (1-1) earned the win over the Mets...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "LHP",
-                              "typeId": "16"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Robbie Ray",
-                          "shortName": "R. Ray"
-                        },
-                        "header": "Probable Starter for San Francisco:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b> 1 &nbsp;<b>IP</b> 10.2 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 3.38 &nbsp;<b>WHIP</b> 1.031 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "37"
-                    },
-                    {
-                      "content": "4"
-                    },
-                    {
-                      "content": "6"
-                    },
-                    {
-                      "content": "2"
-                    },
-                    {
-                      "content": "4"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": ".162"
-                    },
-                    {
-                      "content": "10"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "002",
-                    "014",
-                    "006"
                   ],
                   "actions": [
                     {
@@ -29541,16 +29541,16 @@
                       }
                     },
                     {
-                      "content": "15.1"
+                      "content": "16"
                     },
                     {
-                      "content": "0.59"
+                      "content": "0.56"
                     },
                     {
-                      "content": "0.783"
+                      "content": "0.750"
                     },
                     {
-                      "content": "14"
+                      "content": "16"
                     },
                     {
                       "content": "2"
@@ -31721,7 +31721,7 @@
                       }
                     },
                     {
-                      "content": "39"
+                      "content": "40"
                     },
                     {
                       "content": "2"
@@ -31739,7 +31739,7 @@
                       "content": "0"
                     },
                     {
-                      "content": ".205"
+                      "content": ".200"
                     },
                     {
                       "content": "11"
@@ -32060,7 +32060,7 @@
                       }
                     },
                     {
-                      "content": "33"
+                      "content": "34"
                     },
                     {
                       "content": "10"
@@ -32078,7 +32078,7 @@
                       "content": "1"
                     },
                     {
-                      "content": ".364"
+                      "content": ".353"
                     },
                     {
                       "content": "11"
@@ -32088,6 +32088,120 @@
                   "eligiblePosIds": [
                     "012",
                     "014"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
+                    "teamName": "Detroit Tigers",
+                    "urlName": "gleyber-torres",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs031t0_96_14.png",
+                    "scorerId": "031t0",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "003"
+                    ],
+                    "defaultPosId": "003",
+                    "posShortNames": "2B",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
+                      {
+                        "tooltip": "Apr 5, 7:19 AM: Torres went 2-for-4 with a walk, a solo...",
+                        "typeId": "9"
+                      },
+                      {
+                        "tooltip": "Bats Right",
+                        "typeId": "17"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "003",
+                      "007",
+                      "014"
+                    ],
+                    "teamId": "10080",
+                    "name": "Gleyber Torres",
+                    "teamShortName": "DET",
+                    "shortName": "G. Torres"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "003",
+                  "cells": [
+                    {
+                      "content": "29"
+                    },
+                    {
+                      "content": "@MIN<br/>Tue 5:40PM",
+                      "eventId": "06kbp",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "taj-bradley",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04pr8_96_4.png",
+                          "scorerId": "04pr8",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "Apr 3, 2:34 AM: Bradley (1-0) earned the win Thursday...",
+                              "typeId": "9"
+                            },
+                            {
+                              "tooltip": "RHP",
+                              "typeId": "17"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "Taj Bradley",
+                          "shortName": "T. Bradley"
+                        },
+                        "header": "Probable Starter for Minnesota:",
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 10.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 0.87 &nbsp;<b>WHIP</b> 1.161 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "34"
+                    },
+                    {
+                      "content": "8"
+                    },
+                    {
+                      "content": "7"
+                    },
+                    {
+                      "content": "1"
+                    },
+                    {
+                      "content": "1"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": ".206"
+                    },
+                    {
+                      "content": "10"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "003",
+                    "014",
+                    "007"
                   ],
                   "actions": [
                     {
@@ -32318,120 +32432,6 @@
                     "002",
                     "014",
                     "006"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
-                    "teamName": "Detroit Tigers",
-                    "urlName": "gleyber-torres",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs031t0_96_14.png",
-                    "scorerId": "031t0",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "003"
-                    ],
-                    "defaultPosId": "003",
-                    "posShortNames": "2B",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 2",
-                        "typeId": "22"
-                      },
-                      {
-                        "tooltip": "Apr 5, 7:19 AM: Torres went 2-for-4 with a walk, a solo...",
-                        "typeId": "9"
-                      },
-                      {
-                        "tooltip": "Bats Right",
-                        "typeId": "17"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "003",
-                      "007",
-                      "014"
-                    ],
-                    "teamId": "10080",
-                    "name": "Gleyber Torres",
-                    "teamShortName": "DET",
-                    "shortName": "G. Torres"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "003",
-                  "cells": [
-                    {
-                      "content": "29"
-                    },
-                    {
-                      "content": "@MIN<br/>Tue 5:40PM",
-                      "eventId": "06kbp",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "taj-bradley",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04pr8_96_4.png",
-                          "scorerId": "04pr8",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "Apr 3, 2:34 AM: Bradley (1-0) earned the win Thursday...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Taj Bradley",
-                          "shortName": "T. Bradley"
-                        },
-                        "header": "Probable Starter for Minnesota:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 10.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 0.87 &nbsp;<b>WHIP</b> 1.161 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "33"
-                    },
-                    {
-                      "content": "8"
-                    },
-                    {
-                      "content": "7"
-                    },
-                    {
-                      "content": "1"
-                    },
-                    {
-                      "content": "1"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": ".212"
-                    },
-                    {
-                      "content": "10"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "003",
-                    "014",
-                    "007"
                   ],
                   "actions": [
                     {
@@ -37987,7 +37987,7 @@
                       }
                     },
                     {
-                      "content": "43"
+                      "content": "44"
                     },
                     {
                       "content": "0"
@@ -38005,7 +38005,7 @@
                       "content": "0"
                     },
                     {
-                      "content": ".116"
+                      "content": ".114"
                     },
                     {
                       "content": "11"
@@ -38101,25 +38101,25 @@
                       }
                     },
                     {
-                      "content": "39"
+                      "content": "40"
                     },
                     {
-                      "content": "5"
+                      "content": "6"
                     },
                     {
-                      "content": "10"
+                      "content": "11"
                     },
                     {
                       "content": "1"
                     },
                     {
-                      "content": "4"
+                      "content": "6"
                     },
                     {
                       "content": "0"
                     },
                     {
-                      "content": ".256"
+                      "content": ".275"
                     },
                     {
                       "content": "11"
@@ -38214,7 +38214,7 @@
                       }
                     },
                     {
-                      "content": "39"
+                      "content": "40"
                     },
                     {
                       "content": "6"
@@ -38232,7 +38232,7 @@
                       "content": "0"
                     },
                     {
-                      "content": ".256"
+                      "content": ".250"
                     },
                     {
                       "content": "10"
@@ -40868,7 +40868,7 @@
                       "content": "0"
                     },
                     {
-                      "content": "0.5"
+                      "content": "1.0"
                     },
                     {
                       "content": "0"
@@ -43785,7 +43785,7 @@
                       }
                     },
                     {
-                      "content": "43"
+                      "content": "44"
                     },
                     {
                       "content": "3"
@@ -43803,7 +43803,7 @@
                       "content": "1"
                     },
                     {
-                      "content": ".163"
+                      "content": ".159"
                     },
                     {
                       "content": "10"
@@ -43898,7 +43898,7 @@
                       }
                     },
                     {
-                      "content": "41"
+                      "content": "42"
                     },
                     {
                       "content": "10"
@@ -43916,7 +43916,7 @@
                       "content": "1"
                     },
                     {
-                      "content": ".244"
+                      "content": ".238"
                     },
                     {
                       "content": "11"
@@ -44011,13 +44011,13 @@
                       }
                     },
                     {
-                      "content": "39"
+                      "content": "40"
                     },
                     {
                       "content": "4"
                     },
                     {
-                      "content": "9"
+                      "content": "10"
                     },
                     {
                       "content": "0"
@@ -44029,7 +44029,7 @@
                       "content": "0"
                     },
                     {
-                      "content": ".231"
+                      "content": ".250"
                     },
                     {
                       "content": "11"
@@ -44162,6 +44162,120 @@
                 },
                 {
                   "scorer": {
+                    "teamName": "Detroit Tigers",
+                    "urlName": "kevin-mcgonigle",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05yby_96_2.png",
+                    "scorerId": "05yby",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "005"
+                    ],
+                    "defaultPosId": "005",
+                    "posShortNames": "SS",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 1",
+                        "typeId": "21"
+                      },
+                      {
+                        "tooltip": "Mar 26, 8:09 PM: McGonigle went 4-for-5 with two...",
+                        "typeId": "8"
+                      },
+                      {
+                        "tooltip": "Bats Left",
+                        "typeId": "16"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "005",
+                      "007",
+                      "014"
+                    ],
+                    "teamId": "10080",
+                    "name": "Kevin McGonigle",
+                    "teamShortName": "DET",
+                    "shortName": "K. McGonigle"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "007",
+                  "cells": [
+                    {
+                      "content": "21"
+                    },
+                    {
+                      "content": "@MIN<br/>Tue 5:40PM",
+                      "eventId": "06kbp",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "taj-bradley",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04pr8_96_4.png",
+                          "scorerId": "04pr8",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "Apr 3, 2:34 AM: Bradley (1-0) earned the win Thursday...",
+                              "typeId": "9"
+                            },
+                            {
+                              "tooltip": "RHP",
+                              "typeId": "17"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "Taj Bradley",
+                          "shortName": "T. Bradley"
+                        },
+                        "header": "Probable Starter for Minnesota:",
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 10.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 0.87 &nbsp;<b>WHIP</b> 1.161 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "38"
+                    },
+                    {
+                      "content": "6"
+                    },
+                    {
+                      "content": "11"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "5"
+                    },
+                    {
+                      "content": "1"
+                    },
+                    {
+                      "content": ".289"
+                    },
+                    {
+                      "content": "10"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "014",
+                    "005",
+                    "007"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
                     "teamName": "Kansas City Royals",
                     "urlName": "vinnie-pasquantino",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05184_96_4.png",
@@ -44267,120 +44381,6 @@
                     "002",
                     "014",
                     "006"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
-                    "teamName": "Detroit Tigers",
-                    "urlName": "kevin-mcgonigle",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05yby_96_2.png",
-                    "scorerId": "05yby",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "005"
-                    ],
-                    "defaultPosId": "005",
-                    "posShortNames": "SS",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 1",
-                        "typeId": "21"
-                      },
-                      {
-                        "tooltip": "Mar 26, 8:09 PM: McGonigle went 4-for-5 with two...",
-                        "typeId": "8"
-                      },
-                      {
-                        "tooltip": "Bats Left",
-                        "typeId": "16"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "005",
-                      "007",
-                      "014"
-                    ],
-                    "teamId": "10080",
-                    "name": "Kevin McGonigle",
-                    "teamShortName": "DET",
-                    "shortName": "K. McGonigle"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "007",
-                  "cells": [
-                    {
-                      "content": "21"
-                    },
-                    {
-                      "content": "@MIN<br/>Tue 5:40PM",
-                      "eventId": "06kbp",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "taj-bradley",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04pr8_96_4.png",
-                          "scorerId": "04pr8",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "Apr 3, 2:34 AM: Bradley (1-0) earned the win Thursday...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Taj Bradley",
-                          "shortName": "T. Bradley"
-                        },
-                        "header": "Probable Starter for Minnesota:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 10.1 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 0.87 &nbsp;<b>WHIP</b> 1.161 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "37"
-                    },
-                    {
-                      "content": "6"
-                    },
-                    {
-                      "content": "11"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": "5"
-                    },
-                    {
-                      "content": "1"
-                    },
-                    {
-                      "content": ".297"
-                    },
-                    {
-                      "content": "10"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "014",
-                    "005",
-                    "007"
                   ],
                   "actions": [
                     {
@@ -44702,7 +44702,7 @@
                       "content": "34"
                     },
                     {
-                      "content": "3"
+                      "content": "4"
                     },
                     {
                       "content": "5"
@@ -45160,13 +45160,13 @@
                       }
                     },
                     {
-                      "content": "25"
+                      "content": "26"
                     },
                     {
-                      "content": "3"
+                      "content": "4"
                     },
                     {
-                      "content": "7"
+                      "content": "8"
                     },
                     {
                       "content": "0"
@@ -45178,7 +45178,7 @@
                       "content": "1"
                     },
                     {
-                      "content": ".280"
+                      "content": ".308"
                     },
                     {
                       "content": "6"
@@ -50910,6 +50910,120 @@
                 },
                 {
                   "scorer": {
+                    "teamName": "Atlanta Braves",
+                    "urlName": "austin-riley",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03pom_96_12.png",
+                    "scorerId": "03pom",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "004"
+                    ],
+                    "defaultPosId": "004",
+                    "posShortNames": "3B",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
+                      {
+                        "tooltip": "Apr 5, 1:34 PM: Riley is out of the lineup for Sunday's...",
+                        "typeId": "9"
+                      },
+                      {
+                        "tooltip": "Bats Right",
+                        "typeId": "17"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "004",
+                      "006",
+                      "014"
+                    ],
+                    "teamId": "10150",
+                    "name": "Austin Riley",
+                    "teamShortName": "ATL",
+                    "shortName": "A. Riley"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "004",
+                  "cells": [
+                    {
+                      "content": "29"
+                    },
+                    {
+                      "content": "@LAA<br/>Tue 7:38PM",
+                      "eventId": "06jsm",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "yusei-kikuchi",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04ml0_96_10.png",
+                          "scorerId": "04ml0",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "Apr 1, 3:34 PM: Kikuchi (0-1) took the loss Wednesday...",
+                              "typeId": "9"
+                            },
+                            {
+                              "tooltip": "LHP",
+                              "typeId": "16"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "Yusei Kikuchi",
+                          "shortName": "Y. Kikuchi"
+                        },
+                        "header": "Probable Starter for LA Angels:",
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b> 1 &nbsp;<b>IP</b> 9.2 &nbsp;<b>K</b> 8 &nbsp;<b>ERA</b> 6.52 &nbsp;<b>WHIP</b> 1.966 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "36"
+                    },
+                    {
+                      "content": "2"
+                    },
+                    {
+                      "content": "6"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "2"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": ".167"
+                    },
+                    {
+                      "content": "11"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "014",
+                    "004",
+                    "006"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
                     "teamName": "Washington Nationals",
                     "urlName": "cj-abrams",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04qk8_96_8.png",
@@ -51015,120 +51129,6 @@
                     "014",
                     "005",
                     "007"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
-                    "teamName": "Atlanta Braves",
-                    "urlName": "austin-riley",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03pom_96_12.png",
-                    "scorerId": "03pom",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "004"
-                    ],
-                    "defaultPosId": "004",
-                    "posShortNames": "3B",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 4",
-                        "typeId": "24"
-                      },
-                      {
-                        "tooltip": "Apr 5, 1:34 PM: Riley is out of the lineup for Sunday's...",
-                        "typeId": "9"
-                      },
-                      {
-                        "tooltip": "Bats Right",
-                        "typeId": "17"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "004",
-                      "006",
-                      "014"
-                    ],
-                    "teamId": "10150",
-                    "name": "Austin Riley",
-                    "teamShortName": "ATL",
-                    "shortName": "A. Riley"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "004",
-                  "cells": [
-                    {
-                      "content": "29"
-                    },
-                    {
-                      "content": "@LAA<br/>Tue 7:38PM",
-                      "eventId": "06jsm",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "yusei-kikuchi",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04ml0_96_10.png",
-                          "scorerId": "04ml0",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "Apr 1, 3:34 PM: Kikuchi (0-1) took the loss Wednesday...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "LHP",
-                              "typeId": "16"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Yusei Kikuchi",
-                          "shortName": "Y. Kikuchi"
-                        },
-                        "header": "Probable Starter for LA Angels:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b> 1 &nbsp;<b>IP</b> 9.2 &nbsp;<b>K</b> 8 &nbsp;<b>ERA</b> 6.52 &nbsp;<b>WHIP</b> 1.966 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "35"
-                    },
-                    {
-                      "content": "2"
-                    },
-                    {
-                      "content": "6"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": "2"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": ".171"
-                    },
-                    {
-                      "content": "11"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "014",
-                    "004",
-                    "006"
                   ],
                   "actions": [
                     {
@@ -53827,16 +53827,16 @@
                       }
                     },
                     {
-                      "content": "15"
+                      "content": "16"
                     },
                     {
-                      "content": "1.20"
+                      "content": "2.81"
                     },
                     {
-                      "content": "0.533"
+                      "content": "0.750"
                     },
                     {
-                      "content": "15"
+                      "content": "16"
                     },
                     {
                       "content": "2"
@@ -56527,6 +56527,123 @@
                 },
                 {
                   "scorer": {
+                    "teamName": "Texas Rangers",
+                    "urlName": "jake-burger",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04azv_96_8.png",
+                    "scorerId": "04azv",
+                    "upcomingEventStatusId": "1",
+                    "posIdsNoFlex": [
+                      "002"
+                    ],
+                    "defaultPosId": "002",
+                    "posShortNames": "1B",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
+                      {
+                        "tooltip": "Mar 31, 7:53 AM: Burger went 2-for-4 with a double, two...",
+                        "typeId": "9"
+                      },
+                      {
+                        "tooltip": "Bats Right",
+                        "typeId": "17"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "002",
+                      "006",
+                      "014"
+                    ],
+                    "teamId": "10140",
+                    "name": "Jake Burger",
+                    "teamShortName": "TEX",
+                    "shortName": "J. Burger"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "014",
+                  "cells": [
+                    {
+                      "content": "29"
+                    },
+                    {
+                      "content": "SEA<br/>Tue 6:05PM",
+                      "eventId": "06ive",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "george-kirby",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04yie_96_5.png",
+                          "scorerId": "04yie",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "Apr 1, 8:16 PM: Kirby (1-1) took the loss Wednesday...",
+                              "typeId": "9"
+                            },
+                            {
+                              "tooltip": "RHP",
+                              "typeId": "17"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "George Kirby",
+                          "shortName": "G. Kirby"
+                        },
+                        "header": "Probable Starter for Seattle:",
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b> 1 &nbsp;<b>IP</b> 12 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 3.75 &nbsp;<b>WHIP</b> 1.000 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "41"
+                    },
+                    {
+                      "content": "5"
+                    },
+                    {
+                      "content": "13"
+                    },
+                    {
+                      "content": "2"
+                    },
+                    {
+                      "content": "7"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": ".317"
+                    },
+                    {
+                      "content": "10"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "002",
+                    "014",
+                    "006"
+                  ],
+                  "actions": [
+                    {
+                      "teamId": "7owlmroxmiytz3cs",
+                      "typeId": "3"
+                    },
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
                     "teamName": "Tampa Bay Rays",
                     "urlName": "yandy-diaz",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03m6o_96_13.png",
@@ -56759,123 +56876,6 @@
                 },
                 {
                   "scorer": {
-                    "teamName": "Texas Rangers",
-                    "urlName": "jake-burger",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04azv_96_8.png",
-                    "scorerId": "04azv",
-                    "upcomingEventStatusId": "1",
-                    "posIdsNoFlex": [
-                      "002"
-                    ],
-                    "defaultPosId": "002",
-                    "posShortNames": "1B",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 4",
-                        "typeId": "24"
-                      },
-                      {
-                        "tooltip": "Mar 31, 7:53 AM: Burger went 2-for-4 with a double, two...",
-                        "typeId": "9"
-                      },
-                      {
-                        "tooltip": "Bats Right",
-                        "typeId": "17"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "002",
-                      "006",
-                      "014"
-                    ],
-                    "teamId": "10140",
-                    "name": "Jake Burger",
-                    "teamShortName": "TEX",
-                    "shortName": "J. Burger"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "014",
-                  "cells": [
-                    {
-                      "content": "29"
-                    },
-                    {
-                      "content": "SEA<br/>Tue 6:05PM",
-                      "eventId": "06ive",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "george-kirby",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04yie_96_5.png",
-                          "scorerId": "04yie",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "Apr 1, 8:16 PM: Kirby (1-1) took the loss Wednesday...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "George Kirby",
-                          "shortName": "G. Kirby"
-                        },
-                        "header": "Probable Starter for Seattle:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b> 1 &nbsp;<b>IP</b> 12 &nbsp;<b>K</b> 12 &nbsp;<b>ERA</b> 3.75 &nbsp;<b>WHIP</b> 1.000 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "40"
-                    },
-                    {
-                      "content": "5"
-                    },
-                    {
-                      "content": "13"
-                    },
-                    {
-                      "content": "2"
-                    },
-                    {
-                      "content": "7"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": ".325"
-                    },
-                    {
-                      "content": "10"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "002",
-                    "014",
-                    "006"
-                  ],
-                  "actions": [
-                    {
-                      "teamId": "7owlmroxmiytz3cs",
-                      "typeId": "3"
-                    },
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
                     "teamName": "Houston Astros",
                     "urlName": "carlos-correa",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02i2q_96_14.png",
@@ -56895,7 +56895,7 @@
                       },
                       {
                         "tooltip": "Apr 5, 8:23 PM: Correa went 2-for-5 with an RBI, two...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -58692,7 +58692,7 @@
                       "content": "0"
                     },
                     {
-                      "content": "2.0"
+                      "content": "2.5"
                     },
                     {
                       "content": "0"
