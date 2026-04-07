@@ -8562,7 +8562,7 @@
           "icons": [
             {
               "tooltip": "Apr 6, 8:20 AM: King (1-0) picked up the win in...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -29272,10 +29272,6 @@
               "typeId": "1"
             },
             {
-              "tooltip": "Inactive",
-              "typeId": "7"
-            },
-            {
               "tooltip": "Apr 6, 11:46 AM: The Marlins placed Fairbanks on the...",
               "typeId": "14"
             }
@@ -35319,7 +35315,7 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "Injured List - 15-day IL - Elbow",
+              "tooltip": "Injured List - 60-day IL - Elbow",
               "typeId": "2"
             },
             {
@@ -44038,7 +44034,7 @@
           "icons": [
             {
               "tooltip": "Apr 6, 8:07 AM: Payamps (0-1) took the loss Sunday...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -52767,7 +52763,7 @@
           ],
           "rookie": false,
           "minorsEligible": false,
-          "statusId": "5",
+          "statusId": "4",
           "posIds": [
             "017"
           ],
@@ -52781,8 +52777,8 @@
             "content": "688"
           },
           {
-            "content": "W <small>(Tue)</small>",
-            "toolTip": "Waiver Wire - Off Tue Apr 7, 8:23 AM MDT"
+            "content": "FA",
+            "toolTip": "Free Agent"
           },
           {
             "content": "28"
@@ -52871,7 +52867,7 @@
         ],
         "actions": [
           {
-            "typeId": "9"
+            "typeId": "1"
           },
           {
             "typeId": "5"
@@ -55080,6 +55076,10 @@
           "posShortNames": "RP",
           "team": false,
           "icons": [
+            {
+              "tooltip": "Minor Leagues",
+              "typeId": "4"
+            },
             {
               "tooltip": "Apr 6, 8:34 PM: Granillo was optioned to Triple-A...",
               "typeId": "14"
@@ -65788,10 +65788,6 @@
             {
               "tooltip": "Minor Leagues",
               "typeId": "4"
-            },
-            {
-              "tooltip": "Mar 8, 8:25 AM: The Astros optioned Alexander to...",
-              "typeId": "8"
             }
           ],
           "rookie": false,

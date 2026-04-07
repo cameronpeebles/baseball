@@ -1319,6 +1319,7 @@
           "urlName": "chase-delauter",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05uei_96_4.png",
           "scorerId": "05uei",
+          "upcomingEventStatusId": "5",
           "rank": 24,
           "posIdsNoFlex": [
             "012"
@@ -1327,6 +1328,10 @@
           "posShortNames": "OF",
           "team": false,
           "icons": [
+            {
+              "tooltip": "Not in starting lineup",
+              "typeId": "15"
+            },
             {
               "tooltip": "Apr 3, 6:05 PM: DeLauter went 3-for-4 with a two-run...",
               "typeId": "9"
@@ -12684,6 +12689,7 @@
           "urlName": "steven-kwan",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04pr1_96_5.png",
           "scorerId": "04pr1",
+          "upcomingEventStatusId": "1",
           "rank": 321,
           "posIdsNoFlex": [
             "012"
@@ -12692,6 +12698,10 @@
           "posShortNames": "OF",
           "team": false,
           "icons": [
+            {
+              "tooltip": "Batting Order: 1",
+              "typeId": "21"
+            },
             {
               "tooltip": "Apr 6, 11:30 PM: Kwan went 2-for-4 with a solo home run...",
               "typeId": "14"
@@ -16737,6 +16747,7 @@
           "urlName": "jose-ramirez",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs01ub6_96_16.png",
           "scorerId": "01ub6",
+          "upcomingEventStatusId": "1",
           "rank": 414,
           "posIdsNoFlex": [
             "004"
@@ -16745,6 +16756,10 @@
           "posShortNames": "3B",
           "team": false,
           "icons": [
+            {
+              "tooltip": "Batting Order: 3",
+              "typeId": "23"
+            },
             {
               "tooltip": "Apr 1, 9:45 PM: Ramirez went 1-for-3 with a two-run...",
               "typeId": "9"
@@ -19136,6 +19151,7 @@
           "urlName": "gabriel-arias",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs0414h_96_7.png",
           "scorerId": "0414h",
+          "upcomingEventStatusId": "5",
           "rank": 460,
           "posIdsNoFlex": [
             "003",
@@ -19146,11 +19162,15 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "Hamstring - Day-to-Day",
-              "typeId": "1"
+              "tooltip": "Not in starting lineup",
+              "typeId": "15"
             },
             {
-              "tooltip": "Apr 7, 6:11 AM: Arias (hamstring) will undergo an MRI...",
+              "tooltip": "Injured List - 10-day IL - Hamstring",
+              "typeId": "2"
+            },
+            {
+              "tooltip": "Apr 7, 8:05 AM: The Guardians placed Arias on the...",
               "typeId": "14"
             }
           ],
@@ -19378,6 +19398,7 @@
           "urlName": "brayan-rocchio",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04si3_96_4.png",
           "scorerId": "04si3",
+          "upcomingEventStatusId": "1",
           "rank": 463,
           "posIdsNoFlex": [
             "003",
@@ -19387,6 +19408,10 @@
           "posShortNames": "2B,SS",
           "team": false,
           "icons": [
+            {
+              "tooltip": "Batting Order: 9",
+              "typeId": "29"
+            },
             {
               "tooltip": "Apr 7, 6:16 AM: Rocchio moved mid-game from second base...",
               "typeId": "14"
@@ -25000,7 +25025,7 @@
           "icons": [
             {
               "tooltip": "Apr 6, 8:12 AM: Mateo went 2-for-3 with a walk, a...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -27542,7 +27567,7 @@
           "icons": [
             {
               "tooltip": "Apr 6, 8:24 AM: Marsee went 0-for-3 with two walks and...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -28238,6 +28263,7 @@
           "urlName": "daniel-schneemann",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs06bs4_96_2.png",
           "scorerId": "06bs4",
+          "upcomingEventStatusId": "5",
           "rank": 592,
           "posIdsNoFlex": [
             "003",
@@ -28249,6 +28275,10 @@
           "posShortNames": "2B,3B,SS,OF",
           "team": false,
           "icons": [
+            {
+              "tooltip": "Not in starting lineup",
+              "typeId": "15"
+            },
             {
               "tooltip": "Apr 7, 6:21 AM: Schneemann entered Monday's game as a...",
               "typeId": "14"
@@ -31843,6 +31873,7 @@
           "urlName": "cj-kayfus",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs06dn6_96_1.png",
           "scorerId": "06dn6",
+          "upcomingEventStatusId": "1",
           "rank": 644,
           "posIdsNoFlex": [
             "002",
@@ -31852,6 +31883,10 @@
           "posShortNames": "1B,OF",
           "team": false,
           "icons": [
+            {
+              "tooltip": "Batting Order: 7",
+              "typeId": "27"
+            },
             {
               "tooltip": "Apr 5, 5:05 PM: Kayfus started in left field and went...",
               "typeId": "9"
@@ -33150,6 +33185,7 @@
           "urlName": "austin-hedges",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02brk_96_14.png",
           "scorerId": "02brk",
+          "upcomingEventStatusId": "1",
           "rank": 659,
           "posIdsNoFlex": [
             "001"
@@ -33158,6 +33194,10 @@
           "posShortNames": "C",
           "team": false,
           "icons": [
+            {
+              "tooltip": "Batting Order: 8",
+              "typeId": "28"
+            },
             {
               "tooltip": "Mar 31, 7:18 AM: Hedges went 2-for-4 with a double and...",
               "typeId": "8"
@@ -35049,6 +35089,7 @@
           "urlName": "angel-martinez",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04ydd_96_3.png",
           "scorerId": "04ydd",
+          "upcomingEventStatusId": "1",
           "rank": 685,
           "posIdsNoFlex": [
             "003",
@@ -35058,6 +35099,10 @@
           "posShortNames": "2B,OF",
           "team": false,
           "icons": [
+            {
+              "tooltip": "Batting Order: 2",
+              "typeId": "22"
+            },
             {
               "tooltip": "Apr 6, 1:41 PM: Martinez is out of the lineup for...",
               "typeId": "14"
@@ -35171,6 +35216,7 @@
           "urlName": "rhys-hoskins",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03de9_96_14.png",
           "scorerId": "03de9",
+          "upcomingEventStatusId": "1",
           "rank": 686,
           "posIdsNoFlex": [
             "002"
@@ -35179,6 +35225,10 @@
           "posShortNames": "1B",
           "team": false,
           "icons": [
+            {
+              "tooltip": "Batting Order: 5",
+              "typeId": "25"
+            },
             {
               "tooltip": "Apr 5, 8:15 AM: Hoskins is out of the lineup for Game 1...",
               "typeId": "9"
@@ -36140,7 +36190,7 @@
           "icons": [
             {
               "tooltip": "Mar 31, 8:25 AM: Matthews went 1-for-4 with a solo home...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -37926,6 +37976,7 @@
           "urlName": "bo-naylor",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04mrn_96_5.png",
           "scorerId": "04mrn",
+          "upcomingEventStatusId": "5",
           "rank": 718,
           "posIdsNoFlex": [
             "001"
@@ -37934,6 +37985,10 @@
           "posShortNames": "C",
           "team": false,
           "icons": [
+            {
+              "tooltip": "Not in starting lineup",
+              "typeId": "15"
+            },
             {
               "tooltip": "Mar 30, 3:57 PM: Naylor is not in the Guardians'...",
               "typeId": "8"
@@ -41160,6 +41215,7 @@
           "urlName": "kyle-manzardo",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05rfu_96_2.png",
           "scorerId": "05rfu",
+          "upcomingEventStatusId": "5",
           "rank": 757,
           "posIdsNoFlex": [
             "002"
@@ -41168,6 +41224,10 @@
           "posShortNames": "1B",
           "team": false,
           "icons": [
+            {
+              "tooltip": "Not in starting lineup",
+              "typeId": "15"
+            },
             {
               "tooltip": "Apr 5, 2:21 PM: Manzardo is out of the lineup for Game...",
               "typeId": "9"
@@ -43195,6 +43255,7 @@
           "urlName": "david-fry",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04psr_96_3.png",
           "scorerId": "04psr",
+          "upcomingEventStatusId": "1",
           "rank": 777,
           "posIdsNoFlex": [
             "014"
@@ -43203,6 +43264,10 @@
           "posShortNames": "UT",
           "team": false,
           "icons": [
+            {
+              "tooltip": "Batting Order: 4",
+              "typeId": "24"
+            },
             {
               "tooltip": "Mar 29, 6:12 AM: Fry started at catcher and went 2-for-5...",
               "typeId": "8"
@@ -100540,6 +100605,7 @@
           "urlName": "juan-brito",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05yhe_96_1.png",
           "scorerId": "05yhe",
+          "upcomingEventStatusId": "1",
           "rank": 1803,
           "posIdsNoFlex": [
             "003",
@@ -100550,12 +100616,12 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "Minor Leagues",
-              "typeId": "4"
+              "tooltip": "Batting Order: 6",
+              "typeId": "26"
             },
             {
-              "tooltip": "Mar 19, 5:18 PM: The Guardians optioned Brito to...",
-              "typeId": "8"
+              "tooltip": "Apr 7, 8:10 AM: The Guardians recalled Brito from...",
+              "typeId": "14"
             }
           ],
           "rookie": false,
