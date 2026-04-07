@@ -2193,7 +2193,7 @@ var TA = {
   teamB: null,      // selected team ID
   selectedA: [],    // selected player names for team A (max 2)
   selectedB: [],    // selected player names for team B (max 2)
-  activeTab: 'suggestions'
+  activeTab: 'trade'
 };
 
 // Position groups
@@ -2486,8 +2486,8 @@ function buildTradeAnalyzer() {
 
   // Tabs
   html += '<div class="trade-tabs">';
-  html += '<button class="trade-tab active" onclick="showTradeTab(\'suggestions\', this)">Trade Suggestions</button>';
-  html += '<button class="trade-tab" onclick="showTradeTab(\'trade\', this)">Trade Analyzer</button>';
+  html += '<button class="trade-tab active" onclick="showTradeTab(\'trade\', this)">Trade Suggestions</button>';
+  html += '<button class="trade-tab" onclick="showTradeTab(\'suggestions\', this)">Trade Analyzer</button>';
   html += '<button class="trade-tab" onclick="showTradeTab(\'fa\', this)">Free Agent Recommendations</button>';
   html += '<button class="trade-tab" onclick="showTradeTab(\'sgp-hit\', this)">Hitter SGP</button>';
   html += '<button class="trade-tab" onclick="showTradeTab(\'sgp-pit\', this)">Pitcher SGP</button>';
