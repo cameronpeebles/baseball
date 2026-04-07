@@ -7443,8 +7443,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Mar 31, 8:36 PM: Herrera went 1-for-2 with a two-run...",
-                        "typeId": "9"
+                        "tooltip": "Apr 7, 8:57 AM: Herrera has served as the personal...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -27866,10 +27866,6 @@
                         "typeId": "1"
                       },
                       {
-                        "tooltip": "Inactive",
-                        "typeId": "7"
-                      },
-                      {
                         "tooltip": "Apr 6, 11:46 AM: The Marlins placed Fairbanks on the...",
                         "typeId": "14"
                       },
@@ -28344,11 +28340,7 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Injured List - 15-day IL - Hamstring",
-                        "typeId": "2"
-                      },
-                      {
-                        "tooltip": "Apr 6, 7:18 PM: Kerkering (hamstring) has rejoined the...",
+                        "tooltip": "Apr 7, 9:07 AM: The Phillies activated Kerkering...",
                         "typeId": "14"
                       },
                       {
@@ -28368,8 +28360,7 @@
                   },
                   "eligibleStatusIds": [
                     "1",
-                    "2",
-                    "3"
+                    "2"
                   ],
                   "posId": "017",
                   "cells": [
@@ -29599,7 +29590,7 @@
                     "icons": [
                       {
                         "tooltip": "Mar 31, 9:14 AM: Suarez gave up a hit in a scoreless...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -32163,7 +32154,7 @@
                       "content": "10"
                     }
                   ],
-                  "statusId": "1",
+                  "statusId": "2",
                   "eligiblePosIds": [
                     "003",
                     "014",
@@ -32280,7 +32271,7 @@
                       "content": "9"
                     }
                   ],
-                  "statusId": "2",
+                  "statusId": "1",
                   "eligiblePosIds": [
                     "003",
                     "014",
@@ -32504,7 +32495,7 @@
                       "content": "9"
                     }
                   ],
-                  "statusId": "2",
+                  "statusId": "1",
                   "eligiblePosIds": [
                     "012",
                     "014"
@@ -32612,7 +32603,7 @@
                       "content": "10"
                     }
                   ],
-                  "statusId": "1",
+                  "statusId": "2",
                   "eligiblePosIds": [
                     "012",
                     "014"
@@ -32664,7 +32655,7 @@
                     "1",
                     "2"
                   ],
-                  "posId": "002",
+                  "posId": "001",
                   "cells": [
                     {
                       "content": "27"
@@ -32723,7 +32714,7 @@
                       "content": "8"
                     }
                   ],
-                  "statusId": "2",
+                  "statusId": "1",
                   "eligiblePosIds": [
                     "001",
                     "002",
@@ -32997,7 +32988,7 @@
                     "1",
                     "2"
                   ],
-                  "posId": "001",
+                  "posId": "014",
                   "cells": [
                     {
                       "content": "22"
@@ -33110,7 +33101,7 @@
                     "1",
                     "2"
                   ],
-                  "posId": "006",
+                  "posId": "002",
                   "cells": [
                     {
                       "content": "24"
@@ -33169,7 +33160,7 @@
                       "content": "8"
                     }
                   ],
-                  "statusId": "1",
+                  "statusId": "2",
                   "eligiblePosIds": [
                     "002",
                     "014",
@@ -33220,7 +33211,7 @@
                     "1",
                     "2"
                   ],
-                  "posId": "014",
+                  "posId": "006",
                   "cells": [
                     {
                       "content": "27"
@@ -34821,7 +34812,7 @@
                       "content": "2"
                     }
                   ],
-                  "statusId": "2",
+                  "statusId": "1",
                   "eligiblePosIds": [
                     "017"
                   ],
@@ -36330,7 +36321,7 @@
                       "content": "2"
                     }
                   ],
-                  "statusId": "1",
+                  "statusId": "2",
                   "eligiblePosIds": [
                     "017"
                   ],
@@ -38790,6 +38781,7 @@
                     "urlName": "colson-montgomery",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05rch_96_2.png",
                     "scorerId": "05rch",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "004",
@@ -38799,6 +38791,10 @@
                     "posShortNames": "3B,SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
                       {
                         "tooltip": "Apr 5, 8:45 AM: Montgomery isn't in the White Sox's...",
                         "typeId": "9"
@@ -51094,6 +51090,7 @@
                     "urlName": "munetaka-murakami",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05y3u_96_2.png",
                     "scorerId": "05y3u",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002",
@@ -51104,8 +51101,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Mar 29, 3:38 PM: Murakami went 1-for-4 with a solo home...",
-                        "typeId": "8"
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
+                      {
+                        "tooltip": "Apr 7, 9:20 AM: Murakami is out of the lineup for...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -51642,6 +51643,7 @@
                     "urlName": "kyle-teel",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05wxy_96_2.png",
                     "scorerId": "05wxy",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "001"
@@ -51650,6 +51652,10 @@
                     "posShortNames": "C",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
                       {
                         "tooltip": "Injured List - 10-day IL - Hamstring",
                         "typeId": "2"
