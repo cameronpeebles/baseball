@@ -1617,30 +1617,91 @@ function buildJOEPage(byTeamPeriod, schedule) {
     });
     if (teams.length < 2) return;
 
-    var rows = [];
+    // Step 1-2: Pairwise matchups → Win% for every team vs every opponent
+    var vsAll = {}; // team → {opp → winPct}
     teams.forEach(function(team) {
-      var stats = byTeamPeriod[team][wk];
-      var opps  = teams.filter(function(t){ return t !== team; });
-      var vsAll = {};
-      opps.forEach(function(opp) {
-        vsAll[opp] = h2h(stats, byTeamPeriod[opp][wk]);
+      vsAll[team] = {};
+      var s = byTeamPeriod[team][wk];
+      teams.forEach(function(opp) {
+        if (opp === team) return;
+        var o = byTeamPeriod[opp][wk];
+        var w = 0, t2 = 0;
+        ALL_CATS_J.forEach(function(cat) {
+          var sv = s[cat] || 0, ov = o[cat] || 0;
+          var isLow = LOW_CATS_J.indexOf(cat) !== -1;
+          if (isLow) { if (sv < ov) w++; else if (sv === ov) t2++; }
+          else        { if (sv > ov) w++; else if (sv === ov) t2++; }
+        });
+        vsAll[team][opp] = (w + 0.5 * t2) / 10;
       });
-      var pcts     = Object.values(vsAll);
-      var avgCase  = pcts.reduce(function(s,v){return s+v;},0) / pcts.length;
-      var bestCase = Math.max.apply(null, pcts);
-      var worstCase= Math.min.apply(null, pcts);
-      var opp      = oppLookup[wk] ? oppLookup[wk][team] : null;
-      var actual   = opp ? (vsAll[opp] != null ? vsAll[opp] : null) : null;
-      rows.push({ team:team, opponent:opp||'—', actual:actual, avgCase:avgCase, bestCase:bestCase, worstCase:worstCase });
     });
 
-    // JOE Factor: min-max normalize (actual - avgCase) to [-1, +1]
-    var diffs = rows.map(function(r){ return r.actual != null ? r.actual - r.avgCase : 0; });
-    var minD  = Math.min.apply(null, diffs);
-    var maxD  = Math.max.apply(null, diffs);
-    var range = maxD - minD || 1;
-    rows.forEach(function(r, i) {
-      r.joe = parseFloat((2*(diffs[i]-minD)/range - 1).toFixed(3));
+    // Step 3: Per team — avg W%, std dev, best/worst
+    var rows = [];
+    teams.forEach(function(team) {
+      var pcts  = Object.values(vsAll[team]);
+      var avg   = pcts.reduce(function(s,v){return s+v;},0) / pcts.length;
+      var variance = pcts.reduce(function(s,v){return s+(v-avg)*(v-avg);},0) / pcts.length;
+      var std   = Math.sqrt(variance) || 0.001;
+      var bestOpp  = null, bestPct  = -Infinity;
+      var worstOpp = null, worstPct =  Infinity;
+      Object.keys(vsAll[team]).forEach(function(opp) {
+        var p = vsAll[team][opp];
+        if (p > bestPct)  { bestPct  = p; bestOpp  = opp; }
+        if (p < worstPct) { worstPct = p; worstOpp = opp; }
+      });
+
+      // Step 4: Actual win% from scheduled opponent
+      var opp     = oppLookup[wk] ? oppLookup[wk][team] : null;
+      var actual  = opp ? vsAll[team][opp] : null;
+
+      // Record string (W-L-T) from actual matchup
+      var recStr = '—';
+      if (opp) {
+        var o = byTeamPeriod[opp][wk];
+        var s2 = byTeamPeriod[team][wk];
+        var rw = 0, rl = 0, rt = 0;
+        ALL_CATS_J.forEach(function(cat) {
+          var sv = s2[cat]||0, ov = o[cat]||0;
+          var isLow = LOW_CATS_J.indexOf(cat) !== -1;
+          if (isLow) { if (sv < ov) rw++; else if (sv === ov) rt++; else rl++; }
+          else        { if (sv > ov) rw++; else if (sv === ov) rt++; else rl++; }
+        });
+        recStr = rw + '-' + rl + (rt ? '-' + rt : '');
+      }
+
+      // Best/worst case record strings
+      function recFor(team2, opp2) {
+        if (!opp2) return '—';
+        var s3 = byTeamPeriod[team2][wk], o3 = byTeamPeriod[opp2][wk];
+        var bw=0,bl=0,bt=0;
+        ALL_CATS_J.forEach(function(cat){
+          var sv=s3[cat]||0,ov=o3[cat]||0;
+          var isLow=LOW_CATS_J.indexOf(cat)!==-1;
+          if(isLow){if(sv<ov)bw++;else if(sv===ov)bt++;else bl++;}
+          else{if(sv>ov)bw++;else if(sv===ov)bt++;else bl++;}
+        });
+        return bw+'-'+bl+(bt?'-'+bt:'');
+      }
+
+      rows.push({
+        team:team, recStr:recStr, actual:actual, avg:avg, std:std,
+        bestOpp:bestOpp, bestPct:bestPct, bestRec:recFor(team,bestOpp),
+        worstOpp:worstOpp, worstPct:worstPct, worstRec:recFor(team,worstOpp)
+      });
+    });
+
+    // Step 5: Luck z-score
+    rows.forEach(function(r) {
+      r.z = r.actual != null ? (r.actual - r.avg) / r.std : 0;
+    });
+
+    // Step 6: Normalize z to [-1, +1]
+    var zVals = rows.map(function(r){return r.z;});
+    var minZ  = Math.min.apply(null,zVals), maxZ = Math.max.apply(null,zVals);
+    var zRange = maxZ - minZ || 1;
+    rows.forEach(function(r){
+      r.joe = parseFloat((2*(r.z-minZ)/zRange - 1).toFixed(3));
     });
 
     allResults[wk] = rows;
@@ -1681,21 +1742,27 @@ function buildJOEPage(byTeamPeriod, schedule) {
     html += '<span class="card-title">Week ' + w + ' — JOE Factor</span>';
     html += '</div>';
 
-    var rows = (allResults[w] || []).slice().sort(function(a,b){ return b.actual - a.actual; });
+    var rows = (allResults[w] || []).slice().sort(function(a,b){ return (b.joe||0)-(a.joe||0); });
     html += '<div class="table-wrap"><table><thead><tr>';
     html += '<th class="left">Team</th>';
-    html += '<th>Actual</th><th>Avg Case</th><th>Best Case</th><th>Worst Case</th><th>JOE Factor</th>';
+    html += '<th>Actual (W-L-T)</th><th>Actual W%</th><th>Avg W%</th>';
+    html += '<th>Std Dev</th><th>Luck z</th>';
+    html += '<th style="color:var(--accent);font-weight:700">Normalized [-1,+1]</th>';
+    html += '<th>Best Case</th><th>Worst Case</th>';
     html += '</tr></thead><tbody>';
     rows.forEach(function(r) {
       var joeCol = r.joe > 0.2 ? '#1e6b3a' : r.joe < -0.2 ? '#c0392b' : '#b7791f';
       var s = function(v){ return v >= 0 ? '+' : ''; };
       html += '<tr>';
       html += '<td class="left"><div class="team-cell">' + joeTeamLogo(r.team) + '<span>' + r.team + '</span></div></td>';
-      html += '<td><strong>' + (r.actual!=null?(r.actual*100).toFixed(1)+'%':'—') + '</strong></td>';
-      html += '<td>' + (r.avgCase*100).toFixed(1) + '%</td>';
-      html += '<td>' + (r.bestCase*100).toFixed(1) + '%</td>';
-      html += '<td>' + (r.worstCase*100).toFixed(1) + '%</td>';
+      html += '<td style="font-weight:600">' + r.recStr + '</td>';
+      html += '<td>' + (r.actual!=null?(r.actual).toFixed(3):'—') + '</td>';
+      html += '<td>' + r.avg.toFixed(3) + '</td>';
+      html += '<td>' + r.std.toFixed(3) + '</td>';
+      html += '<td>' + s(r.z) + r.z.toFixed(3) + '</td>';
       html += '<td style="font-weight:700;color:' + joeCol + '">' + s(r.joe) + r.joe.toFixed(3) + '</td>';
+      html += '<td style="font-size:12px;color:var(--muted)">' + r.bestRec + ' vs ' + (r.bestOpp||'—') + '</td>';
+      html += '<td style="font-size:12px;color:var(--muted)">' + r.worstRec + ' vs ' + (r.worstOpp||'—') + '</td>';
       html += '</tr>';
     });
     html += '</tbody></table></div></div></div>';
