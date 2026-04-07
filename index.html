@@ -1712,7 +1712,7 @@ function buildJOEPage(byWeek, schedule) {
       }
 
       rows.push({
-        team:team, recStr:recStr, actual:actual, avg:avg, std:std,
+        team:team, opponent: opp||'—', recStr:recStr, actual:actual, avg:avg, std:std,
         bestOpp:bestOpp, bestPct:bestPct, bestRec:recFor(team,bestOpp),
         worstOpp:worstOpp, worstPct:worstPct, worstRec:recFor(team,worstOpp)
       });
@@ -1772,7 +1772,7 @@ function buildJOEPage(byWeek, schedule) {
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">';
 
     // ── Chart 1: Range plot ───────────────────────────────────────────────────
-    var W1=520, H1=420, PL=150, PR=20, PT=30, PB=120, AL=20;
+    var W1=520, H1=440, PL=150, PR=20, PT=30, PB=140, AL=20;
     var chartW = W1-PL-PR, chartH = H1-PT-PB;
     html += '<div class="card"><div class="card-header"><span class="card-title" style="font-size:12px">Win% Range — Best / Actual / Avg / Worst</span></div>';
     html += '<div style="padding:12px"><svg viewBox="0 0 ' + W1 + ' ' + H1 + '" style="width:100%;height:auto">';
@@ -1802,8 +1802,8 @@ function buildJOEPage(byWeek, schedule) {
       if (yAct != null) html += '<circle cx="' + cx + '" cy="' + yAct + '" r="5" fill="var(--accent)" stroke="white" stroke-width="1.5"/>';
 
       // Rotated team name — full name, more room now
-      var labelX = cx, labelY = PT + chartH + 4;
-      html += '<text x="' + labelX + '" y="' + labelY + '" text-anchor="start" font-size="9" fill="var(--muted)" transform="rotate(55,' + labelX + ',' + labelY + ')">' + r.team + '</text>';
+      var labelX = cx, labelY = PT + chartH + 8;
+      html += '<text x="' + labelX + '" y="' + labelY + '" text-anchor="end" font-size="9" fill="var(--muted)" transform="rotate(-45,' + labelX + ',' + labelY + ')">' + r.team + '</text>';
     });
 
     // Legend
@@ -1815,7 +1815,7 @@ function buildJOEPage(byWeek, schedule) {
     html += '</svg></div></div>';
 
     // ── Chart 2: JOE Factor bar chart ─────────────────────────────────────────
-    var W2=520, H2=420, PL2=150, PR2=20, PT2=30, PB2=120;
+    var W2=520, H2=440, PL2=150, PR2=20, PT2=30, PB2=140;
     var chartW2 = W2-PL2-PR2, chartH2 = H2-PT2-PB2;
     var midY = PT2 + chartH2/2;
 
@@ -1840,8 +1840,8 @@ function buildJOEPage(byWeek, schedule) {
       var col  = r.joe >= 0.7 ? '#1e6b3a' : r.joe >= 0 ? '#4a9a68' : r.joe <= -0.7 ? '#922b21' : '#c0392b';
       html += '<rect x="' + (cx-barW/2) + '" y="' + barY + '" width="' + barW + '" height="' + barH + '" fill="' + col + '" rx="2"/>';
       html += '<text x="' + cx + '" y="' + (r.joe>=0 ? barY-3 : barY+barH+9) + '" text-anchor="middle" font-size="8" fill="' + col + '" font-weight="600">' + (r.joe>=0?'+':'') + r.joe.toFixed(2) + '</text>';
-      var labelX2 = cx, labelY2 = PT2 + chartH2 + 4;
-      html += '<text x="' + labelX2 + '" y="' + labelY2 + '" text-anchor="start" font-size="9" fill="var(--muted)" transform="rotate(55,' + labelX2 + ',' + labelY2 + ')">' + r.team + '</text>';
+      var labelX2 = cx, labelY2 = PT2 + chartH2 + 8;
+      html += '<text x="' + labelX2 + '" y="' + labelY2 + '" text-anchor="end" font-size="9" fill="var(--muted)" transform="rotate(-45,' + labelX2 + ',' + labelY2 + ')">' + r.team + '</text>';
     });
 
     html += '</svg></div></div>';
