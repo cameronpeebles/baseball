@@ -4230,46 +4230,22 @@ window.showCombinedTab = function(tab, btn) {
 // ── Tab 1: Week-by-week stats ────────────────────────────────────────────────
 function renderWeeklyStats(el) {
   function tryRender() {
-    var stats = window._joeStats;
-    if (!stats || !stats.length) {
-      // Load joe_stats.json if not already loaded
-      if (!window._joeStatsLoading) {
-        window._joeStatsLoading = true;
-        loadJSON('joe_stats.json').then(function(data) {
-          window._joeStats = data;
-          renderWeeklyStats(el);
-        }).catch(function(e) {
-          el.innerHTML = '<div class="error-msg">Error loading weekly stats: ' + e.message + '</div>';
-        });
-      }
+    var byWeek = window._joeByWeek;
+    if (!byWeek) {
+      if (!joeRendered) renderJOEFactor();
+      setTimeout(function() { renderWeeklyStats(el); }, 600);
       return;
     }
+    var weeks = Object.keys(byWeek).map(Number).sort(function(a,b){return a-b;});
+    var CATS = ['R','HR','RBI','SB','AVG','K','W','SV','ERA','WHIP'];
 
-    // Group by week
-    var weeks = [];
-    stats.forEach(function(r) { if (weeks.indexOf(r.week) === -1) weeks.push(r.week); });
-    weeks.sort(function(a,b){return a-b;});
-
-    var teams = [];
-    stats.forEach(function(r) { if (teams.indexOf(r.team) === -1) teams.push(r.team); });
-    teams.sort();
-
-    var CATS = ['R','HR','RBI','SB','AVG','K','W','SVH3','ERA','WHIP'];
-
-    // Week selector pills
     var html = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px" id="weekly-pills">';
     weeks.forEach(function(w, i) {
       html += '<button class="pill' + (i===0?' active':'') + '" onclick="showWeekStats(' + w + ',this)">Wk ' + w + '</button>';
     });
     html += '</div><div id="weekly-table"></div>';
     el.innerHTML = html;
-
-    window._joeWeekStats = {};
-    stats.forEach(function(r) {
-      if (!window._joeWeekStats[r.week]) window._joeWeekStats[r.week] = {};
-      window._joeWeekStats[r.week][r.team] = r;
-    });
-
+    window._joeWeekStats = byWeek;
     showWeekStats(weeks[0], document.querySelector('#weekly-pills .pill'));
   }
   tryRender();
@@ -4278,31 +4254,26 @@ function renderWeeklyStats(el) {
 window.showWeekStats = function(week, btn) {
   document.querySelectorAll('#weekly-pills .pill').forEach(function(p){p.classList.remove('active');});
   if (btn) btn.classList.add('active');
-
   var weekData = (window._joeWeekStats||{})[week] || {};
   var teams = Object.keys(weekData).sort();
-  var CATS  = ['R','HR','RBI','SB','AVG','K','W','SVH3','ERA','WHIP'];
-
-  // Find league max/min per cat for color scale
+  var CATS  = ['R','HR','RBI','SB','AVG','K','W','SV','ERA','WHIP'];
   var catMax = {}, catMin = {};
   CATS.forEach(function(c) {
-    var vals = teams.map(function(t){return weekData[t][c];}).filter(function(v){return v!=null;});
+    var vals = teams.map(function(t){ return weekData[t][c]; }).filter(function(v){ return v != null; });
     if (!vals.length) return;
     catMax[c] = Math.max.apply(null,vals);
     catMin[c] = Math.min.apply(null,vals);
   });
-
   var html = '<div class="card"><div class="table-wrap"><table>';
   html += '<thead><tr><th class="left">Team</th>';
   CATS.forEach(function(c){ html += '<th>' + c + '</th>'; });
   html += '</tr></thead><tbody>';
-
   teams.forEach(function(team) {
     var row = weekData[team] || {};
     html += '<tr><td class="left" style="font-weight:500">' + team + '</td>';
     CATS.forEach(function(c) {
       var v = row[c];
-      if (v == null) { html += '<td style="color:var(--muted)">—</td>'; return; }
+      if (v == null) { html += '<td style="color:var(--muted)">-</td>'; return; }
       var isLow = c==='ERA'||c==='WHIP';
       var range = (catMax[c]||1) - (catMin[c]||0);
       var pct   = range > 0 ? (isLow ? (catMax[c]-v)/range : (v-catMin[c])/range) : 0.5;
@@ -4316,187 +4287,152 @@ window.showWeekStats = function(week, btn) {
   document.getElementById('weekly-table').innerHTML = html;
 };
 
-// ── Tab 2: Head-to-head matrix ───────────────────────────────────────────────
+// Tab 2: H2H matrix
 function renderH2HMatrix(el) {
-  var schedule = window._scheduleData;
-  var joeData  = window._joeByTeamWeek;
-
   function tryRender() {
-    if (!schedule || !joeData || !joeData.length) {
-      if (!schedule) {
-        loadJSON('schedule.json').then(function(d) {
-          window._scheduleData = d;
-          tryRender();
-        }).catch(function(){});
-        return;
-      }
-      if (!joeData || !joeData.length) {
-        if (!joeRendered) renderJOEFactor();
-        setTimeout(tryRender, 500); return;
-      }
+    var allResults = window._joeAllResults;
+    var completedWeeks = window._joeCompletedWeeks;
+    if (!allResults || !completedWeeks) {
+      if (!joeRendered) renderJOEFactor();
+      setTimeout(tryRender, 600); return;
     }
-    buildH2HMatrix(el, schedule, joeData);
+    buildH2HMatrix(el, allResults, completedWeeks);
   }
   tryRender();
 }
 
-function buildH2HMatrix(el, schedule, joeData) {
-  // Build W/L record for each team vs each other team
+function buildH2HMatrix(el, allResults, completedWeeks) {
   var teams = [];
-  schedule.forEach(function(m) {
-    if (teams.indexOf(m.away) === -1) teams.push(m.away);
-    if (teams.indexOf(m.home) === -1) teams.push(m.home);
+  completedWeeks.forEach(function(wk) {
+    (allResults[wk]||[]).forEach(function(r) {
+      if (teams.indexOf(r.team) === -1) teams.push(r.team);
+    });
   });
   teams.sort();
 
-  // Map week-team to actual result
-  var resultMap = {};
-  joeData.forEach(function(r) {
-    if (r.actual != null) resultMap[r.week + '|' + r.team] = r;
-  });
-
-  // For each played matchup, determine W/L
   var h2h = {};
   teams.forEach(function(t) { h2h[t] = {}; teams.forEach(function(o){ h2h[t][o] = {w:0,l:0,t:0}; }); });
 
-  schedule.forEach(function(m) {
-    var awayRes = resultMap[m.week + '|' + m.away];
-    var homeRes = resultMap[m.week + '|' + m.home];
-    if (!awayRes || !homeRes) return;
-    var awayPts = awayRes.actual * 10;
-    var homePts = homeRes.actual * 10;
-    if (awayPts > homePts)      { h2h[m.away][m.home].w++; h2h[m.home][m.away].l++; }
-    else if (homePts > awayPts) { h2h[m.home][m.away].w++; h2h[m.away][m.home].l++; }
-    else                        { h2h[m.away][m.home].t++; h2h[m.home][m.away].t++; }
+  completedWeeks.forEach(function(wk) {
+    (allResults[wk]||[]).forEach(function(r) {
+      if (!r.opponent || r.opponent==='—' || r.actual==null) return;
+      var opp = r.opponent;
+      if (!h2h[r.team] || !h2h[r.team][opp]) return;
+      if (r.actual > 0.5)      h2h[r.team][opp].w++;
+      else if (r.actual < 0.5) h2h[r.team][opp].l++;
+      else                     h2h[r.team][opp].t++;
+    });
   });
 
-  var html = '<div class="card"><div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:12px">';
-  html += '<thead><tr><th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:130px">Team</th>';
-  teams.forEach(function(t) {
-    var short = t.length > 10 ? t.substring(0,10)+'…' : t;
-    html += '<th style="padding:6px 8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;white-space:nowrap" title="' + t + '">' + short + '</th>';
+  var nameToShort = {};
+  Object.keys(S.teamInfo).forEach(function(id) {
+    var t = S.teamInfo[id];
+    if (t.name) nameToShort[t.name] = t.shortName || t.name;
   });
-  html += '<th style="padding:6px 8px;text-align:center;border-bottom:1px solid var(--border);font-weight:600">Overall</th>';
-  html += '</tr></thead><tbody>';
 
-  // Sort teams by overall W-L record
   var teamTotals = {};
   teams.forEach(function(t) {
     var w=0,l=0,ti=0;
     teams.forEach(function(o){ if(o===t)return; w+=h2h[t][o].w; l+=h2h[t][o].l; ti+=h2h[t][o].t; });
     teamTotals[t] = {w:w,l:l,t:ti};
   });
-  var sortedTeams = teams.slice().sort(function(a,b){ return (teamTotals[b].w+teamTotals[b].t*0.5)-(teamTotals[a].w+teamTotals[a].t*0.5); });
+  var sorted = teams.slice().sort(function(a,b){ return (teamTotals[b].w+teamTotals[b].t*0.5)-(teamTotals[a].w+teamTotals[a].t*0.5); });
 
-  sortedTeams.forEach(function(team) {
-    html += '<tr>';
-    html += '<td style="padding:7px 10px;font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap">' + team + '</td>';
-    sortedTeams.forEach(function(opp) {
-      if (opp === team) {
-        html += '<td style="padding:6px 8px;text-align:center;border-bottom:1px solid var(--border);background:var(--bg);color:var(--muted)">—</td>';
-        return;
-      }
+  var html = '<div class="card"><div class="table-wrap" style="overflow-x:auto"><table style="font-size:12px;min-width:max-content">';
+  html += '<thead><tr><th class="left" style="min-width:140px">Team</th>';
+  sorted.forEach(function(t) {
+    html += '<th style="text-align:center;min-width:70px" title="' + t + '">' + (nameToShort[t]||t) + '</th>';
+  });
+  html += '<th style="text-align:center;font-weight:700">Overall</th></tr></thead><tbody>';
+
+  sorted.forEach(function(team) {
+    html += '<tr><td class="left"><div class="team-cell">' + joeTeamLogo(team) + '<span>' + team + '</span></div></td>';
+    sorted.forEach(function(opp) {
+      if (opp===team) { html += '<td style="text-align:center;background:var(--bg);color:var(--muted)">-</td>'; return; }
       var rec = h2h[team][opp];
-      if (rec.w===0 && rec.l===0 && rec.t===0) {
-        html += '<td style="padding:6px 8px;text-align:center;border-bottom:1px solid var(--border);color:var(--muted)">—</td>';
-        return;
-      }
-      var bg  = rec.w > rec.l ? 'var(--accent-light)' : rec.l > rec.w ? '#fef3e2' : 'var(--bg)';
-      var col = rec.w > rec.l ? 'var(--accent)' : rec.l > rec.w ? '#b7791f' : 'var(--muted)';
-      html += '<td style="padding:6px 8px;text-align:center;border-bottom:1px solid var(--border);background:' + bg + ';color:' + col + ';font-weight:500">';
-      html += rec.w + '-' + rec.l + (rec.t?'-'+rec.t:'') + '</td>';
+      if (!rec.w&&!rec.l&&!rec.t) { html += '<td style="text-align:center;color:var(--muted)">-</td>'; return; }
+      var bg  = rec.w>rec.l?'var(--accent-light)':rec.l>rec.w?'#fef3e2':'var(--bg)';
+      var col = rec.w>rec.l?'var(--accent)':rec.l>rec.w?'#b7791f':'var(--muted)';
+      html += '<td style="text-align:center;background:' + bg + ';color:' + col + ';font-weight:500">' + rec.w+'-'+rec.l+'-'+rec.t + '</td>';
     });
     var tot = teamTotals[team];
-    var totCol = tot.w>tot.l?'var(--accent)':tot.l>tot.w?'#c0392b':'var(--muted)';
-    html += '<td style="padding:6px 8px;text-align:center;border-bottom:1px solid var(--border);font-weight:600;color:' + totCol + '">' + tot.w + '-' + tot.l + (tot.t?'-'+tot.t:'') + '</td>';
+    var tc = tot.w>tot.l?'var(--accent)':tot.l>tot.w?'#c0392b':'var(--muted)';
+    html += '<td style="text-align:center;font-weight:700;color:' + tc + '">' + tot.w+'-'+tot.l+'-'+tot.t + '</td>';
     html += '</tr>';
   });
-  html += '</tbody></table></div><div style="padding:10px 16px;font-size:11px;color:var(--muted)">Each cell shows W-L record for the row team vs the column team. Green = winning record, tan = losing record.</div></div>';
+  html += '</tbody></table></div></div>';
   el.innerHTML = html;
 }
 
-// ── Tab 3: Matchup history ───────────────────────────────────────────────────
+// Tab 3: Matchup history
 function renderMatchupHistory(el) {
-  var schedule = window._scheduleData;
-  var joeData  = window._joeByTeamWeek;
-
   function tryRender() {
-    if (!schedule) {
-      loadJSON('schedule.json').then(function(d) { window._scheduleData = d; tryRender(); }).catch(function(){});
-      return;
-    }
-    if (!joeData || !joeData.length) {
+    var allResults = window._joeAllResults;
+    var completedWeeks = window._joeCompletedWeeks;
+    if (!allResults || !completedWeeks) {
       if (!joeRendered) renderJOEFactor();
-      setTimeout(tryRender, 500); return;
+      setTimeout(tryRender, 600); return;
     }
-    buildMatchupHistory(el, schedule, joeData);
+    buildMatchupHistory(el, allResults, completedWeeks);
   }
   tryRender();
 }
 
-function buildMatchupHistory(el, schedule, joeData) {
-  var resultMap = {};
-  joeData.forEach(function(r) { if (r.actual!=null) resultMap[r.week+'|'+r.team]=r; });
+function buildMatchupHistory(el, allResults, completedWeeks) {
+  var matchups = [];
+  completedWeeks.forEach(function(wk) {
+    var seen = {};
+    (allResults[wk]||[]).forEach(function(r) {
+      if (!r.opponent||r.opponent==='—'||r.actual==null) return;
+      var key = [r.team,r.opponent].sort().join('|');
+      if (seen[key]) return;
+      seen[key] = true;
+      matchups.push({week:wk, teamA:r.team, teamB:r.opponent, recA:r.recStr, actualA:r.actual});
+    });
+  });
 
-  // Get all teams for filter
   var teams = [];
-  schedule.forEach(function(m){
-    if (teams.indexOf(m.away)===-1) teams.push(m.away);
-    if (teams.indexOf(m.home)===-1) teams.push(m.home);
+  completedWeeks.forEach(function(wk) {
+    (allResults[wk]||[]).forEach(function(r) { if (teams.indexOf(r.team)===-1) teams.push(r.team); });
   });
   teams.sort();
 
   var html = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">';
   html += '<span style="font-size:13px;font-weight:500;color:var(--muted)">Filter by team:</span>';
-  html += '<select class="trade-team-select" style="max-width:240px" onchange="filterMatchupHistory(this.value)">';
-  html += '<option value="">All matchups</option>';
+  html += '<select id="history-filter" onchange="filterMatchupHistory()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card);font-size:13px">';
+  html += '<option value="ALL">All teams</option>';
   teams.forEach(function(t){ html += '<option value="' + t + '">' + t + '</option>'; });
-  html += '</select></div>';
-  html += '<div id="matchup-history-list"></div>';
+  html += '</select></div><div id="history-table"></div>';
   el.innerHTML = html;
-
-  window._matchupHistorySchedule = schedule;
-  window._matchupHistoryResultMap = resultMap;
-  filterMatchupHistory('');
+  window._matchupHistory = matchups;
+  filterMatchupHistory();
 }
 
-window.filterMatchupHistory = function(filterTeam) {
-  var schedule   = window._matchupHistorySchedule || [];
-  var resultMap  = window._matchupHistoryResultMap || {};
-  var played     = schedule.filter(function(m) {
-    var awayR = resultMap[m.week+'|'+m.away];
-    var homeR = resultMap[m.week+'|'+m.home];
-    if (!awayR || !homeR) return false;
-    if (filterTeam && m.away !== filterTeam && m.home !== filterTeam) return false;
-    return true;
-  }).sort(function(a,b){return b.week-a.week;});
-
-  var html = '<div class="card"><div class="table-wrap"><table>';
-  html += '<thead><tr><th class="left">Period</th><th class="left">Away</th><th>Score</th><th class="left">Home</th><th>Score</th><th class="left">Winner</th></tr></thead><tbody>';
-
-  played.forEach(function(m) {
-    var awayR = resultMap[m.week+'|'+m.away];
-    var homeR = resultMap[m.week+'|'+m.home];
-    var awayPts = (awayR.actual*10).toFixed(1);
-    var homePts = (homeR.actual*10).toFixed(1);
-    var awayWin = parseFloat(awayPts) > parseFloat(homePts);
-    var homeWin = parseFloat(homePts) > parseFloat(awayPts);
-    var tie     = !awayWin && !homeWin;
-    var winner  = awayWin ? m.away : homeWin ? m.home : 'Tie';
-    var winCol  = awayWin||homeWin ? 'var(--accent)' : 'var(--muted)';
-
+window.filterMatchupHistory = function() {
+  var filter = (document.getElementById('history-filter')||{}).value || 'ALL';
+  var matchups = window._matchupHistory || [];
+  var filtered = filter==='ALL' ? matchups : matchups.filter(function(m){ return m.teamA===filter||m.teamB===filter; });
+  filtered = filtered.slice().sort(function(a,b){ return b.week-a.week; });
+  var html = '<div class="card"><div class="table-wrap"><table><thead><tr>';
+  html += '<th>Wk</th><th class="left">Team A</th><th>Score</th><th class="left">Team B</th></tr></thead><tbody>';
+  filtered.forEach(function(m) {
+    var recA = m.recA||'—';
+    var parts = recA.split('-').map(Number);
+    var recB = parts.length===3 ? parts[1]+'-'+parts[0]+'-'+parts[2] : '—';
+    var aWon=m.actualA>0.5, bWon=m.actualA<0.5;
+    var aCol=aWon?'var(--accent)':bWon?'#c0392b':'var(--muted)';
+    var bCol=bWon?'var(--accent)':aWon?'#c0392b':'var(--muted)';
     html += '<tr>';
-    html += '<td class="left" style="color:var(--muted);font-size:12px">P' + m.week + '</td>';
-    html += '<td class="left"' + (awayWin?' style="font-weight:500"':'') + '>' + m.away + '</td>';
-    html += '<td style="font-weight:600;color:' + (awayWin?'var(--accent)':'var(--muted)') + '">' + awayPts + '</td>';
-    html += '<td class="left"' + (homeWin?' style="font-weight:500"':'') + '>' + m.home + '</td>';
-    html += '<td style="font-weight:600;color:' + (homeWin?'var(--accent)':'var(--muted)') + '">' + homePts + '</td>';
-    html += '<td class="left" style="color:' + winCol + ';font-weight:500">' + winner + '</td>';
+    html += '<td style="color:var(--muted);font-size:12px">Wk '+m.week+'</td>';
+    html += '<td class="left"><div class="team-cell">'+joeTeamLogo(m.teamA)+'<span style="font-weight:500;color:'+aCol+'">'+m.teamA+'</span></div></td>';
+    html += '<td style="text-align:center;font-weight:600;font-size:13px"><span style="color:'+aCol+'">'+recA+'</span> <span style="color:var(--muted)">vs</span> <span style="color:'+bCol+'">'+recB+'</span></td>';
+    html += '<td class="left"><div class="team-cell">'+joeTeamLogo(m.teamB)+'<span style="font-weight:500;color:'+bCol+'">'+m.teamB+'</span></div></td>';
     html += '</tr>';
   });
   html += '</tbody></table></div></div>';
-  document.getElementById('matchup-history-list').innerHTML = html;
+  document.getElementById('history-table').innerHTML = html;
 };
+
 
 // ── Correlations ─────────────────────────────────────────────────────────────
 
