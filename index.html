@@ -1519,36 +1519,33 @@ function renderJOEFactor() {
   if (joeRendered) return;
   joeRendered = true;
 
-  // Use data already loaded by Match Predictions page
-  // If not loaded yet, load it now
-  function buildFromData() {
-    var byTeamPeriod = window._byTeamPeriod;
-    var schedule     = window._mpPredictions; // full schedule with all periods
-
-    if (!byTeamPeriod || !schedule) {
-      document.getElementById('joe-body').innerHTML = '<div class="loading">Loading — visit Match Predictions first, or wait...</div>';
-      // Try loading joe_stats + full_schedule directly
-      Promise.all([
-        loadJSON('joe_stats.json'),
-        loadJSON('full_schedule.json')
-      ]).then(function(res) {
-        var stats = res[0];
-        var fullSched = res[1];
-        // Build byTeamPeriod from joe_stats
-        var btp = {};
-        stats.forEach(function(row) {
-          if (!btp[row.team]) btp[row.team] = {};
-          btp[row.team][row.week] = row;
-        });
-        buildJOEPage(btp, fullSched);
-      }).catch(function(e) {
-        document.getElementById('joe-body').innerHTML = '<div class="error-msg">Error loading data: ' + e.message + '</div>';
-      });
-      return;
-    }
-    buildJOEPage(byTeamPeriod, schedule);
+  function build(joeStats, schedule) {
+    // Build {week → {team → stats}} from flat joe_stats array
+    var byWeek = {};
+    joeStats.forEach(function(row) {
+      if (!byWeek[row.week]) byWeek[row.week] = {};
+      byWeek[row.week][row.team] = row;
+    });
+    buildJOEPage(byWeek, schedule);
   }
-  buildFromData();
+
+  // Use already-loaded _joeStats if available
+  if (window._joeStats && window._joeStats.length) {
+    var sched = window._mpPredictions || [];
+    if (sched.length) { build(window._joeStats, sched); return; }
+  }
+
+  // Otherwise load both
+  Promise.all([
+    loadJSON('joe_stats.json'),
+    loadJSON('full_schedule.json')
+  ]).then(function(res) {
+    window._joeStats = res[0];
+    build(res[0], res[1]);
+  }).catch(function(e) {
+    document.getElementById('joe-body').innerHTML =
+      '<div class="error-msg">Error loading data: ' + e.message + '</div>';
+  });
 }
 
 function joeTeamLogo(teamName) {
@@ -1571,33 +1568,14 @@ function heatColor(v) {
   return { bg: '#c0392b', fg: '#ffffff' };
 }
 
-function buildJOEPage(byTeamPeriod, schedule) {
-  // schedule entries have {period, away, home} (from full_schedule.json)
-  // or {week, away, home} (from schedule.json) — handle both
+function buildJOEPage(byWeek, schedule) {
   var ALL_CATS_J  = ['R','HR','RBI','SB','AVG','K','W','SV','ERA','WHIP'];
   var LOW_CATS_J  = ['ERA','WHIP'];
 
-  function h2h(a, b) {
-    var pts = 0;
-    ALL_CATS_J.forEach(function(cat) {
-      var av = a[cat] || 0, bv = b[cat] || 0;
-      var isLow = LOW_CATS_J.indexOf(cat) !== -1;
-      if (isLow) { if (av < bv) pts += 1; else if (av === bv) pts += 0.5; }
-      else        { if (av > bv) pts += 1; else if (av === bv) pts += 0.5; }
-    });
-    return pts / 10;
-  }
-
-  // Find all completed weeks — periods that have stats for at least 8 teams
-  var weekSet = {};
-  Object.keys(byTeamPeriod).forEach(function(team) {
-    Object.keys(byTeamPeriod[team]).forEach(function(wk) {
-      weekSet[wk] = (weekSet[wk] || 0) + 1;
-    });
-  });
-  var completedWeeks = Object.keys(weekSet)
+  // Find completed weeks — at least 8 teams have stats
+  var completedWeeks = Object.keys(byWeek)
     .map(Number)
-    .filter(function(w) { return weekSet[w] >= 8; })
+    .filter(function(w) { return Object.keys(byWeek[w]).length >= 8; })
     .sort(function(a,b){ return a-b; });
 
   // Build opponent lookup from schedule
@@ -1612,19 +1590,17 @@ function buildJOEPage(byTeamPeriod, schedule) {
   // Compute JOE results per week
   var allResults = {}; // week → [{team, opponent, actual, avgCase, bestCase, worstCase}]
   completedWeeks.forEach(function(wk) {
-    var teams = Object.keys(byTeamPeriod).filter(function(t) {
-      return byTeamPeriod[t][wk] != null;
-    });
+    var teams = Object.keys(byWeek[wk] || {});
     if (teams.length < 2) return;
 
     // Step 1-2: Pairwise matchups → Win% for every team vs every opponent
     var vsAll = {}; // team → {opp → winPct}
     teams.forEach(function(team) {
       vsAll[team] = {};
-      var s = byTeamPeriod[team][wk];
+      var s = byWeek[wk][team];
       teams.forEach(function(opp) {
         if (opp === team) return;
-        var o = byTeamPeriod[opp][wk];
+        var o = byWeek[wk][opp];
         var w = 0, t2 = 0;
         ALL_CATS_J.forEach(function(cat) {
           var sv = s[cat] || 0, ov = o[cat] || 0;
@@ -1658,8 +1634,8 @@ function buildJOEPage(byTeamPeriod, schedule) {
       // Record string (W-L-T) from actual matchup
       var recStr = '—';
       if (opp) {
-        var o = byTeamPeriod[opp][wk];
-        var s2 = byTeamPeriod[team][wk];
+        var o = byWeek[wk][opp];
+        var s2 = byWeek[wk][team];
         var rw = 0, rl = 0, rt = 0;
         ALL_CATS_J.forEach(function(cat) {
           var sv = s2[cat]||0, ov = o[cat]||0;
@@ -1673,7 +1649,7 @@ function buildJOEPage(byTeamPeriod, schedule) {
       // Best/worst case record strings
       function recFor(team2, opp2) {
         if (!opp2) return '—';
-        var s3 = byTeamPeriod[team2][wk], o3 = byTeamPeriod[opp2][wk];
+        var s3 = byWeek[wk][team2], o3 = byWeek[wk][opp2];
         var bw=0,bl=0,bt=0;
         ALL_CATS_J.forEach(function(cat){
           var sv=s3[cat]||0,ov=o3[cat]||0;
