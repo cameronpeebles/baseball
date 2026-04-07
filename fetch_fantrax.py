@@ -319,10 +319,20 @@ for period in range(1, MAX_PERIODS + 1):
         }
 
         # Collect W/L/T for schedule derivation
-        ww = get_stat(cells, "WW") or get_stat(cells, "WIN")
-        ll = get_stat(cells, "LL") or get_stat(cells, "LOSS")
-        tt = get_stat(cells, "TT") or get_stat(cells, "TIE") or get_stat(cells, "T")
-        period_teams.append({"team": team_name, "W": ww, "L": ll, "T": tt})
+        # In SCORING_PERIOD view the match record columns are typically
+        # named differently from pitching W — print idx once to debug
+        if period == 1 and team_name == list(cumulative.keys())[0] if cumulative else True:
+            print(f"  DEBUG idx keys: {sorted(idx.keys())[:20]}")
+        # Try dedicated match record keys, then fall back
+        match_w = get_stat(cells, "PW") or get_stat(cells, "MW") or get_stat(cells, "WW") or get_stat(cells, "WIN")
+        match_l = get_stat(cells, "PL") or get_stat(cells, "ML") or get_stat(cells, "LL") or get_stat(cells, "LOSS")
+        match_t = get_stat(cells, "PT") or get_stat(cells, "MT") or get_stat(cells, "TT") or get_stat(cells, "TIE")
+        # If nothing found, try W/L/T directly (original approach)
+        if match_w == 0 and match_l == 0:
+            match_w = get_stat(cells, "W")
+            match_l = get_stat(cells, "L")
+            match_t = get_stat(cells, "T")
+        period_teams.append({"team": team_name, "W": match_w, "L": match_l, "T": match_t})
 
     # Derive matchups: two teams played each other when W_a + W_b + T = 10
     paired = set()
