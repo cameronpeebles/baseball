@@ -767,26 +767,6 @@ def safe_float(row, *keys):
     return None
 
 # Fetch all four sources
-xwoba_rows  = fetch_csv(
-    "https://baseballsavant.mlb.com/leaderboard/expected_statistics"
-    "?type=batter&year=2026&position=&team=&filterType=bip&min=q&csv=true",
-    "xwOBA/wOBA 2026")
-
-babip_rows  = fetch_csv(
-    "https://baseballsavant.mlb.com/leaderboard/statcast-year-to-year"
-    "?type=babip&group=Batter&year=2025&csv=true",
-    "BABIP YoY")
-
-barrel_rows = fetch_csv(
-    "https://baseballsavant.mlb.com/leaderboard/statcast-year-to-year"
-    "?type=barrel_batted_rate&group=Batter&year=2025&csv=true",
-    "Barrel% YoY")
-
-hardhit_rows = fetch_csv(
-    "https://baseballsavant.mlb.com/leaderboard/statcast-year-to-year"
-    "?type=hard_hit_percent&group=Batter&year=2025&sort=hard_hit_percent_diff_2025&sortDir=desc&csv=true",
-    "HardHit% YoY")
-
 xwoba_rows   = fetch_csv(
     "https://baseballsavant.mlb.com/leaderboard/expected_statistics"
     "?type=batter&year=2026&position=&team=&filterType=bip&min=q&csv=true",
@@ -813,10 +793,16 @@ print(f"  xwoba={len(xwoba_id)} ids/{len(xwoba_nm)} names, babip={len(babip_id)}
 
 # Iterate over xwOBA entries — one row per player, no duplicates
 targets = []
+debug_count = 0
 for pid, name, xr in xwoba_rows:
     _, br  = lookup_row(babip_id,  babip_nm,  pid, name)
     _, blr = lookup_row(barrel_id, barrel_nm, pid, name)
     _, hr  = lookup_row(hh_id,     hh_nm,     pid, name)
+
+    if debug_count < 3:
+        print(f"  DEBUG {name} (id={pid}): babip_hit={bool(br)}, barrel_hit={bool(blr)}, hh_hit={bool(hr)}")
+        if br: print(f"    babip row keys: {list(br.keys())[:8]}")
+        debug_count += 1
 
     display_name = name if name else pid
 
