@@ -188,12 +188,19 @@ function calculateJOEFactor(stats, schedule) {
   // Sort for readability
   weekResults.sort((a, b) => a.week - b.week || a.team.localeCompare(b.team));
 
-  // Aggregate season-level summaries (only over weeks where actual is known)
+  // Only weeks that appear in the schedule (confirmed played) count toward season averages
+  const scheduledWeeks = new Set(schedule.map(g => g.week));
+
+  // Aggregate season-level summaries (only over weeks where actual is known AND week is in schedule)
   const teamNames = [...new Set(stats.map(s => s.team))];
 
   // Step 1 — per-team stats
   const teamSummaries = teamNames.map(team => {
-    const weeks = weekResults.filter(r => r.team === team && r.actual != null);
+    const weeks = weekResults.filter(r =>
+      r.team === team &&
+      r.actual != null &&
+      scheduledWeeks.has(r.week)
+    );
     const avg = arr => arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : null;
 
     const avgActual     = round(avg(weeks.map(w => w.actual)));
