@@ -1929,6 +1929,12 @@ window.showMatrixWeek = function(wk, btn) {
     if (t.name) nameToShort[t.name] = t.shortName || t.name;
   });
 
+  // Build actual opponent lookup for this week from allResults
+  var actualOpp = {};
+  (allResults[wk] || []).forEach(function(r) {
+    if (r.opponent && r.opponent !== '—') actualOpp[r.team] = r.opponent;
+  });
+
   // Compute pairwise scores for this week
   // matrix[row][col] = {w, l, t} from row team's perspective
   var matrix = {};
@@ -1974,7 +1980,10 @@ window.showMatrixWeek = function(wk, btn) {
       } else {
         var m = matrix[a][b];
         var rec = m.w + '-' + m.l + '-' + m.t;
-        h += '<td style="text-align:center;' + cellCol(m.pct) + '" title="' + rec + '">' + rec + '</td>';
+        var isActual = actualOpp[a] === b;
+        var star = isActual ? ' <span style="font-size:10px">★</span>' : '';
+        var border = isActual ? 'outline:2px solid white;' : '';
+        h += '<td style="text-align:center;' + border + cellCol(m.pct) + '" title="' + rec + (isActual?' (actual matchup)':'') + '">' + rec + star + '</td>';
       }
     });
     h += '</tr>';
