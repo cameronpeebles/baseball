@@ -1556,7 +1556,6 @@ function heatColor(v) {
 }
 
 function buildJOEPage(result) {
-  var season = result.season;
   var byTeamWeek = result.byTeamWeek;
 
   var weeks = [];
@@ -1565,9 +1564,8 @@ function buildJOEPage(result) {
   });
   weeks.sort(function(a, b) { return a - b; });
 
-  // Sort season by luck descending for display
-  var seasonSorted = season.slice().sort(function(a, b) { return (b.luck || 0) - (a.luck || 0); });
-  var teamOrder = seasonSorted.map(function(s) { return s.team; });
+  window._joeByTeamWeek = byTeamWeek;
+  window._joeWeeks = weeks;
 
   var html = '';
 
@@ -1575,248 +1573,142 @@ function buildJOEPage(result) {
   html += '<div class="joe-info">';
   html += '<strong>How it works:</strong> Each week, every team\'s 10 stat categories ';
   html += '(R, HR, RBI, SB, AVG, K, W, SV, ERA, WHIP) are compared head-to-head against ';
-  html += 'every other team. The <strong>Average Case</strong> is what their win% would be ';
-  html += 'if they played everyone that week. <strong>Luck = Actual &minus; Average Case.</strong> ';
-  html += 'Positive = schedule favoured them. Negative = they got a tough draw.';
+  html += 'every other team. <strong>Avg Case</strong> = win% vs all opponents. ';
+  html += '<strong>JOE Factor</strong> = normalized luck index [-1 to +1] for that week.';
   html += '</div>';
 
-  // ── 1. Season summary table ──────────────────────────────────────────────
-  html += '<div class="card">';
-  html += '<div class="card-header"><span class="card-title">Season luck index — all weeks combined</span></div>';
-  html += '<div class="table-wrap"><table>';
-  html += '<thead><tr>';
-  html += '<th class="left">Team</th>';
-  html += '<th>Best case</th><th>Avg case</th><th>Actual</th><th>Luck</th>';
-  html += '</tr></thead><tbody>';
+  if (!weeks.length) {
+    html += '<div class="error-msg">No completed weeks found.</div>';
+    document.getElementById('joe-body').innerHTML = html;
+    return;
+  }
 
-  seasonSorted.forEach(function(s) {
-    var luck = s.luck || 0;
-    var luckClass = luck > 0.2 ? 'pos' : luck < -0.2 ? 'neg' : '';
-    var sign = luck >= 0 ? '+' : '';
-    html += '<tr>';
-    html += '<td class="left"><div class="team-cell">' + joeTeamLogo(s.team) + '<span>' + s.team + '</span></div></td>';
-    html += '<td>' + (s.avgBestCase * 100).toFixed(1) + '%</td>';
-    html += '<td>' + (s.avgCase * 100).toFixed(1) + '%</td>';
-    html += '<td><strong>' + (s.avgActual * 100).toFixed(1) + '%</strong></td>';
-    html += '<td class="' + luckClass + '">' + sign + luck.toFixed(3) + '</td>';
-    html += '</tr>';
-  });
-  html += '</tbody></table></div></div>';
-
-  // ── 2. Heatmap ───────────────────────────────────────────────────────────
-  html += '<div class="card">';
-  html += '<div class="card-header"><span class="card-title">Weekly actual win% heatmap</span></div>';
-  html += '<div class="card-body" style="padding:16px 20px">';
-  html += '<div class="joe-heatmap"><table><thead><tr>';
-  html += '<th class="left">Team</th>';
-  weeks.forEach(function(w) { html += '<th>Wk ' + w + '</th>'; });
-  html += '<th>Avg</th>';
-  html += '</tr></thead><tbody>';
-
-  teamOrder.forEach(function(teamName) {
-    html += '<tr>';
-    html += '<td class="team-col"><div class="team-cell">' + joeTeamLogo(teamName) + '<span>' + teamName + '</span></div></td>';
-    var sum = 0, count = 0;
-    weeks.forEach(function(w) {
-      var row = byTeamWeek.find(function(r) { return r.team === teamName && r.week === w && r.actual != null; });
-      if (row) {
-        var c = heatColor(row.actual);
-        html += '<td style="background:' + c.bg + ';color:' + c.fg + '">' + (row.actual * 100).toFixed(0) + '%</td>';
-        sum += row.actual; count++;
-      } else {
-        html += '<td style="background:var(--bg);color:var(--muted)">—</td>';
-      }
-    });
-    var avg = count > 0 ? sum / count : null;
-    if (avg != null) {
-      var c = heatColor(avg);
-      html += '<td class="avg-col" style="background:' + c.bg + ';color:' + c.fg + '">' + (avg * 100).toFixed(0) + '%</td>';
-    } else {
-      html += '<td class="avg-col" style="background:var(--bg);color:var(--muted)">—</td>';
-    }
-    html += '</tr>';
-  });
-  html += '</tbody></table></div></div></div>';
-
-  // ── 3. Actual vs Average Case chart (week selector) ───────────────────────
-  html += '<div class="card">';
-  html += '<div class="card-header">';
-  html += '<span class="card-title">Actual vs average case</span>';
-  html += '<div class="pill-group" id="joe-chart-pills">';
+  // Week tabs
+  html += '<div class="trade-tabs" id="joe-week-tabs" style="flex-wrap:wrap">';
   weeks.forEach(function(w, i) {
-    html += '<button class="pill' + (i === 0 ? ' active' : '') + '" onclick="showJOEChart(' + w + ', this)">Wk ' + w + '</button>';
+    html += '<button class="trade-tab' + (i === 0 ? ' active' : '') + '" onclick="showJOEWeekTab(' + w + ',this)">Wk ' + w + '</button>';
   });
-  html += '</div></div>';
-  html += '<div class="card-body"><div class="chart-wrap" style="height:320px"><canvas id="joe-bar-chart"></canvas></div></div>';
   html += '</div>';
 
-  // ── 4. Weekly detail table (week selector) ───────────────────────────────
-  html += '<div class="card">';
-  html += '<div class="card-header"><span class="card-title">Weekly detail</span>';
-  html += '<div style="display:flex;align-items:center;gap:10px">';
-  html += '<div class="pill-group" id="joe-week-pills">';
+  // One content div per week
   weeks.forEach(function(w, i) {
-    html += '<button class="pill' + (i === 0 ? ' active' : '') + '" onclick="showJOEWeek(' + w + ', this)">Wk ' + w + '</button>';
+    html += '<div id="joe-week-tab-' + w + '" class="trade-tab-content' + (i === 0 ? ' active' : '') + '">';
+    html += '<div class="card" style="margin-top:16px">';
+    html += '<div class="card-header">';
+    html += '<span class="card-title">Week ' + w + ' — JOE Factor</span>';
+    html += '<button class="pill" onclick="downloadJOEWeekCSV(' + w + ')" style="background:var(--accent);border-color:var(--accent);color:white;padding:5px 14px;font-size:12px">⬇ CSV</button>';
+    html += '</div>';
+    html += buildJOEWeekTable(w, byTeamWeek);
+    html += '</div></div>';
   });
-  html += '</div>';
-  html += '<button class="pill" onclick="downloadJOEWeekCSV()" style="background:var(--accent);border-color:var(--accent);color:white">⬇ CSV</button>';
-  html += '</div></div>';
-  html += '<div id="joe-week-body"></div>';
-  html += '</div>';
 
   document.getElementById('joe-body').innerHTML = html;
-  window._joeByTeamWeek = byTeamWeek;
-  window._joeSeasonData = season;
-  window._joeWeeks = weeks;
-  window._joeTeamOrder = teamOrder;
-
-  if (weeks.length > 0) {
-    showJOEChart(weeks[0], document.querySelector('#joe-chart-pills .pill'));
-    showJOEWeek(weeks[0], document.querySelector('#joe-week-pills .pill'));
-  }
 }
 
-window.showJOEChart = function(week, btn) {
-  document.querySelectorAll('#joe-chart-pills .pill').forEach(function(p) { p.classList.remove('active'); });
-  if (btn) btn.classList.add('active');
-
-  var rows = (window._joeByTeamWeek || [])
-    .filter(function(r) { return r.week === week && r.actual != null; })
-    .sort(function(a, b) { return b.actual - a.actual; });
-
-  var labels  = rows.map(function(r) { return r.team; });
-  var actual  = rows.map(function(r) { return parseFloat((r.actual * 100).toFixed(1)); });
-  var avgCase = rows.map(function(r) { return parseFloat((r.avgCase * 100).toFixed(1)); });
-
-  var barColors = rows.map(function(r) {
-    var diff = r.actual - r.avgCase;
-    return diff > 0.02 ? '#2d5a3d' : diff < -0.02 ? '#c0392b' : '#c8a96e';
+function buildJOEWeekTable(week, byTeamWeek) {
+  var rows = byTeamWeek.filter(function(r) {
+    return r.week === week && r.actual != null;
   });
 
-  if (window._joeBarChart) { window._joeBarChart.destroy(); }
-  window._joeBarChart = new Chart(document.getElementById('joe-bar-chart'), {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          label: 'Avg case',
-          data: avgCase,
-          backgroundColor: 'rgba(200,169,110,0.25)',
-          borderColor: '#c8a96e',
-          borderWidth: 1.5,
-          borderRadius: 3,
-          order: 2
-        },
-        {
-          label: 'Actual',
-          data: actual,
-          backgroundColor: barColors,
-          borderRadius: 3,
-          order: 1
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'top',
-          labels: { boxWidth: 12, padding: 16 }
-        },
-        tooltip: {
-          callbacks: {
-            afterBody: function(items) {
-              var i = items[0].dataIndex;
-              var row = (window._joeByTeamWeek || []).find(function(r) {
-                return r.team === items[0].label && r.week === week;
-              });
-              if (!row) return '';
-              var diff = (row.actual - row.avgCase);
-              var sign = diff >= 0 ? '+' : '';
-              return 'vs Avg: ' + sign + (diff * 100).toFixed(1) + '%';
-            }
-          }
-        }
-      },
-      scales: {
-        x: { grid: { display: false } },
-        y: {
-          min: 0, max: 100,
-          grid: { color: '#e4e0d8' },
-          ticks: { callback: function(v) { return v + '%'; } }
-        }
-      }
-    }
-  });
-};
+  if (!rows.length) return '<div style="padding:20px;color:var(--muted)">No data for this week.</div>';
 
-var _joeCurrentWeek = null;
+  // Compute weekly JOE Factor: normalize (actual - avgCase) / std to [-1,+1]
+  var diffs = rows.map(function(r) { return r.actual - r.avgCase; });
+  var mean  = diffs.reduce(function(s,v){return s+v;},0) / diffs.length;
+  var std   = Math.sqrt(diffs.reduce(function(s,v){return s+(v-mean)*(v-mean);},0) / diffs.length) || 1;
+  var raw   = diffs.map(function(d){ return (d - mean) / std; });
+  var minR  = Math.min.apply(null, raw);
+  var maxR  = Math.max.apply(null, raw);
+  var range = maxR - minR || 1;
+  var joe   = raw.map(function(r){ return 2*(r-minR)/range - 1; });
 
-window.showJOEWeek = function(week, btn) {
-  _joeCurrentWeek = week;
-  document.querySelectorAll('#joe-week-pills .pill').forEach(function(p) { p.classList.remove('active'); });
-  if (btn) btn.classList.add('active');
+  // Sort by actual desc
+  var indexed = rows.map(function(r,i){ return {r:r, joe:joe[i]}; });
+  indexed.sort(function(a,b){ return b.r.actual - a.r.actual; });
 
-  var rows = (window._joeByTeamWeek || [])
-    .filter(function(r) { return r.week === week && r.actual != null; })
-    .sort(function(a, b) { return (b.actual - b.avgCase) - (a.actual - a.avgCase); });
-
-  var html = '<div class="table-wrap"><table>';
-  html += '<thead><tr>';
+  var html = '<div class="table-wrap"><table><thead><tr>';
   html += '<th class="left">Team</th>';
   html += '<th class="left">Opponent</th>';
-  html += '<th>Actual</th><th>Avg case</th><th>Best case</th><th>Worst case</th><th>vs Avg</th>';
+  html += '<th>Actual</th><th>Avg Case</th><th>Best Case</th><th>Worst Case</th>';
+  html += '<th>vs Avg</th><th>JOE Factor</th>';
   html += '</tr></thead><tbody>';
 
-  rows.forEach(function(r) {
+  indexed.forEach(function(d) {
+    var r    = d.r;
+    var joe2 = d.joe;
     var diff = r.actual - r.avgCase;
-    var luckClass = diff > 0.02 ? 'pos' : diff < -0.02 ? 'neg' : '';
-    var sign = diff >= 0 ? '+' : '';
+    var diffClass = diff > 0.02 ? 'pos' : diff < -0.02 ? 'neg' : '';
+    var joeCol = joe2 > 0.2 ? '#1e6b3a' : joe2 < -0.2 ? '#c0392b' : '#b7791f';
+    var sign = function(v){ return v >= 0 ? '+' : ''; };
+
     html += '<tr>';
     html += '<td class="left"><div class="team-cell">' + joeTeamLogo(r.team) + '<span>' + r.team + '</span></div></td>';
     html += '<td class="left" style="color:var(--muted)">' + (r.opponent || '—') + '</td>';
-    html += '<td><strong>' + (r.actual * 100).toFixed(1) + '%</strong></td>';
-    html += '<td>' + (r.avgCase * 100).toFixed(1) + '%</td>';
+    html += '<td><strong>' + (r.actual   * 100).toFixed(1) + '%</strong></td>';
+    html += '<td>' + (r.avgCase  * 100).toFixed(1) + '%</td>';
     html += '<td>' + (r.bestCase * 100).toFixed(1) + '%</td>';
-    html += '<td>' + (r.worstCase * 100).toFixed(1) + '%</td>';
-    html += '<td class="' + luckClass + '">' + sign + (diff * 100).toFixed(1) + '%</td>';
+    html += '<td>' + (r.worstCase* 100).toFixed(1) + '%</td>';
+    html += '<td class="' + diffClass + '">' + sign(diff) + (diff * 100).toFixed(1) + '%</td>';
+    html += '<td style="font-weight:700;color:' + joeCol + '">' + sign(joe2) + joe2.toFixed(3) + '</td>';
     html += '</tr>';
   });
 
   html += '</tbody></table></div>';
-  document.getElementById('joe-week-body').innerHTML = html;
+  return html;
+}
+
+window.showJOEWeekTab = function(week, btn) {
+  document.querySelectorAll('#joe-week-tabs .trade-tab').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelectorAll('#joe-body .trade-tab-content').forEach(function(c){ c.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  var el = document.getElementById('joe-week-tab-' + week);
+  if (el) el.classList.add('active');
+  _joeCurrentWeek = week;
 };
 
-window.downloadJOEWeekCSV = function() {
-  var week = _joeCurrentWeek;
+var _joeCurrentWeek = null;
+
+window.downloadJOEWeekCSV = function(week) {
+  week = week || _joeCurrentWeek;
   if (!week) return;
-  var rows = (window._joeByTeamWeek || [])
-    .filter(function(r) { return r.week === week && r.actual != null; })
-    .sort(function(a, b) { return (b.actual - b.avgCase) - (a.actual - a.avgCase); });
+  var byTeamWeek = window._joeByTeamWeek || [];
+  var rows = byTeamWeek.filter(function(r){ return r.week === week && r.actual != null; });
   if (!rows.length) return;
 
-  var lines = ['Team,Opponent,Actual %,Avg Case %,Best Case %,Worst Case %,vs Avg %'];
-  rows.forEach(function(r) {
-    var diff = r.actual - r.avgCase;
+  // Recompute JOE Factor for CSV
+  var diffs = rows.map(function(r){ return r.actual - r.avgCase; });
+  var mean  = diffs.reduce(function(s,v){return s+v;},0) / diffs.length;
+  var std   = Math.sqrt(diffs.reduce(function(s,v){return s+(v-mean)*(v-mean);},0) / diffs.length) || 1;
+  var raw   = diffs.map(function(d){ return (d-mean)/std; });
+  var minR  = Math.min.apply(null,raw), maxR = Math.max.apply(null,raw);
+  var range = maxR - minR || 1;
+  var joe   = raw.map(function(r){ return 2*(r-minR)/range-1; });
+
+  var indexed = rows.map(function(r,i){ return {r:r, joe:joe[i]}; });
+  indexed.sort(function(a,b){ return b.r.actual - a.r.actual; });
+
+  var lines = ['Team,Opponent,Actual %,Avg Case %,Best Case %,Worst Case %,vs Avg %,JOE Factor'];
+  indexed.forEach(function(d) {
+    var r = d.r, diff = r.actual - r.avgCase;
     lines.push([
       '"' + r.team + '"',
-      '"' + (r.opponent || '') + '"',
-      (r.actual   * 100).toFixed(1),
-      (r.avgCase  * 100).toFixed(1),
-      (r.bestCase * 100).toFixed(1),
-      (r.worstCase* 100).toFixed(1),
-      (diff       * 100).toFixed(1)
+      '"' + (r.opponent||'') + '"',
+      (r.actual   *100).toFixed(1),
+      (r.avgCase  *100).toFixed(1),
+      (r.bestCase *100).toFixed(1),
+      (r.worstCase*100).toFixed(1),
+      (diff       *100).toFixed(1),
+      d.joe.toFixed(3)
     ].join(','));
   });
 
-  var blob = new Blob([lines.join('\n')], {type: 'text/csv'});
+  var blob = new Blob([lines.join('\n')], {type:'text/csv'});
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'joe_factor_week' + week + '.csv';
   a.click();
 };
+
 
 var CATS_HIGH = ['R','HR','RBI','SB','AVG','K','W','SVH3'];
 var CATS_LOW  = ['ERA','WHIP'];
