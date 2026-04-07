@@ -1652,12 +1652,14 @@ function buildJOEPage(result) {
 
   // ── 4. Weekly detail table (week selector) ───────────────────────────────
   html += '<div class="card">';
-  html += '<div class="card-header">';
-  html += '<span class="card-title">Weekly detail</span>';
+  html += '<div class="card-header"><span class="card-title">Weekly detail</span>';
+  html += '<div style="display:flex;align-items:center;gap:10px">';
   html += '<div class="pill-group" id="joe-week-pills">';
   weeks.forEach(function(w, i) {
     html += '<button class="pill' + (i === 0 ? ' active' : '') + '" onclick="showJOEWeek(' + w + ', this)">Wk ' + w + '</button>';
   });
+  html += '</div>';
+  html += '<button class="pill" onclick="downloadJOEWeekCSV()" style="background:var(--accent);border-color:var(--accent);color:white">⬇ CSV</button>';
   html += '</div></div>';
   html += '<div id="joe-week-body"></div>';
   html += '</div>';
@@ -1750,7 +1752,10 @@ window.showJOEChart = function(week, btn) {
   });
 };
 
+var _joeCurrentWeek = null;
+
 window.showJOEWeek = function(week, btn) {
+  _joeCurrentWeek = week;
   document.querySelectorAll('#joe-week-pills .pill').forEach(function(p) { p.classList.remove('active'); });
   if (btn) btn.classList.add('active');
 
@@ -1784,7 +1789,34 @@ window.showJOEWeek = function(week, btn) {
   document.getElementById('joe-week-body').innerHTML = html;
 };
 
-// ── Match Predictions ────────────────────────────────────────────────────────
+window.downloadJOEWeekCSV = function() {
+  var week = _joeCurrentWeek;
+  if (!week) return;
+  var rows = (window._joeByTeamWeek || [])
+    .filter(function(r) { return r.week === week && r.actual != null; })
+    .sort(function(a, b) { return (b.actual - b.avgCase) - (a.actual - a.avgCase); });
+  if (!rows.length) return;
+
+  var lines = ['Team,Opponent,Actual %,Avg Case %,Best Case %,Worst Case %,vs Avg %'];
+  rows.forEach(function(r) {
+    var diff = r.actual - r.avgCase;
+    lines.push([
+      '"' + r.team + '"',
+      '"' + (r.opponent || '') + '"',
+      (r.actual   * 100).toFixed(1),
+      (r.avgCase  * 100).toFixed(1),
+      (r.bestCase * 100).toFixed(1),
+      (r.worstCase* 100).toFixed(1),
+      (diff       * 100).toFixed(1)
+    ].join(','));
+  });
+
+  var blob = new Blob([lines.join('\n')], {type: 'text/csv'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'joe_factor_week' + week + '.csv';
+  a.click();
+};
 
 var CATS_HIGH = ['R','HR','RBI','SB','AVG','K','W','SVH3'];
 var CATS_LOW  = ['ERA','WHIP'];
