@@ -1634,15 +1634,13 @@ function buildJOEPage(byTeamPeriod, schedule) {
       rows.push({ team:team, opponent:opp||'—', actual:actual, avgCase:avgCase, bestCase:bestCase, worstCase:worstCase });
     });
 
-    // Normalize JOE Factor [-1,+1] across teams for this week
+    // JOE Factor: min-max normalize (actual - avgCase) to [-1, +1]
     var diffs = rows.map(function(r){ return r.actual != null ? r.actual - r.avgCase : 0; });
-    var mean  = diffs.reduce(function(s,v){return s+v;},0) / diffs.length;
-    var std   = Math.sqrt(diffs.reduce(function(s,v){return s+(v-mean)*(v-mean);},0) / diffs.length) || 1;
-    var raw   = diffs.map(function(d){ return (d-mean)/std; });
-    var minR  = Math.min.apply(null,raw), maxR = Math.max.apply(null,raw);
-    var range = maxR - minR || 1;
+    var minD  = Math.min.apply(null, diffs);
+    var maxD  = Math.max.apply(null, diffs);
+    var range = maxD - minD || 1;
     rows.forEach(function(r, i) {
-      r.joe = parseFloat((2*(raw[i]-minR)/range - 1).toFixed(3));
+      r.joe = parseFloat((2*(diffs[i]-minD)/range - 1).toFixed(3));
     });
 
     allResults[wk] = rows;
@@ -1681,27 +1679,22 @@ function buildJOEPage(byTeamPeriod, schedule) {
     html += '<div class="card" style="margin-top:16px">';
     html += '<div class="card-header">';
     html += '<span class="card-title">Week ' + w + ' — JOE Factor</span>';
-    html += '<button class="pill" onclick="downloadJOEWeekCSV(' + w + ')" style="background:var(--accent);border-color:var(--accent);color:white;padding:5px 14px;font-size:12px">⬇ CSV</button>';
     html += '</div>';
 
     var rows = (allResults[w] || []).slice().sort(function(a,b){ return b.actual - a.actual; });
     html += '<div class="table-wrap"><table><thead><tr>';
-    html += '<th class="left">Team</th><th class="left">Opponent</th>';
-    html += '<th>Actual</th><th>Avg Case</th><th>Best Case</th><th>Worst Case</th><th>vs Avg</th><th>JOE Factor</th>';
+    html += '<th class="left">Team</th>';
+    html += '<th>Actual</th><th>Avg Case</th><th>Best Case</th><th>Worst Case</th><th>JOE Factor</th>';
     html += '</tr></thead><tbody>';
     rows.forEach(function(r) {
-      var diff = r.actual != null ? r.actual - r.avgCase : null;
-      var diffCls = diff == null ? '' : diff > 0.02 ? 'pos' : diff < -0.02 ? 'neg' : '';
-      var joeCol  = r.joe > 0.2 ? '#1e6b3a' : r.joe < -0.2 ? '#c0392b' : '#b7791f';
+      var joeCol = r.joe > 0.2 ? '#1e6b3a' : r.joe < -0.2 ? '#c0392b' : '#b7791f';
       var s = function(v){ return v >= 0 ? '+' : ''; };
       html += '<tr>';
       html += '<td class="left"><div class="team-cell">' + joeTeamLogo(r.team) + '<span>' + r.team + '</span></div></td>';
-      html += '<td class="left" style="color:var(--muted)">' + r.opponent + '</td>';
       html += '<td><strong>' + (r.actual!=null?(r.actual*100).toFixed(1)+'%':'—') + '</strong></td>';
       html += '<td>' + (r.avgCase*100).toFixed(1) + '%</td>';
       html += '<td>' + (r.bestCase*100).toFixed(1) + '%</td>';
       html += '<td>' + (r.worstCase*100).toFixed(1) + '%</td>';
-      html += '<td class="' + diffCls + '">' + (diff!=null?s(diff)+(diff*100).toFixed(1)+'%':'—') + '</td>';
       html += '<td style="font-weight:700;color:' + joeCol + '">' + s(r.joe) + r.joe.toFixed(3) + '</td>';
       html += '</tr>';
     });
