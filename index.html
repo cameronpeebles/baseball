@@ -1519,29 +1519,80 @@ function renderJOEFactor() {
   if (joeRendered) return;
   joeRendered = true;
 
-  function build(joeStats, schedule) {
-    // Build {week → {team → stats}} from flat joe_stats array
-    var byWeek = {};
-    joeStats.forEach(function(row) {
-      if (!byWeek[row.week]) byWeek[row.week] = {};
-      byWeek[row.week][row.team] = row;
+  // standings.json already loaded in S — use it directly
+  // Parse all "Scoring Period: N" tables from standings tableList
+  var tables = (S.seasonData && S.seasonData.data && S.seasonData.data.tableList) || [];
+
+  // Try standings.json first (has scoring period tables)
+  function buildFromStandings(standingsData, scheduleData) {
+    var tbls = (standingsData.data && standingsData.data.tableList) || [];
+    var byWeek = {}; // week → {teamName → {R,HR,RBI,SB,AVG,W,K,SV,ERA,WHIP}}
+
+    tbls.forEach(function(tbl) {
+      var cap = (tbl.caption || '').trim();
+      // Match "Scoring Period: 1" or "SCORING PERIOD: 1" etc.
+      var m = cap.match(/scoring period[:\s]+(\d+)/i);
+      if (!m) return;
+      var wk = parseInt(m[1]);
+
+      var vh = (tbl.header && tbl.header.cells) || [];
+      // Build column index map
+      var hIdx = {};
+      vh.forEach(function(h, i) {
+        if (h.key)       hIdx[h.key.toUpperCase()]       = i;
+        if (h.shortName) hIdx[h.shortName.toUpperCase()] = i;
+        if (h.name)      hIdx[h.name.toUpperCase()]      = i;
+      });
+
+      function gv(cells, key) {
+        var i = hIdx[key.toUpperCase()];
+        if (i == null) return 0;
+        var v = parseFloat((cells[i] || {}).content);
+        return isNaN(v) ? 0 : v;
+      }
+
+      byWeek[wk] = {};
+      (tbl.rows || []).forEach(function(row) {
+        var fc = row.fixedCells || [], cells = row.cells || [];
+        var teamId = '', teamName = '';
+        fc.forEach(function(c) { if (c.teamId) { teamId = c.teamId; } });
+        if (teamId && S.teamInfo[teamId]) teamName = S.teamInfo[teamId].name || '';
+        if (!teamName) fc.forEach(function(c) { if (c.content && !c.teamId) teamName = teamName || c.content; });
+        if (!teamName) return;
+
+        byWeek[wk][teamName] = {
+          R:    gv(cells,'R'),
+          HR:   gv(cells,'HR'),
+          RBI:  gv(cells,'RBI'),
+          SB:   gv(cells,'SB'),
+          AVG:  gv(cells,'AVG'),
+          W:    gv(cells,'W'),
+          K:    gv(cells,'K'),
+          SV:   gv(cells,'SV') || gv(cells,'SVH3') || gv(cells,'SVH'),
+          ERA:  gv(cells,'ERA'),
+          WHIP: gv(cells,'WHIP'),
+        };
+      });
+
+      // Remove weeks with fewer than 8 teams
+      if (Object.keys(byWeek[wk]).length < 8) delete byWeek[wk];
     });
-    buildJOEPage(byWeek, schedule);
+
+    if (!Object.keys(byWeek).length) {
+      document.getElementById('joe-body').innerHTML =
+        '<div class="error-msg">No Scoring Period tables found in standings data.</div>';
+      return;
+    }
+
+    buildJOEPage(byWeek, scheduleData);
   }
 
-  // Use already-loaded _joeStats if available
-  if (window._joeStats && window._joeStats.length) {
-    var sched = window._mpPredictions || [];
-    if (sched.length) { build(window._joeStats, sched); return; }
-  }
-
-  // Otherwise load both
+  // Load standings.json + full_schedule.json
   Promise.all([
-    loadJSON('joe_stats.json'),
+    loadJSON('standings.json'),
     loadJSON('full_schedule.json')
   ]).then(function(res) {
-    window._joeStats = res[0];
-    build(res[0], res[1]);
+    buildFromStandings(res[0], res[1]);
   }).catch(function(e) {
     document.getElementById('joe-body').innerHTML =
       '<div class="error-msg">Error loading data: ' + e.message + '</div>';
