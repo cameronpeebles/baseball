@@ -238,6 +238,7 @@ td.neg { color: #c0392b; font-weight: 500; }
 
 <nav>
   <button class="active" onclick="showPage('dashboard',this)">Dashboard</button>
+  <button onclick="showPage('leaders',this)">League Leaders</button>
   <button onclick="showPage('fantrax',this)">Fantrax Data</button>
   <button onclick="showPage('combined',this)">League Stats</button>
   <button onclick="showPage('rosters',this)">Rosters</button>
@@ -247,8 +248,6 @@ td.neg { color: #c0392b; font-weight: 500; }
   <button onclick="showPage('correlations',this)">Correlations</button>
   <button onclick="showPage('fwar',this)">fWAR</button>
   <button onclick="showPage('trade',this)">Player Trade &amp; Market</button>
-  <button onclick="showPage('historic',this)">Historic League Data</button>
-  <button onclick="showPage('leaders',this)">League Leaders</button>
   <button onclick="showPage('targets',this)">Trade Waiver Wire Targets</button>
 </nav>
 
@@ -267,6 +266,7 @@ td.neg { color: #c0392b; font-weight: 500; }
       <button class="trade-tab active" onclick="showFantraxTab('standings',this)">Standings</button>
       <button class="trade-tab" onclick="showFantraxTab('season',this)">Season Stats</button>
       <button class="trade-tab" onclick="showFantraxTab('tables',this)">Tables</button>
+      <button class="trade-tab" onclick="showFantraxTab('historic',this)">Historic League Data</button>
     </div>
     <div id="fantrax-tab-standings" class="trade-tab-content active">
       <div id="standings-body"><div class="loading">Loading...</div></div>
@@ -290,7 +290,9 @@ td.neg { color: #c0392b; font-weight: 500; }
         </div>
       </div>
     </div>
-  </div>
+    <div id="fantrax-tab-historic" class="trade-tab-content">
+      <div id="historic-body"><div class="loading">Loading...</div></div>
+    </div>
   <div class="page" id="page-combined">
     <div class="page-title">League Stats</div>
     <div class="page-subtitle">Weekly stats, head-to-head results, and matchup history.</div>
@@ -335,7 +337,7 @@ td.neg { color: #c0392b; font-weight: 500; }
         </div>
       </div>
       <div style="margin-top:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <span style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Presets:</span>
+        <span style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Positional Scarcity:</span>
         <button id="fwar-preset-pitcher" class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('pitcher')">⚾ Pitcher Heavy</button>
         <button id="fwar-preset-hybrid"  class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('hybrid')">⚖️ Hybrid</button>
         <button id="fwar-preset-hitter"  class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('hitter')">🏏 Hitter Heavy</button>
@@ -478,11 +480,7 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div class="page-subtitle">How stats, luck, and roster strength relate to standings performance.</div>
     <div id="correlations-body"><div class="loading">Loading...</div></div>
   </div>
-  <div class="page" id="page-historic">
-    <div class="page-title">Historic League Data</div>
-    <div class="page-subtitle">Season-by-season standings, stats, and SPG analysis (2021–2025).</div>
-    <div id="historic-body"><div class="loading">Loading...</div></div>
-  </div>
+  <div class="page" id="page-historic" style="display:none"></div>
   <div class="page" id="page-leaders">
     <div class="page-title">League Leaders</div>
     <div class="page-subtitle">Top players and teams across every scoring category.</div>
@@ -574,6 +572,7 @@ window.showFantraxTab = function(tab, btn) {
   var el = document.getElementById('fantrax-tab-' + tab);
   if (el) el.classList.add('active');
   if (tab === 'tables') renderAnalytics();
+  if (tab === 'historic') renderHistoricPage();
 };
 
 function init() {
@@ -2558,15 +2557,15 @@ function buildTradeAnalyzer() {
 
   // Tabs
   html += '<div class="trade-tabs">';
-  html += '<button class="trade-tab active" onclick="showTradeTab(\'trade\', this)">Trade Finder</button>';
-  html += '<button class="trade-tab" onclick="showTradeTab(\'suggestions\', this)">Trade Suggestions</button>';
-  html += '<button class="trade-tab" onclick="showTradeTab(\'fa\', this)">Free Agent Fixer</button>';
+  html += '<button class="trade-tab active" onclick="showTradeTab(\'suggestions\', this)">Trade Suggestions</button>';
+  html += '<button class="trade-tab" onclick="showTradeTab(\'trade\', this)">Trade Analyzer</button>';
+  html += '<button class="trade-tab" onclick="showTradeTab(\'fa\', this)">Free Agent Recommendations</button>';
   html += '<button class="trade-tab" onclick="showTradeTab(\'sgp-hit\', this)">Hitter SGP</button>';
   html += '<button class="trade-tab" onclick="showTradeTab(\'sgp-pit\', this)">Pitcher SGP</button>';
   html += '</div>';
 
-  // ── Trade Finder tab ──────────────────────────────────────────────────────
-  html += '<div class="trade-tab-content active" id="trade-tab-trade">';
+  // ── Trade Suggestions tab (first/default) ────────────────────────────────
+  html += '<div class="trade-tab-content active" id="trade-tab-suggestions">';
 
   html += '<div class="joe-info" style="margin-bottom:20px">';
   html += '<strong>How it works:</strong> Select up to 2 players from each team. ';
@@ -2632,8 +2631,8 @@ function buildTradeAnalyzer() {
   html += '<div id="fa-results-area"></div>';
   html += '</div>'; // fa tab
 
-  // ── Trade Suggestions tab ─────────────────────────────────────────────────
-  html += '<div class="trade-tab-content" id="trade-tab-suggestions">';
+  // ── Trade Analyzer tab ────────────────────────────────────────────────────
+  html += '<div class="trade-tab-content" id="trade-tab-trade">';
   html += '<div class="joe-info" style="margin-bottom:20px">';
   html += '<strong>How it works:</strong> Select your team. The analyzer finds your weakest and strongest positions, ';
   html += 'then scans every other team for players who fill your weaknesses — but only suggests trades where ';
@@ -5916,7 +5915,6 @@ function renderHistoricPage() {
     html += '<div class="table-wrap"><table><thead><tr>';
     html += '<th class="left">Rank</th><th>Pts</th>';
     CATS.forEach(function(cat){ html += '<th>' + CAT_LABELS[cat] + '</th>'; });
-    html += '<th style="color:var(--accent);font-weight:700">SGP</th>';
     html += '</tr></thead><tbody>';
 
     // League avg row
@@ -5927,13 +5925,10 @@ function renderHistoricPage() {
       var fmt = (cat==='avg'||cat==='era'||cat==='whip') ? m.toFixed(3) : Math.round(m);
       html += '<td style="font-weight:600;color:#2980b9;font-size:12px">' + fmt + '</td>';
     });
-    html += '<td style="color:#2980b9;font-weight:600">—</td>';
     html += '</tr>';
 
     teamsWithSGP.forEach(function(d, i) {
       var t = d.t;
-      var sgpCol = d.sgp >= 5 ? '#1e6b3a' : d.sgp >= 0 ? '#4a9a68' : d.sgp >= -5 ? '#b7791f' : '#c0392b';
-      // Color each stat cell vs league avg
       html += '<tr' + (i%2===1?' style="background:var(--bg)"':'') + '>';
       html += '<td class="left"><span class="rank' + (t.rank<=3?' top':'') + '">' + t.rank + '</span></td>';
       html += '<td style="font-weight:600">' + t.pts + '</td>';
@@ -5947,7 +5942,6 @@ function renderHistoricPage() {
         var fmt = (cat==='avg'||cat==='era'||cat==='whip') ? v.toFixed(3) : v;
         html += '<td style="color:' + col + '">' + fmt + '</td>';
       });
-      html += '<td style="font-weight:700;color:' + sgpCol + '">' + (d.sgp>=0?'+':'') + d.sgp.toFixed(1) + '</td>';
       html += '</tr>';
     });
     html += '</tbody></table></div></div>';
