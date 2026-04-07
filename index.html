@@ -1687,7 +1687,8 @@ window.showJOEChart = function(week, btn) {
   var avgCase = rows.map(function(r) { return parseFloat((r.avgCase * 100).toFixed(1)); });
 
   var barColors = rows.map(function(r) {
-    return r.luck > 0.2 ? '#2d5a3d' : r.luck < -0.2 ? '#c0392b' : '#c8a96e';
+    var diff = r.actual - r.avgCase;
+    return diff > 0.02 ? '#2d5a3d' : diff < -0.02 ? '#c0392b' : '#c8a96e';
   });
 
   if (window._joeBarChart) { window._joeBarChart.destroy(); }
@@ -1730,9 +1731,9 @@ window.showJOEChart = function(week, btn) {
                 return r.team === items[0].label && r.week === week;
               });
               if (!row) return '';
-              var luck = row.luck || 0;
-              var sign = luck >= 0 ? '+' : '';
-              return 'Luck: ' + sign + luck.toFixed(3);
+              var diff = (row.actual - row.avgCase);
+              var sign = diff >= 0 ? '+' : '';
+              return 'vs Avg: ' + sign + (diff * 100).toFixed(1) + '%';
             }
           }
         }
@@ -1755,19 +1756,19 @@ window.showJOEWeek = function(week, btn) {
 
   var rows = (window._joeByTeamWeek || [])
     .filter(function(r) { return r.week === week && r.actual != null; })
-    .sort(function(a, b) { return b.luck - a.luck; });
+    .sort(function(a, b) { return (b.actual - b.avgCase) - (a.actual - a.avgCase); });
 
   var html = '<div class="table-wrap"><table>';
   html += '<thead><tr>';
   html += '<th class="left">Team</th>';
   html += '<th class="left">Opponent</th>';
-  html += '<th>Actual</th><th>Avg case</th><th>Best case</th><th>Worst case</th><th>Luck</th>';
+  html += '<th>Actual</th><th>Avg case</th><th>Best case</th><th>Worst case</th><th>vs Avg</th>';
   html += '</tr></thead><tbody>';
 
   rows.forEach(function(r) {
-    var luck = r.luck || 0;
-    var luckClass = luck > 0.2 ? 'pos' : luck < -0.2 ? 'neg' : '';
-    var sign = luck >= 0 ? '+' : '';
+    var diff = r.actual - r.avgCase;
+    var luckClass = diff > 0.02 ? 'pos' : diff < -0.02 ? 'neg' : '';
+    var sign = diff >= 0 ? '+' : '';
     html += '<tr>';
     html += '<td class="left"><div class="team-cell">' + joeTeamLogo(r.team) + '<span>' + r.team + '</span></div></td>';
     html += '<td class="left" style="color:var(--muted)">' + (r.opponent || '—') + '</td>';
@@ -1775,7 +1776,7 @@ window.showJOEWeek = function(week, btn) {
     html += '<td>' + (r.avgCase * 100).toFixed(1) + '%</td>';
     html += '<td>' + (r.bestCase * 100).toFixed(1) + '%</td>';
     html += '<td>' + (r.worstCase * 100).toFixed(1) + '%</td>';
-    html += '<td class="' + luckClass + '">' + sign + luck.toFixed(3) + '</td>';
+    html += '<td class="' + luckClass + '">' + sign + (diff * 100).toFixed(1) + '%</td>';
     html += '</tr>';
   });
 
@@ -4358,7 +4359,7 @@ function buildCorrelations(el) {
     var rows = joeByTeam[team];
     var avgActual = rows.reduce(function(s,r){return s+r.actual;},0)/rows.length;
     var avgCase   = rows.reduce(function(s,r){return s+(r.avgCase||0);},0)/rows.length;
-    var avgLuck   = rows.reduce(function(s,r){return s+(r.luck||0);},0)/rows.length;
+    var avgLuck   = rows.reduce(function(s,r){return s+((r.actual||0)-(r.avgCase||0));},0)/rows.length;
     teamJOE[team] = { avgActual: avgActual, avgCase: avgCase, avgLuck: avgLuck };
   });
 
