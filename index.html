@@ -1876,6 +1876,93 @@ function buildJOEPage(byWeek, schedule) {
   });
 
   document.getElementById('joe-body').innerHTML = html;
+
+  // ── Season H2H Matrix ─────────────────────────────────────────────────────
+  // Compute each team's season-average stats across all completed weeks
+  var teamNames = [];
+  completedWeeks.forEach(function(wk) {
+    Object.keys(byWeek[wk]).forEach(function(t) {
+      if (teamNames.indexOf(t) === -1) teamNames.push(t);
+    });
+  });
+  teamNames.sort();
+
+  var seasonAvg = {}; // team → avg stats
+  teamNames.forEach(function(team) {
+    var weeks = completedWeeks.filter(function(wk){ return byWeek[wk][team]; });
+    if (!weeks.length) return;
+    var avg = {};
+    ALL_CATS_J.forEach(function(cat) {
+      avg[cat] = weeks.reduce(function(s,wk){ return s + (byWeek[wk][team][cat]||0); }, 0) / weeks.length;
+    });
+    seasonAvg[team] = avg;
+  });
+
+  var teams = Object.keys(seasonAvg).sort();
+  if (!teams.length) return;
+
+  // Build pairwise W% matrix
+  var matrix = {}; // row team → col team → W%
+  teams.forEach(function(a) {
+    matrix[a] = {};
+    teams.forEach(function(b) {
+      if (a === b) { matrix[a][b] = null; return; }
+      var w = 0, t2 = 0;
+      ALL_CATS_J.forEach(function(cat) {
+        var av = seasonAvg[a][cat]||0, bv = seasonAvg[b][cat]||0;
+        var isLow = LOW_CATS_J.indexOf(cat) !== -1;
+        if (isLow) { if (av < bv) w++; else if (av === bv) t2++; }
+        else        { if (av > bv) w++; else if (av === bv) t2++; }
+      });
+      matrix[a][b] = (w + 0.5*t2) / 10;
+    });
+  });
+
+  // Color helper: green = high W%, red = low
+  function cellStyle(v) {
+    if (v === null) return 'background:#e4e0d8;color:var(--muted)';
+    if (v >= 0.75) return 'background:#1e6b3a;color:#fff;font-weight:700';
+    if (v >= 0.60) return 'background:#4a9a68;color:#fff;font-weight:600';
+    if (v >= 0.50) return 'background:#a8d5b5;color:#1a3d26';
+    if (v >= 0.40) return 'background:#f5c4b3;color:#6b2a1a';
+    if (v >= 0.25) return 'background:#e05c4b;color:#fff;font-weight:600';
+    return 'background:#c0392b;color:#fff;font-weight:700';
+  }
+
+  var mHtml = '<div class="card" style="margin-top:20px">';
+  mHtml += '<div class="card-header"><span class="card-title">Season H2H Matrix — Expected W% (row team vs column team)</span>';
+  mHtml += '<span style="font-size:11px;color:var(--muted)">Based on season-average stats across all completed weeks</span></div>';
+  mHtml += '<div class="table-wrap" style="overflow-x:auto"><table style="font-size:12px;min-width:max-content"><thead><tr>';
+  mHtml += '<th class="left" style="min-width:140px">Team</th>';
+  mHtml += '<th style="min-width:60px">Avg W%</th>';
+  teams.forEach(function(t) {
+    var short = t.split(' ').map(function(w){ return w[0]; }).join('');
+    mHtml += '<th style="min-width:52px" title="' + t + '">' + short + '</th>';
+  });
+  mHtml += '</tr></thead><tbody>';
+
+  teams.forEach(function(a) {
+    // Row average (excluding self)
+    var rowVals = teams.filter(function(b){ return b!==a; }).map(function(b){ return matrix[a][b]; });
+    var rowAvg  = rowVals.reduce(function(s,v){ return s+v; }, 0) / rowVals.length;
+
+    mHtml += '<tr>';
+    mHtml += '<td class="left"><div class="team-cell">' + joeTeamLogo(a) + '<span>' + a + '</span></div></td>';
+    mHtml += '<td style="font-weight:700;' + cellStyle(rowAvg) + '">' + rowAvg.toFixed(3) + '</td>';
+    teams.forEach(function(b) {
+      var v = matrix[a][b];
+      if (v === null) {
+        mHtml += '<td style="background:#e4e0d8;text-align:center">—</td>';
+      } else {
+        mHtml += '<td style="text-align:center;' + cellStyle(v) + '">' + v.toFixed(3) + '</td>';
+      }
+    });
+    mHtml += '</tr>';
+  });
+
+  mHtml += '</tbody></table></div></div>';
+
+  document.getElementById('joe-body').innerHTML += mHtml;
 }
 
 
