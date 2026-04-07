@@ -1764,12 +1764,96 @@ function buildJOEPage(byWeek, schedule) {
   // One content div per week
   completedWeeks.forEach(function(w, i) {
     html += '<div id="joe-week-tab-' + w + '" class="trade-tab-content' + (i===0?' active':'') + '">';
-    html += '<div class="card" style="margin-top:16px">';
-    html += '<div class="card-header">';
-    html += '<span class="card-title">Week ' + w + ' — JOE Factor</span>';
-    html += '</div>';
 
     var rows = (allResults[w] || []).slice().sort(function(a,b){ return (b.joe||0)-(a.joe||0); });
+    var rowsByActual = rows.slice().sort(function(a,b){ return (b.actual||0)-(a.actual||0); });
+
+    // ── Chart row ────────────────────────────────────────────────────────────
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">';
+
+    // ── Chart 1: Range plot (Worst→Best line, dots for Avg and Actual) ───────
+    var W1=520, H1=300, PL=140, PR=20, PT=30, PB=40;
+    var chartW = W1-PL-PR, chartH = H1-PT-PB;
+    html += '<div class="card"><div class="card-header"><span class="card-title" style="font-size:12px">Win% Range — Best / Actual / Avg / Worst</span></div>';
+    html += '<div style="padding:12px"><svg viewBox="0 0 ' + W1 + ' ' + H1 + '" style="width:100%;height:auto">';
+
+    // Grid lines at 0, 0.25, 0.5, 0.75, 1.0
+    [0,0.25,0.5,0.75,1.0].forEach(function(v) {
+      var y = PT + chartH - v * chartH;
+      html += '<line x1="' + PL + '" y1="' + y + '" x2="' + (W1-PR) + '" y2="' + y + '" stroke="var(--border)" stroke-width="0.5"/>';
+      html += '<text x="' + (PL-4) + '" y="' + (y+4) + '" text-anchor="end" font-size="9" fill="var(--muted)">' + v.toFixed(2) + '</text>';
+    });
+
+    var n1 = rowsByActual.length;
+    rowsByActual.forEach(function(r, idx) {
+      var cx = PL + (idx + 0.5) * (chartW / n1);
+      var yBest  = PT + chartH - r.bestPct  * chartH;
+      var yWorst = PT + chartH - r.worstPct * chartH;
+      var yAvg   = PT + chartH - r.avg      * chartH;
+      var yAct   = r.actual != null ? PT + chartH - r.actual * chartH : null;
+
+      // Vertical range line
+      html += '<line x1="' + cx + '" y1="' + yBest + '" x2="' + cx + '" y2="' + yWorst + '" stroke="#90b4a0" stroke-width="2"/>';
+      // Best dot
+      html += '<circle cx="' + cx + '" cy="' + yBest + '" r="3" fill="#2d5a3d"/>';
+      // Worst dot
+      html += '<circle cx="' + cx + '" cy="' + yWorst + '" r="3" fill="#c0392b"/>';
+      // Avg dot
+      html += '<circle cx="' + cx + '" cy="' + yAvg + '" r="4" fill="#c8a96e"/>';
+      // Actual dot
+      if (yAct != null) {
+        html += '<circle cx="' + cx + '" cy="' + yAct + '" r="5" fill="var(--accent)" stroke="white" stroke-width="1.5"/>';
+      }
+      // Team label (rotated)
+      var shortName = r.team.split(' ').slice(-1)[0]; // last word
+      html += '<text x="' + cx + '" y="' + (H1-5) + '" text-anchor="end" font-size="8" fill="var(--muted)" transform="rotate(-40,' + cx + ',' + (H1-5) + ')">' + shortName + '</text>';
+    });
+
+    // Legend
+    html += '<circle cx="' + (PL+4) + '" cy="' + (PT-12) + '" r="3" fill="#2d5a3d"/><text x="' + (PL+9) + '" y="' + (PT-9) + '" font-size="8" fill="var(--muted)">Best</text>';
+    html += '<circle cx="' + (PL+35) + '" cy="' + (PT-12) + '" r="4" fill="#c8a96e"/><text x="' + (PL+40) + '" y="' + (PT-9) + '" font-size="8" fill="var(--muted)">Avg</text>';
+    html += '<circle cx="' + (PL+63) + '" cy="' + (PT-12) + '" r="5" fill="var(--accent)"/><text x="' + (PL+70) + '" y="' + (PT-9) + '" font-size="8" fill="var(--muted)">Actual</text>';
+    html += '<circle cx="' + (PL+98) + '" cy="' + (PT-12) + '" r="3" fill="#c0392b"/><text x="' + (PL+103) + '" y="' + (PT-9) + '" font-size="8" fill="var(--muted)">Worst</text>';
+
+    html += '</svg></div></div>';
+
+    // ── Chart 2: JOE Factor bar chart ─────────────────────────────────────────
+    var W2=520, H2=300, PL2=140, PR2=20, PT2=30, PB2=40;
+    var chartW2 = W2-PL2-PR2, chartH2 = H2-PT2-PB2;
+    var midY = PT2 + chartH2/2; // y position of 0
+
+    html += '<div class="card"><div class="card-header"><span class="card-title" style="font-size:12px">JOE Factor (+1 = Luckiest, -1 = Unluckiest)</span></div>';
+    html += '<div style="padding:12px"><svg viewBox="0 0 ' + W2 + ' ' + H2 + '" style="width:100%;height:auto">';
+
+    // Grid lines at -1, -0.5, 0, 0.5, 1
+    [-1,-0.5,0,0.5,1].forEach(function(v) {
+      var y = PT2 + chartH2/2 - v * chartH2/2;
+      html += '<line x1="' + PL2 + '" y1="' + y + '" x2="' + (W2-PR2) + '" y2="' + y + '" stroke="' + (v===0?'var(--text)':'var(--border)') + '" stroke-width="' + (v===0?'1':'0.5') + '"/>';
+      html += '<text x="' + (PL2-4) + '" y="' + (y+4) + '" text-anchor="end" font-size="9" fill="var(--muted)">' + (v>=0?'+':'') + v.toFixed(1) + '</text>';
+    });
+
+    var n2 = rows.length;
+    var barW = Math.max(8, (chartW2 / n2) * 0.65);
+    rows.forEach(function(r, idx) {
+      var cx = PL2 + (idx + 0.5) * (chartW2 / n2);
+      var barH = Math.abs(r.joe) * chartH2/2;
+      var barY = r.joe >= 0 ? midY - barH : midY;
+      var col  = r.joe >= 0 ? '#4a9a68' : '#c0392b';
+      if (r.joe >= 0.7)  col = '#1e6b3a';
+      if (r.joe <= -0.7) col = '#922b21';
+      html += '<rect x="' + (cx-barW/2) + '" y="' + barY + '" width="' + barW + '" height="' + barH + '" fill="' + col + '" rx="2"/>';
+      html += '<text x="' + cx + '" y="' + (r.joe>=0 ? barY-3 : barY+barH+9) + '" text-anchor="middle" font-size="8" fill="' + col + '" font-weight="600">' + (r.joe>=0?'+':'') + r.joe.toFixed(2) + '</text>';
+      var shortName2 = r.team.split(' ').slice(-1)[0];
+      html += '<text x="' + cx + '" y="' + (H2-5) + '" text-anchor="end" font-size="8" fill="var(--muted)" transform="rotate(-40,' + cx + ',' + (H2-5) + ')">' + shortName2 + '</text>';
+    });
+
+    html += '</svg></div></div>';
+
+    html += '</div>'; // chart grid
+
+    // ── Table ─────────────────────────────────────────────────────────────────
+    html += '<div class="card" style="margin-top:16px">';
+    html += '<div class="card-header"><span class="card-title">Week ' + w + ' — Detail</span></div>';
     html += '<div class="table-wrap"><table><thead><tr>';
     html += '<th class="left">Team</th>';
     html += '<th>Actual (W-L-T)</th><th>Actual W%</th><th>Avg W%</th>';
