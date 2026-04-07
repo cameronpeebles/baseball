@@ -579,7 +579,7 @@ function init() {
   Promise.all([
     loadJSON('standings.json'),
     loadJSON('standings_season.json'),
-    loadJSON('standings_combined.json'),
+    loadJSON('standings_combined.json').catch(function(){ return {}; }),
     loadJSON('players_hitting.json'),
     loadJSON('players_pitching.json'),
     loadJSON('rosters.json'),
@@ -2264,7 +2264,7 @@ var TA = {
   teamB: null,      // selected team ID
   selectedA: [],    // selected player names for team A (max 2)
   selectedB: [],    // selected player names for team B (max 2)
-  activeTab: 'trade'
+  activeTab: 'suggestions'
 };
 
 // Position groups
