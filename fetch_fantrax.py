@@ -731,7 +731,7 @@ def fetch_savant_year(year, field_map, label):
                 first = (row.get('first_name') or '').strip()
                 last  = (row.get('last_name')  or '').strip()
                 name  = (first + ' ' + last).strip()
-            entry = {'player_id': pid, 'name': name}
+            entry = {'player_id': pid, 'name': name, 'pa': row.get('pa','').strip()}
             for field, disp in field_map.items():
                 raw = (row.get(field) or '').strip()
                 try: entry[disp] = float(raw) if raw and raw != 'null' else None
@@ -744,15 +744,71 @@ def fetch_savant_year(year, field_map, label):
         return []
 
 TARGETS_FIELD_MAP = {
-    "est_woba":           "xwOBA",
-    "woba":               "wOBA",
     "babip":              "BABIP",
     "barrel_batted_rate": "Barrel%",
     "hard_hit_percent":   "HardHit%",
 }
 
-players_2026 = fetch_savant_year(2026, TARGETS_FIELD_MAP, "targets 2026")
-players_2025 = fetch_savant_year(2025, TARGETS_FIELD_MAP, "targets 2025")
+XWOBA_FIELD_MAP = {
+    "est_woba_using_speedangle": "xwOBA",
+    "woba":                      "wOBA",
+}
+
+def fetch_xwoba_2026():
+    """Fetch xwOBA from expected_statistics endpoint (known to work)."""
+    url = ("https://baseballsavant.mlb.com/leaderboard/expected_statistics"
+           "?type=batter&year=2026&position=&team=&filterType=bip&min=q&csv=true")
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/csv,text/plain,*/*",
+    }
+    print(f"  xwOBA 2026: {url[:100]}...")
+    try:
+        r = requests.get(url, headers=headers, timeout=30)
+        print(f"  Status {r.status_code}, {len(r.content)} bytes")
+        if r.status_code != 200: return []
+        content = r.content
+        if content[:2] == b'\x1f\x8b':
+            import gzip as _gz; content = _gz.decompress(content)
+        text = content.decode('utf-8', errors='replace')
+        if text.startswith('\ufeff'): text = text[1:]
+        import csv as _c, io as _io
+        reader = _c.DictReader(_io.StringIO(text))
+        rows = list(reader)
+        fieldnames = [f.strip() for f in (reader.fieldnames or [])]
+        print(f"  xwOBA columns: {fieldnames[:15]}, rows: {len(rows)}")
+        combined = next((f for f in fieldnames if 'last_name' in f.lower() and 'first_name' in f.lower()), None)
+        result = []
+        for row in rows:
+            row = {k.strip(): (v.strip() if isinstance(v,str) else v) for k,v in row.items()}
+            pid = str(row.get('player_id','') or '').strip()
+            if combined:
+                parts = (row.get(combined) or '').split(',',1)
+                name = ((parts[1].strip() if len(parts)>1 else '') + ' ' + parts[0].strip()).strip()
+            else:
+                name = ((row.get('first_name','') or '') + ' ' + (row.get('last_name','') or '')).strip()
+            xwoba = None
+            for k in ('est_woba','est_woba_using_speedangle','xwoba','expected_woba'):
+                v = row.get(k,'').strip()
+                if v and v != 'null':
+                    try: xwoba = float(v); break
+                    except: pass
+            woba = None
+            v = row.get('woba','').strip()
+            if v and v != 'null':
+                try: woba = float(v)
+                except: pass
+            pa = row.get('pa','').strip() or row.get('ab','').strip()
+            result.append({'player_id': pid, 'name': name, 'xwOBA': xwoba, 'wOBA': woba, 'pa': pa})
+        print(f"  Parsed {len(result)} xwOBA players")
+        return result
+    except Exception as e:
+        print(f"  xwOBA error: {e}")
+        return []
+
+players_2026      = fetch_savant_year(2026, TARGETS_FIELD_MAP, "targets 2026")
+players_2025      = fetch_savant_year(2025, TARGETS_FIELD_MAP, "targets 2025")
+players_xwoba     = fetch_xwoba_2026()
 
 # Build lookups keyed by player_id (primary) then name (fallback)
 import unicodedata as _ud
@@ -775,10 +831,10 @@ def make_lookup(players):
                 by_name[key] = p
     return by_id, by_name
 
-lkp26_id, lkp26_nm = make_lookup(players_2026)
-lkp25_id, lkp25_nm = make_lookup(players_2025)
-print(f"  2026: {len(lkp26_id)} by id, {len(lkp26_nm)} by name")
-print(f"  2025: {len(lkp25_id)} by id, {len(lkp25_nm)} by name")
+lkp26_id,    lkp26_nm    = make_lookup(players_2026)
+lkp25_id,    lkp25_nm    = make_lookup(players_2025)
+lkpxw_id,    lkpxw_nm    = make_lookup(players_xwoba)
+print(f"  2026: {len(lkp26_id)} by id, xwoba: {len(lkpxw_id)} by id, 2025: {len(lkp25_id)} by id")
 
 def find(by_id, by_name, pid, name):
     if pid and pid in by_id: return by_id[pid]
@@ -790,24 +846,18 @@ for p26 in players_2026:
     pid  = (p26.get('player_id') or '').strip()
     name = (p26.get('name') or '').strip()
     p25  = find(lkp25_id, lkp25_nm, pid, name)
+    pxw  = find(lkpxw_id, lkpxw_nm, pid, name)
 
-    xwoba   = p26.get('xwOBA')
-    woba    = p26.get('wOBA')
+    xwoba   = pxw.get('xwOBA')
+    woba    = pxw.get('wOBA')
     b26     = p26.get('BABIP')
     bar26   = p26.get('Barrel%')
     hh26    = p26.get('HardHit%')
     b25     = p25.get('BABIP')
     bar25   = p25.get('Barrel%')
     hh25    = p25.get('HardHit%')
-
-    # Get PA from hit_players (already fetched)
-    hit_p = next((h for h in hit_players if h.get('PlayerName','').lower() == name.lower()), None)
-    pa_26 = None
-    if hit_p:
-        for k in ('PA','pa','AB','ab'):
-            if hit_p.get(k) is not None:
-                try: pa_26 = int(hit_p[k]); break
-                except: pass
+    pa_26_v = p26.get('pa') or pxw.get('pa')
+    pa_26   = int(float(pa_26_v)) if pa_26_v else None
 
     delta_xwoba  = round(xwoba - woba, 3) if xwoba is not None and woba is not None else None
     delta_babip  = round(b26   - b25,  3) if b26   is not None and b25  is not None else None
