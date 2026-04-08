@@ -1679,16 +1679,105 @@ function buildJOEPage(byWeek, schedule) {
     return;
   }
 
-  // Week tabs
+  // Week tabs — Season Average first, then each week
   html += '<div class="trade-tabs" id="joe-week-tabs" style="flex-wrap:wrap">';
-  completedWeeks.forEach(function(w, i) {
-    html += '<button class="trade-tab' + (i===0?' active':'') + '" onclick="showJOEWeekTab(' + w + ',this)">Wk ' + w + '</button>';
+  html += '<button class="trade-tab active" onclick="showJOEWeekTab(\'avg\',this)">Season Avg</button>';
+  completedWeeks.forEach(function(w) {
+    html += '<button class="trade-tab" onclick="showJOEWeekTab(' + w + ',this)">Wk ' + w + '</button>';
   });
   html += '</div>';
 
-  // One content div per week
+  // ── Season Average tab ───────────────────────────────────────────────────
+  html += '<div id="joe-week-tab-avg" class="trade-tab-content active" style="margin-top:16px">';
+  html += '<div class="card">';
+  html += '<div class="card-header"><span class="card-title">Season Average JOE Factor — All Completed Weeks</span></div>';
+
+  // Collect all teams
+  var allTeams = [];
+  completedWeeks.forEach(function(wk) {
+    (allResults[wk]||[]).forEach(function(r) {
+      if (allTeams.indexOf(r.team) === -1) allTeams.push(r.team);
+    });
+  });
+
+  // Per team: accumulate weekly joe, actual, avg, best, worst
+  var teamSeason = {};
+  allTeams.forEach(function(team) {
+    teamSeason[team] = { joes:[], actuals:[], avgs:[], bests:[], worsts:[], diffs:[] };
+  });
+  completedWeeks.forEach(function(wk) {
+    (allResults[wk]||[]).forEach(function(r) {
+      if (!teamSeason[r.team]) return;
+      if (r.actual != null) {
+        teamSeason[r.team].joes.push(r.joe);
+        teamSeason[r.team].actuals.push(r.actual);
+        teamSeason[r.team].avgs.push(r.avg);
+        teamSeason[r.team].bests.push(r.bestPct);
+        teamSeason[r.team].worsts.push(r.worstPct);
+        teamSeason[r.team].diffs.push(r.actual - r.avg);
+      }
+    });
+  });
+
+  function avgArr(arr) { return arr.length ? arr.reduce(function(s,v){return s+v;},0)/arr.length : null; }
+  function stdArr(arr) {
+    var m = avgArr(arr); if (m == null || arr.length < 2) return null;
+    return Math.sqrt(arr.reduce(function(s,v){return s+(v-m)*(v-m);},0)/(arr.length-1));
+  }
+
+  // Build season summary rows
+  var seasonRows = allTeams.map(function(team) {
+    var d = teamSeason[team];
+    var avgActual  = avgArr(d.actuals);
+    var avgCase    = avgArr(d.avgs);
+    var avgBest    = avgArr(d.bests);
+    var avgWorst   = avgArr(d.worsts);
+    var meanDiff   = avgArr(d.diffs);
+    var stdDiff    = stdArr(d.diffs) || 0.001;
+    var rawZ       = meanDiff != null ? meanDiff / stdDiff : 0;
+    return { team:team, avgActual:avgActual, avgCase:avgCase, avgBest:avgBest,
+             avgWorst:avgWorst, rawZ:rawZ, weeks:d.joes.length };
+  });
+
+  // Normalize rawZ to [-1,+1]
+  var zVals = seasonRows.map(function(r){return r.rawZ;});
+  var minZ = Math.min.apply(null,zVals), maxZ = Math.max.apply(null,zVals);
+  var zRange = maxZ - minZ || 1;
+  seasonRows.forEach(function(r) {
+    r.joe = parseFloat((2*(r.rawZ-minZ)/zRange - 1).toFixed(3));
+  });
+  seasonRows.sort(function(a,b){ return b.joe - a.joe; });
+
+  html += '<div class="table-wrap"><table><thead><tr>';
+  html += '<th class="left">Team</th>';
+  html += '<th>Weeks</th>';
+  html += '<th>Avg Actual W%</th>';
+  html += '<th>Avg Case W%</th>';
+  html += '<th>Avg Best Case</th>';
+  html += '<th>Avg Worst Case</th>';
+  html += '<th>Luck z</th>';
+  html += '<th style="color:var(--accent);font-weight:700">Avg JOE Factor</th>';
+  html += '</tr></thead><tbody>';
+
+  seasonRows.forEach(function(r) {
+    var joeCol = r.joe > 0.2 ? '#1e6b3a' : r.joe < -0.2 ? '#c0392b' : '#b7791f';
+    var s = function(v){ return v >= 0 ? '+' : ''; };
+    html += '<tr>';
+    html += '<td class="left"><div class="team-cell">' + joeTeamLogo(r.team) + '<span>' + r.team + '</span></div></td>';
+    html += '<td style="color:var(--muted)">' + r.weeks + '</td>';
+    html += '<td><strong>' + (r.avgActual!=null?(r.avgActual).toFixed(3):'—') + '</strong></td>';
+    html += '<td>' + (r.avgCase!=null?r.avgCase.toFixed(3):'—') + '</td>';
+    html += '<td>' + (r.avgBest!=null?r.avgBest.toFixed(3):'—') + '</td>';
+    html += '<td>' + (r.avgWorst!=null?r.avgWorst.toFixed(3):'—') + '</td>';
+    html += '<td>' + s(r.rawZ) + r.rawZ.toFixed(3) + '</td>';
+    html += '<td style="font-weight:700;color:' + joeCol + '">' + s(r.joe) + r.joe.toFixed(3) + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div></div></div>';
+
+  // One content div per week (all inactive — Season Avg tab is default)
   completedWeeks.forEach(function(w, i) {
-    html += '<div id="joe-week-tab-' + w + '" class="trade-tab-content' + (i===0?' active':'') + '">';
+    html += '<div id="joe-week-tab-' + w + '" class="trade-tab-content">';
 
     var rows = (allResults[w] || []).slice().sort(function(a,b){ return (b.joe||0)-(a.joe||0); });
     var rowsByActual = rows.slice().sort(function(a,b){ return (b.actual||0)-(a.actual||0); });
