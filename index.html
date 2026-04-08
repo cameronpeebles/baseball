@@ -6257,19 +6257,14 @@ function drawSGPTable(type) {
   function computePlayerSGP(p) {
     if (isHit) {
       var sgp = p.ros.r/SGP_D.r + p.ros.hr/SGP_D.hr + p.ros.rbi/SGP_D.rbi + p.ros.sb/SGP_D.sb;
-      // AVG impact: scale denominator by player's AB share of team AB
-      var abShare = p.ros.ab / TEAM_AB;
-      var avgDenom = SGP_D.avg / (abShare > 0 ? abShare : 1);
-      sgp += ((p.ros.avg - myAvg) * p.ros.ab) / avgDenom;
+      // AVG: (playerAVG - teamAVG) × ROS_AB / denominator
+      sgp += ((p.ros.avg - myAvg) * p.ros.ab) / SGP_D.avg;
       return sgp;
     } else {
       var sgp2 = p.ros.w/SGP_D.w + p.ros.k/SGP_D.k + p.ros.sv/SGP_D.sv;
-      // ERA/WHIP impact: scale denominator by player's IP share of team IP
-      var ipShare = p.ros.ip / TEAM_IP;
-      var eraDenom  = SGP_D.era  / (ipShare > 0 ? ipShare : 1);
-      var whipDenom = SGP_D.whip / (ipShare > 0 ? ipShare : 1);
-      sgp2 += ((myERA  - p.ros.era)  * p.ros.ip) / eraDenom;
-      sgp2 += ((myWHIP - p.ros.whip) * p.ros.ip) / whipDenom;
+      // ERA/WHIP: (teamRate - playerRate) × ROS_IP / denominator
+      sgp2 += ((myERA  - p.ros.era)  * p.ros.ip) / SGP_D.era;
+      sgp2 += ((myWHIP - p.ros.whip) * p.ros.ip) / SGP_D.whip;
       return sgp2;
     }
   }
@@ -6310,25 +6305,20 @@ function drawSGPTable(type) {
   // ── Category breakdown for profile ───────────────────────────────────────
   function getCatSGPs(p) {
     if (isHit) {
-      var abShare = p.ros.ab / TEAM_AB;
-      var avgDenom = SGP_D.avg / (abShare > 0 ? abShare : 1);
       return [
         {cat:'R',  v:p.ros.r/SGP_D.r},
         {cat:'HR', v:p.ros.hr/SGP_D.hr},
         {cat:'RBI',v:p.ros.rbi/SGP_D.rbi},
         {cat:'SB', v:p.ros.sb/SGP_D.sb},
-        {cat:'AVG',v:((p.ros.avg-myAvg)*p.ros.ab)/avgDenom}
+        {cat:'AVG',v:((p.ros.avg-myAvg)*p.ros.ab)/SGP_D.avg}
       ];
     } else {
-      var ipShare = p.ros.ip / TEAM_IP;
-      var eraDenom  = SGP_D.era  / (ipShare > 0 ? ipShare : 1);
-      var whipDenom = SGP_D.whip / (ipShare > 0 ? ipShare : 1);
       return [
         {cat:'W',   v:p.ros.w/SGP_D.w},
         {cat:'K',   v:p.ros.k/SGP_D.k},
         {cat:'SV',  v:p.ros.sv/SGP_D.sv},
-        {cat:'ERA', v:((myERA-p.ros.era)*p.ros.ip)/eraDenom},
-        {cat:'WHIP',v:((myWHIP-p.ros.whip)*p.ros.ip)/whipDenom}
+        {cat:'ERA', v:((myERA-p.ros.era)*p.ros.ip)/SGP_D.era},
+        {cat:'WHIP',v:((myWHIP-p.ros.whip)*p.ros.ip)/SGP_D.whip}
       ];
     }
   }
