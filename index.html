@@ -6721,6 +6721,7 @@ function drawTargetsTable() {
     chartHtml += '<span style="font-size:11px;color:var(--muted)">Color by:</span>';
     chartHtml += '<select id="quadrant-color-by" onchange="redrawQuadrantChart()" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);font-size:12px">';
     chartHtml += '<option value="quadrant">Quadrant</option>';
+    chartHtml += '<option value="team">Fantasy Team</option>';
     chartHtml += '<option value="hardhit_2026">2026 Hard Hit%</option>';
     chartHtml += '<option value="delta_hardhit">Δ Hard Hit%</option>';
     chartHtml += '<option value="barrel_2026">2026 Barrel%</option>';
@@ -6956,6 +6957,19 @@ window.redrawQuadrantChart = function() {
   svg += '<text x="'+(W/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="11" fill="var(--muted)">\u0394 xwOBA \u2212 wOBA (positive = underperforming)</text>';
   svg += '<text x="14" y="'+(PT+cH/2)+'" text-anchor="middle" font-size="11" fill="var(--muted)" transform="rotate(-90,14,'+(PT+cH/2)+')">fWAR</text>';
 
+  // 10 distinct team colors
+  var TEAM_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6',
+                     '#1abc9c','#e67e22','#34495e','#e91e8c','#00bcd4'];
+  var teamColorMap = {};
+  var teamList = [];
+  plotData.forEach(function(e){
+    var tname = e.ti ? (e.ti.shortName||e.ti.name||'FA') : 'FA';
+    if (tname !== 'FA' && teamList.indexOf(tname) === -1) teamList.push(tname);
+  });
+  teamList.sort();
+  teamList.forEach(function(t,i){ teamColorMap[t] = TEAM_COLORS[i % TEAM_COLORS.length]; });
+  teamColorMap['FA'] = '#aaa';
+
   // Dots
   plotData.forEach(function(e){
     var cx=px(e.t.delta_xwoba), cy=py(e.fw.fWAR);
@@ -6965,12 +6979,15 @@ window.redrawQuadrantChart = function() {
       col = (e.t.delta_xwoba>=0&&e.fw.fWAR>=0)?'#2d5a3d'
            :(e.t.delta_xwoba<0&&e.fw.fWAR>=0)?'#c0392b'
            :(e.t.delta_xwoba>=0&&e.fw.fWAR<0)?'#2980b9':'#888';
+    } else if (colorBy === 'team') {
+      var tname = e.ti ? (e.ti.shortName||e.ti.name||'FA') : 'FA';
+      col = teamColorMap[tname] || '#aaa';
     } else {
       col = statColor(e.t[colorBy], statMin, statMax);
     }
     var statLabel = {hardhit_2026:'HH%: ',delta_hardhit:'\u0394HH%: ',barrel_2026:'Barrel%: ',delta_barrel:'\u0394Barrel%: '};
     var statVal = e.t[colorBy];
-    var statStr = colorBy !== 'quadrant' && statVal != null
+    var statStr = (colorBy !== 'quadrant' && colorBy !== 'team') && statVal != null
       ? '&#10;' + (statLabel[colorBy]||'') + (statVal>=0&&colorBy.indexOf('delta')===0?'+':'') + statVal.toFixed(1) + '%'
       : '';
     var tip = e.t.name
@@ -6991,8 +7008,18 @@ window.redrawQuadrantChart = function() {
   svg += '<rect x="'+(PL+74)+'" y="'+(PT-23)+'" width="10" height="10" fill="#666" opacity="0.8"/>';
   svg += '<text x="'+(PL+89)+'" y="'+(PT-14)+'" font-size="9" fill="var(--muted)">Free Agent</text>';
 
+  // Team legend
+  if (colorBy === 'team') {
+    var tlx = PL, tly = H - PB + 22, spacing = (W - PL - PR) / (teamList.length + 1);
+    teamList.forEach(function(t, i) {
+      var tx = tlx + (i + 0.5) * spacing;
+      svg += '<circle cx="'+tx+'" cy="'+tly+'" r="5" fill="'+teamColorMap[t]+'" opacity="0.9"/>';
+      svg += '<text x="'+(tx+8)+'" y="'+(tly+4)+'" font-size="8" fill="var(--muted)">'+t+'</text>';
+    });
+  }
+
   // Gradient legend for stat-based coloring
-  if (colorBy !== 'quadrant' && statVals.length) {
+  if (colorBy !== 'quadrant' && colorBy !== 'team' && statVals.length) {
     var lx = W - PR - 120, ly = PT - 28, lw = 100, lh = 10;
     svg += '<defs><linearGradient id="stat-grad" x1="0" x2="1" y1="0" y2="0">';
     svg += '<stop offset="0%" stop-color="#c0392b"/>';
