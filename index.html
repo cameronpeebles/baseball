@@ -6700,101 +6700,29 @@ function drawTargetsTable() {
 
 
   // ── Quadrant scatterplot ──────────────────────────────────────────────────
-  // Use all enriched players that have both delta_xwoba and fWAR
   var plotData = enriched.filter(function(e) {
     return e.t.delta_xwoba != null && e.fw != null;
   });
 
   if (plotData.length) {
-    var W=700, H=480, PL=60, PR=60, PT=40, PB=50;
-    var cW = W-PL-PR, cH = H-PT-PB;
+    // Store plotData on window so the redraw function can access it
+    window._targetPlotData = plotData;
 
-    var xVals = plotData.map(function(e){ return e.t.delta_xwoba; });
-    var yVals = plotData.map(function(e){ return e.fw.fWAR; });
-    var xMin = Math.min.apply(null,xVals), xMax = Math.max.apply(null,xVals);
-    var yMin = Math.min.apply(null,yVals), yMax = Math.max.apply(null,yVals);
-    xMin = Math.min(xMin,-0.02)-0.01; xMax = Math.max(xMax,0.02)+0.01;
-    yMin = Math.min(yMin,-0.5)-0.3;   yMax = Math.max(yMax,0.5)+0.3;
-    var xRange = xMax-xMin, yRange = yMax-yMin;
-
-    function px(v){ return PL+(v-xMin)/xRange*cW; }
-    function py(v){ return PT+(1-(v-yMin)/yRange)*cH; }
-
-    var x0=px(0), y0=py(0);
-
-    var svg = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:700px;height:auto;display:block;margin:0 auto">';
-
-    // Quadrant backgrounds
-    svg += '<rect x="'+PL+'" y="'+PT+'" width="'+(x0-PL)+'" height="'+(y0-PT)+'" fill="#fce8e8" opacity="0.4"/>';
-    svg += '<rect x="'+x0+'" y="'+PT+'" width="'+(W-PR-x0)+'" height="'+(y0-PT)+'" fill="#e8f0eb" opacity="0.4"/>';
-    svg += '<rect x="'+PL+'" y="'+y0+'" width="'+(x0-PL)+'" height="'+(H-PB-y0)+'" fill="#f5f5f0" opacity="0.4"/>';
-    svg += '<rect x="'+x0+'" y="'+y0+'" width="'+(W-PR-x0)+'" height="'+(H-PB-y0)+'" fill="#e8f4fd" opacity="0.4"/>';
-
-    // Grid lines
-    var step=0.02;
-    for(var xv=Math.ceil(xMin/step)*step; xv<=xMax+0.001; xv=Math.round((xv+step)*1000)/1000){
-      var xpx=px(xv);
-      svg += '<line x1="'+xpx+'" y1="'+PT+'" x2="'+xpx+'" y2="'+(H-PB)+'" stroke="var(--border)" stroke-width="0.5"/>';
-      svg += '<text x="'+xpx+'" y="'+(H-PB+14)+'" text-anchor="middle" font-size="9" fill="var(--muted)">'+(xv>=0?'+':'')+xv.toFixed(2)+'</text>';
-    }
-    [-2,-1,0,1,2,3,4,5].forEach(function(yv){
-      if(yv<yMin||yv>yMax) return;
-      var ypx=py(yv);
-      svg += '<line x1="'+PL+'" y1="'+ypx+'" x2="'+(W-PR)+'" y2="'+ypx+'" stroke="var(--border)" stroke-width="0.5"/>';
-      svg += '<text x="'+(PL-6)+'" y="'+(ypx+4)+'" text-anchor="end" font-size="9" fill="var(--muted)">'+yv+'</text>';
-    });
-
-    // Zero axes
-    svg += '<line x1="'+x0+'" y1="'+PT+'" x2="'+x0+'" y2="'+(H-PB)+'" stroke="var(--text)" stroke-width="1.5"/>';
-    svg += '<line x1="'+PL+'" y1="'+y0+'" x2="'+(W-PR)+'" y2="'+y0+'" stroke="var(--text)" stroke-width="1.5"/>';
-
-    // Quadrant labels
-    [{x:PL+8,y:PT+18,t:'Sell High',c:'#c0392b',a:'start'},
-     {x:W-PR-8,y:PT+18,t:'Stars',c:'#1e6b3a',a:'end'},
-     {x:PL+8,y:H-PB-10,t:'Drop / Avoid',c:'#888',a:'start'},
-     {x:W-PR-8,y:H-PB-10,t:'Buy Low',c:'#2980b9',a:'end'}
-    ].forEach(function(q){
-      svg += '<text x="'+q.x+'" y="'+q.y+'" text-anchor="'+q.a+'" font-size="11" font-weight="700" fill="'+q.c+'" opacity="0.75">'+q.t+'</text>';
-    });
-
-    // Axis labels
-    svg += '<text x="'+(W/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="11" fill="var(--muted)">Δ xwOBA − wOBA (positive = underperforming luck)</text>';
-    svg += '<text x="14" y="'+(PT+cH/2)+'" text-anchor="middle" font-size="11" fill="var(--muted)" transform="rotate(-90,14,'+(PT+cH/2)+')">fWAR</text>';
-
-    // Dots
-    plotData.forEach(function(e){
-      var cx=px(e.t.delta_xwoba), cy=py(e.fw.fWAR);
-      var isFA=!e.ri;
-      var col=(e.t.delta_xwoba>=0&&e.fw.fWAR>=0)?'#2d5a3d'
-             :(e.t.delta_xwoba<0&&e.fw.fWAR>=0)?'#c0392b'
-             :(e.t.delta_xwoba>=0&&e.fw.fWAR<0)?'#2980b9':'#888';
-      var tip=e.t.name
-        +'&#10;fWAR: '+(e.fw.fWAR>=0?'+':'')+e.fw.fWAR.toFixed(2)
-        +'&#10;Δ xwOBA: '+(e.t.delta_xwoba>=0?'+':'')+e.t.delta_xwoba.toFixed(3)
-        +(e.ti?'&#10;'+(e.ti.shortName||e.ti.name):'&#10;FA');
-      if(isFA){
-        svg += '<rect x="'+(cx-5)+'" y="'+(cy-5)+'" width="10" height="10" fill="'+col+'" opacity="0.85" stroke="white" stroke-width="1.5" style="cursor:pointer"><title>'+tip+'</title></rect>';
-      } else {
-        svg += '<circle cx="'+cx+'" cy="'+cy+'" r="6" fill="'+col+'" opacity="0.85" stroke="white" stroke-width="1.5" style="cursor:pointer"><title>'+tip+'</title></circle>';
-      }
-    });
-
-    // Legend
-    svg += '<circle cx="'+(PL)+'" cy="'+(PT-20)+'" r="5" fill="#666"/>';
-    svg += '<text x="'+(PL+10)+'" y="'+(PT-16)+'" font-size="9" fill="var(--muted)">Rostered (circle)</text>';
-    svg += '<rect x="'+(PL+100)+'" y="'+(PT-25)+'" width="10" height="10" fill="#666"/>';
-    svg += '<text x="'+(PL+115)+'" y="'+(PT-16)+'" font-size="9" fill="var(--muted)">Free Agent (square)</text>';
-
-    svg += '</svg>';
-
-    html_chart = '<div class="card" style="margin-bottom:20px">';
-    html_chart += '<div class="card-header"><span class="card-title">Player Quadrant — xwOBA Performance vs fWAR</span></div>';
-    html_chart += '<div style="padding:16px">' + svg + '</div>';
-    html_chart += '</div>';
-    html += html_chart;
+    var chartHtml = '<div class="card" style="margin-bottom:20px">';
+    chartHtml += '<div class="card-header"><span class="card-title">Player Quadrant — xwOBA Performance vs fWAR</span>';
+    chartHtml += '<div style="display:flex;align-items:center;gap:8px">';
+    chartHtml += '<span style="font-size:11px;color:var(--muted)">Color by:</span>';
+    chartHtml += '<select id="quadrant-color-by" onchange="redrawQuadrantChart()" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);font-size:12px">';
+    chartHtml += '<option value="quadrant">Quadrant</option>';
+    chartHtml += '<option value="hardhit_2026">2026 Hard Hit%</option>';
+    chartHtml += '<option value="delta_hardhit">Δ Hard Hit%</option>';
+    chartHtml += '<option value="barrel_2026">2026 Barrel%</option>';
+    chartHtml += '<option value="delta_barrel">Δ Barrel%</option>';
+    chartHtml += '</select></div></div>';
+    chartHtml += '<div style="padding:16px" id="quadrant-chart-wrap"></div>';
+    chartHtml += '</div>';
+    html += chartHtml;
   }
-
-
 
   // ── Filter controls ───────────────────────────────────────────────────────
   html += '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">';
@@ -6929,7 +6857,149 @@ function drawTargetsTable() {
 
   html += '</tbody></table></div></div>';
   el.innerHTML = html;
+  // Draw chart after DOM is set
+  if (window._targetPlotData) redrawQuadrantChart();
 }
+
+window.redrawQuadrantChart = function() {
+  var wrap = document.getElementById('quadrant-chart-wrap');
+  if (!wrap) return;
+  var plotData = window._targetPlotData || [];
+  if (!plotData.length) return;
+
+  var colorBy = (document.getElementById('quadrant-color-by') || {}).value || 'quadrant';
+
+  var W=700, H=500, PL=62, PR=60, PT=40, PB=52;
+  var cW=W-PL-PR, cH=H-PT-PB;
+
+  var xVals = plotData.map(function(e){ return e.t.delta_xwoba; });
+  var yVals = plotData.map(function(e){ return e.fw.fWAR; });
+  var xMin=Math.min.apply(null,xVals), xMax=Math.max.apply(null,xVals);
+  var yMin=Math.min.apply(null,yVals), yMax=Math.max.apply(null,yVals);
+  xMin=Math.min(xMin,-0.02)-0.01; xMax=Math.max(xMax,0.02)+0.01;
+  yMin=Math.min(yMin,-0.5)-0.3;   yMax=Math.max(yMax,0.5)+0.3;
+  var xRange=xMax-xMin, yRange=yMax-yMin;
+
+  function px(v){ return PL+(v-xMin)/xRange*cW; }
+  function py(v){ return PT+(1-(v-yMin)/yRange)*cH; }
+  var x0=px(0), y0=py(0);
+
+  // Gradient color helper for stat-based coloring
+  function statColor(val, mn, mx) {
+    if (val == null) return '#ccc';
+    var t = mx > mn ? (val - mn) / (mx - mn) : 0.5;
+    t = Math.max(0, Math.min(1, t));
+    // green (#1e6b3a) → yellow (#c8a96e) → red (#c0392b)
+    var r, g, b;
+    if (t >= 0.5) {
+      var s = (t - 0.5) * 2;
+      r = Math.round(0x1e + (0xc8 - 0x1e) * (1-s));
+      g = Math.round(0x6b + (0xa9 - 0x6b) * (1-s));
+      b = Math.round(0x3a + (0x6e - 0x3a) * (1-s));
+    } else {
+      var s = t * 2;
+      r = Math.round(0xc8 + (0xc0 - 0xc8) * (1-s));
+      g = Math.round(0xa9 + (0x39 - 0xa9) * (1-s));
+      b = Math.round(0x6e + (0x2b - 0x6e) * (1-s));
+    }
+    return 'rgb('+r+','+g+','+b+')';
+  }
+
+  // Get range for stat-based coloring
+  var statVals = plotData.map(function(e){ return e.t[colorBy]; }).filter(function(v){ return v != null; });
+  var statMin = statVals.length ? Math.min.apply(null,statVals) : 0;
+  var statMax = statVals.length ? Math.max.apply(null,statVals) : 1;
+
+  var svg = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:720px;height:auto;display:block;margin:0 auto">';
+
+  // Quadrant backgrounds
+  svg += '<rect x="'+PL+'" y="'+PT+'" width="'+(x0-PL)+'" height="'+(y0-PT)+'" fill="#fce8e8" opacity="0.35"/>';
+  svg += '<rect x="'+x0+'" y="'+PT+'" width="'+(W-PR-x0)+'" height="'+(y0-PT)+'" fill="#e8f0eb" opacity="0.35"/>';
+  svg += '<rect x="'+PL+'" y="'+y0+'" width="'+(x0-PL)+'" height="'+(H-PB-y0)+'" fill="#f5f5f0" opacity="0.35"/>';
+  svg += '<rect x="'+x0+'" y="'+y0+'" width="'+(W-PR-x0)+'" height="'+(H-PB-y0)+'" fill="#e8f4fd" opacity="0.35"/>';
+
+  // Grid lines + x ticks
+  var step=0.02;
+  for(var xv=Math.ceil(xMin/step)*step; xv<=xMax+0.001; xv=Math.round((xv+step)*1000)/1000){
+    var xpx=px(xv);
+    svg += '<line x1="'+xpx+'" y1="'+PT+'" x2="'+xpx+'" y2="'+(H-PB)+'" stroke="var(--border)" stroke-width="0.5"/>';
+    svg += '<text x="'+xpx+'" y="'+(H-PB+14)+'" text-anchor="middle" font-size="9" fill="var(--muted)">'+(xv>=0?'+':'')+xv.toFixed(2)+'</text>';
+  }
+  [-2,-1,0,1,2,3,4,5].forEach(function(yv){
+    if(yv<yMin||yv>yMax) return;
+    var ypx=py(yv);
+    svg += '<line x1="'+PL+'" y1="'+ypx+'" x2="'+(W-PR)+'" y2="'+ypx+'" stroke="var(--border)" stroke-width="0.5"/>';
+    svg += '<text x="'+(PL-6)+'" y="'+(ypx+4)+'" text-anchor="end" font-size="9" fill="var(--muted)">'+yv+'</text>';
+  });
+
+  // Zero axes
+  svg += '<line x1="'+x0+'" y1="'+PT+'" x2="'+x0+'" y2="'+(H-PB)+'" stroke="var(--text)" stroke-width="1.5"/>';
+  svg += '<line x1="'+PL+'" y1="'+y0+'" x2="'+(W-PR)+'" y2="'+y0+'" stroke="var(--text)" stroke-width="1.5"/>';
+
+  // Quadrant labels
+  [{x:PL+8,y:PT+18,t:'Sell High',c:'#c0392b',a:'start'},
+   {x:W-PR-8,y:PT+18,t:'Stars',c:'#1e6b3a',a:'end'},
+   {x:PL+8,y:H-PB-10,t:'Drop / Avoid',c:'#888',a:'start'},
+   {x:W-PR-8,y:H-PB-10,t:'Buy Low',c:'#2980b9',a:'end'}
+  ].forEach(function(q){
+    svg += '<text x="'+q.x+'" y="'+q.y+'" text-anchor="'+q.a+'" font-size="11" font-weight="700" fill="'+q.c+'" opacity="0.7">'+q.t+'</text>';
+  });
+
+  // Axis labels
+  svg += '<text x="'+(W/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="11" fill="var(--muted)">\u0394 xwOBA \u2212 wOBA (positive = underperforming)</text>';
+  svg += '<text x="14" y="'+(PT+cH/2)+'" text-anchor="middle" font-size="11" fill="var(--muted)" transform="rotate(-90,14,'+(PT+cH/2)+')">fWAR</text>';
+
+  // Dots
+  plotData.forEach(function(e){
+    var cx=px(e.t.delta_xwoba), cy=py(e.fw.fWAR);
+    var isFA=!e.ri;
+    var col;
+    if (colorBy === 'quadrant') {
+      col = (e.t.delta_xwoba>=0&&e.fw.fWAR>=0)?'#2d5a3d'
+           :(e.t.delta_xwoba<0&&e.fw.fWAR>=0)?'#c0392b'
+           :(e.t.delta_xwoba>=0&&e.fw.fWAR<0)?'#2980b9':'#888';
+    } else {
+      col = statColor(e.t[colorBy], statMin, statMax);
+    }
+    var statLabel = {hardhit_2026:'HH%: ',delta_hardhit:'\u0394HH%: ',barrel_2026:'Barrel%: ',delta_barrel:'\u0394Barrel%: '};
+    var statVal = e.t[colorBy];
+    var statStr = colorBy !== 'quadrant' && statVal != null
+      ? '&#10;' + (statLabel[colorBy]||'') + (statVal>=0&&colorBy.indexOf('delta')===0?'+':'') + statVal.toFixed(1) + '%'
+      : '';
+    var tip = e.t.name
+      + '&#10;fWAR: '+(e.fw.fWAR>=0?'+':'')+e.fw.fWAR.toFixed(2)
+      + '&#10;\u0394 xwOBA: '+(e.t.delta_xwoba>=0?'+':'')+e.t.delta_xwoba.toFixed(3)
+      + statStr
+      + (e.ti?'&#10;'+(e.ti.shortName||e.ti.name):'&#10;FA');
+    if(isFA){
+      svg += '<rect x="'+(cx-5)+'" y="'+(cy-5)+'" width="11" height="11" fill="'+col+'" opacity="0.9" stroke="white" stroke-width="1.5" style="cursor:pointer"><title>'+tip+'</title></rect>';
+    } else {
+      svg += '<circle cx="'+cx+'" cy="'+cy+'" r="6" fill="'+col+'" opacity="0.9" stroke="white" stroke-width="1.5" style="cursor:pointer"><title>'+tip+'</title></circle>';
+    }
+  });
+
+  // Legend: shape
+  svg += '<circle cx="'+(PL+2)+'" cy="'+(PT-18)+'" r="5" fill="#666" opacity="0.8"/>';
+  svg += '<text x="'+(PL+12)+'" y="'+(PT-14)+'" font-size="9" fill="var(--muted)">Rostered</text>';
+  svg += '<rect x="'+(PL+74)+'" y="'+(PT-23)+'" width="10" height="10" fill="#666" opacity="0.8"/>';
+  svg += '<text x="'+(PL+89)+'" y="'+(PT-14)+'" font-size="9" fill="var(--muted)">Free Agent</text>';
+
+  // Gradient legend for stat-based coloring
+  if (colorBy !== 'quadrant' && statVals.length) {
+    var lx = W - PR - 120, ly = PT - 28, lw = 100, lh = 10;
+    svg += '<defs><linearGradient id="stat-grad" x1="0" x2="1" y1="0" y2="0">';
+    svg += '<stop offset="0%" stop-color="#c0392b"/>';
+    svg += '<stop offset="50%" stop-color="#c8a96e"/>';
+    svg += '<stop offset="100%" stop-color="#1e6b3a"/>';
+    svg += '</linearGradient></defs>';
+    svg += '<rect x="'+lx+'" y="'+ly+'" width="'+lw+'" height="'+lh+'" fill="url(#stat-grad)" rx="3"/>';
+    svg += '<text x="'+lx+'" y="'+(ly+lh+11)+'" font-size="8" fill="var(--muted)" text-anchor="start">'+statMin.toFixed(1)+'%</text>';
+    svg += '<text x="'+(lx+lw)+'" y="'+(ly+lh+11)+'" font-size="8" fill="var(--muted)" text-anchor="end">'+statMax.toFixed(1)+'%</text>';
+  }
+
+  svg += '</svg>';
+  wrap.innerHTML = svg;
+};
 
 window.setTargetsFilter = function(type, val, btn) {
   if (type === 'rost') TARGETS_STATE.rostFilter = val;
