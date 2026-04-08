@@ -1747,6 +1747,8 @@ function buildJOEPage(byWeek, schedule) {
     r.joe = parseFloat((2*(r.rawZ-minZ)/zRange - 1).toFixed(3));
   });
   seasonRows.sort(function(a,b){ return b.joe - a.joe; });
+  // Store for dashboard — same shape expected: {team, luck (normalized joe)}
+  window._joeSeasonData = seasonRows;
 
   html += '<div class="table-wrap"><table><thead><tr>';
   html += '<th class="left">Team</th>';
@@ -3758,7 +3760,7 @@ function assembleDashboard(teamId, el) {
   var myJOEWeeks = (window._joeByTeamWeek || []).filter(function(r) { return r.team === teamName && r.actual != null; });
   // Use normalized season JOE Factor from season summary
   var joeSeasonRow = (window._joeSeasonData || []).find(function(s){ return s.team === teamName; });
-  var avgLuck   = joeSeasonRow ? joeSeasonRow.luck : null;  // normalized [-1, +1]
+  var avgLuck = joeSeasonRow ? (joeSeasonRow.joe != null ? joeSeasonRow.joe : joeSeasonRow.luck) : null;
   var avgActual = myJOEWeeks.length ? myJOEWeeks.reduce(function(s,r){return s+r.actual;},0)/myJOEWeeks.length : null;
   var avgCase   = myJOEWeeks.length ? myJOEWeeks.reduce(function(s,r){return s+r.avgCase;},0)/myJOEWeeks.length : null;
 
