@@ -1110,3 +1110,209 @@ n_grade = sum(1 for t in pit_targets if t['grade'] != '—')
 print(f"  Merged {len(pit_targets)} pitchers — {n_under} underperforming, {n_over} overperforming, {n_grade} graded")
 save("targets_pitching.json", pit_targets)
 print("Pitcher targets fetch complete!")
+
+# ---------------------------------------------------------------------------
+# Optimal fWAR Weights — find positional scarcity weights that best predict
+# fantasy point standings using scipy optimization
+# ---------------------------------------------------------------------------
+print("\n=== Computing optimal fWAR weights ===")
+
+try:
+    import numpy as np
+    from scipy.optimize import minimize
+    from scipy.stats import spearmanr
+
+    # Historic season data hardcoded (same as in index.html HISTORIC_DATA)
+    # Each entry: rank, pts, and per-category totals
+    # We use pts as the "true" ordering signal
+    HISTORIC = {
+        2025: [
+            dict(rank=1,  pts=81,   r=1159, hr=305, rbi=1059, sb=262, avg=0.261, w=165, k=2555, sv=126,   era=3.51, whip=1.165),
+            dict(rank=2,  pts=80,   r=1241, hr=393, rbi=1165, sb=224, avg=0.261, w=144, k=2137, sv=127,   era=3.84, whip=1.226),
+            dict(rank=3,  pts=68.5, r=1057, hr=311, rbi=1080, sb=181, avg=0.248, w=112, k=2098, sv=176.5, era=3.47, whip=1.171),
+            dict(rank=4,  pts=65,   r=1067, hr=319, rbi=1064, sb=164, avg=0.261, w=38,  k=793,  sv=189,   era=3.38, whip=1.195),
+            dict(rank=5,  pts=57.5, r=1102, hr=265, rbi=970,  sb=126, avg=0.254, w=152, k=2062, sv=148,   era=3.47, whip=1.169),
+            dict(rank=6,  pts=56,   r=1102, hr=308, rbi=981,  sb=200, avg=0.254, w=108, k=1923, sv=151.5, era=3.74, whip=1.206),
+            dict(rank=7,  pts=54,   r=1076, hr=287, rbi=1011, sb=176, avg=0.255, w=149, k=2072, sv=76.5,  era=3.86, whip=1.217),
+            dict(rank=8,  pts=48.5, r=1011, hr=311, rbi=1016, sb=211, avg=0.255, w=129, k=1970, sv=67,    era=4.04, whip=1.279),
+            dict(rank=9,  pts=28.5, r=1005, hr=299, rbi=981,  sb=148, avg=0.248, w=84,  k=1320, sv=72.5,  era=4.15, whip=1.238),
+            dict(rank=10, pts=11,   r=737,  hr=235, rbi=762,  sb=115, avg=0.242, w=41,  k=751,  sv=3,     era=4.5,  whip=1.329),
+        ],
+        2024: [
+            dict(rank=1,  pts=78,   r=1101, hr=338, rbi=1025, sb=254, avg=0.245, w=171, k=2414, sv=109, era=3.63, whip=1.148),
+            dict(rank=2,  pts=72,   r=1076, hr=326, rbi=1053, sb=226, avg=0.257, w=125, k=1967, sv=117, era=3.55, whip=1.119),
+            dict(rank=3,  pts=69.5, r=1078, hr=282, rbi=1037, sb=197, avg=0.257, w=153, k=2501, sv=121, era=4.02, whip=1.204),
+            dict(rank=4,  pts=69,   r=1081, hr=289, rbi=1052, sb=178, avg=0.258, w=152, k=2309, sv=147, era=3.81, whip=1.258),
+            dict(rank=5,  pts=59,   r=1188, hr=366, rbi=1115, sb=166, avg=0.255, w=142, k=2227, sv=78,  era=4.02, whip=1.257),
+            dict(rank=6,  pts=55,   r=1037, hr=308, rbi=991,  sb=172, avg=0.252, w=144, k=2085, sv=130, era=3.71, whip=1.21),
+            dict(rank=7,  pts=50.5, r=1073, hr=271, rbi=985,  sb=211, avg=0.247, w=145, k=2404, sv=46,  era=3.73, whip=1.226),
+            dict(rank=8,  pts=49,   r=1047, hr=262, rbi=985,  sb=197, avg=0.254, w=159, k=2195, sv=108, era=3.94, whip=1.235),
+            dict(rank=9,  pts=30,   r=1014, hr=273, rbi=1023, sb=148, avg=0.257, w=95,  k=1624, sv=28,  era=4.34, whip=1.299),
+            dict(rank=10, pts=18,   r=515,  hr=143, rbi=532,  sb=95,  avg=0.247, w=22,  k=403,  sv=0,   era=3.96, whip=1.236),
+        ],
+        2023: [
+            dict(rank=1,  pts=80,   r=1203, hr=373, rbi=1199, sb=162, avg=0.262, w=179, k=2811, sv=142, era=4.01, whip=1.269),
+            dict(rank=2,  pts=76.5, r=1204, hr=353, rbi=1154, sb=189, avg=0.263, w=155, k=2201, sv=86,  era=3.98, whip=1.252),
+            dict(rank=3,  pts=71,   r=1231, hr=356, rbi=1167, sb=184, avg=0.264, w=130, k=2090, sv=60,  era=4.2,  whip=1.229),
+            dict(rank=4,  pts=71,   r=1084, hr=271, rbi=935,  sb=225, avg=0.259, w=144, k=2218, sv=130, era=3.79, whip=1.191),
+            dict(rank=5,  pts=62.5, r=1063, hr=305, rbi=1098, sb=189, avg=0.258, w=128, k=2076, sv=173, era=4.01, whip=1.237),
+            dict(rank=6,  pts=45,   r=921,  hr=259, rbi=874,  sb=143, avg=0.246, w=99,  k=1586, sv=122, era=3.95, whip=1.186),
+            dict(rank=7,  pts=44,   r=1078, hr=328, rbi=1060, sb=213, avg=0.259, w=97,  k=1585, sv=0,   era=4.28, whip=1.296),
+            dict(rank=8,  pts=40,   r=1057, hr=268, rbi=946,  sb=306, avg=0.262, w=89,  k=1543, sv=16,  era=4.12, whip=1.318),
+            dict(rank=9,  pts=34,   r=936,  hr=301, rbi=961,  sb=133, avg=0.256, w=88,  k=1504, sv=78,  era=4.03, whip=1.273),
+            dict(rank=10, pts=26,   r=947,  hr=192, rbi=780,  sb=67,  avg=0.264, w=65,  k=1202, sv=13,  era=4.05, whip=1.28),
+        ],
+        2022: [
+            dict(rank=1,  pts=80,   r=1099, hr=332, rbi=1124, sb=180, avg=0.264, w=164, k=2115, sv=140, era=3.25, whip=1.1),
+            dict(rank=2,  pts=78,   r=1085, hr=318, rbi=1059, sb=178, avg=0.261, w=140, k=2074, sv=120, era=3.28, whip=1.11),
+            dict(rank=3,  pts=73,   r=1066, hr=315, rbi=1057, sb=146, avg=0.259, w=138, k=2070, sv=95,  era=3.41, whip=1.14),
+            dict(rank=4,  pts=68,   r=1038, hr=302, rbi=1051, sb=137, avg=0.258, w=138, k=2068, sv=93,  era=3.43, whip=1.17),
+            dict(rank=5,  pts=65.5, r=1034, hr=286, rbi=1015, sb=121, avg=0.256, w=128, k=2048, sv=91,  era=3.52, whip=1.19),
+            dict(rank=6,  pts=58,   r=1027, hr=271, rbi=964,  sb=114, avg=0.253, w=122, k=1791, sv=88,  era=3.62, whip=1.2),
+            dict(rank=7,  pts=47.5, r=1012, hr=269, rbi=918,  sb=101, avg=0.252, w=108, k=1654, sv=60,  era=3.77, whip=1.2),
+            dict(rank=8,  pts=34,   r=841,  hr=214, rbi=818,  sb=82,  avg=0.251, w=80,  k=1199, sv=54,  era=3.79, whip=1.22),
+            dict(rank=9,  pts=32,   r=786,  hr=200, rbi=719,  sb=58,  avg=0.244, w=63,  k=1036, sv=17,  era=4.14, whip=1.24),
+            dict(rank=10, pts=14,   r=690,  hr=186, rbi=667,  sb=45,  avg=0.242, w=55,  k=1019, sv=11,  era=4.46, whip=1.32),
+        ],
+        2021: [
+            dict(rank=1,  pts=81,   r=1039, hr=305, rbi=991,  sb=127, avg=0.266, w=133, k=1963, sv=125, era=3.28, whip=1.08),
+            dict(rank=2,  pts=79,   r=1035, hr=302, rbi=951,  sb=123, avg=0.265, w=112, k=1918, sv=123, era=3.38, whip=1.16),
+            dict(rank=3,  pts=78,   r=997,  hr=299, rbi=929,  sb=118, avg=0.264, w=111, k=1829, sv=92,  era=3.55, whip=1.16),
+            dict(rank=4,  pts=77,   r=966,  hr=293, rbi=922,  sb=106, avg=0.262, w=108, k=1738, sv=88,  era=3.78, whip=1.16),
+            dict(rank=5,  pts=49,   r=965,  hr=277, rbi=894,  sb=101, avg=0.261, w=101, k=1453, sv=62,  era=3.8,  whip=1.19),
+            dict(rank=6,  pts=48,   r=928,  hr=257, rbi=878,  sb=98,  avg=0.261, w=85,  k=1447, sv=58,  era=3.85, whip=1.21),
+            dict(rank=7,  pts=42.5, r=813,  hr=257, rbi=839,  sb=87,  avg=0.261, w=80,  k=1427, sv=48,  era=3.88, whip=1.21),
+            dict(rank=8,  pts=38.5, r=804,  hr=216, rbi=796,  sb=84,  avg=0.255, w=59,  k=1019, sv=17,  era=3.91, whip=1.22),
+            dict(rank=9,  pts=36,   r=689,  hr=180, rbi=678,  sb=48,  avg=0.255, w=55,  k=927,  sv=2,   era=4.2,  whip=1.27),
+            dict(rank=10, pts=21,   r=451,  hr=134, rbi=494,  sb=43,  avg=0.24,  w=29,  k=493,  sv=0,   era=4.46, whip=1.32),
+        ],
+    }
+
+    # Flatten all team-seasons
+    all_rows = []
+    for yr, teams in HISTORIC.items():
+        for t in teams:
+            all_rows.append(t)
+
+    cats_high = ['r', 'hr', 'rbi', 'sb', 'avg', 'w', 'k', 'sv']
+    cats_low  = ['era', 'whip']
+    all_cats  = cats_high + cats_low
+
+    # Compute league-average per cat per season for z-score normalization
+    from collections import defaultdict
+    yr_stats = defaultdict(lambda: defaultdict(list))
+    for yr, teams in HISTORIC.items():
+        for t in teams:
+            for c in all_cats:
+                yr_stats[yr][c].append(t[c])
+
+    yr_mean = {yr: {c: np.mean(v) for c,v in cats.items()} for yr, cats in yr_stats.items()}
+    yr_std  = {yr: {c: np.std(v) + 1e-9 for c,v in cats.items()} for yr, cats in yr_stats.items()}
+
+    # Build z-score matrix: each row = one team-season, columns = 10 cats
+    # For ERA/WHIP: negate so higher = better
+    X = []
+    y = []
+    for yr, teams in HISTORIC.items():
+        for t in teams:
+            row = []
+            for c in all_cats:
+                z = (t[c] - yr_mean[yr][c]) / yr_std[yr][c]
+                if c in cats_low:
+                    z = -z
+                row.append(z)
+            X.append(row)
+            y.append(t['pts'])
+
+    X = np.array(X)
+    y = np.array(y)
+
+    # Objective: maximize Spearman r between weighted sum and pts
+    # Use all 50 team-seasons together (cross-season)
+    def neg_spearman(weights):
+        w = np.abs(weights)  # force non-negative
+        score = X @ w
+        r, _ = spearmanr(score, y)
+        return -r  # minimize negative = maximize positive
+
+    # Initial guess: equal weights
+    w0 = np.ones(len(all_cats)) / len(all_cats)
+    bounds = [(0.0, None)] * len(all_cats)
+
+    result = minimize(neg_spearman, w0, method='L-BFGS-B', bounds=bounds,
+                      options={'maxiter': 2000, 'ftol': 1e-10})
+
+    w_opt = np.abs(result.x)
+    w_opt = w_opt / w_opt.sum()  # normalize to sum = 1
+
+    # Map category weights to positional scarcity
+    # Concept: positions that contribute most to high-value cats get higher replacement rank
+    # We use the weight to scale the hybrid preset
+    HYBRID = {'C': 17, '1B': 23, '2B': 18, '3B': 25, 'SS': 32, 'OF': 85, 'SP': 123, 'RP': 53}
+    total_slots = sum(HYBRID.values())
+
+    # Hit weight = sum of hitting cat weights
+    hit_w = sum(w_opt[i] for i, c in enumerate(all_cats) if c in cats_high and c not in ('w','k','sv'))
+    pit_w = sum(w_opt[i] for i, c in enumerate(all_cats) if c in ('w','k','sv') or c in cats_low)
+    total_w = hit_w + pit_w
+
+    # Scale SP/RP vs hitters by pit_w / hit_w ratio
+    pit_ratio = pit_w / total_w
+    hit_ratio = hit_w / total_w
+
+    # Rebalance: keep total slots same, but shift between hitters/pitchers
+    hit_positions = ['C','1B','2B','3B','SS','OF']
+    pit_positions = ['SP','RP']
+    base_hit_slots = sum(HYBRID[p] for p in hit_positions)
+    base_pit_slots = sum(HYBRID[p] for p in pit_positions)
+
+    opt_total = total_slots
+    opt_hit_slots = round(opt_total * hit_ratio)
+    opt_pit_slots = opt_total - opt_hit_slots
+
+    # Within hitters: scale by individual cat weights
+    hit_cat_weights = {
+        'C':   w_opt[all_cats.index('avg')] * 0.4 + w_opt[all_cats.index('hr')] * 0.3 + w_opt[all_cats.index('rbi')] * 0.3,
+        '1B':  w_opt[all_cats.index('hr')]  * 0.4 + w_opt[all_cats.index('rbi')]* 0.4 + w_opt[all_cats.index('r')]  * 0.2,
+        '2B':  w_opt[all_cats.index('r')]   * 0.4 + w_opt[all_cats.index('sb')] * 0.3 + w_opt[all_cats.index('avg')]* 0.3,
+        '3B':  w_opt[all_cats.index('hr')]  * 0.3 + w_opt[all_cats.index('rbi')]* 0.4 + w_opt[all_cats.index('r')]  * 0.3,
+        'SS':  w_opt[all_cats.index('sb')]  * 0.4 + w_opt[all_cats.index('r')]  * 0.3 + w_opt[all_cats.index('avg')]* 0.3,
+        'OF':  w_opt[all_cats.index('r')]   * 0.3 + w_opt[all_cats.index('hr')] * 0.2 + w_opt[all_cats.index('rbi')]* 0.2 + w_opt[all_cats.index('sb')]* 0.3,
+    }
+    total_hcw = sum(hit_cat_weights.values())
+    hit_ranks = {p: max(5, round(opt_hit_slots * hit_cat_weights[p] / total_hcw)) for p in hit_positions}
+
+    # Within pitchers: SP vs RP by W+K vs SV weight
+    sp_w = w_opt[all_cats.index('w')] + w_opt[all_cats.index('k')] + w_opt[all_cats.index('era')] + w_opt[all_cats.index('whip')]
+    rp_w = w_opt[all_cats.index('sv')]
+    total_pcw = sp_w + rp_w
+    pit_ranks = {
+        'SP': max(30, round(opt_pit_slots * sp_w / total_pcw)),
+        'RP': max(10, round(opt_pit_slots * rp_w / total_pcw)),
+    }
+
+    optimal_weights = {**hit_ranks, **pit_ranks}
+
+    # Compute final correlation with optimal weights
+    final_r, _ = spearmanr(X @ w_opt, y)
+
+    print(f"  Optimal category weights: { {c: round(float(w),3) for c,w in zip(all_cats, w_opt)} }")
+    print(f"  Spearman r with pts: {final_r:.3f}")
+    print(f"  Optimal positional ranks: {optimal_weights}")
+
+    save("optimal_fwar_weights.json", {
+        "positional_ranks": optimal_weights,
+        "category_weights": {c: round(float(w), 4) for c, w in zip(all_cats, w_opt)},
+        "spearman_r": round(float(final_r), 3),
+        "n_seasons": len(HISTORIC),
+        "n_team_seasons": len(all_rows),
+        "note": "Optimized to maximize Spearman rank correlation between team fWAR and fantasy points across historical seasons"
+    })
+    print("Optimal fWAR weights saved to optimal_fwar_weights.json")
+
+except ImportError as e:
+    print(f"  Skipping optimization — missing library: {e}")
+    print("  Install scipy: pip install scipy")
+except Exception as e:
+    print(f"  Optimization error: {e}")
+    import traceback; traceback.print_exc()
