@@ -904,86 +904,165 @@ print("Targets hitting fetch complete!")
 # ---------------------------------------------------------------------------
 print("\n=== Fetching pitcher target data ===")
 
-def fetch_pitcher_era():
-    """Fetch ERA vs xERA from expected_statistics for pitchers."""
+import unicodedata as _ud2
+def norm_pit(n):
+    n = n.lower().strip()
+    n = ''.join(c for c in _ud2.normalize('NFD', n) if _ud2.category(c) != 'Mn')
+    return ' '.join(''.join(c for c in n if c.isalpha() or c == ' ').split())
+
+def make_pit_lookup(players):
+    by_id, by_name = {}, {}
+    for p in players:
+        pid  = (p.get('player_id') or '').strip()
+        name = (p.get('name') or '').strip()
+        if pid:  by_id[pid]  = p
+        if name:
+            key = norm_pit(name)
+            if key and key not in by_name: by_name[key] = p
+    return by_id, by_name
+
+def find_pit(by_id, by_name, pid, name):
+    if pid and pid in by_id: return by_id[pid]
+    return by_name.get(norm_pit(name), {})
+
+def safe_f(d, *keys):
+    for k in keys:
+        v = str(d.get(k, '') or '').strip()
+        if v and v not in ('null',''):
+            try: return float(v)
+            except: pass
+    return None
+
+# ERA/xERA — use expected_statistics endpoint for pitchers
+def fetch_pitcher_era_stats():
     url = ("https://baseballsavant.mlb.com/leaderboard/expected_statistics"
            "?type=pitcher&year=2026&position=&team=&filterType=bip&min=q&sort=15&sortDir=asc&csv=true")
     print(f"  ERA/xERA 2026: {url[:100]}...")
     try:
-        r = _req.get(url, headers=TARGETS_HEADERS, timeout=30)
+        headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+                   "Accept": "text/csv,text/plain,*/*"}
+        r = requests.get(url, headers=headers, timeout=30)
         print(f"  Status {r.status_code}, {len(r.content)} bytes")
         if r.status_code != 200: return []
+        import gzip as _gz2, csv as _csv3, io as _io3
         content = r.content
-        if content[:2] == b'\x1f\x8b':
-            import gzip as _gz; content = _gz.decompress(content)
+        if content[:2] == b'\x1f\x8b': content = _gz2.decompress(content)
         text = content.decode('utf-8', errors='replace')
         if text.startswith('\ufeff'): text = text[1:]
-        rows_raw = list(csv.DictReader(io.StringIO(text)))
-        if rows_raw:
-            print(f"  ERA cols: {list(rows_raw[0].keys())[:15]}")
-        return parse_savant_csv(text)
+        rows_raw = list(_csv3.DictReader(_io3.StringIO(text)))
+        print(f"  ERA cols: {list(rows_raw[0].keys())[:15] if rows_raw else []}")
+        fieldnames = list(_csv3.DictReader(_io3.StringIO(text)).fieldnames or [])
+        combined = next((f for f in fieldnames if 'last_name' in f.lower() and 'first_name' in f.lower()), None)
+        result = []
+        for row in rows_raw:
+            row = {k.strip(): (v.strip() if isinstance(v,str) else v) for k,v in row.items()}
+            pid = str(row.get('player_id','') or '').strip()
+            if combined:
+                parts = (row.get(combined) or '').split(',',1)
+                name = ((parts[1].strip() if len(parts)>1 else '') + ' ' + parts[0].strip()).strip()
+            else:
+                name = ((row.get('first_name','') or '') + ' ' + (row.get('last_name','') or '')).strip()
+            result.append({'player_id': pid, 'name': name, 'row': row})
+        print(f"  Parsed {len(result)} ERA rows")
+        return result
     except Exception as e:
         print(f"  Error: {e}"); return []
 
-era_rows  = fetch_pitcher_era()
-pbabip_rows = fetch_csv(
-    "https://baseballsavant.mlb.com/leaderboard/statcast-year-to-year"
-    "?type=babip&group=Pitcher&year=2025&csv=true",
-    "Pitcher BABIP YoY")
-pk_rows = fetch_csv(
-    "https://baseballsavant.mlb.com/leaderboard/statcast-year-to-year"
-    "?type=k_percent&group=Pitcher&year=2025&sort=k_percent_diff_2025&sortDir=desc&csv=true",
-    "Pitcher K% YoY")
-velo_rows = fetch_csv(
-    "https://baseballsavant.mlb.com/leaderboard/statcast-year-to-year"
-    "?type=fastball_velo&group=Pitcher&year=2025&sort=fastball_velo_diff_2025&sortDir=desc&csv=true",
-    "Pitcher Velo YoY")
+# YoY stats — reuse fetch_savant_year but for pitcher type
+PIT_YOY_BABIP  = {"babip": "BABIP"}
+PIT_YOY_K      = {"k_percent": "K%"}
+PIT_YOY_VELO   = {"fastball_velo": "Velo"}
 
-era_id,    era_nm    = build_lookup(era_rows)
-pbabip_id, pbabip_nm = build_lookup(pbabip_rows)
-pk_id,     pk_nm     = build_lookup(pk_rows)
-velo_id,   velo_nm   = build_lookup(velo_rows)
-print(f"  era={len(era_id)}, babip={len(pbabip_id)}, k%={len(pk_id)}, velo={len(velo_id)}")
+def fetch_savant_year_pit(year, field_map, label):
+    """Same as fetch_savant_year but type=pitcher."""
+    import requests as _rp, csv as _cp, io as _ip, gzip as _gp
+    selections = ",".join(["player_id","last_name","first_name","pa"] + list(field_map.keys()))
+    url = (f"https://baseballsavant.mlb.com/leaderboard/custom"
+           f"?year={year}&type=pitcher&filter=&min=1"
+           f"&selections={selections}&chart=false&x=pa&y=pa&r=no&chartType=beeswarm"
+           f"&sort=pa&sortDir=desc&csv=true")
+    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+               "Accept": "text/csv,text/plain,*/*"}
+    print(f"  {label} ({year}): {url[:100]}...")
+    try:
+        r = _rp.get(url, headers=headers, timeout=30)
+        print(f"  Status {r.status_code}, {len(r.content)} bytes")
+        if r.status_code != 200: return []
+        content = r.content
+        if content[:2] == b'\x1f\x8b': content = _gp.decompress(content)
+        text = content.decode('utf-8', errors='replace')
+        if text.startswith('\ufeff'): text = text[1:]
+        reader = _cp.DictReader(_ip.StringIO(text))
+        rows = list(reader)
+        fieldnames = [f.strip() for f in (reader.fieldnames or [])]
+        combined = next((f for f in fieldnames if 'last_name' in f.lower() and 'first_name' in f.lower()), None)
+        result = []
+        for row in rows:
+            row = {k.strip(): (v.strip() if isinstance(v,str) else v) for k,v in row.items()}
+            pid = row.get('player_id','').strip()
+            if combined:
+                parts = (row.get(combined) or '').split(',',1)
+                name = ((parts[1].strip() if len(parts)>1 else '') + ' ' + parts[0].strip()).strip()
+            else:
+                name = ((row.get('first_name','') or '') + ' ' + (row.get('last_name','') or '')).strip()
+            entry = {'player_id': pid, 'name': name}
+            for field, disp in field_map.items():
+                raw = (row.get(field) or '').strip()
+                try: entry[disp] = float(raw) if raw and raw != 'null' else None
+                except: entry[disp] = None
+            result.append(entry)
+        print(f"  Parsed {len(result)} rows")
+        return result
+    except Exception as e:
+        print(f"  Error: {e}"); return []
+
+era_data     = fetch_pitcher_era_stats()
+babip26_pit  = fetch_savant_year_pit(2026, PIT_YOY_BABIP, "Pitcher BABIP 2026")
+babip25_pit  = fetch_savant_year_pit(2025, PIT_YOY_BABIP, "Pitcher BABIP 2025")
+k26_pit      = fetch_savant_year_pit(2026, PIT_YOY_K,    "Pitcher K% 2026")
+k25_pit      = fetch_savant_year_pit(2025, PIT_YOY_K,    "Pitcher K% 2025")
+velo26_pit   = fetch_savant_year_pit(2026, PIT_YOY_VELO, "Pitcher Velo 2026")
+velo25_pit   = fetch_savant_year_pit(2025, PIT_YOY_VELO, "Pitcher Velo 2025")
+
+era_id, era_nm       = make_pit_lookup(era_data)
+b26_id, b26_nm       = make_pit_lookup(babip26_pit)
+b25_id, b25_nm       = make_pit_lookup(babip25_pit)
+k26_id, k26_nm       = make_pit_lookup(k26_pit)
+k25_id, k25_nm       = make_pit_lookup(k25_pit)
+v26_id, v26_nm       = make_pit_lookup(velo26_pit)
+v25_id, v25_nm       = make_pit_lookup(velo25_pit)
+print(f"  era={len(era_id)}, b26={len(b26_id)}, b25={len(b25_id)}, k26={len(k26_id)}, v26={len(v26_id)}")
 
 pit_targets = []
-for pid, name, xr in era_rows:
-    _, br  = lookup_row(pbabip_id, pbabip_nm, pid, name)
-    _, kr  = lookup_row(pk_id,     pk_nm,     pid, name)
-    _, vr  = lookup_row(velo_id,   velo_nm,   pid, name)
+for pd2 in era_data:
+    pid  = pd2['player_id']
+    name = pd2['name']
+    xr   = pd2['row']
 
-    display_name = name if name else pid
+    b26  = find_pit(b26_id, b26_nm, pid, name)
+    b25  = find_pit(b25_id, b25_nm, pid, name)
+    k26  = find_pit(k26_id, k26_nm, pid, name)
+    k25  = find_pit(k25_id, k25_nm, pid, name)
+    v26  = find_pit(v26_id, v26_nm, pid, name)
+    v25  = find_pit(v25_id, v25_nm, pid, name)
 
-    # ERA vs xERA
-    era   = safe_float(xr, 'era')
-    xera  = safe_float(xr, 'est_era', 'xera', 'expected_era', 'est_era_using_speedangle')
-    ip_26 = safe_float(xr, 'ip', 'innings_pitched')
+    era  = safe_f(xr, 'era')
+    xera = safe_f(xr, 'est_era', 'xera', 'expected_era', 'est_era_using_speedangle')
+    ip26 = safe_f(xr, 'ip', 'innings_pitched')
     delta_era = round(xera - era, 2) if xera is not None and era is not None else None
 
-    # BABIP YoY
-    babip_26 = safe_float(br, '2026')
-    babip_25 = safe_float(br, '2025')
-    delta_babip = safe_float(br, 'delta_2025_2026')
-    if delta_babip is None and babip_26 is not None and babip_25 is not None:
-        delta_babip = round(babip_26 - babip_25, 3)
+    babip_26 = b26.get('BABIP'); babip_25 = b25.get('BABIP')
+    delta_babip = round(babip_26 - babip_25, 3) if babip_26 is not None and babip_25 is not None else None
 
-    # K% YoY
-    k_26 = safe_float(kr, '2026')
-    k_25 = safe_float(kr, '2025')
-    delta_k = safe_float(kr, 'delta_2025_2026')
-    if delta_k is None and k_26 is not None and k_25 is not None:
-        delta_k = round(k_26 - k_25, 1)
+    k_26 = k26.get('K%'); k_25 = k25.get('K%')
+    delta_k = round(k_26 - k_25, 1) if k_26 is not None and k_25 is not None else None
 
-    # Fastball Velo YoY
-    velo_26 = safe_float(vr, '2026')
-    velo_25 = safe_float(vr, '2025')
-    delta_velo = safe_float(vr, 'delta_2025_2026')
-    if delta_velo is None and velo_26 is not None and velo_25 is not None:
-        delta_velo = round(velo_26 - velo_25, 1)
+    velo_26 = v26.get('Velo'); velo_25 = v25.get('Velo')
+    delta_velo = round(velo_26 - velo_25, 1) if velo_26 is not None and velo_25 is not None else None
 
     if era is None and xera is None:
         continue
 
-    # Signal
     is_under = (delta_era   is not None and delta_era   >= 0.50 and
                 delta_babip is not None and delta_babip >= 0.020 and
                 delta_k     is not None and delta_k     >= 0.0)
@@ -993,11 +1072,10 @@ for pid, name, xr in era_rows:
 
     signal = "Underperforming" if is_under else "Overperforming" if is_over else "Neutral"
 
-    # Grade from velo delta
     grade = "—"
     dv = delta_velo
     if is_under and dv is not None:
-        if   dv >= 1.0: grade = "Elite Buy Low"
+        if   dv >= 1.0:  grade = "Elite Buy Low"
         elif dv >= 0.75: grade = "Good Buy Low"
         elif dv >= 0.5:  grade = "Buy Low"
     elif is_over and dv is not None:
@@ -1006,24 +1084,24 @@ for pid, name, xr in era_rows:
         elif dv <= -0.5:  grade = "Sell High"
 
     pit_targets.append({
-        "name":          display_name,
-        "name_key":      norm(name),
-        "mlbam_id":      pid,
-        "ip_2026":       round(ip_26, 1) if ip_26 is not None else None,
-        "era":           era,
-        "xera":          xera,
-        "delta_era":     delta_era,
-        "babip_2026":    babip_26,
-        "babip_2025":    babip_25,
-        "delta_babip":   delta_babip,
-        "k_2026":        k_26,
-        "k_2025":        k_25,
-        "delta_k":       delta_k,
-        "velo_2026":     velo_26,
-        "velo_2025":     velo_25,
-        "delta_velo":    delta_velo,
-        "signal":        signal,
-        "grade":         grade,
+        "name":         name,
+        "name_key":     norm_pit(name),
+        "mlbam_id":     pid,
+        "ip_2026":      round(ip26, 1) if ip26 is not None else None,
+        "era":          era,
+        "xera":         xera,
+        "delta_era":    delta_era,
+        "babip_2026":   babip_26,
+        "babip_2025":   babip_25,
+        "delta_babip":  delta_babip,
+        "k_2026":       k_26,
+        "k_2025":       k_25,
+        "delta_k":      delta_k,
+        "velo_2026":    velo_26,
+        "velo_2025":    velo_25,
+        "delta_velo":   delta_velo,
+        "signal":       signal,
+        "grade":        grade,
     })
 
 n_under = sum(1 for t in pit_targets if t['signal'] == 'Underperforming')
