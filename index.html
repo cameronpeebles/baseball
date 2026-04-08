@@ -493,9 +493,13 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div class="page-subtitle">Buy low / sell high analysis based on Statcast expected vs actual performance.</div>
     <div class="trade-tabs" id="targets-tabs">
       <button class="trade-tab active" onclick="showTargetsTab('hitters',this)">Hitters</button>
+      <button class="trade-tab" onclick="showTargetsTab('pitchers',this)">Pitchers</button>
     </div>
     <div id="targets-tab-hitters" class="trade-tab-content active">
       <div id="targets-body"><div class="loading">Loading...</div></div>
+    </div>
+    <div id="targets-tab-pitchers" class="trade-tab-content">
+      <div id="targets-pit-body"><div class="loading">Loading...</div></div>
     </div>
   </div>
 
@@ -6570,7 +6574,10 @@ var TARGETS_STATE = {
 
 window.showTargetsTab = function(tab, btn) {
   document.querySelectorAll('#targets-tabs .trade-tab').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('#page-targets .trade-tab-content').forEach(function(c){c.classList.remove('active');});
   btn.classList.add('active');
+  document.getElementById('targets-tab-' + tab).classList.add('active');
+  if (tab === 'pitchers') renderPitcherTargetsPage();
 };
 
 function renderTargetsPage() {
@@ -7015,6 +7022,217 @@ window.sortTargets = function(key) {
   if (TARGETS_STATE.sort === key) TARGETS_STATE.sortDir *= -1;
   else { TARGETS_STATE.sort = key; TARGETS_STATE.sortDir = -1; }
   drawTargetsTable();
+};
+
+// ── Pitcher Targets ───────────────────────────────────────────────────────────
+
+var pitTargetsData = null;
+var PIT_TARGETS_STATE = { rostFilter:'ALL', sort:'delta_era', sortDir:-1 };
+
+function renderPitcherTargetsPage() {
+  var el = document.getElementById('targets-pit-body');
+  if (!el) return;
+  if (pitTargetsData) { drawPitcherTargetsTable(); return; }
+  el.innerHTML = '<div class="loading">Loading pitcher targets...</div>';
+  loadJSON('targets_pitching.json').then(function(data) {
+    pitTargetsData = data;
+    drawPitcherTargetsTable();
+  }).catch(function() {
+    el.innerHTML = '<div class="error-msg">targets_pitching.json not found — run the GitHub Action first.</div>';
+  });
+}
+
+function drawPitcherTargetsTable() {
+  var el = document.getElementById('targets-pit-body');
+  if (!el || !pitTargetsData) return;
+
+  function normName(n) {
+    return (n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+  }
+
+  // fWAR lookup (pitchers)
+  var fwarLookup = {};
+  FWAR.pitResults.forEach(function(p){ fwarLookup[normName(p.name)] = p; });
+
+  // Roster lookup (pitchers)
+  var rosterLookup = {};
+  S.pitRows.forEach(function(row) {
+    var cells = row.cells || [], scorer = row.scorer || {};
+    var ftId = (cells[1] && cells[1].teamId) || '';
+    var name = scorer.name || '';
+    if (!name) return;
+    rosterLookup[normName(name)] = { ftId:ftId, hs:scorer.headshotUrl||'', pos:scorer.posShortNames||'' };
+  });
+
+  var enriched = pitTargetsData.map(function(t) {
+    var key = t.name_key || normName(t.name);
+    var ri  = rosterLookup[key] || null;
+    var fw  = fwarLookup[key]   || null;
+    var ti  = ri ? (S.teamInfo[ri.ftId] || {}) : null;
+    return { t:t, ri:ri, fw:fw, ti:ti };
+  });
+
+  // Sort
+  var sk = PIT_TARGETS_STATE.sort, sd = PIT_TARGETS_STATE.sortDir;
+  var sorted = enriched.slice().sort(function(a,b) {
+    var va = sk==='fwar' ? (a.fw?a.fw.fWAR:null) : a.t[sk];
+    var vb = sk==='fwar' ? (b.fw?b.fw.fWAR:null) : b.t[sk];
+    if (va==null&&vb==null) return 0;
+    if (va==null) return 1; if (vb==null) return -1;
+    return (va-vb)*sd;
+  });
+
+  // Filter
+  var rf = PIT_TARGETS_STATE.rostFilter;
+  var filtered = sorted.filter(function(e) {
+    if (rf==='ROSTERED' && !e.ri) return false;
+    if (rf==='FA'       &&  e.ri) return false;
+    return true;
+  });
+
+  function sigStyle(s) {
+    if (s==='Underperforming') return {bg:'#e8f0eb',fg:'#1e6b3a',icon:'🟢'};
+    if (s==='Overperforming')  return {bg:'#fce8e8',fg:'#c0392b',icon:'🔴'};
+    return {bg:'var(--bg)',fg:'var(--muted)',icon:'⚪'};
+  }
+  function gradeStyle(g) {
+    if (g==='Elite Buy Low')   return {bg:'#1e6b3a',fg:'#fff'};
+    if (g==='Good Buy Low')    return {bg:'#4a9a68',fg:'#fff'};
+    if (g==='Buy Low')         return {bg:'#a8d5b5',fg:'#1a3d26'};
+    if (g==='Elite Sell High') return {bg:'#c0392b',fg:'#fff'};
+    if (g==='Good Sell High')  return {bg:'#e05c4b',fg:'#fff'};
+    if (g==='Sell High')       return {bg:'#f5c4b3',fg:'#6b2a1a'};
+    return {bg:'var(--bg)',fg:'var(--muted)'};
+  }
+  function fmtD(v,dec) {
+    if (v==null) return '<span style="color:var(--muted)">—</span>';
+    return (v>=0?'+':'')+v.toFixed(dec);
+  }
+  function th(key,label) {
+    var sorted2 = PIT_TARGETS_STATE.sort===key;
+    var arrow = sorted2?(PIT_TARGETS_STATE.sortDir===-1?' ↓':' ↑'):'';
+    var style = sorted2?'color:var(--accent);cursor:pointer':'cursor:pointer';
+    return '<th style="'+style+'" onclick="sortPitTargets(\''+key+'\')">'+label+arrow+'</th>';
+  }
+
+  var html = '';
+
+  // Filter pills
+  html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px">';
+  html += '<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted)">Roster</span>';
+  html += '<div class="pill-group" id="pit-rost-pills">';
+  [{v:'ALL',l:'All'},{v:'ROSTERED',l:'Rostered'},{v:'FA',l:'Free Agents'}].forEach(function(o){
+    html += '<button class="pill'+(rf===o.v?' active':'')+'" onclick="setPitTargetsFilter(\'rost\',\''+o.v+'\',this)">'+o.l+'</button>';
+  });
+  html += '</div>';
+  html += '<span style="font-size:12px;color:var(--muted)">'+filtered.length+' pitchers</span>';
+  html += '</div>';
+
+  // Table
+  html += '<div class="card"><div class="table-wrap" style="max-height:78vh;overflow-y:auto;overflow-x:auto">';
+  html += '<table style="min-width:max-content;font-size:13px"><thead><tr>';
+  html += '<th class="left" style="min-width:160px">Pitcher</th>';
+  html += '<th class="left" style="min-width:80px">Team</th>';
+  html += th('fwar','fWAR');
+  html += '<th>IP</th>';
+  html += '<th style="min-width:130px">Signal</th>';
+  html += '<th style="min-width:130px">Buy/Sell</th>';
+  html += th('era','ERA');
+  html += th('xera','xERA');
+  html += th('delta_era','Δ xERA−ERA');
+  html += th('babip_2026','BABIP 2026');
+  html += th('babip_2025','BABIP 2025');
+  html += th('delta_babip','ΔBABIP');
+  html += th('k_2026','K% 2026');
+  html += th('k_2025','K% 2025');
+  html += th('delta_k','ΔK%');
+  html += th('velo_2026','Velo 2026');
+  html += th('velo_2025','Velo 2025');
+  html += th('delta_velo','ΔVelo');
+  html += '</tr></thead><tbody>';
+
+  filtered.forEach(function(e,i) {
+    var t=e.t, ri=e.ri, ti=e.ti;
+    var bg=i%2===1?'background:var(--bg)':'';
+    var ss=sigStyle(t.signal), gs=gradeStyle(t.grade||'—');
+    var s=function(v){return v>=0?'+':'';};
+
+    html += '<tr style="border-bottom:1px solid var(--border);'+bg+'">';
+
+    // Pitcher
+    html += '<td class="left" style="white-space:nowrap"><div class="team-cell">';
+    if (ri&&ri.hs) html += '<img class="player-hs" src="'+ri.hs+'" alt="" onerror="this.style.display=\'none\'">';
+    html += '<div><div style="font-size:13px;font-weight:500">'+t.name+'</div>';
+    if (ri) html += '<div style="font-size:10px;color:var(--muted)">'+(ri.pos||'')+'</div>';
+    html += '</div></div></td>';
+
+    // Team
+    html += '<td class="left">';
+    if (ti) {
+      var tl=ti.logoUrl512||'';
+      html += '<div style="display:flex;align-items:center;gap:4px">';
+      if (tl) html += '<img src="'+tl+'" style="width:16px;height:16px;border-radius:50%" alt="" onerror="this.style.display=\'none\'">';
+      html += '<span style="font-size:12px">'+(ti.shortName||ti.name||'')+'</span></div>';
+    } else html += '<span class="badge fa">FA</span>';
+    html += '</td>';
+
+    // fWAR
+    if (e.fw) {
+      var fc=e.fw.fWAR>=2?'#1e6b3a':e.fw.fWAR>=0.5?'#4a9a68':e.fw.fWAR>=-0.5?'#b7791f':'#c0392b';
+      html += '<td style="font-weight:700;color:'+fc+'">'+(e.fw.fWAR>=0?'+':'')+e.fw.fWAR.toFixed(2)+'</td>';
+    } else html += '<td style="color:var(--muted)">—</td>';
+
+    // IP
+    html += '<td style="color:var(--muted)">'+(t.ip_2026!=null?t.ip_2026:'—')+'</td>';
+
+    // Signal
+    html += '<td><span style="padding:3px 9px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap;background:'+ss.bg+';color:'+ss.fg+'">'+ss.icon+' '+t.signal+'</span></td>';
+
+    // Grade
+    html += '<td><span style="padding:3px 9px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap;background:'+gs.bg+';color:'+gs.fg+'">'+(t.grade||'—')+'</span></td>';
+
+    // ERA / xERA / delta
+    html += '<td>'+(t.era!=null?t.era.toFixed(2):'—')+'</td>';
+    html += '<td>'+(t.xera!=null?t.xera.toFixed(2):'—')+'</td>';
+    var dec=t.delta_era; var dEc=dec==null?'var(--muted)':dec>=0.5?'#1e6b3a':dec<=-0.5?'#c0392b':'var(--text)';
+    html += '<td style="font-weight:700;color:'+dEc+'">'+fmtD(t.delta_era,2)+'</td>';
+
+    // BABIP
+    html += '<td>'+(t.babip_2026!=null?t.babip_2026.toFixed(3):'—')+'</td>';
+    html += '<td style="color:var(--muted)">'+(t.babip_2025!=null?t.babip_2025.toFixed(3):'—')+'</td>';
+    var dbC=t.delta_babip==null?'var(--muted)':t.delta_babip>=0.02?'#c0392b':t.delta_babip<=-0.02?'#1e6b3a':'var(--text)';
+    html += '<td style="font-weight:600;color:'+dbC+'">'+fmtD(t.delta_babip,3)+'</td>';
+
+    // K%
+    html += '<td>'+(t.k_2026!=null?t.k_2026.toFixed(1)+'%':'—')+'</td>';
+    html += '<td style="color:var(--muted)">'+(t.k_2025!=null?t.k_2025.toFixed(1)+'%':'—')+'</td>';
+    var dkC=t.delta_k==null?'var(--muted)':t.delta_k>=0?'#1e6b3a':'#c0392b';
+    html += '<td style="font-weight:600;color:'+dkC+'">'+fmtD(t.delta_k,1)+'</td>';
+
+    // Velo
+    html += '<td>'+(t.velo_2026!=null?t.velo_2026.toFixed(1):'—')+'</td>';
+    html += '<td style="color:var(--muted)">'+(t.velo_2025!=null?t.velo_2025.toFixed(1):'—')+'</td>';
+    var dvC=t.delta_velo==null?'var(--muted)':t.delta_velo>=0.5?'#1e6b3a':t.delta_velo<=-0.5?'#c0392b':'var(--text)';
+    html += '<td style="font-weight:600;color:'+dvC+'">'+fmtD(t.delta_velo,1)+'</td>';
+
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div></div>';
+  el.innerHTML = html;
+}
+
+window.setPitTargetsFilter = function(type, val, btn) {
+  if (type==='rost') PIT_TARGETS_STATE.rostFilter = val;
+  document.getElementById('pit-rost-pills').querySelectorAll('.pill').forEach(function(p){p.classList.remove('active');});
+  btn.classList.add('active');
+  drawPitcherTargetsTable();
+};
+
+window.sortPitTargets = function(key) {
+  if (PIT_TARGETS_STATE.sort===key) PIT_TARGETS_STATE.sortDir *= -1;
+  else { PIT_TARGETS_STATE.sort=key; PIT_TARGETS_STATE.sortDir=-1; }
+  drawPitcherTargetsTable();
 };
 
 init();
