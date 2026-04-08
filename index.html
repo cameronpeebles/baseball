@@ -6696,6 +6696,8 @@ function drawTargetsTable() {
     return '<th style="' + style + '" onclick="sortTargets(\'' + key + '\')">' + label + arrow + '</th>';
   }
 
+  var html = '';
+
 
   // ── Quadrant scatterplot ──────────────────────────────────────────────────
   // Use all enriched players that have both delta_xwoba and fWAR
@@ -6792,7 +6794,7 @@ function drawTargetsTable() {
     html += html_chart;
   }
 
-  var html = '';
+
 
   // ── Filter controls ───────────────────────────────────────────────────────
   html += '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">';
