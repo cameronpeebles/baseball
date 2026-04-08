@@ -343,6 +343,7 @@ td.neg { color: #c0392b; font-weight: 500; }
         <button id="fwar-preset-pitcher" class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('pitcher')">⚾ Pitcher Heavy</button>
         <button id="fwar-preset-hybrid"  class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('hybrid')">⚖️ Hybrid</button>
         <button id="fwar-preset-hitter"  class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('hitter')">🏏 Hitter Heavy</button>
+        <button id="fwar-preset-optimal" class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('optimal')">🎯 Optimal</button>
       </div>
       <div style="margin-top:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <button class="pill active" style="padding:10px 28px;font-size:13px" onclick="recalculateFWAR()">Recalculate fWAR</button>
@@ -4998,8 +4999,24 @@ function buildCorrelations(el) {
 var FWAR_PRESETS = {
   pitcher: { C:16, '1B':20, '2B':16, '3B':21, SS:25, OF:68,  SP:147, RP:63 },
   hybrid:  { C:17, '1B':23, '2B':18, '3B':25, SS:32, OF:85,  SP:123, RP:53 },
-  hitter:  { C:18, '1B':26, '2B':20, '3B':28, SS:38, OF:100, SP:98,  RP:42 }
+  hitter:  { C:18, '1B':26, '2B':20, '3B':28, SS:38, OF:100, SP:98,  RP:42 },
+  optimal: null  // loaded from optimal_fwar_weights.json
 };
+
+// Load optimal weights from JSON file
+loadJSON('optimal_fwar_weights.json').then(function(data) {
+  if (data && data.positional_ranks) {
+    FWAR_PRESETS.optimal = data.positional_ranks;
+    var btn = document.getElementById('fwar-preset-optimal');
+    if (btn) {
+      btn.title = 'Spearman r = ' + (data.spearman_r || '?') + ' across ' + (data.n_team_seasons || '?') + ' team-seasons';
+      btn.textContent = '🎯 Optimal (r=' + (data.spearman_r || '?') + ')';
+    }
+    console.log('Optimal fWAR weights loaded:', data.positional_ranks);
+  }
+}).catch(function() {
+  console.log('optimal_fwar_weights.json not yet generated — run the GitHub Action first.');
+});
 
 var FWAR_DEFAULTS = {
   repRanks:   { C:17, '1B':23, '2B':18, '3B':25, SS:32, OF:85, SP:123, RP:53 },
@@ -5076,13 +5093,18 @@ window.resetFWARDefaults = function() {
 
 window.applyFWARPreset = function(preset) {
   var ranks = FWAR_PRESETS[preset];
-  if (!ranks) return;
+  if (!ranks) {
+    if (preset === 'optimal') {
+      document.getElementById('fwar-status').textContent = 'Optimal weights not yet loaded — run the GitHub Action first.';
+    }
+    return;
+  }
   FWAR.repRanks = JSON.parse(JSON.stringify(ranks));
   buildFWARModelInputs();
-  var labels = { pitcher: 'Pitcher Heavy', hybrid: 'Pitcher/Hitter Hybrid', hitter: 'Hitter Heavy' };
-  document.getElementById('fwar-status').textContent = labels[preset] + ' preset applied — click Recalculate.';
+  var labels = { pitcher: 'Pitcher Heavy', hybrid: 'Pitcher/Hitter Hybrid', hitter: 'Hitter Heavy', optimal: 'Optimal (data-driven)' };
+  document.getElementById('fwar-status').textContent = (labels[preset] || preset) + ' preset applied — click Recalculate.';
   // Highlight active preset button
-  ['pitcher','hybrid','hitter'].forEach(function(p) {
+  ['pitcher','hybrid','hitter','optimal'].forEach(function(p) {
     var btn = document.getElementById('fwar-preset-' + p);
     if (btn) btn.classList.toggle('active', p === preset);
   });
