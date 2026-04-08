@@ -1,0 +1,28 @@
+{
+  "positional_ranks": {
+    "C": 31,
+    "1B": 31,
+    "2B": 31,
+    "3B": 31,
+    "SS": 31,
+    "OF": 31,
+    "SP": 150,
+    "RP": 38
+  },
+  "category_weights": {
+    "r": 0.1,
+    "hr": 0.1,
+    "rbi": 0.1,
+    "sb": 0.1,
+    "avg": 0.1,
+    "w": 0.1,
+    "k": 0.1,
+    "sv": 0.1,
+    "era": 0.1,
+    "whip": 0.1
+  },
+  "spearman_r": 0.977,
+  "n_seasons": 5,
+  "n_team_seasons": 50,
+  "note": "Optimized to maximize Spearman rank correlation between team fWAR and fantasy points across historical seasons"
+}
