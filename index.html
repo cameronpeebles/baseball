@@ -890,7 +890,7 @@ function drawPlayers(type) {
   if (hasFG && fgLeague && Object.keys(fgLeague).length > 0) {
     html += '<tr class="lg-avg-row" style="border-bottom:2px solid #2980b9">';
     html += '<td class="left" style="font-weight:600;font-size:11px;color:#2980b9;white-space:nowrap" colspan="3">MLB Avg (Savant)</td>';
-    if (hasFWAR) html += '<td></td><td></td><td></td><td></td><td></td>';
+    if (hasFWAR) html += '<td></td><td></td><td></td><td></td>';
     ftxCols.forEach(function() { html += '<td></td>'; });
     fgCols.forEach(function(c) {
       var v = fgLeague[c];
@@ -6694,6 +6694,102 @@ function drawTargetsTable() {
     var arrow  = sorted ? (TARGETS_STATE.sortDir === -1 ? ' ↓' : ' ↑') : '';
     var style  = sorted ? 'color:var(--accent);cursor:pointer' : 'cursor:pointer';
     return '<th style="' + style + '" onclick="sortTargets(\'' + key + '\')">' + label + arrow + '</th>';
+  }
+
+
+  // ── Quadrant scatterplot ──────────────────────────────────────────────────
+  // Use all enriched players that have both delta_xwoba and fWAR
+  var plotData = enriched.filter(function(e) {
+    return e.t.delta_xwoba != null && e.fw != null;
+  });
+
+  if (plotData.length) {
+    var W=700, H=480, PL=60, PR=60, PT=40, PB=50;
+    var cW = W-PL-PR, cH = H-PT-PB;
+
+    var xVals = plotData.map(function(e){ return e.t.delta_xwoba; });
+    var yVals = plotData.map(function(e){ return e.fw.fWAR; });
+    var xMin = Math.min.apply(null,xVals), xMax = Math.max.apply(null,xVals);
+    var yMin = Math.min.apply(null,yVals), yMax = Math.max.apply(null,yVals);
+    xMin = Math.min(xMin,-0.02)-0.01; xMax = Math.max(xMax,0.02)+0.01;
+    yMin = Math.min(yMin,-0.5)-0.3;   yMax = Math.max(yMax,0.5)+0.3;
+    var xRange = xMax-xMin, yRange = yMax-yMin;
+
+    function px(v){ return PL+(v-xMin)/xRange*cW; }
+    function py(v){ return PT+(1-(v-yMin)/yRange)*cH; }
+
+    var x0=px(0), y0=py(0);
+
+    var svg = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:700px;height:auto;display:block;margin:0 auto">';
+
+    // Quadrant backgrounds
+    svg += '<rect x="'+PL+'" y="'+PT+'" width="'+(x0-PL)+'" height="'+(y0-PT)+'" fill="#fce8e8" opacity="0.4"/>';
+    svg += '<rect x="'+x0+'" y="'+PT+'" width="'+(W-PR-x0)+'" height="'+(y0-PT)+'" fill="#e8f0eb" opacity="0.4"/>';
+    svg += '<rect x="'+PL+'" y="'+y0+'" width="'+(x0-PL)+'" height="'+(H-PB-y0)+'" fill="#f5f5f0" opacity="0.4"/>';
+    svg += '<rect x="'+x0+'" y="'+y0+'" width="'+(W-PR-x0)+'" height="'+(H-PB-y0)+'" fill="#e8f4fd" opacity="0.4"/>';
+
+    // Grid lines
+    var step=0.02;
+    for(var xv=Math.ceil(xMin/step)*step; xv<=xMax+0.001; xv=Math.round((xv+step)*1000)/1000){
+      var xpx=px(xv);
+      svg += '<line x1="'+xpx+'" y1="'+PT+'" x2="'+xpx+'" y2="'+(H-PB)+'" stroke="var(--border)" stroke-width="0.5"/>';
+      svg += '<text x="'+xpx+'" y="'+(H-PB+14)+'" text-anchor="middle" font-size="9" fill="var(--muted)">'+(xv>=0?'+':'')+xv.toFixed(2)+'</text>';
+    }
+    [-2,-1,0,1,2,3,4,5].forEach(function(yv){
+      if(yv<yMin||yv>yMax) return;
+      var ypx=py(yv);
+      svg += '<line x1="'+PL+'" y1="'+ypx+'" x2="'+(W-PR)+'" y2="'+ypx+'" stroke="var(--border)" stroke-width="0.5"/>';
+      svg += '<text x="'+(PL-6)+'" y="'+(ypx+4)+'" text-anchor="end" font-size="9" fill="var(--muted)">'+yv+'</text>';
+    });
+
+    // Zero axes
+    svg += '<line x1="'+x0+'" y1="'+PT+'" x2="'+x0+'" y2="'+(H-PB)+'" stroke="var(--text)" stroke-width="1.5"/>';
+    svg += '<line x1="'+PL+'" y1="'+y0+'" x2="'+(W-PR)+'" y2="'+y0+'" stroke="var(--text)" stroke-width="1.5"/>';
+
+    // Quadrant labels
+    [{x:PL+8,y:PT+18,t:'Sell High',c:'#c0392b',a:'start'},
+     {x:W-PR-8,y:PT+18,t:'Stars',c:'#1e6b3a',a:'end'},
+     {x:PL+8,y:H-PB-10,t:'Drop / Avoid',c:'#888',a:'start'},
+     {x:W-PR-8,y:H-PB-10,t:'Buy Low',c:'#2980b9',a:'end'}
+    ].forEach(function(q){
+      svg += '<text x="'+q.x+'" y="'+q.y+'" text-anchor="'+q.a+'" font-size="11" font-weight="700" fill="'+q.c+'" opacity="0.75">'+q.t+'</text>';
+    });
+
+    // Axis labels
+    svg += '<text x="'+(W/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="11" fill="var(--muted)">Δ xwOBA − wOBA (positive = underperforming luck)</text>';
+    svg += '<text x="14" y="'+(PT+cH/2)+'" text-anchor="middle" font-size="11" fill="var(--muted)" transform="rotate(-90,14,'+(PT+cH/2)+')">fWAR</text>';
+
+    // Dots
+    plotData.forEach(function(e){
+      var cx=px(e.t.delta_xwoba), cy=py(e.fw.fWAR);
+      var isFA=!e.ri;
+      var col=(e.t.delta_xwoba>=0&&e.fw.fWAR>=0)?'#2d5a3d'
+             :(e.t.delta_xwoba<0&&e.fw.fWAR>=0)?'#c0392b'
+             :(e.t.delta_xwoba>=0&&e.fw.fWAR<0)?'#2980b9':'#888';
+      var tip=e.t.name
+        +'&#10;fWAR: '+(e.fw.fWAR>=0?'+':'')+e.fw.fWAR.toFixed(2)
+        +'&#10;Δ xwOBA: '+(e.t.delta_xwoba>=0?'+':'')+e.t.delta_xwoba.toFixed(3)
+        +(e.ti?'&#10;'+(e.ti.shortName||e.ti.name):'&#10;FA');
+      if(isFA){
+        svg += '<rect x="'+(cx-5)+'" y="'+(cy-5)+'" width="10" height="10" fill="'+col+'" opacity="0.85" stroke="white" stroke-width="1.5" style="cursor:pointer"><title>'+tip+'</title></rect>';
+      } else {
+        svg += '<circle cx="'+cx+'" cy="'+cy+'" r="6" fill="'+col+'" opacity="0.85" stroke="white" stroke-width="1.5" style="cursor:pointer"><title>'+tip+'</title></circle>';
+      }
+    });
+
+    // Legend
+    svg += '<circle cx="'+(PL)+'" cy="'+(PT-20)+'" r="5" fill="#666"/>';
+    svg += '<text x="'+(PL+10)+'" y="'+(PT-16)+'" font-size="9" fill="var(--muted)">Rostered (circle)</text>';
+    svg += '<rect x="'+(PL+100)+'" y="'+(PT-25)+'" width="10" height="10" fill="#666"/>';
+    svg += '<text x="'+(PL+115)+'" y="'+(PT-16)+'" font-size="9" fill="var(--muted)">Free Agent (square)</text>';
+
+    svg += '</svg>';
+
+    html_chart = '<div class="card" style="margin-bottom:20px">';
+    html_chart += '<div class="card-header"><span class="card-title">Player Quadrant — xwOBA Performance vs fWAR</span></div>';
+    html_chart += '<div style="padding:16px">' + svg + '</div>';
+    html_chart += '</div>';
+    html += html_chart;
   }
 
   var html = '';
