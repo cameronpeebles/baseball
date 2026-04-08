@@ -387,6 +387,7 @@
                     "urlName": "freddie-freeman",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs01cgo_96_16.png",
                     "scorerId": "01cgo",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002"
@@ -395,6 +396,10 @@
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
                       {
                         "tooltip": "Apr 6, 11:50 PM: Freeman went 2-for-4 with a home run, a...",
                         "typeId": "9"
@@ -497,6 +502,7 @@
                     "urlName": "steven-kwan",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04pr1_96_5.png",
                     "scorerId": "04pr1",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -505,6 +511,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 1",
+                        "typeId": "21"
+                      },
                       {
                         "tooltip": "Apr 6, 11:30 PM: Kwan went 2-for-4 with a solo home run...",
                         "typeId": "9"
@@ -713,6 +723,7 @@
                     "urlName": "andres-gimenez",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03pzn_96_11.png",
                     "scorerId": "03pzn",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "003",
@@ -722,6 +733,10 @@
                     "posShortNames": "2B,SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 8",
+                        "typeId": "28"
+                      },
                       {
                         "tooltip": "Apr 3, 4:06 PM: Gimenez went 1-for-4 with a two-run...",
                         "typeId": "9"
@@ -765,8 +780,8 @@
                           "team": false,
                           "icons": [
                             {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
+                              "tooltip": "Batting Order: 1",
+                              "typeId": "21"
                             },
                             {
                               "tooltip": "RHP",
@@ -826,6 +841,7 @@
                     "urlName": "salvador-perez",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs01u75_96_16.png",
                     "scorerId": "01u75",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "001",
@@ -835,6 +851,10 @@
                     "posShortNames": "C,1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
                       {
                         "tooltip": "Apr 4, 10:03 PM: Perez went 1-for-2 with a solo home...",
                         "typeId": "9"
@@ -939,6 +959,7 @@
                     "urlName": "fernando-tatis-jr",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03zbh_96_13.png",
                     "scorerId": "03zbh",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -947,6 +968,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -1482,6 +1507,7 @@
                     "urlName": "brice-turang",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04b00_96_7.png",
                     "scorerId": "04b00",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "003"
@@ -1491,11 +1517,15 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
+                      {
                         "tooltip": "Ankle - Day-to-Day",
                         "typeId": "1"
                       },
                       {
-                        "tooltip": "Apr 7, 2:41 PM: Turang is out of the lineup for...",
+                        "tooltip": "Apr 8, 8:47 AM: Turang (ankle) remains out of the...",
                         "typeId": "14"
                       },
                       {
@@ -1825,6 +1855,7 @@
                     "urlName": "max-muncy",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02mzg_96_13.png",
                     "scorerId": "02mzg",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "004"
@@ -1833,6 +1864,10 @@
                     "posShortNames": "3B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 5",
+                        "typeId": "25"
+                      },
                       {
                         "tooltip": "Apr 1, 2:00 AM: Muncy went 2-for-3 with a solo home...",
                         "typeId": "8"
@@ -1935,6 +1970,7 @@
                     "urlName": "sal-frelick",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05rb1_96_5.png",
                     "scorerId": "05rb1",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -1943,6 +1979,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 1",
+                        "typeId": "21"
+                      },
                       {
                         "tooltip": "Apr 6, 1:38 PM: Frelick (side) will start in right...",
                         "typeId": "9"
@@ -2043,6 +2083,7 @@
                     "urlName": "mookie-betts",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02btf_96_16.png",
                     "scorerId": "02btf",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "005"
@@ -2051,6 +2092,10 @@
                     "posShortNames": "SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
                       {
                         "tooltip": "Injured List - 10-day IL - Oblique",
                         "typeId": "2"
@@ -2631,8 +2676,8 @@
                           "team": false,
                           "icons": [
                             {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
+                              "tooltip": "Batting Order: 1",
+                              "typeId": "21"
                             },
                             {
                               "tooltip": "RHP",
@@ -3261,8 +3306,8 @@
                           "team": false,
                           "icons": [
                             {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
+                              "tooltip": "Batting Order: 1",
+                              "typeId": "21"
                             },
                             {
                               "tooltip": "RHP",
@@ -3285,7 +3330,7 @@
                       "content": "2.08"
                     },
                     {
-                      "content": "0.577"
+                      "content": "0.635"
                     },
                     {
                       "content": "26"
@@ -3385,8 +3430,8 @@
                           "team": false,
                           "icons": [
                             {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
+                              "tooltip": "Batting Order: 1",
+                              "typeId": "21"
                             },
                             {
                               "tooltip": "RHP",
@@ -6979,7 +7024,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 1, 9:10 AM: Diaz is out of the lineup for...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -7081,6 +7126,7 @@
                     "urlName": "jackson-merrill",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05ua7_96_3.png",
                     "scorerId": "05ua7",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -7089,6 +7135,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
+                      },
                       {
                         "tooltip": "Apr 6, 12:00 AM: Merrill went 3-for-5 with a solo home...",
                         "typeId": "9"
@@ -7311,7 +7361,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 7, 8:57 AM: Herrera has served as the personal...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -7519,6 +7569,7 @@
                     "urlName": "jac-caglianone",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05u9q_96_2.png",
                     "scorerId": "05u9q",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002",
@@ -7529,8 +7580,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 1, 10:54 PM: Caglianone went 3-for-4 with a double...",
-                        "typeId": "9"
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
+                      {
+                        "tooltip": "Apr 8, 8:36 AM: Caglianone is out of the lineup for...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "On this team's trade block",
@@ -7636,6 +7691,7 @@
                     "urlName": "chase-delauter",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05uei_96_4.png",
                     "scorerId": "05uei",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -7644,6 +7700,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 5",
+                        "typeId": "25"
+                      },
                       {
                         "tooltip": "Apr 3, 6:05 PM: DeLauter went 3-for-4 with a two-run...",
                         "typeId": "9"
@@ -8417,6 +8477,7 @@
                     "urlName": "konnor-griffin",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05u3u_96_1.png",
                     "scorerId": "05u3u",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "005"
@@ -8426,7 +8487,11 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 8, 7:15 AM: Griffin signed a nine-year, $140...",
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
+                      {
+                        "tooltip": "Apr 8, 8:44 AM: Griffin is not in the lineup for...",
                         "typeId": "14"
                       },
                       {
@@ -13001,6 +13066,7 @@
                     "urlName": "cal-raleigh",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04my4_96_10.png",
                     "scorerId": "04my4",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "001"
@@ -13009,6 +13075,10 @@
                     "posShortNames": "C",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
                       {
                         "tooltip": "Apr 6, 11:13 PM: Raleigh went 1-for-3 with a solo home...",
                         "typeId": "9"
@@ -13109,6 +13179,7 @@
                     "urlName": "jose-ramirez",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs01ub6_96_16.png",
                     "scorerId": "01ub6",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "004"
@@ -13117,6 +13188,10 @@
                     "posShortNames": "3B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
+                      },
                       {
                         "tooltip": "Apr 1, 9:45 PM: Ramirez went 1-for-3 with a two-run...",
                         "typeId": "9"
@@ -13219,6 +13294,7 @@
                     "urlName": "roman-anthony",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05u9z_96_2.png",
                     "scorerId": "05u9z",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -13228,8 +13304,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 4, 5:56 PM: Anthony went 2-for-4 with a triple in...",
-                        "typeId": "9"
+                        "tooltip": "Batting Order: 1",
+                        "typeId": "21"
+                      },
+                      {
+                        "tooltip": "Apr 8, 9:35 AM: Anthony had three instances of poor...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -13331,6 +13411,7 @@
                     "urlName": "maikel-garcia",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05g3x_96_5.png",
                     "scorerId": "05g3x",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "003",
@@ -13341,6 +13422,10 @@
                     "posShortNames": "2B,3B,SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 1",
+                        "typeId": "21"
+                      },
                       {
                         "tooltip": "Apr 5, 4:35 PM: Garcia went 2-for-5 with a two-run...",
                         "typeId": "9"
@@ -13566,6 +13651,7 @@
                     "urlName": "randy-arozarena",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs040b5_96_10.png",
                     "scorerId": "040b5",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -13574,6 +13660,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
                       {
                         "tooltip": "Mar 30, 6:57 AM: Arozarena went 2-for-4 with a double,...",
                         "typeId": "8"
@@ -13784,6 +13874,7 @@
                     "urlName": "corey-seager",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02mw6_96_16.png",
                     "scorerId": "02mw6",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "005"
@@ -13792,6 +13883,10 @@
                     "posShortNames": "SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
+                      },
                       {
                         "tooltip": "Apr 7, 6:53 AM: Seager went 2-for-3 with a walk, an RBI...",
                         "typeId": "9"
@@ -13894,6 +13989,7 @@
                     "urlName": "teoscar-hernandez",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02xic_96_14.png",
                     "scorerId": "02xic",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -13902,6 +13998,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 6",
+                        "typeId": "26"
+                      },
                       {
                         "tooltip": "Apr 6, 9:41 PM: Hernandez went 2-for-5 with a home run,...",
                         "typeId": "9"
@@ -14110,6 +14210,7 @@
                     "urlName": "ryan-ohearn",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03dgq_96_11.png",
                     "scorerId": "03dgq",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002",
@@ -14119,6 +14220,10 @@
                     "posShortNames": "1B,OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
                       {
                         "tooltip": "Apr 7, 10:35 PM: O'Hearn went 2-for-3 with a walk and...",
                         "typeId": "14"
@@ -14223,6 +14328,7 @@
                     "urlName": "evan-carter",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05mdt_96_3.png",
                     "scorerId": "05mdt",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -14231,6 +14337,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 6",
+                        "typeId": "26"
+                      },
                       {
                         "tooltip": "Apr 7, 9:48 PM: Carter went 1-for-3 with an RBI and a...",
                         "typeId": "14"
@@ -15015,8 +15125,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 2, 4:55 AM: Cavalli did not factor into the...",
-                        "typeId": "9"
+                        "tooltip": "Apr 8, 7:55 AM: Cavalli didn't factor into the decision...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -15272,7 +15382,7 @@
                         "typeId": "1"
                       },
                       {
-                        "tooltip": "Apr 7, 9:07 PM: MRI results on deGrom's right knee came...",
+                        "tooltip": "Apr 8, 9:49 AM: DeGrom said Wednesday that his injured...",
                         "typeId": "14"
                       },
                       {
@@ -16406,8 +16516,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 1, 4:01 PM: Peralta (1-0) did not factor into the...",
-                        "typeId": "9"
+                        "tooltip": "Apr 8, 9:39 AM: Peralta did not factor into the...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -19173,6 +19283,7 @@
                     "urlName": "ernie-clement",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04alp_96_10.png",
                     "scorerId": "04alp",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002",
@@ -19184,6 +19295,10 @@
                     "posShortNames": "1B,2B,3B,SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 6",
+                        "typeId": "26"
+                      },
                       {
                         "tooltip": "Apr 2, 8:13 AM: Clement went 2-for-4 in Wednesday's...",
                         "typeId": "9"
@@ -19230,8 +19345,8 @@
                           "team": false,
                           "icons": [
                             {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
+                              "tooltip": "Batting Order: 1",
+                              "typeId": "21"
                             },
                             {
                               "tooltip": "RHP",
@@ -19294,6 +19409,7 @@
                     "urlName": "george-springer",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs025he_96_16.png",
                     "scorerId": "025he",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -19302,6 +19418,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 1",
+                        "typeId": "21"
+                      },
                       {
                         "tooltip": "Mar 31, 9:37 AM: Springer went 1-for-5 with a solo home...",
                         "typeId": "8"
@@ -19343,8 +19463,8 @@
                           "team": false,
                           "icons": [
                             {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
+                              "tooltip": "Batting Order: 1",
+                              "typeId": "21"
                             },
                             {
                               "tooltip": "RHP",
@@ -19402,6 +19522,7 @@
                     "urlName": "cole-young",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05y7x_96_2.png",
                     "scorerId": "05y7x",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "003"
@@ -19410,6 +19531,10 @@
                     "posShortNames": "2B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 9",
+                        "typeId": "29"
+                      },
                       {
                         "tooltip": "Apr 5, 10:54 PM: Young went 1-for-4 with a three-run...",
                         "typeId": "9"
@@ -19620,6 +19745,7 @@
                     "urlName": "kazuma-okamoto",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs06fzu_96_2.png",
                     "scorerId": "06fzu",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002",
@@ -19629,6 +19755,10 @@
                     "posShortNames": "1B,3B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 5",
+                        "typeId": "25"
+                      },
                       {
                         "tooltip": "Mar 31, 12:16 AM: Okamoto went 1-for-3 with a solo home...",
                         "typeId": "8"
@@ -19672,8 +19802,8 @@
                           "team": false,
                           "icons": [
                             {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
+                              "tooltip": "Batting Order: 1",
+                              "typeId": "21"
                             },
                             {
                               "tooltip": "RHP",
@@ -20066,6 +20196,7 @@
                     "urlName": "vladimir-guerrero-jr",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03ojr_96_10.png",
                     "scorerId": "03ojr",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002"
@@ -20074,6 +20205,10 @@
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
+                      },
                       {
                         "tooltip": "Apr 4, 4:21 PM: Guerrero went 1-for-4 with a two-run...",
                         "typeId": "9"
@@ -20116,8 +20251,8 @@
                           "team": false,
                           "icons": [
                             {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
+                              "tooltip": "Batting Order: 1",
+                              "typeId": "21"
                             },
                             {
                               "tooltip": "RHP",
@@ -20613,6 +20748,7 @@
                     "urlName": "garrett-mitchell",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04en7_96_4.png",
                     "scorerId": "04en7",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -20621,6 +20757,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
                       {
                         "tooltip": "Apr 4, 9:41 PM: Mitchell went 2-for-4 with a home run,...",
                         "typeId": "9"
@@ -20721,6 +20861,7 @@
                     "urlName": "adley-rutschman",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04q2n_96_9.png",
                     "scorerId": "04q2n",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "001"
@@ -20729,6 +20870,10 @@
                     "posShortNames": "C",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
+                      },
                       {
                         "tooltip": "Apr 7, 10:57 AM: Rutschman is out of the lineup for...",
                         "typeId": "14"
@@ -21441,8 +21586,8 @@
                           "team": false,
                           "icons": [
                             {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
+                              "tooltip": "Batting Order: 1",
+                              "typeId": "21"
                             },
                             {
                               "tooltip": "RHP",
@@ -22035,8 +22180,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 6, 10:07 PM: Helsley picked up the save in Monday's...",
-                        "typeId": "9"
+                        "tooltip": "Apr 8, 8:56 AM: Helsley picked up the save in Tuesday's...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -22832,8 +22977,8 @@
                           "team": false,
                           "icons": [
                             {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
+                              "tooltip": "Batting Order: 1",
+                              "typeId": "21"
                             },
                             {
                               "tooltip": "RHP",
@@ -23710,8 +23855,8 @@
                           "team": false,
                           "icons": [
                             {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
+                              "tooltip": "Batting Order: 1",
+                              "typeId": "21"
                             },
                             {
                               "tooltip": "RHP",
@@ -25318,6 +25463,7 @@
                     "urlName": "oneil-cruz",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03zlh_96_9.png",
                     "scorerId": "03zlh",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -25326,6 +25472,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 1",
+                        "typeId": "21"
+                      },
                       {
                         "tooltip": "Apr 5, 6:44 PM: Cruz went 2-for-4 with a two-run home...",
                         "typeId": "9"
@@ -25426,6 +25576,7 @@
                     "urlName": "bryan-reynolds",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03e5m_96_12.png",
                     "scorerId": "03e5m",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -25434,6 +25585,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
+                      },
                       {
                         "tooltip": "Apr 1, 11:00 PM: Reynolds went 2-for-5 with a two-run...",
                         "typeId": "9"
@@ -25655,8 +25810,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "In starting lineup",
-                        "typeId": "12"
+                        "tooltip": "Batting Order: 1",
+                        "typeId": "21"
                       },
                       {
                         "tooltip": "Apr 6, 11:45 PM: Ohtani went 2-for-6 with a solo home...",
@@ -25869,6 +26024,7 @@
                     "urlName": "kyle-tucker",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03pir_96_12.png",
                     "scorerId": "03pir",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -25877,6 +26033,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
                       {
                         "tooltip": "Apr 5, 8:55 AM: Tucker is out of the lineup for...",
                         "typeId": "9"
@@ -26195,6 +26355,7 @@
                     "urlName": "willson-contreras",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03oh0_96_14.png",
                     "scorerId": "03oh0",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002"
@@ -26204,8 +26365,12 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
+                      },
+                      {
                         "tooltip": "Apr 7, 7:43 AM: Contreras went 3-for-3 with a walk, a...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -26309,6 +26474,7 @@
                     "urlName": "will-smith",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs042sz_96_10.png",
                     "scorerId": "042sz",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "001"
@@ -26317,6 +26483,10 @@
                     "posShortNames": "C",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
+                      },
                       {
                         "tooltip": "Apr 6, 3:25 PM: Smith is out of the lineup for Monday's...",
                         "typeId": "9"
@@ -26741,6 +26911,7 @@
                     "urlName": "andrew-vaughn",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04si2_96_9.png",
                     "scorerId": "04si2",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002"
@@ -26749,6 +26920,10 @@
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
                       {
                         "tooltip": "Injured List - 10-day IL - Hand",
                         "typeId": "2"
@@ -27065,8 +27240,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "In starting lineup",
-                        "typeId": "12"
+                        "tooltip": "Batting Order: 1",
+                        "typeId": "21"
                       },
                       {
                         "tooltip": "Apr 6, 11:45 PM: Ohtani went 2-for-6 with a solo home...",
@@ -28583,7 +28758,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 7, 9:07 AM: The Phillies activated Kerkering...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -31746,6 +31921,7 @@
                     "urlName": "gunnar-henderson",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs050w9_96_6.png",
                     "scorerId": "050w9",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "005"
@@ -31755,8 +31931,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 3, 8:03 PM: Henderson went 3-for-5 with a double, a...",
-                        "typeId": "9"
+                        "tooltip": "Batting Order: 1",
+                        "typeId": "21"
+                      },
+                      {
+                        "tooltip": "Apr 8, 9:11 AM: Henderson went 2-for-4 with a two-run...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -32107,7 +32287,7 @@
                     "1",
                     "2"
                   ],
-                  "posId": "003",
+                  "posId": "014",
                   "cells": [
                     {
                       "content": "29"
@@ -32166,7 +32346,7 @@
                       "content": "11"
                     }
                   ],
-                  "statusId": "2",
+                  "statusId": "1",
                   "eligiblePosIds": [
                     "003",
                     "014",
@@ -32885,7 +33065,7 @@
                     "1",
                     "2"
                   ],
-                  "posId": "001",
+                  "posId": "006",
                   "cells": [
                     {
                       "content": "27"
@@ -33071,6 +33251,7 @@
                     "urlName": "carter-jensen",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05vy5_96_2.png",
                     "scorerId": "05vy5",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "001"
@@ -33079,6 +33260,10 @@
                     "posShortNames": "C",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 5",
+                        "typeId": "25"
+                      },
                       {
                         "tooltip": "Apr 6, 10:47 PM: Jensen went 2-for-4 with a solo home...",
                         "typeId": "9"
@@ -33103,7 +33288,7 @@
                     "1",
                     "2"
                   ],
-                  "posId": "014",
+                  "posId": "001",
                   "cells": [
                     {
                       "content": "22"
@@ -33179,6 +33364,7 @@
                     "urlName": "coby-mayo",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05js5_96_2.png",
                     "scorerId": "05js5",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002"
@@ -33187,6 +33373,10 @@
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 8",
+                        "typeId": "28"
+                      },
                       {
                         "tooltip": "Apr 3, 10:33 AM: Mayo is out of the lineup for Friday's...",
                         "typeId": "9"
@@ -33322,7 +33512,7 @@
                     "1",
                     "2"
                   ],
-                  "posId": "006",
+                  "posId": "004",
                   "cells": [
                     {
                       "content": "27"
@@ -33385,7 +33575,7 @@
                       "content": "7"
                     }
                   ],
-                  "statusId": "1",
+                  "statusId": "2",
                   "eligiblePosIds": [
                     "014",
                     "004",
@@ -33526,10 +33716,6 @@
                       {
                         "tooltip": "Minor Leagues",
                         "typeId": "4"
-                      },
-                      {
-                        "tooltip": "Mar 9, 8:59 AM: De Vries went 2-for-4 with a two-run...",
-                        "typeId": "8"
                       },
                       {
                         "tooltip": "Switch Hitter",
@@ -33741,6 +33927,7 @@
                     "urlName": "jackson-holliday",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05ybv_96_3.png",
                     "scorerId": "05ybv",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "003"
@@ -33749,6 +33936,10 @@
                     "posShortNames": "2B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
                       {
                         "tooltip": "Injured List - 10-day IL - Hand",
                         "typeId": "2"
@@ -34558,7 +34749,7 @@
                       },
                       {
                         "tooltip": "Apr 7, 8:24 AM: The Orioles transferred Eflin (elbow)...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -34935,8 +35126,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 1, 5:12 PM: Gallen (1-1) notched the win Wednesday...",
-                        "typeId": "9"
+                        "tooltip": "Apr 8, 9:28 AM: Gallen did not factor into the decision...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -35311,8 +35502,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 6, 12:04 AM: Loaisiga blew a save chance, allowing...",
-                        "typeId": "9"
+                        "tooltip": "Apr 8, 9:52 AM: Loaisiga was charged with a blown save...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -36195,8 +36386,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 1, 5:39 PM: Schlittler (2-0) notched the win...",
-                        "typeId": "9"
+                        "tooltip": "Apr 8, 8:11 AM: Schlittler didn't factor into the...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -37994,6 +38185,7 @@
                     "urlName": "josh-naylor",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03pjd_96_12.png",
                     "scorerId": "03pjd",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002"
@@ -38002,6 +38194,10 @@
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
                       {
                         "tooltip": "Apr 4, 7:51 AM: Naylor went 2-for-5 with two RBI in...",
                         "typeId": "9"
@@ -38214,6 +38410,7 @@
                     "urlName": "brandon-nimmo",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02bq2_96_16.png",
                     "scorerId": "02bq2",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -38222,6 +38419,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 1",
+                        "typeId": "21"
+                      },
                       {
                         "tooltip": "Mar 30, 4:50 AM: Nimmo went 2-for-4 with a home run and...",
                         "typeId": "8"
@@ -38430,6 +38631,7 @@
                     "urlName": "andy-pages",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04ru5_96_8.png",
                     "scorerId": "04ru5",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -38438,6 +38640,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 7",
+                        "typeId": "27"
+                      },
                       {
                         "tooltip": "Apr 4, 9:14 PM: Pages went 3-for-5 with a home run, a...",
                         "typeId": "9"
@@ -38651,6 +38857,7 @@
                     "urlName": "bobby-witt-jr",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04lgp_96_6.png",
                     "scorerId": "04lgp",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "005"
@@ -38659,6 +38866,10 @@
                     "posShortNames": "SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
                       {
                         "tooltip": "Apr 1, 10:49 PM: Witt went 1-for-3 with one RBI and a...",
                         "typeId": "9"
@@ -38761,6 +38972,7 @@
                     "urlName": "christian-yelich",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs025dn_96_14.png",
                     "scorerId": "025dn",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012",
@@ -38770,6 +38982,10 @@
                     "posShortNames": "OF,UT",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
+                      },
                       {
                         "tooltip": "Apr 7, 2:55 PM: Yelich is out of the lineup for...",
                         "typeId": "14"
@@ -38870,6 +39086,7 @@
                     "urlName": "colson-montgomery",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05rch_96_2.png",
                     "scorerId": "05rch",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "004",
@@ -38879,6 +39096,10 @@
                     "posShortNames": "3B,SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
                       {
                         "tooltip": "Apr 5, 8:45 AM: Montgomery isn't in the White Sox's...",
                         "typeId": "9"
@@ -39205,6 +39426,7 @@
                     "urlName": "brendan-donovan",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04pse_96_5.png",
                     "scorerId": "04pse",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "003",
@@ -39215,6 +39437,10 @@
                     "posShortNames": "2B,3B,OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 5",
+                        "typeId": "25"
+                      },
                       {
                         "tooltip": "Apr 7, 8:46 PM: Donovan went 2-for-4 with a solo home...",
                         "typeId": "14"
@@ -39323,6 +39549,7 @@
                     "urlName": "ceddanne-rafaela",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05gsi_96_3.png",
                     "scorerId": "05gsi",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "003",
@@ -39332,6 +39559,10 @@
                     "posShortNames": "2B,OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 8",
+                        "typeId": "28"
+                      },
                       {
                         "tooltip": "Apr 5, 7:49 AM: Rafaela is out of the lineup for...",
                         "typeId": "9"
@@ -39440,6 +39671,7 @@
                     "urlName": "marcelo-mayer",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05r9j_96_2.png",
                     "scorerId": "05r9j",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "003",
@@ -39450,8 +39682,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 3, 3:18 PM: Mayer went 2-for-2 with a home run, a...",
-                        "typeId": "9"
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
+                      {
+                        "tooltip": "Apr 8, 8:04 AM: Mayer is out of the lineup for...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -40395,8 +40631,8 @@
                           "team": false,
                           "icons": [
                             {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
+                              "tooltip": "Batting Order: 1",
+                              "typeId": "21"
                             },
                             {
                               "tooltip": "RHP",
@@ -41736,8 +41972,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 1, 2:24 PM: Rogers (2-0) picked up the win...",
-                        "typeId": "9"
+                        "tooltip": "Apr 8, 8:34 AM: Rogers did not factor into the decision...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -43614,7 +43850,7 @@
                 "id": "2"
               },
               {
-                "total": 6,
+                "total": 7,
                 "max": 7,
                 "name": "Inj Res",
                 "id": "3"
@@ -43634,7 +43870,7 @@
                   "name": "Claims Remaining (Week)",
                   "hasMore": true,
                   "description": "Number of Claims Remaining in week",
-                  "value": 4
+                  "value": 3
                 }
               ]
             },
@@ -43678,7 +43914,7 @@
                   "id": "2"
                 },
                 {
-                  "total": 1,
+                  "total": 2,
                   "name": "Inj Res",
                   "id": "3"
                 }
@@ -43910,6 +44146,7 @@
                     "urlName": "wyatt-langford",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs060pm_96_3.png",
                     "scorerId": "060pm",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -43918,6 +44155,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
                       {
                         "tooltip": "Apr 4, 7:18 AM: Langford went 2-for-5 with a double, a...",
                         "typeId": "9"
@@ -44113,6 +44354,120 @@
                   "eligiblePosIds": [
                     "012",
                     "014"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
+                    "teamName": "Houston Astros",
+                    "urlName": "christian-walker",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02mw3_96_16.png",
+                    "scorerId": "02mw3",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "002"
+                    ],
+                    "defaultPosId": "002",
+                    "posShortNames": "1B",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Apr 8, 8:23 AM: Walker went 1-for-4 with a solo home...",
+                        "typeId": "14"
+                      },
+                      {
+                        "tooltip": "Bats Right",
+                        "typeId": "17"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "002",
+                      "006",
+                      "014"
+                    ],
+                    "teamId": "10105",
+                    "name": "Christian Walker",
+                    "teamShortName": "HOU",
+                    "shortName": "C. Walker"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "002",
+                  "cells": [
+                    {
+                      "content": "35"
+                    },
+                    {
+                      "content": "@COL<br/>Wed 1:10PM",
+                      "eventId": "06j83",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "michael-lorenzen",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02hir_96_15.png",
+                          "scorerId": "02hir",
+                          "upcomingEventStatusId": "1",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "In starting lineup",
+                              "typeId": "12"
+                            },
+                            {
+                              "tooltip": "Apr 7, 12:09 PM: Rockies manager Warren Schaeffer said...",
+                              "typeId": "14"
+                            },
+                            {
+                              "tooltip": "RHP",
+                              "typeId": "17"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "Michael Lorenzen",
+                          "shortName": "M. Lorenzen"
+                        },
+                        "header": "Probable Starter for Colorado:",
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b> 1 &nbsp;<b>IP</b> 7.1 &nbsp;<b>K</b> 6 &nbsp;<b>ERA</b> 14.73 &nbsp;<b>WHIP</b> 2.864 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "46"
+                    },
+                    {
+                      "content": "9"
+                    },
+                    {
+                      "content": "15"
+                    },
+                    {
+                      "content": "3"
+                    },
+                    {
+                      "content": "13"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": ".326"
+                    },
+                    {
+                      "content": "12"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "002",
+                    "014",
+                    "006"
                   ],
                   "actions": [
                     {
@@ -44460,6 +44815,7 @@
                     "urlName": "vinnie-pasquantino",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05184_96_4.png",
                     "scorerId": "05184",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002"
@@ -44469,8 +44825,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Mar 12, 9:08 AM: Pasquantino went 3-for-4 with three...",
-                        "typeId": "8"
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
+                      },
+                      {
+                        "tooltip": "Apr 8, 7:48 AM: Pasquantino went 0-for-3 with a walk in...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -44570,6 +44930,7 @@
                     "urlName": "ramon-laureano",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03dp8_96_13.png",
                     "scorerId": "03dp8",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -44578,6 +44939,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 1",
+                        "typeId": "21"
+                      },
                       {
                         "tooltip": "Apr 1, 5:12 PM: Laureano went 2-for-4 with a two-run...",
                         "typeId": "9"
@@ -44790,6 +45155,7 @@
                     "urlName": "manny-machado",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs01svq_96_16.png",
                     "scorerId": "01svq",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "004"
@@ -44799,8 +45165,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 5, 4:19 PM: Machado went 2-for-4 with a three-run...",
-                        "typeId": "9"
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
+                      {
+                        "tooltip": "Apr 8, 7:51 AM: Machado is not in the lineup for...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "On this team's trade block",
@@ -44904,6 +45274,7 @@
                     "urlName": "kyle-manzardo",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05rfu_96_2.png",
                     "scorerId": "05rfu",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002"
@@ -44913,8 +45284,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 5, 2:21 PM: Manzardo is out of the lineup for Game...",
-                        "typeId": "9"
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
+                      {
+                        "tooltip": "Apr 8, 8:23 AM: Manzardo is out of the lineup for...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -44996,7 +45371,7 @@
                       "content": "11"
                     }
                   ],
-                  "statusId": "1",
+                  "statusId": "2",
                   "eligiblePosIds": [
                     "002",
                     "014",
@@ -45014,6 +45389,7 @@
                     "urlName": "samuel-basallo",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05rbv_96_2.png",
                     "scorerId": "05rbv",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "001"
@@ -45023,8 +45399,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 6, 3:52 PM: Basallo is out of the lineup for...",
-                        "typeId": "9"
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
+                      {
+                        "tooltip": "Apr 8, 9:37 AM: Basallo is not in the lineup for...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -45240,6 +45620,7 @@
                     "urlName": "colton-cowser",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05ras_96_6.png",
                     "scorerId": "05ras",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -45249,8 +45630,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Mar 29, 8:29 AM: Cowser is out of the lineup for...",
-                        "typeId": "8"
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
+                      {
+                        "tooltip": "Apr 8, 9:41 AM: Cowser is not in the lineup for...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -45348,6 +45733,7 @@
                     "urlName": "addison-barger",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04qii_96_4.png",
                     "scorerId": "04qii",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "004",
@@ -45357,6 +45743,10 @@
                     "posShortNames": "3B,OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
                       {
                         "tooltip": "Injured List - 10-day IL - Ankle",
                         "typeId": "2"
@@ -45405,8 +45795,8 @@
                           "team": false,
                           "icons": [
                             {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
+                              "tooltip": "Batting Order: 1",
+                              "typeId": "21"
                             },
                             {
                               "tooltip": "RHP",
@@ -45447,7 +45837,7 @@
                       "content": "8"
                     }
                   ],
-                  "statusId": "2",
+                  "statusId": "3",
                   "eligiblePosIds": [
                     "012",
                     "014",
@@ -47155,8 +47545,8 @@
                           "team": false,
                           "icons": [
                             {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
+                              "tooltip": "Batting Order: 1",
+                              "typeId": "21"
                             },
                             {
                               "tooltip": "RHP",
@@ -48004,8 +48394,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 6, 1:24 AM: O'Brien (2) earned the save Sunday...",
-                        "typeId": "9"
+                        "tooltip": "Apr 8, 7:47 AM: O'Brien allowed an unearned run while...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -48256,11 +48646,11 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Personal - Day-to-Day",
+                        "tooltip": "Paternity Leave - Day-to-Day",
                         "typeId": "1"
                       },
                       {
-                        "tooltip": "Apr 7, 12:56 PM: Rasmussen was scratched from his...",
+                        "tooltip": "Apr 8, 10:00 AM: The Rays placed Rasmussen (personal) on...",
                         "typeId": "14"
                       },
                       {
@@ -50081,6 +50471,7 @@
                     "urlName": "julio-rodriguez",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04fhb_96_9.png",
                     "scorerId": "04fhb",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -50089,6 +50480,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
+                      },
                       {
                         "tooltip": "Mar 21, 9:27 AM: Rodriguez went 3-for-3 with a home run,...",
                         "typeId": "8"
@@ -50498,7 +50893,7 @@
                       "content": "12"
                     }
                   ],
-                  "statusId": "2",
+                  "statusId": "1",
                   "eligiblePosIds": [
                     "012",
                     "014"
@@ -50515,6 +50910,7 @@
                     "urlName": "pete-alonso",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs041pz_96_12.png",
                     "scorerId": "041pz",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002"
@@ -50523,6 +50919,10 @@
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
                       {
                         "tooltip": "Apr 6, 7:12 AM: Alonso went 1-for-4 with an RBI double...",
                         "typeId": "9"
@@ -50768,7 +51168,7 @@
                     "1",
                     "2"
                   ],
-                  "posId": "014",
+                  "posId": "005",
                   "cells": [
                     {
                       "content": "32"
@@ -50827,7 +51227,7 @@
                       "content": "11"
                     }
                   ],
-                  "statusId": "1",
+                  "statusId": "2",
                   "eligiblePosIds": [
                     "014",
                     "005",
@@ -51173,6 +51573,7 @@
                     "urlName": "brandon-lowe",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03qjy_96_10.png",
                     "scorerId": "03qjy",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "003"
@@ -51182,8 +51583,12 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
+                      {
                         "tooltip": "Apr 1, 8:41 AM: Lowe is not in the lineup for...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -51206,7 +51611,7 @@
                     "1",
                     "2"
                   ],
-                  "posId": "003",
+                  "posId": "014",
                   "cells": [
                     {
                       "content": "31"
@@ -51265,7 +51670,7 @@
                       "content": "10"
                     }
                   ],
-                  "statusId": "2",
+                  "statusId": "1",
                   "eligiblePosIds": [
                     "003",
                     "014",
@@ -51392,6 +51797,7 @@
                     "urlName": "munetaka-murakami",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05y3u_96_2.png",
                     "scorerId": "05y3u",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002",
@@ -51402,8 +51808,12 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
+                      {
                         "tooltip": "Apr 7, 9:20 AM: Murakami is out of the lineup for...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -51505,6 +51915,7 @@
                     "urlName": "jarren-duran",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04pst_96_8.png",
                     "scorerId": "04pst",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -51514,8 +51925,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 6, 12:04 PM: Duran is out of the lineup for Monday's...",
-                        "typeId": "9"
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
+                      {
+                        "tooltip": "Apr 8, 8:13 AM: Duran is out of the lineup for...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -51600,7 +52015,7 @@
                       "content": "9"
                     }
                   ],
-                  "statusId": "1",
+                  "statusId": "2",
                   "eligiblePosIds": [
                     "012",
                     "014"
@@ -51725,6 +52140,7 @@
                     "urlName": "kyle-teel",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05wxy_96_2.png",
                     "scorerId": "05wxy",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "001"
@@ -51733,6 +52149,10 @@
                     "posShortNames": "C",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
                       {
                         "tooltip": "Injured List - 10-day IL - Hamstring",
                         "typeId": "2"
@@ -52169,8 +52589,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 4, 9:05 PM: Bednar picked up his fourth save in...",
-                        "typeId": "9"
+                        "tooltip": "Apr 8, 8:14 AM: Bednar struck out one in a perfect...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -56102,6 +56522,7 @@
                     "urlName": "trevor-story",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02bqh_96_16.png",
                     "scorerId": "02bqh",
+                    "upcomingEventStatusId": "1",
                     "posIdsNoFlex": [
                       "005"
                     ],
@@ -56109,6 +56530,10 @@
                     "posShortNames": "SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 5",
+                        "typeId": "25"
+                      },
                       {
                         "tooltip": "Apr 7, 11:06 PM: Story went 1-for-4 with a two-run...",
                         "typeId": "14"
@@ -56556,6 +56981,7 @@
                     "urlName": "jake-burger",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04azv_96_8.png",
                     "scorerId": "04azv",
+                    "upcomingEventStatusId": "1",
                     "posIdsNoFlex": [
                       "002"
                     ],
@@ -56563,6 +56989,10 @@
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
                       {
                         "tooltip": "Apr 7, 6:57 AM: Burger went 1-for-4 with a double and...",
                         "typeId": "9"
@@ -56782,6 +57212,7 @@
                     "urlName": "wilyer-abreu",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs060x1_96_4.png",
                     "scorerId": "060x1",
+                    "upcomingEventStatusId": "1",
                     "posIdsNoFlex": [
                       "012"
                     ],
@@ -56789,6 +57220,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
                       {
                         "tooltip": "Apr 2, 7:43 AM: Abreu went 2-for-4 with a solo home run...",
                         "typeId": "9"
@@ -57019,6 +57454,7 @@
                     "urlName": "taylor-ward",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03pje_96_15.png",
                     "scorerId": "03pje",
+                    "upcomingEventStatusId": "1",
                     "posIdsNoFlex": [
                       "012"
                     ],
@@ -57026,6 +57462,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
                       {
                         "tooltip": "Apr 3, 8:07 PM: Ward went 1-for-3 with a double, one...",
                         "typeId": "9"
@@ -57109,7 +57549,7 @@
                       "content": "11"
                     }
                   ],
-                  "statusId": "1",
+                  "statusId": "2",
                   "eligiblePosIds": [
                     "012",
                     "014"
@@ -57256,7 +57696,7 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 7, 2:00 PM: Walker will start in right field and...",
+                        "tooltip": "Apr 8, 7:51 AM: Walker went 1-for-5 with a home run and...",
                         "typeId": "14"
                       },
                       {
@@ -57359,6 +57799,7 @@
                     "urlName": "william-contreras",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03yrz_96_10.png",
                     "scorerId": "03yrz",
+                    "upcomingEventStatusId": "5",
                     "posIdsNoFlex": [
                       "001"
                     ],
@@ -57367,8 +57808,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 4, 4:25 PM: Contreras isn't in the lineup for the...",
-                        "typeId": "9"
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
+                      {
+                        "tooltip": "Apr 8, 8:50 AM: Contreras is not in the lineup for...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -57672,7 +58117,7 @@
                       "content": "10"
                     }
                   ],
-                  "statusId": "2",
+                  "statusId": "1",
                   "eligiblePosIds": [
                     "012",
                     "014"
@@ -57693,6 +58138,7 @@
                     "urlName": "jake-bauers",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs0316v_96_13.png",
                     "scorerId": "0316v",
+                    "upcomingEventStatusId": "1",
                     "posIdsNoFlex": [
                       "002",
                       "012"
@@ -57701,6 +58147,10 @@
                     "posShortNames": "1B,OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
                       {
                         "tooltip": "Mar 31, 10:21 PM: Bauers went 2-for-4 with a solo home...",
                         "typeId": "8"
@@ -57925,6 +58375,7 @@
                     "urlName": "jackson-chourio",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05m1e_96_4.png",
                     "scorerId": "05m1e",
+                    "upcomingEventStatusId": "5",
                     "posIdsNoFlex": [
                       "012"
                     ],
@@ -57932,6 +58383,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
                       {
                         "tooltip": "Injured List - 10-day IL - Hand",
                         "typeId": "2"
@@ -58159,6 +58614,7 @@
                     "urlName": "jordan-westburg",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05gsc_96_5.png",
                     "scorerId": "05gsc",
+                    "upcomingEventStatusId": "5",
                     "posIdsNoFlex": [
                       "003",
                       "004"
@@ -58167,6 +58623,10 @@
                     "posShortNames": "2B,3B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
                       {
                         "tooltip": "Injured List - 60-day IL - Elbow",
                         "typeId": "2"
