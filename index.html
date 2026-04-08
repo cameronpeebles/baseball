@@ -2119,6 +2119,50 @@ function fmtStat(cat, val) {
 }
 
 function buildMatchupPage(stats, fullSchedule) {
+
+  // ── Pull cumulative pts from standings (S.seasonData) ─────────────────────
+  var teamPtsById = {};   // teamId  → pts
+  var teamPtsByName = {}; // teamName → pts
+  (function() {
+    var tables = (S.seasonData && S.seasonData.data && S.seasonData.data.tableList) || [];
+    var ptTable = null;
+    for (var i = 0; i < tables.length; i++) {
+      if ((tables[i].caption || '').toLowerCase().indexOf('point total') !== -1) {
+        ptTable = tables[i]; break;
+      }
+    }
+    if (!ptTable) return;
+    var hdr = (ptTable.header && ptTable.header.cells) || [];
+    var ptsIdx = 0;
+    hdr.forEach(function(h, i) {
+      var k = (h.key || h.shortName || h.name || '').toUpperCase();
+      if (k === 'PTS' || k === 'POINTS') ptsIdx = i;
+    });
+    (ptTable.rows || []).forEach(function(row) {
+      var fc = row.fixedCells || [], cells = row.cells || [];
+      var id   = (fc[1] && fc[1].teamId) || '';
+      var name = S.teamInfo[id] ? (S.teamInfo[id].name || '') : '';
+      var pts  = parseFloat((cells[ptsIdx] || {}).content) || 0;
+      if (id)   teamPtsById[id]     = pts;
+      if (name) teamPtsByName[name] = pts;
+    });
+  })();
+
+  // Lookup pts by team name (as used in joe_stats)
+  var allPtsVals = Object.values(teamPtsByName);
+  var maxPts = allPtsVals.length ? Math.max.apply(null, allPtsVals) : 1;
+  var minPts = allPtsVals.length ? Math.min.apply(null, allPtsVals) : 0;
+  var ptRange = maxPts - minPts || 1;
+
+  // Points-based win probability for team A vs team B (0–1, 0.5 = even)
+  function ptsWinProb(nameA, nameB) {
+    var pa = teamPtsByName[nameA], pb = teamPtsByName[nameB];
+    if (pa == null || pb == null) return 0.5;
+    // Logistic blend: difference scaled to pts range → win prob
+    var diff = (pa - pb) / ptRange;  // -1 to +1
+    return 1 / (1 + Math.exp(-6 * diff)); // sigmoid, k=6 gives ~70% at 1σ diff
+  }
+
   // Group stats by team and period
   var byTeamPeriod = {};
   stats.forEach(function(row) {
@@ -2150,6 +2194,14 @@ function buildMatchupPage(stats, fullSchedule) {
     var homeAvg = avgThrough(m.home, m.period);
     if (!awayAvg || !homeAvg) return null;
     var result = predictH2H(awayAvg, homeAvg);
+
+    // Blend category-based (60%) with points-based (40%)
+    var catProb  = result.awayPct;                        // 0–1 from H2H cats
+    var ptsProb  = ptsWinProb(m.away, m.home);            // 0–1 from standings pts
+    var blendProb = 0.6 * catProb + 0.4 * ptsProb;
+    result.awayWinProb = blendProb;
+    result.winner = blendProb > 0.52 ? 'away' : blendProb < 0.48 ? 'home' : 'tie';
+
     return { period: m.period, away: m.away, home: m.home, result: result };
   }).filter(Boolean);
   var periods = [];
@@ -2189,7 +2241,7 @@ function buildMatchupPage(stats, fullSchedule) {
   });
 
   html += '<div class="card">';
-  html += '<div class="card-header"><span class="card-title">Predicted season standings (all 20 periods)</span></div>';
+  html += '<div class="card-header"><span class="card-title">Predicted season standings (all 20 periods)</span><span style="font-size:12px;color:var(--muted)">Based on category H2H + season point totals</span></div>';
   html += '<div class="table-wrap"><table>';
   html += '<thead><tr><th class="left">#</th><th class="left">Team</th><th>W</th><th>L</th><th>T</th><th>Pts</th></tr></thead><tbody>';
   teamsSorted.forEach(function(team, i) {
@@ -2228,14 +2280,22 @@ window.showMPPeriod = function(period, btn) {
 
   var matches = (window._mpPredictions || []).filter(function(p) { return p.period === period; });
 
-  var html = '<p style="font-size:12px;color:var(--muted);margin-bottom:16px">Predictions based on cumulative average stats from all prior periods. ';
-  html += 'Green = predicted winner.</p>';
+  var html = '<p style="font-size:12px;color:var(--muted);margin-bottom:16px">';
+  html += 'Win probability blends category H2H (60%) and season point totals (40%). Green = predicted winner.</p>';
 
   matches.forEach(function(m) {
     var r = m.result;
     var awayWin = r.winner === 'away';
     var homeWin = r.winner === 'home';
-    var isTie   = r.winner === 'tie';
+    var awayProb = r.awayWinProb != null ? r.awayWinProb : (r.awayPct || 0.5);
+    var homeProb = 1 - awayProb;
+
+    // Points context
+    var awayPts = teamPtsByName[m.away];
+    var homePts = teamPtsByName[m.home];
+    var ptStr = (awayPts != null && homePts != null)
+      ? ' (' + awayPts.toFixed(1) + ' pts vs ' + homePts.toFixed(1) + ' pts)'
+      : '';
 
     html += '<div class="mp-matchup">';
 
@@ -2243,15 +2303,26 @@ window.showMPPeriod = function(period, btn) {
     html += '<div class="mp-team away ' + (awayWin ? 'winner' : 'loser') + '">';
     html += '<div class="mp-team-name">' + joeTeamLogo(m.away) + '<span>' + m.away + '</span></div>';
     html += '<div class="mp-score">' + r.awayPts.toFixed(1) + '</div>';
+    html += '<div style="font-size:11px;color:' + (awayWin?'#1e6b3a':'var(--muted)') + ';margin-top:2px">' + Math.round(awayProb*100) + '% win</div>';
+    if (awayPts != null) html += '<div style="font-size:10px;color:var(--muted)">' + awayPts.toFixed(1) + ' season pts</div>';
     html += '</div>';
 
-    // VS divider
-    html += '<div class="mp-vs">vs</div>';
+    // VS divider with win prob bar
+    var barPct = Math.round(awayProb * 100);
+    html += '<div class="mp-vs" style="display:flex;flex-direction:column;align-items:center;gap:4px">';
+    html += '<span>vs</span>';
+    html += '<div style="width:80px;height:6px;border-radius:3px;background:var(--border);overflow:hidden">';
+    html += '<div style="width:' + barPct + '%;height:100%;background:' + (awayWin?'#1e6b3a':homeWin?'#c0392b':'#b7791f') + '"></div>';
+    html += '</div>';
+    html += '<span style="font-size:9px;color:var(--muted)">' + barPct + ' / ' + (100-barPct) + '</span>';
+    html += '</div>';
 
     // Home team
     html += '<div class="mp-team home ' + (homeWin ? 'winner' : 'loser') + '">';
     html += '<div class="mp-team-name"><span>' + m.home + '</span>' + joeTeamLogo(m.home) + '</div>';
     html += '<div class="mp-score">' + r.homePts.toFixed(1) + '</div>';
+    html += '<div style="font-size:11px;color:' + (homeWin?'#1e6b3a':'var(--muted)') + ';margin-top:2px">' + Math.round(homeProb*100) + '% win</div>';
+    if (homePts != null) html += '<div style="font-size:10px;color:var(--muted)">' + homePts.toFixed(1) + ' season pts</div>';
     html += '</div>';
 
     // Category breakdown
