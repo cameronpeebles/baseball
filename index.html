@@ -2147,6 +2147,7 @@ function buildMatchupPage(stats, fullSchedule) {
       if (name) teamPtsByName[name] = pts;
     });
   })();
+  window._teamPtsByName = teamPtsByName;
 
   // Lookup pts by team name (as used in joe_stats)
   var allPtsVals = Object.values(teamPtsByName);
@@ -2279,6 +2280,7 @@ window.showMPPeriod = function(period, btn) {
   if (btn) btn.classList.add('active');
 
   var matches = (window._mpPredictions || []).filter(function(p) { return p.period === period; });
+  var teamPtsByName = window._teamPtsByName || {};
 
   var html = '<p style="font-size:12px;color:var(--muted);margin-bottom:16px">';
   html += 'Win probability blends category H2H (60%) and season point totals (40%). Green = predicted winner.</p>';
