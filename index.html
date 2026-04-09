@@ -252,6 +252,7 @@ td.neg { color: #c0392b; font-weight: 500; }
   <button onclick="showPage('rosters',this)">Rosters</button>
   <button onclick="showPage('trade',this)">Player Trade &amp; Market</button>
   <button onclick="showPage('targets',this)">Trade Waiver Wire Targets</button>
+  <button onclick="showPage('guide',this)">Site Guide</button>
 </nav>
 
 <main>
@@ -516,6 +517,340 @@ td.neg { color: #c0392b; font-weight: 500; }
     </div>
   </div>
 
+  <div class="page" id="page-guide">
+    <div class="page-title">Site Guide</div>
+    <div class="page-subtitle">How each page works, key calculations, and what's new.</div>
+    <div class="trade-tabs" id="guide-tabs">
+      <button class="trade-tab active" onclick="showGuideTab('start',this)">Getting Started</button>
+      <button class="trade-tab" onclick="showGuideTab('dashboard',this)">Dashboard</button>
+      <button class="trade-tab" onclick="showGuideTab('joe',this)">JOE Factor</button>
+      <button class="trade-tab" onclick="showGuideTab('fwar',this)">fWAR</button>
+      <button class="trade-tab" onclick="showGuideTab('sgp',this)">SGP Engine</button>
+      <button class="trade-tab" onclick="showGuideTab('targets',this)">Trade Targets</button>
+      <button class="trade-tab" onclick="showGuideTab('predictions',this)">Match Predictions</button>
+      <button class="trade-tab" onclick="showGuideTab('correlations',this)">Correlations</button>
+      <button class="trade-tab" onclick="showGuideTab('data',this)">Data Pipeline</button>
+      <button class="trade-tab" onclick="showGuideTab('glossary',this)">Glossary</button>
+      <button class="trade-tab" onclick="showGuideTab('changelog',this)">Changelog</button>
+    </div>
+
+    <!-- Getting Started -->
+    <div id="guide-tab-start" class="trade-tab-content active">
+      <div class="card" style="margin-top:16px">
+        <div class="card-header"><span class="card-title">Welcome to Bluebonnet Baseball Analytics</span></div>
+        <div class="card-body" style="padding:20px;max-width:760px">
+          <p style="font-size:14px;line-height:1.7;color:var(--text)">This site is a full analytics platform for the <strong>Bluebonnet Baseball Federation</strong> — a 10-team rotisserie league scoring 10 categories over 20 weekly periods. Every page connects to live Fantrax data fetched automatically by a GitHub Action.</p>
+
+          <div style="margin:20px 0;padding:16px;background:var(--accent-light);border-radius:8px;border-left:4px solid var(--accent)">
+            <div style="font-weight:700;color:var(--accent);margin-bottom:10px;font-size:13px">WEEKLY WORKFLOW — What to check each week</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="font-size:13px"><span style="display:inline-block;width:24px;height:24px;background:var(--accent);color:#fff;border-radius:50%;text-align:center;line-height:24px;font-weight:700;margin-right:8px;font-size:11px">1</span><strong>Dashboard</strong> — See your current matchup, standings position, and top players at a glance.</div>
+              <div style="font-size:13px"><span style="display:inline-block;width:24px;height:24px;background:var(--accent);color:#fff;border-radius:50%;text-align:center;line-height:24px;font-weight:700;margin-right:8px;font-size:11px">2</span><strong>Match Predictions</strong> — Check win probability vs your current opponent. Which categories are you likely to lose?</div>
+              <div style="font-size:13px"><span style="display:inline-block;width:24px;height:24px;background:var(--accent);color:#fff;border-radius:50%;text-align:center;line-height:24px;font-weight:700;margin-right:8px;font-size:11px">3</span><strong>SGP → By Position</strong> — Is there a free agent or trade target who upgrades your weakest slot?</div>
+              <div style="font-size:13px"><span style="display:inline-block;width:24px;height:24px;background:var(--accent);color:#fff;border-radius:50%;text-align:center;line-height:24px;font-weight:700;margin-right:8px;font-size:11px">4</span><strong>Trade Waiver Wire Targets</strong> — Any underperforming hitters or pitchers worth picking up?</div>
+              <div style="font-size:13px"><span style="display:inline-block;width:24px;height:24px;background:var(--accent);color:#fff;border-radius:50%;text-align:center;line-height:24px;font-weight:700;margin-right:8px;font-size:11px">5</span><strong>JOE Factor</strong> — Are you running lucky or unlucky? Adjust expectations accordingly.</div>
+            </div>
+          </div>
+
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px">10 Scoring Categories</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px">
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px"><strong>Hitting:</strong> R · HR · RBI · SB · AVG</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px"><strong>Pitching:</strong> W · K · SVH3 · ERA · WHIP</div>
+          </div>
+
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px">Pages Overview</div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div style="font-size:12px;padding:6px 10px;border-left:3px solid var(--accent);background:var(--bg);border-radius:0 6px 6px 0"><strong>Dashboard</strong> — Your personal command center. Select your team.</div>
+            <div style="font-size:12px;padding:6px 10px;border-left:3px solid #c8a96e;background:var(--bg);border-radius:0 6px 6px 0"><strong>League Leaders</strong> — Top individual + team stats this season.</div>
+            <div style="font-size:12px;padding:6px 10px;border-left:3px solid #2980b9;background:var(--bg);border-radius:0 6px 6px 0"><strong>Fantrax Data</strong> — Raw Fantrax standings, stats, historic data (2021-2025).</div>
+            <div style="font-size:12px;padding:6px 10px;border-left:3px solid var(--accent);background:var(--bg);border-radius:0 6px 6px 0"><strong>League Stats</strong> — Week-by-week stats, H2H matrix, matchup history.</div>
+            <div style="font-size:12px;padding:6px 10px;border-left:3px solid #8e44ad;background:var(--bg);border-radius:0 6px 6px 0"><strong>Z-Scores</strong> — How each team compares to league average per category.</div>
+            <div style="font-size:12px;padding:6px 10px;border-left:3px solid var(--accent);background:var(--bg);border-radius:0 6px 6px 0"><strong>JOE Factor</strong> — Scheduling luck analysis. Are you winning/losing because of schedule?</div>
+            <div style="font-size:12px;padding:6px 10px;border-left:3px solid #2980b9;background:var(--bg);border-radius:0 6px 6px 0"><strong>Match Predictions</strong> — Win probabilities for every period matchup.</div>
+            <div style="font-size:12px;padding:6px 10px;border-left:3px solid #c8a96e;background:var(--bg);border-radius:0 6px 6px 0"><strong>Correlations</strong> — Which stats drive standings? Current + 5-year historical.</div>
+            <div style="font-size:12px;padding:6px 10px;border-left:3px solid var(--accent);background:var(--bg);border-radius:0 6px 6px 0"><strong>fWAR</strong> — Fantasy Wins Above Replacement. The core player valuation model.</div>
+            <div style="font-size:12px;padding:6px 10px;border-left:3px solid #2980b9;background:var(--bg);border-radius:0 6px 6px 0"><strong>Rosters</strong> — Full rosters with fWAR and Statcast data.</div>
+            <div style="font-size:12px;padding:6px 10px;border-left:3px solid var(--accent);background:var(--bg);border-radius:0 6px 6px 0"><strong>Player Trade & Market</strong> — SGP waiver engine, trade analyzer, free agent recs.</div>
+            <div style="font-size:12px;padding:6px 10px;border-left:3px solid #c0392b;background:var(--bg);border-radius:0 6px 6px 0"><strong>Trade Waiver Wire Targets</strong> — Statcast buy-low / sell-high signals for hitters + pitchers.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="guide-tab-dashboard" class="trade-tab-content">
+      <div class="card" style="margin-top:16px;max-width:760px">
+        <div class="card-header"><span class="card-title">Dashboard</span></div>
+        <div class="card-body" style="padding:20px">
+          <p style="font-size:13px;line-height:1.7">Select your team from the dropdown — the dashboard pulls live data from across the site and assembles your personal view.</p>
+          <div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">
+            <div style="padding:12px 16px;background:var(--bg);border-radius:8px"><div style="font-weight:700;font-size:12px;color:var(--accent);margin-bottom:4px">TOP 5 BY fWAR</div><div style="font-size:12px;line-height:1.6">Your top 5 hitters and top 5 pitchers by Fantasy WAR. Requires clicking Recalculate on the fWAR page first. Columns: fWAR · fWAR-Pts (estimated pts contribution) · Z-score · key stats.</div></div>
+            <div style="padding:12px 16px;background:var(--bg);border-radius:8px"><div style="font-weight:700;font-size:12px;color:var(--accent);margin-bottom:4px">CURRENT MATCHUP</div><div style="font-size:12px;line-height:1.6">Shows your live period matchup with category-by-category W/L/T breakdown. Stats pulled from the most recent completed Scoring Period in standings.json. Win probability is blended from category H2H (60%) and season points standings (40%).</div></div>
+            <div style="padding:12px 16px;background:var(--bg);border-radius:8px"><div style="font-weight:700;font-size:12px;color:var(--accent);margin-bottom:4px">JOE FACTOR LUCK</div><div style="font-size:12px;line-height:1.6">Your normalized season-average JOE score (-1 to +1). Positive = you've been winning more than your stats deserve. Negative = you've been unlucky. Pulled from the Season Avg tab on the JOE Factor page.</div></div>
+            <div style="padding:12px 16px;background:var(--bg);border-radius:8px"><div style="font-weight:700;font-size:12px;color:var(--accent);margin-bottom:4px">POSITIONAL STRENGTH</div><div style="font-size:12px;line-height:1.6">Your team rated by position group (Infield / Outfield / SP / RP) using percentile ratings vs all other rostered players at that position.</div></div>
+            <div style="padding:12px 16px;background:var(--bg);border-radius:8px"><div style="font-weight:700;font-size:12px;color:var(--accent);margin-bottom:4px">TRADE SUGGESTIONS & WAIVER TARGETS</div><div style="font-size:12px;line-height:1.6">Top 4 mutual-benefit trade suggestions and best available free agents for your weakest position slots.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JOE Factor -->
+    <div id="guide-tab-joe" class="trade-tab-content">
+      <div class="card" style="margin-top:16px;max-width:760px">
+        <div class="card-header"><span class="card-title">JOE Factor — Scheduling Luck</span></div>
+        <div class="card-body" style="padding:20px">
+          <p style="font-size:13px;line-height:1.7">JOE Factor answers: <em>"If you had played every other team each week, what would your average win% have been — and how does your actual record compare?"</em></p>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px;color:var(--text)">How It's Calculated</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 1 — Pairwise H2H:</strong> For each team each week, simulate a head-to-head matchup vs every other team. Compare all 10 categories. ERA/WHIP are lower-is-better.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 2 — Avg Case W%:</strong> Average your win% if you'd played all 9 opponents. This is your "deserved" performance.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 3 — Luck z-score:</strong> luck_z = (Actual W% − Avg Case W%) / std(differences across all teams that week)</div>
+            <div style="padding:10px 14px;background:var(--accent-light);border-radius:8px;font-size:12px;line-height:1.6;border:1px solid var(--accent)"><strong>Step 4 — JOE Factor:</strong> Min-max normalize luck z-scores to [−1, +1] across all teams. <strong>+1 = luckiest</strong>, <strong>−1 = unluckiest</strong>.</div>
+          </div>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px;color:var(--text)">Charts</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:6px"><strong>Whisker Plot</strong> — Each team's vertical range from Worst to Best case. Dots: dark green = Best, gold = Avg, green = Actual, red = Worst.</div>
+            <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:6px"><strong>JOE Bar Chart</strong> — Green bars = lucky, red bars = unlucky.</div>
+            <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:6px"><strong>H2H Score Matrix</strong> — What the score would have been between every pair of teams. ★ = your actual opponent that week.</div>
+            <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:6px"><strong>Season Avg tab</strong> — Averages all metrics across every completed week. This is the source of the Dashboard luck tile.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- fWAR -->
+    <div id="guide-tab-fwar" class="trade-tab-content">
+      <div class="card" style="margin-top:16px;max-width:760px">
+        <div class="card-header"><span class="card-title">fWAR — Fantasy Wins Above Replacement</span></div>
+        <div class="card-body" style="padding:20px">
+          <p style="font-size:13px;line-height:1.7">fWAR estimates how many fantasy wins a player contributes above a freely available replacement-level player at their position. Higher = more valuable.</p>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px">Calculation Steps</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>1. Z-Score</strong> — Each player is z-scored vs all rostered players at their position group. z = (value − mean) / std. ERA/WHIP are negated.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>2. Total Z</strong> — Weighted sum of z-scores across relevant categories × category weights.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>3. Replacement Level</strong> — The z-score of the Nth-ranked player at that position (N = positional replacement rank).</div>
+            <div style="padding:10px 14px;background:var(--accent-light);border-radius:8px;font-size:12px;line-height:1.6;border:1px solid var(--accent)"><strong>4. fWAR = player Total Z − replacement level Z</strong></div>
+          </div>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px">Positional Scarcity Presets</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:12px;padding:8px 12px;background:var(--bg);border-radius:6px"><strong>⚾ Pitcher Heavy</strong> — SP:147, RP:63. Values pitching depth.</div>
+            <div style="font-size:12px;padding:8px 12px;background:var(--bg);border-radius:6px"><strong>⚖️ Hybrid (default)</strong> — SP:123, RP:53, OF:85. Balanced.</div>
+            <div style="font-size:12px;padding:8px 12px;background:var(--bg);border-radius:6px"><strong>🏏 Hitter Heavy</strong> — SP:98, OF:100. Values hitting depth.</div>
+            <div style="font-size:12px;padding:8px 12px;background:var(--accent-light);border-radius:6px;border:1px solid var(--accent)"><strong>🎯 Optimal</strong> — Weights derived from scipy optimizer maximizing Spearman rank correlation between team fWAR and points standings across 50 historical team-seasons. Spearman r shown on button.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SGP -->
+    <div id="guide-tab-sgp" class="trade-tab-content">
+      <div class="card" style="margin-top:16px;max-width:760px">
+        <div class="card-header"><span class="card-title">SGP Engine — Standings Gain Points</span></div>
+        <div class="card-body" style="padding:20px">
+          <p style="font-size:13px;line-height:1.7">SGP measures how many standings positions a player's rest-of-season stats would gain your team. It's personalized to <em>your current weaknesses</em>.</p>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px">SGP Denominators</div>
+          <p style="font-size:12px;line-height:1.6">The average gap between adjacent teams in each category across your league's history (2021-2025):</p>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:16px">
+            <div style="padding:8px;background:var(--bg);border-radius:6px;text-align:center;font-size:11px"><strong>R</strong><br>65.4</div>
+            <div style="padding:8px;background:var(--bg);border-radius:6px;text-align:center;font-size:11px"><strong>HR</strong><br>21.2</div>
+            <div style="padding:8px;background:var(--bg);border-radius:6px;text-align:center;font-size:11px"><strong>RBI</strong><br>54.8</div>
+            <div style="padding:8px;background:var(--bg);border-radius:6px;text-align:center;font-size:11px"><strong>SB</strong><br>17.0</div>
+            <div style="padding:8px;background:var(--bg);border-radius:6px;text-align:center;font-size:11px"><strong>AVG</strong><br>.00178</div>
+            <div style="padding:8px;background:var(--bg);border-radius:6px;text-align:center;font-size:11px"><strong>W</strong><br>15.3</div>
+            <div style="padding:8px;background:var(--bg);border-radius:6px;text-align:center;font-size:11px"><strong>K</strong><br>216.8</div>
+            <div style="padding:8px;background:var(--bg);border-radius:6px;text-align:center;font-size:11px"><strong>SVH3</strong><br>18.5</div>
+            <div style="padding:8px;background:var(--bg);border-radius:6px;text-align:center;font-size:11px"><strong>ERA</strong><br>0.106</div>
+            <div style="padding:8px;background:var(--bg);border-radius:6px;text-align:center;font-size:11px"><strong>WHIP</strong><br>0.0191</div>
+          </div>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px">Formulas</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:12px;padding:8px 12px;background:var(--bg);border-radius:6px;font-family:monospace">Counting: SGP = ROS_stat / denominator</div>
+            <div style="font-size:12px;padding:8px 12px;background:var(--bg);border-radius:6px;font-family:monospace">AVG: SGP = (playerAVG − teamAVG) × abShare / 0.00178</div>
+            <div style="font-size:12px;padding:8px 12px;background:var(--bg);border-radius:6px;font-family:monospace">ERA: SGP = (teamERA − playerERA) × ipShare / 0.106</div>
+          </div>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px">Category Weighting</div>
+          <p style="font-size:12px;line-height:1.6">SGP is multiplied by a weight based on your current standings rank in that category:</p>
+          <div style="font-size:12px;padding:8px 12px;background:var(--accent-light);border-radius:6px;font-family:monospace;margin-bottom:8px">weight = 0.2 + (rank − 1) / (n − 1) × 2.3</div>
+          <p style="font-size:12px;color:var(--muted)">Rank 1 = 0.2× (you're winning this, don't need more). Rank 10 = 2.5× (you desperately need improvement here).</p>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px">By Position View</div>
+          <p style="font-size:12px;line-height:1.6">Shows your best current starter at each position vs the best available upgrade. <span style="background:#2980b9;color:#fff;padding:2px 8px;border-radius:8px;font-size:11px">🔥 UPGRADE</span> = delta SGP &gt; 0.7. <span style="background:#e8f0eb;color:#1e6b3a;padding:2px 8px;border-radius:8px;font-size:11px">↑ Consider</span> = delta &gt; 0.3.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trade Targets -->
+    <div id="guide-tab-targets" class="trade-tab-content">
+      <div class="card" style="margin-top:16px;max-width:760px">
+        <div class="card-header"><span class="card-title">Trade Waiver Wire Targets</span></div>
+        <div class="card-body" style="padding:20px">
+          <p style="font-size:13px;line-height:1.7">Identifies hitters and pitchers whose underlying Statcast metrics suggest their stats will improve (buy low) or decline (sell high).</p>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px">Hitter Signals</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="padding:10px 14px;background:#e8f0eb;border-radius:8px;font-size:12px;line-height:1.6"><strong style="color:#1e6b3a">🟢 Underperforming (Buy Low):</strong> Δ xwOBA ≥ +0.020 AND Δ BABIP ≤ −0.020 AND Δ Barrel% ≥ 0. Hitting the ball harder than stats show — expect improvement.</div>
+            <div style="padding:10px 14px;background:#fce8e8;border-radius:8px;font-size:12px;line-height:1.6"><strong style="color:#c0392b">🔴 Overperforming (Sell High):</strong> Δ xwOBA ≤ −0.020 AND Δ BABIP ≥ +0.020 AND Δ Barrel% ≤ 0. Stats inflated by luck — expect regression.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Grade (Δ Hard Hit%):</strong> ≥ +2% = Buy Low · ≥ +3% = Good Buy Low · ≥ +4% = Elite Buy Low</div>
+          </div>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px">Pitcher Signals</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="padding:10px 14px;background:#e8f0eb;border-radius:8px;font-size:12px;line-height:1.6"><strong style="color:#1e6b3a">🟢 Underperforming:</strong> Δ(xERA − ERA) ≥ +0.50 AND Δ BABIP ≥ +0.020 AND Δ K% ≥ 0. ERA is worse than expected — strikeout rate holding.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Grade (Δ Fastball Velo):</strong> ≥ +0.5 mph = Buy Low · ≥ +0.75 mph = Good · ≥ +1.0 mph = Elite</div>
+          </div>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px">Quadrant Chart</div>
+          <p style="font-size:12px;line-height:1.6">X-axis = Δ xwOBA−wOBA · Y-axis = fWAR. Circles = rostered, squares = FA. Dropdown to color by quadrant, fantasy team, Hard Hit%, Barrel%, or their deltas. Hover any dot for player details.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Match Predictions -->
+    <div id="guide-tab-predictions" class="trade-tab-content">
+      <div class="card" style="margin-top:16px;max-width:760px">
+        <div class="card-header"><span class="card-title">Match Predictions</span></div>
+        <div class="card-body" style="padding:20px">
+          <p style="font-size:13px;line-height:1.7">Predicts every period matchup using a blend of head-to-head category analysis and season standings points.</p>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px">Category H2H (60% weight)</div>
+          <p style="font-size:12px;line-height:1.6">Compares each team's cumulative average stats across all prior periods. The team winning more of the 10 categories is predicted to win. ERA/WHIP are lower-is-better.</p>
+          <div style="font-size:12px;padding:8px 12px;background:var(--bg);border-radius:6px;font-family:monospace;margin-bottom:12px">catProb = away_cat_wins / 10</div>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px">Points Strength (40% weight)</div>
+          <p style="font-size:12px;line-height:1.6">Uses cumulative season fantasy points as a second signal. A sigmoid function converts the points difference into win probability.</p>
+          <div style="font-size:12px;padding:8px 12px;background:var(--bg);border-radius:6px;font-family:monospace;margin-bottom:4px">diff = (teamA_pts − teamB_pts) / pts_range</div>
+          <div style="font-size:12px;padding:8px 12px;background:var(--bg);border-radius:6px;font-family:monospace;margin-bottom:12px">ptsProb = 1 / (1 + e^(−6 × diff))</div>
+
+          <div style="padding:10px 14px;background:var(--accent-light);border-radius:8px;border:1px solid var(--accent);font-size:12px;font-family:monospace;margin-bottom:4px">winProb = 0.60 × catProb + 0.40 × ptsProb</div>
+          <p style="font-size:12px;color:var(--muted)">Winner if prob &gt; 0.52. Tie if within 0.48–0.52 band.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Correlations -->
+    <div id="guide-tab-correlations" class="trade-tab-content">
+      <div class="card" style="margin-top:16px;max-width:760px">
+        <div class="card-header"><span class="card-title">Correlations</span></div>
+        <div class="card-body" style="padding:20px">
+          <p style="font-size:13px;line-height:1.7">Shows how strongly each category correlates with fantasy points standings — tells you what's actually driven winning in this league.</p>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px">Two Tabs</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>2026 Season</strong> — 10 data points (one per team). Quick signal but noisy at this sample size.</div>
+            <div style="padding:10px 14px;background:var(--accent-light);border-radius:8px;border:1px solid var(--accent);font-size:12px;line-height:1.6"><strong>Historical 2021-2025</strong> — 50 data points (10 teams × 5 seasons). Much more reliable. Use this to guide your roster strategy.</div>
+          </div>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px">Pearson r Interpretation</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:12px;padding:6px 12px;background:#e8f0eb;border-radius:6px"><strong style="color:#1e6b3a">|r| ≥ 0.7 — Strong.</strong> This category has consistently driven standings. Chase it.</div>
+            <div style="font-size:12px;padding:6px 12px;background:#fef3e2;border-radius:6px"><strong style="color:#b7791f">|r| 0.4–0.7 — Moderate.</strong> Meaningful but not decisive.</div>
+            <div style="font-size:12px;padding:6px 12px;background:var(--bg);border-radius:6px"><strong>|r| &lt; 0.2 — Weak.</strong> Deprioritize. Winning this category hasn't historically translated to standings.</div>
+          </div>
+          <p style="font-size:12px;color:var(--muted);margin-top:8px">ERA and WHIP signs are inverted (lower = better) so positive r means better ERA = more points.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Pipeline -->
+    <div id="guide-tab-data" class="trade-tab-content">
+      <div class="card" style="margin-top:16px;max-width:760px">
+        <div class="card-header"><span class="card-title">Data Pipeline</span></div>
+        <div class="card-body" style="padding:20px">
+          <p style="font-size:13px;line-height:1.7">All data is fetched by <code style="background:var(--bg);padding:1px 5px;border-radius:3px">fetch_fantrax.py</code>, which runs as a GitHub Action and saves JSON files to the <code style="background:var(--bg);padding:1px 5px;border-radius:3px">data/</code> directory.</p>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px">Data Files</div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div style="font-size:11px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><code style="color:var(--accent);min-width:200px">standings.json</code><span>Fantrax league standings + scoring period weekly stats</span></div>
+            <div style="font-size:11px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><code style="color:var(--accent);min-width:200px">standings_season.json</code><span>Season standings by category with individual category tables</span></div>
+            <div style="font-size:11px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><code style="color:var(--accent);min-width:200px">players_hitting/pitching.json</code><span>All hitter/pitcher stats from Fantrax</span></div>
+            <div style="font-size:11px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><code style="color:var(--accent);min-width:200px">full_schedule.json</code><span>Complete 20-period schedule [{period, away, home}]</span></div>
+            <div style="font-size:11px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><code style="color:var(--accent);min-width:200px">fangraphs_hitting/pitching.json</code><span>Baseball Savant Statcast leaderboard data</span></div>
+            <div style="font-size:11px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><code style="color:var(--accent);min-width:200px">targets_hitting/pitching.json</code><span>Buy-low/sell-high signal data</span></div>
+            <div style="font-size:11px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><code style="color:var(--accent);min-width:200px">optimal_fwar_weights.json</code><span>Scipy-optimized positional weights + Spearman r</span></div>
+          </div>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px">Triggering a Data Refresh</div>
+          <p style="font-size:12px;line-height:1.6">Go to your GitHub repo → Actions → the fetch workflow → Run workflow. Data typically takes 2–3 minutes to update. The site reads from GitHub Pages so changes are live within seconds of the Action completing.</p>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px">Required Secrets</div>
+          <p style="font-size:12px;line-height:1.6">Set in GitHub repo Settings → Secrets: <code>FANTRAX_USERNAME</code>, <code>FANTRAX_PASSWORD</code>, <code>FANTRAX_FX_RM</code>, <code>FANTRAX_CF_CLEARANCE</code>. The CF_CLEARANCE cookie expires periodically and needs to be refreshed manually.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Glossary -->
+    <div id="guide-tab-glossary" class="trade-tab-content">
+      <div class="card" style="margin-top:16px;max-width:760px">
+        <div class="card-header"><span class="card-title">Glossary</span></div>
+        <div class="card-body" style="padding:20px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>fWAR</strong> — Fantasy Wins Above Replacement. How many fantasy wins a player contributes above a freely available replacement at their position.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>SGP</strong> — Standings Gain Points. How many standings positions a player's projected stats would gain your team. Based on the average gap between adjacent teams in each category.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>JOE Factor</strong> — Scheduling luck metric. Compares your actual win% to the average win% you'd have gotten if you'd played every team. Normalized to [−1, +1].</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>xwOBA</strong> — Expected weighted on-base average. Measures quality of contact (exit velocity + launch angle) to estimate what a hitter's wOBA "should" be.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>wOBA</strong> — Weighted on-base average. Like OBP but weights each outcome (walk, single, HR etc.) by its actual run value.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>xERA</strong> — Expected ERA. What a pitcher's ERA "should" be based on quality of contact allowed, independent of defense and luck.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>BABIP</strong> — Batting Average on Balls In Play. A high BABIP often indicates luck; a low BABIP can signal bad luck. Typical range: .280–.320.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Barrel%</strong> — Percentage of batted balls hit with ideal exit velocity (95+ mph) and launch angle (26–30°). Strong predictor of future HR and xwOBA.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Hard Hit%</strong> — Percentage of batted balls hit 95+ mph. General measure of contact quality.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Z-Score</strong> — How far above or below average a value is, measured in standard deviations. Z = (value − mean) / std. Used throughout the site for cross-category comparisons.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Pearson r</strong> — Correlation coefficient from −1 to +1. Measures how linearly related two variables are. |r| ≥ 0.7 = strong, 0.4–0.7 = moderate, &lt; 0.2 = weak.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Spearman r</strong> — Like Pearson r but based on rank order rather than raw values. More robust to outliers. Used in the fWAR optimizer.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Replacement Level</strong> — The performance of a freely available player (waiver wire / end of bench). fWAR measures value above this baseline, not above zero.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>SVH3</strong> — Saves + Holds × 3-point value. Your league's combined saves/holds scoring category.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>ROS</strong> — Rest of season. Projections scaled by current pace: ROS = current_stat × (remaining_games / games_played).</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Changelog -->
+    <div id="guide-tab-changelog" class="trade-tab-content">
+      <div class="card" style="margin-top:16px;max-width:760px">
+        <div class="card-header"><span class="card-title">Changelog</span><span style="font-size:12px;color:var(--muted)">Updates from April 9, 2026 onward</span></div>
+        <div class="card-body" style="padding:20px">
+
+          <div style="margin-bottom:24px">
+            <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+              <span style="background:var(--accent);color:#fff;padding:2px 10px;border-radius:10px;font-size:11px">APR 9, 2026</span>
+              Initial Changelog Entry
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><span style="color:var(--accent);font-weight:700;min-width:80px;font-size:11px">NEW</span>Site Guide page with Getting Started, all page guides, glossary, and changelog</div>
+              <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><span style="color:var(--accent);font-weight:700;min-width:80px;font-size:11px">NEW</span>JOE Factor Season Avg tab with whisker plot and JOE bar chart</div>
+              <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><span style="color:var(--accent);font-weight:700;min-width:80px;font-size:11px">NEW</span>Trade Waiver Wire Targets — Pitchers tab (xERA, BABIP YoY, K%, Velo)</div>
+              <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><span style="color:var(--accent);font-weight:700;min-width:80px;font-size:11px">NEW</span>Quadrant chart on Trade Waiver Wire Targets with dropdown color modes (Quadrant, Fantasy Team, Hard Hit%, Barrel%)</div>
+              <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><span style="color:var(--accent);font-weight:700;min-width:80px;font-size:11px">NEW</span>SGP By Position view — shows your starter vs best available upgrade at each slot</div>
+              <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><span style="color:var(--accent);font-weight:700;min-width:80px;font-size:11px">NEW</span>Historical Correlations tab (50 team-seasons, 2021-2025) with strategic callout</div>
+              <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><span style="color:var(--accent);font-weight:700;min-width:80px;font-size:11px">NEW</span>Optimal fWAR preset — scipy L-BFGS-B optimizer maximizing Spearman r</div>
+              <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><span style="color:var(--accent);font-weight:700;min-width:80px;font-size:11px">NEW</span>Match Predictions augmented with standings points (60% category H2H + 40% pts sigmoid)</div>
+              <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><span style="color:#2980b9;font-weight:700;min-width:80px;font-size:11px">IMPROVED</span>JOE Factor tabs: pill-style navigation, content swaps in place (no page scrolling)</div>
+              <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><span style="color:#2980b9;font-weight:700;min-width:80px;font-size:11px">IMPROVED</span>SGP values fixed — rate stats (AVG/ERA/WHIP) were inflating to 1000s due to incorrect AB/IP scaling</div>
+              <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><span style="color:#2980b9;font-weight:700;min-width:80px;font-size:11px">IMPROVED</span>SGP personalized to your standings: categories you're losing get up to 2.5× weight</div>
+              <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><span style="color:#2980b9;font-weight:700;min-width:80px;font-size:11px">IMPROVED</span>Dashboard: Top 5 fWAR moved above trade suggestions, column alignment fixed, matchup period detection fixed</div>
+              <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><span style="color:#2980b9;font-weight:700;min-width:80px;font-size:11px">IMPROVED</span>League Leaders Team section now reads from individual category tables in standings_season.json</div>
+              <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><span style="color:#b7791f;font-weight:700;min-width:80px;font-size:11px">FIXED</span>fWAR-W column removed from fWAR page, Roster page, and League Leaders</div>
+              <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><span style="color:#b7791f;font-weight:700;min-width:80px;font-size:11px">FIXED</span>SVH3 standardized throughout (previously mixed SV/SVH3 references causing missing data)</div>
+              <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><span style="color:#b7791f;font-weight:700;min-width:80px;font-size:11px">FIXED</span>Dashboard no longer hangs — removed infinite wait loop for optional data sources</div>
+              <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><span style="color:#b7791f;font-weight:700;min-width:80px;font-size:11px">FIXED</span>Historic League Data SGP column removed from per-year tables</div>
+            </div>
+          </div>
+
+          <div style="border-top:1px dashed var(--border);padding-top:16px">
+            <p style="font-size:12px;color:var(--muted);font-style:italic">Future entries will be added here. Updated approximately weekly.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <script>
@@ -577,12 +912,21 @@ function showPage(name, btn) {
   if (name === 'historic') renderHistoricPage();
   if (name === 'leaders') renderLeadersPage();
   if (name === 'targets') renderTargetsPage();
+  if (name === 'guide') {} // static content, no render needed
   // Expand main to full width for wide-table pages
   document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'rosters' || name === 'historic' || name === 'targets') ? 'none' : '';
   if (name === 'trade' && (TA.activeTab === 'sgp-hit' || TA.activeTab === 'sgp-pit')) {
     document.querySelector('main').style.maxWidth = 'none';
   }
 }
+
+window.showGuideTab = function(tab, btn) {
+  document.querySelectorAll('#guide-tabs .trade-tab').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('#page-guide .trade-tab-content').forEach(function(c){c.classList.remove('active');});
+  if (btn) btn.classList.add('active');
+  var el = document.getElementById('guide-tab-' + tab);
+  if (el) el.classList.add('active');
+};
 
 window.showFantraxTab = function(tab, btn) {
   document.querySelectorAll('#fantrax-tabs .trade-tab').forEach(function(b){b.classList.remove('active');});
