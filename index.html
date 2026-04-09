@@ -8590,11 +8590,11 @@ window.redrawPitQuadrantChart = function() {
   plotData.forEach(function(e){var tn=e.ti?(e.ti.shortName||e.ti.name||'FA'):'FA'; if(tn!=='FA'&&teamList.indexOf(tn)===-1)teamList.push(tn);});
   teamList.sort(); teamList.forEach(function(t,i){teamColorMap[t]=TEAM_COLORS[i%TEAM_COLORS.length];}); teamColorMap['FA']='#aaa';
   var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:720px;height:auto;display:block;margin:0 auto">';
-  svg+='<rect x="'+PL+'" y="'+PT+'" width="'+(x0-PL)+'" height="'+(y0-PT)+'" fill="#fce8e8" opacity="0.35"/>';
-  svg+='<rect x="'+x0+'" y="'+PT+'" width="'+(W-PR-x0)+'" height="'+(y0-PT)+'" fill="#e8f0eb" opacity="0.35"/>';
-  svg+='<rect x="'+PL+'" y="'+y0+'" width="'+(x0-PL)+'" height="'+(H-PB-y0)+'" fill="#f5f5f0" opacity="0.35"/>';
-  svg+='<rect x="'+x0+'" y="'+y0+'" width="'+(W-PR-x0)+'" height="'+(H-PB-y0)+'" fill="#e8f4fd" opacity="0.35"/>';
-  var step=0.5;
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:720px;height:auto;display:block;margin:0 auto">';
+  svg+='<rect x="'+PL+'" y="'+PT+'" width="'+(x0-PL)+'" height="'+(y0-PT)+'" fill="#e8f0eb" opacity="0.35"/>';  // top-left: buy low (neg delta = underperforming)
+  svg+='<rect x="'+x0+'" y="'+PT+'" width="'+(W-PR-x0)+'" height="'+(y0-PT)+'" fill="#fce8e8" opacity="0.35"/>';  // top-right: sell high (pos delta = overperforming)
+  svg+='<rect x="'+PL+'" y="'+y0+'" width="'+(x0-PL)+'" height="'+(H-PB-y0)+'" fill="#e8f4fd" opacity="0.35"/>';  // bot-left: buy low candidates
+  svg+='<rect x="'+x0+'" y="'+y0+'" width="'+(W-PR-x0)+'" height="'+(H-PB-y0)+'" fill="#f5f5f0" opacity="0.35"/>';  // bot-right: drop/avoid
   for(var xv=Math.ceil(xMin/step)*step; xv<=xMax+0.01; xv=Math.round((xv+step)*10)/10){
     var xpx=px(xv);
     svg+='<line x1="'+xpx+'" y1="'+PT+'" x2="'+xpx+'" y2="'+(H-PB)+'" stroke="var(--border)" stroke-width="0.5"/>';
@@ -8608,10 +8608,10 @@ window.redrawPitQuadrantChart = function() {
   });
   svg+='<line x1="'+x0+'" y1="'+PT+'" x2="'+x0+'" y2="'+(H-PB)+'" stroke="var(--text)" stroke-width="1.5"/>';
   svg+='<line x1="'+PL+'" y1="'+y0+'" x2="'+(W-PR)+'" y2="'+y0+'" stroke="var(--text)" stroke-width="1.5"/>';
-  [{x:PL+8,y:PT+18,t:'Sell High',c:'#c0392b',a:'start'},{x:W-PR-8,y:PT+18,t:'Stars',c:'#1e6b3a',a:'end'},
-   {x:PL+8,y:H-PB-10,t:'Drop / Avoid',c:'#888',a:'start'},{x:W-PR-8,y:H-PB-10,t:'Buy Low',c:'#2980b9',a:'end'}
+  [{x:PL+8,y:PT+18,t:'Buy Low',c:'#2980b9',a:'start'},{x:W-PR-8,y:PT+18,t:'Stars / Sell High',c:'#c0392b',a:'end'},
+   {x:PL+8,y:H-PB-10,t:'Drop / Avoid',c:'#888',a:'start'},{x:W-PR-8,y:H-PB-10,t:'Overperforming',c:'#e67e22',a:'end'}
   ].forEach(function(q){svg+='<text x="'+q.x+'" y="'+q.y+'" text-anchor="'+q.a+'" font-size="11" font-weight="700" fill="'+q.c+'" opacity="0.7">'+q.t+'</text>';});
-  svg+='<text x="'+(W/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="11" fill="var(--muted)">Δ(xERA − ERA) (positive = underperforming)</text>';
+  svg+='<text x="'+( W/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="11" fill="var(--muted)">Δ(xERA − ERA) (positive = overperforming / ERA better than expected)</text>';
   svg+='<text x="14" y="'+(PT+cH/2)+'" text-anchor="middle" font-size="11" fill="var(--muted)" transform="rotate(-90,14,'+(PT+cH/2)+')">fWAR</text>';
   svg+='<circle cx="'+(PL+2)+'" cy="'+(PT-18)+'" r="5" fill="#666" opacity="0.8"/>';
   svg+='<text x="'+(PL+12)+'" y="'+(PT-14)+'" font-size="9" fill="var(--muted)">Rostered</text>';
@@ -8619,7 +8619,7 @@ window.redrawPitQuadrantChart = function() {
   svg+='<text x="'+(PL+89)+'" y="'+(PT-14)+'" font-size="9" fill="var(--muted)">Free Agent</text>';
   plotData.forEach(function(e){
     var cx=px(e.t.delta_era), cy=py(e.fw.fWAR), isFA=!e.ri, col;
-    if(colorBy==='quadrant'){col=(e.t.delta_era>=0&&e.fw.fWAR>=0)?'#2d5a3d':(e.t.delta_era<0&&e.fw.fWAR>=0)?'#c0392b':(e.t.delta_era>=0&&e.fw.fWAR<0)?'#2980b9':'#888';}
+    if(colorBy==='quadrant'){col=(e.t.delta_era<0&&e.fw.fWAR>=0)?'#2d5a3d':(e.t.delta_era>=0&&e.fw.fWAR>=0)?'#c0392b':(e.t.delta_era<0&&e.fw.fWAR<0)?'#2980b9':'#888';}
     else if(colorBy==='team'){var tn=e.ti?(e.ti.shortName||e.ti.name||'FA'):'FA'; col=teamColorMap[tn]||'#aaa';}
     else{col=statColor(e.t[colorBy],statMin,statMax);}
     var statLabels={delta_velo:'ΔVelo: ',k_2026:'K%: ',babip_2026:'BABIP: ',velo_2026:'Velo: '};
