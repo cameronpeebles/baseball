@@ -971,7 +971,7 @@ def fetch_pitcher_era_stats():
 # YoY stats — reuse fetch_savant_year but for pitcher type
 PIT_YOY_BABIP  = {"babip": "BABIP"}
 PIT_YOY_K      = {"k_percent": "K%"}
-PIT_YOY_VELO   = {"fastball_velo": "Velo"}
+PIT_YOY_VELO   = {"fastball_avg_speed": "Velo"}
 
 def fetch_savant_year_pit(year, field_map, label):
     """Same as fetch_savant_year but type=pitcher."""
