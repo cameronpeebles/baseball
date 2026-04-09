@@ -2114,6 +2114,7 @@ function renderMatchPredictions() {
   ]).then(function(results) {
     var stats = results[0];
     var fullSchedule = results[1]; // [{period, away, home}, ...]
+    window._fullSchedule = fullSchedule;
     buildMatchupPage(stats, fullSchedule);
   }).catch(function(e) {
     document.getElementById('matchup-body').innerHTML =
@@ -3986,7 +3987,8 @@ function assembleDashboard(teamId, el) {
 
   // ── Current matchup card ──────────────────────────────────────────────────
   // Use _joeByTeamWeek (real scoring period stats) + full schedule
-  // Find current period — first period with no completed joeByWeek data
+  // Find current period — use _currentPeriod set by Match Predictions if available,
+  // otherwise derive from _joeByWeek completed weeks
   var byWeekData    = window._joeByWeek || {};
   var completedWks  = {};
   Object.keys(byWeekData).forEach(function(wk) {
@@ -3996,30 +3998,49 @@ function assembleDashboard(teamId, el) {
   });
   var lastWk = Object.keys(completedWks).map(Number).sort(function(a,b){return b-a;})[0] || 0;
 
-  // Find current period from full schedule — first scheduled period not yet in joe data
-  var fullSched = window._mpPredictions || [];
-  var myMatches = fullSched
-    .filter(function(m){ return m.away === teamName || m.home === teamName; })
-    .sort(function(a,b){ return a.period - b.period; });
-  var currentPeriodMatch = null;
-  for (var mi2 = 0; mi2 < myMatches.length; mi2++) {
-    if (!completedWks[myMatches[mi2].period]) { currentPeriodMatch = myMatches[mi2]; break; }
+  // Use full_schedule.json to find current matchup — keyed by period number
+  // _currentPeriod = first period not in joe_stats (i.e. currently being scored)
+  // _maxPeriod = last period with actual data in joe_stats
+  // If Match Predictions has run, use _currentPeriod directly
+  // Otherwise fall back to lastWk (last completed week in standings.json)
+  var currentPeriod = window._currentPeriod
+    ? window._currentPeriod
+    : lastWk + 1;
+
+  // Find my match in the current period from full_schedule
+  var myMatchCurrent = fullSchedule.filter(function(m){
+    return m.period === currentPeriod && (m.away === teamName || m.home === teamName);
+  })[0] || null;
+
+  // Fallback: try _mpPredictions
+  if (!myMatchCurrent) {
+    var fullSched = window._mpPredictions || [];
+    var myMatches = fullSched
+      .filter(function(m){ return m.away === teamName || m.home === teamName; })
+      .sort(function(a,b){ return a.period - b.period; });
+    for (var mi2 = 0; mi2 < myMatches.length; mi2++) {
+      if (!completedWks[myMatches[mi2].period]) { myMatchCurrent = myMatches[mi2]; break; }
+    }
+    if (!myMatchCurrent) myMatchCurrent = myMatches[myMatches.length - 1] || null;
   }
-  // Fall back to last completed period
-  if (!currentPeriodMatch) currentPeriodMatch = myMatches[myMatches.length - 1] || null;
+
+  var currentPeriodMatch = myMatchCurrent;
 
   if (currentPeriodMatch) {
     var cm     = currentPeriodMatch;
     var isAway = cm.away === teamName;
     var opp    = isAway ? cm.home : cm.away;
     var period = cm.period;
-    var isLive = !completedWks[period];
+    var isLive = currentPeriod > (window._maxPeriod || 0);
 
-    // Get stats from _joeByWeek — current period if live, last completed if done
-    var statPeriod = completedWks[period] ? period : lastWk;
+    // Show stats from the current period if we have them, else last completed
+    var statPeriod = completedWks[currentPeriod] ? currentPeriod : lastWk;
     var periodStats = completedWks[statPeriod] || {};
     var myStats  = periodStats[teamName] || null;
     var oppStats = periodStats[opp]      || null;
+
+    // Note what period stats we're showing
+    var showingPeriod = statPeriod;
 
     var oppTi = {};
     Object.keys(S.teamInfo).forEach(function(id){ if ((S.teamInfo[id].name||'') === opp) oppTi = S.teamInfo[id]; });
@@ -4046,7 +4067,7 @@ function assembleDashboard(teamId, el) {
 
     html += '<div class="card" style="margin-bottom:20px">';
     html += '<div class="card-header">';
-    html += '<span class="card-title">' + (isLive ? 'Current matchup' : 'Period ' + period + ' results') + ' — Period ' + period + '</span>';
+    html += '<span class="card-title">' + (isLive ? 'Current matchup' : 'Period ' + currentPeriod + ' results') + ' — Period ' + currentPeriod + '</span>';
     html += '<div style="display:flex;align-items:center;gap:8px">';
     if (isLive) html += '<span style="font-size:11px;background:#e8f0eb;color:#2d5a3d;padding:3px 8px;border-radius:10px;font-weight:600">LIVE</span>';
     if (myStats && oppStats) html += '<span style="font-size:12px;padding:4px 12px;border-radius:12px;font-weight:600;background:' + headerBg + ';color:' + headerCol + '">' + headerLbl + ' ' + myW + '–' + oppW + '</span>';
@@ -4095,7 +4116,7 @@ function assembleDashboard(teamId, el) {
       });
       html += '</div>';
 
-      if (isLive) html += '<div style="margin-top:10px;font-size:11px;color:var(--muted)">Showing Period ' + statPeriod + ' stats (most recent completed period). Updates after each period closes.</div>';
+      if (statPeriod < currentPeriod) html += '<div style="margin-top:10px;font-size:11px;color:var(--muted)">Showing Period ' + statPeriod + ' stats (most recent completed period). Updates after each period closes.</div>';
     }
     html += '</div></div>';
   }
@@ -4345,7 +4366,7 @@ function parseStandingsByWeek(standingsData) {
       bw[wk][teamName]={
         R:gv(cells,'R'),HR:gv(cells,'HR'),RBI:gv(cells,'RBI'),SB:gv(cells,'SB'),
         AVG:gv(cells,'AVG'),K:gv(cells,'K'),W:gv(cells,'W'),
-        SV:gv(cells,'SV')||gv(cells,'SVH3')||gv(cells,'SVH'),
+        SVH3:gv(cells,'SVH3')||gv(cells,'SV')||gv(cells,'SVH'),
         ERA:gv(cells,'ERA'),WHIP:gv(cells,'WHIP')
       };
     });
