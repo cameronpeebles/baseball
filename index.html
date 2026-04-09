@@ -7511,20 +7511,20 @@ function drawSGPPositionView(type) {
     if (isHit) {
       var tAB=7500*(p.rem/162), abSh=tAB>0?Math.min(p.ros.ab/tAB,1):0;
       return [
-        {cat:'R',   v:(p.ros.r/SGP_D.r)*(cw['R']||1)},
-        {cat:'HR',  v:(p.ros.hr/SGP_D.hr)*(cw['HR']||1)},
-        {cat:'RBI', v:(p.ros.rbi/SGP_D.rbi)*(cw['RBI']||1)},
-        {cat:'SB',  v:(p.ros.sb/SGP_D.sb)*(cw['SB']||1)},
-        {cat:'AVG', v:((p.ros.avg-myAvg)*abSh/SGP_D.avg)*(cw['AVG']||1)}
+        {cat:'R',   v:(p.ros.r/SGP_D.r)*(cw['R']||1),   raw:Math.round(p.ros.r),          fmt:function(v){return Math.round(v)+' R';}},
+        {cat:'HR',  v:(p.ros.hr/SGP_D.hr)*(cw['HR']||1), raw:Math.round(p.ros.hr),         fmt:function(v){return Math.round(v)+' HR';}},
+        {cat:'RBI', v:(p.ros.rbi/SGP_D.rbi)*(cw['RBI']||1), raw:Math.round(p.ros.rbi),     fmt:function(v){return Math.round(v)+' RBI';}},
+        {cat:'SB',  v:(p.ros.sb/SGP_D.sb)*(cw['SB']||1), raw:Math.round(p.ros.sb),         fmt:function(v){return Math.round(v)+' SB';}},
+        {cat:'AVG', v:((p.ros.avg-myAvg)*abSh/SGP_D.avg)*(cw['AVG']||1), raw:p.ros.avg,    fmt:function(v){return v.toFixed(3);}}
       ];
     } else {
       var tIP=1800*(p.rem/162), ipSh=tIP>0?Math.min(p.ros.ip/tIP,1):0;
       return [
-        {cat:'W',    v:(p.ros.w/SGP_D.w)*(cw['W']||1)},
-        {cat:'K',    v:(p.ros.k/SGP_D.k)*(cw['K']||1)},
-        {cat:'SVH3', v:(p.ros.svh3/SGP_D.svh3)*(cw['SVH3']||1)},
-        {cat:'ERA',  v:((myERA-p.ros.era)*ipSh/SGP_D.era)*(cw['ERA']||1)},
-        {cat:'WHIP', v:((myWHIP-p.ros.whip)*ipSh/SGP_D.whip)*(cw['WHIP']||1)}
+        {cat:'W',    v:(p.ros.w/SGP_D.w)*(cw['W']||1),       raw:Math.round(p.ros.w),      fmt:function(v){return Math.round(v)+' W';}},
+        {cat:'K',    v:(p.ros.k/SGP_D.k)*(cw['K']||1),       raw:Math.round(p.ros.k),      fmt:function(v){return Math.round(v)+' K';}},
+        {cat:'SVH3', v:(p.ros.svh3/SGP_D.svh3)*(cw['SVH3']||1), raw:Math.round(p.ros.svh3),fmt:function(v){return Math.round(v)+' SVH';}},
+        {cat:'ERA',  v:((myERA-p.ros.era)*ipSh/SGP_D.era)*(cw['ERA']||1),   raw:p.ros.era, fmt:function(v){return v.toFixed(2)+' ERA';}},
+        {cat:'WHIP', v:((myWHIP-p.ros.whip)*ipSh/SGP_D.whip)*(cw['WHIP']||1), raw:p.ros.whip, fmt:function(v){return v.toFixed(2)+' WHP';}}
       ];
     }
   }
@@ -7543,22 +7543,25 @@ function drawSGPPositionView(type) {
     h += '</div>';
 
     // Mini vertical bar chart
-    var barH = 40; // max bar height px
-    h += '<div style="display:flex;align-items:flex-end;gap:4px;height:'+(barH+28)+'px">';
+    var barH = 40;
+    h += '<div style="display:flex;align-items:flex-end;gap:4px;height:'+(barH+42)+'px">';
     cats.forEach(function(c) {
       var col = c.v < 0 ? '#c0392b' : (CAT_COLORS[c.cat] || '#888');
       var pct = Math.abs(c.v) / maxAbs;
       var bh = Math.max(2, Math.round(pct * barH));
       var sign = c.v >= 0 ? '+' : '';
-      h += '<div style="display:flex;flex-direction:column;align-items:center;width:28px">';
-      // Value on top
+      var rawStr = c.fmt ? c.fmt(c.raw) : '';
+      h += '<div style="display:flex;flex-direction:column;align-items:center;width:36px">';
+      // SGP value on top
       h += '<div style="font-size:8px;font-weight:700;color:'+col+';margin-bottom:2px;white-space:nowrap">'+sign+c.v.toFixed(1)+'</div>';
-      // Spacer to push bar to bottom
+      // Spacer
       h += '<div style="flex:1"></div>';
       // Bar
-      h += '<div style="width:18px;height:'+bh+'px;background:'+col+';border-radius:3px 3px 0 0;opacity:0.85"></div>';
+      h += '<div style="width:22px;height:'+bh+'px;background:'+col+';border-radius:3px 3px 0 0;opacity:0.85"></div>';
       // Category label
-      h += '<div style="font-size:8px;color:var(--muted);margin-top:2px;font-weight:600">'+c.cat+'</div>';
+      h += '<div style="font-size:8px;color:var(--muted);margin-top:2px;font-weight:600;white-space:nowrap">'+c.cat+'</div>';
+      // Raw stat
+      h += '<div style="font-size:8px;color:var(--muted);white-space:nowrap;opacity:0.8">'+rawStr+'</div>';
       h += '</div>';
     });
     h += '</div>';
