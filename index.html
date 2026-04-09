@@ -472,13 +472,6 @@ td.neg { color: #c0392b; font-weight: 500; }
   <div class="page" id="page-trade">
     <div class="page-title">Player Trade &amp; Market</div>
     <div class="page-subtitle">Find mutually beneficial trades between two teams, or free agents to fill weaknesses.</div>
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-header">
-        <span class="card-title">Positional strength — all teams</span>
-        <span style="font-size:12px;color:var(--muted)">Percentile vs all rostered players. Green = strength, red = weakness.</span>
-      </div>
-      <div id="trade-pos-heatmap"><div class="loading">Loading player ratings...</div></div>
-    </div>
     <div id="trade-body"><div class="loading">Loading...</div></div>
   </div>
 
@@ -1822,8 +1815,9 @@ function renderAnalytics() {
 }
 
 function renderPosHeatmap() {
-  var el = document.getElementById('trade-pos-heatmap');
-  if (!el) return;
+  var targets = ['trade-pos-heatmap-hit', 'trade-pos-heatmap-pit', 'trade-pos-heatmap'].map(function(id){
+    return document.getElementById(id);
+  }).filter(Boolean);
 
   var groups = ['Infield','Outfield','SP','RP'];
 
@@ -1915,7 +1909,8 @@ function renderPosHeatmap() {
   });
   html += '</div></div>';
 
-  el.innerHTML = html;
+  if (!targets.length) return;
+  targets.forEach(function(el) { el.innerHTML = html; });
 }
 
 // ── JOE Factor ──────────────────────────────────────────────────────────────
@@ -3294,9 +3289,8 @@ function buildTradeAnalyzer() {
   html += '</label>';
   html += '<span style="font-size:11px;color:var(--muted)">ΔSGP vs your best starter at that position</span>';
   html += '</div>';
+  html += '<div class="card" style="margin-bottom:20px"><div class="card-header"><span class="card-title">Positional strength — all teams</span><span style="font-size:12px;color:var(--muted)">Percentile vs all rostered players. Green = strength, red = weakness.</span></div><div id="trade-pos-heatmap-hit"><div class="loading">Loading...</div></div></div>';
   html += '<div class="card"><div class="card-header"><span class="card-title">ALL HITTERS</span>';
-  html += '<div style="display:flex;align-items:center;gap:12px">';
-  html += '<div class="pill-group" id="sgp-hit-view-pills">';
   html += '<button class="pill active" onclick="setSGPView(\'hit\',\'position\',this)">📍 By Position</button>';
   html += '<button class="pill" onclick="setSGPView(\'hit\',\'table\',this)">📋 Full Table</button>';
   html += '</div>';
@@ -3324,9 +3318,8 @@ function buildTradeAnalyzer() {
   html += '</label>';
   html += '<span style="font-size:11px;color:var(--muted)">ΔSGP vs your best starter at that position</span>';
   html += '</div>';
+  html += '<div class="card" style="margin-bottom:20px"><div class="card-header"><span class="card-title">Positional strength — all teams</span><span style="font-size:12px;color:var(--muted)">Percentile vs all rostered players. Green = strength, red = weakness.</span></div><div id="trade-pos-heatmap-pit"><div class="loading">Loading...</div></div></div>';
   html += '<div class="card"><div class="card-header"><span class="card-title">ALL PITCHERS</span>';
-  html += '<div style="display:flex;align-items:center;gap:12px">';
-  html += '<div class="pill-group" id="sgp-pit-view-pills">';
   html += '<button class="pill active" onclick="setSGPView(\'pit\',\'position\',this)">📍 By Position</button>';
   html += '<button class="pill" onclick="setSGPView(\'pit\',\'table\',this)">📋 Full Table</button>';
   html += '</div>';
