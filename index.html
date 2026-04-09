@@ -481,7 +481,16 @@ td.neg { color: #c0392b; font-weight: 500; }
   <div class="page" id="page-correlations">
     <div class="page-title">Correlations</div>
     <div class="page-subtitle">How stats, luck, and roster strength relate to standings performance.</div>
-    <div id="correlations-body"><div class="loading">Loading...</div></div>
+    <div class="trade-tabs" id="corr-tabs">
+      <button class="trade-tab active" onclick="showCorrTab('current',this)">2026 Season</button>
+      <button class="trade-tab" onclick="showCorrTab('historical',this)">Historical (2021–2025)</button>
+    </div>
+    <div id="corr-tab-current" class="trade-tab-content active">
+      <div id="correlations-body"><div class="loading">Loading...</div></div>
+    </div>
+    <div id="corr-tab-historical" class="trade-tab-content">
+      <div id="correlations-hist-body"><div class="loading">Loading...</div></div>
+    </div>
   </div>
   <div class="page" id="page-historic" style="display:none"></div>
   <div class="page" id="page-leaders">
@@ -2759,12 +2768,17 @@ function buildTradeAnalyzer() {
   html += '<span style="font-size:11px;color:var(--muted)">ΔSGP vs your best starter at that position</span>';
   html += '</div>';
   html += '<div class="card"><div class="card-header"><span class="card-title">ALL HITTERS</span>';
+  html += '<div style="display:flex;align-items:center;gap:12px">';
+  html += '<div class="pill-group" id="sgp-hit-view-pills">';
+  html += '<button class="pill active" onclick="setSGPView(\'hit\',\'position\',this)">📍 By Position</button>';
+  html += '<button class="pill" onclick="setSGPView(\'hit\',\'table\',this)">📋 Full Table</button>';
+  html += '</div>';
   html += '<div class="pill-group" id="sgp-hit-pills">';
   html += '<button class="pill active" onclick="setSGPFilter(\'hit\',\'ALL\',this)">All</button>';
   html += '<button class="pill" onclick="setSGPFilter(\'hit\',\'FA\',this)">Free Agents</button>';
   html += '<button class="pill" onclick="setSGPFilter(\'hit\',\'OWNED\',this)">Rostered</button>';
-  html += '</div></div>';
-  html += '<div class="table-wrap" id="sgp-hit-table"><div class="loading">Select your team above</div></div>';
+  html += '</div></div></div>';
+  html += '<div id="sgp-hit-table"><div class="loading">Select your team above</div></div>';
   html += '</div></div>';
 
   // ── Pitcher SGP tab ───────────────────────────────────────────────────────
@@ -2784,12 +2798,17 @@ function buildTradeAnalyzer() {
   html += '<span style="font-size:11px;color:var(--muted)">ΔSGP vs your best starter at that position</span>';
   html += '</div>';
   html += '<div class="card"><div class="card-header"><span class="card-title">ALL PITCHERS</span>';
+  html += '<div style="display:flex;align-items:center;gap:12px">';
+  html += '<div class="pill-group" id="sgp-pit-view-pills">';
+  html += '<button class="pill active" onclick="setSGPView(\'pit\',\'position\',this)">📍 By Position</button>';
+  html += '<button class="pill" onclick="setSGPView(\'pit\',\'table\',this)">📋 Full Table</button>';
+  html += '</div>';
   html += '<div class="pill-group" id="sgp-pit-pills">';
   html += '<button class="pill active" onclick="setSGPFilter(\'pit\',\'ALL\',this)">All</button>';
   html += '<button class="pill" onclick="setSGPFilter(\'pit\',\'FA\',this)">Free Agents</button>';
   html += '<button class="pill" onclick="setSGPFilter(\'pit\',\'OWNED\',this)">Rostered</button>';
-  html += '</div></div>';
-  html += '<div class="table-wrap" id="sgp-pit-table"><div class="loading">Select your team above</div></div>';
+  html += '</div></div></div>';
+  html += '<div id="sgp-pit-table"><div class="loading">Select your team above</div></div>';
   html += '</div></div>';
 
   document.getElementById('trade-body').innerHTML = html;
@@ -4554,13 +4573,20 @@ window.filterMatchupHistory = function() {
 
 // ── Correlations ─────────────────────────────────────────────────────────────
 
+window.showCorrTab = function(tab, btn) {
+  document.querySelectorAll('#corr-tabs .trade-tab').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('#page-correlations .trade-tab-content').forEach(function(c){c.classList.remove('active');});
+  btn.classList.add('active');
+  document.getElementById('corr-tab-' + tab).classList.add('active');
+  if (tab === 'historical') buildHistoricalCorrelations();
+};
+
 function renderCorrelations() {
   if (correlationsRendered) return;
   correlationsRendered = true;
 
   var el = document.getElementById('correlations-body');
 
-  // Need JOE data + season stats
   function tryBuild() {
     var hasJOE = window._joeByTeamWeek && window._joeByTeamWeek.length;
     if (!hasJOE) {
@@ -5067,7 +5093,177 @@ function buildCorrelations(el) {
   el.innerHTML = html;
 }
 
-// ── fWAR Engine ──────────────────────────────────────────────────────────────
+function buildHistoricalCorrelations() {
+  var el = document.getElementById('correlations-hist-body');
+  if (!el) return;
+  if (el.dataset.built) return;
+  el.dataset.built = '1';
+
+  // Use HISTORIC_DATA (same object used by Historic League Data page)
+  var HIST = typeof HISTORIC_DATA !== 'undefined' ? HISTORIC_DATA : null;
+  if (!HIST) { el.innerHTML = '<div class="error-msg">Historic data not available.</div>'; return; }
+
+  var CATS_H = ['r','hr','rbi','sb','avg','w','k','sv','era','whip'];
+  var CAT_LABELS_H = {r:'R',hr:'HR',rbi:'RBI',sb:'SB',avg:'AVG',w:'W',k:'K',sv:'SVH3',era:'ERA',whip:'WHIP'};
+  var LOW_H = ['era','whip'];
+  var YEAR_COLORS = {'2021':'#2980b9','2022':'#27ae60','2023':'#e67e22','2024':'#8e44ad','2025':'#c0392b'};
+
+  // Flatten to one point per team-season
+  var allPoints = [];
+  [2021,2022,2023,2024,2025].forEach(function(yr) {
+    (HIST[yr]||[]).forEach(function(t) {
+      var pt = {yr:yr, pts:t.pts, rank:t.rank, color:YEAR_COLORS[yr]||'#888'};
+      CATS_H.forEach(function(cat){ pt[cat] = t[cat]; });
+      allPoints.push(pt);
+    });
+  });
+
+  function pearsonH(pairs) {
+    var n=pairs.length; if(n<3)return null;
+    var sx=0,sy=0,sxy=0,sx2=0,sy2=0;
+    pairs.forEach(function(p){sx+=p[0];sy+=p[1];sxy+=p[0]*p[1];sx2+=p[0]*p[0];sy2+=p[1]*p[1];});
+    var num=n*sxy-sx*sy, den=Math.sqrt((n*sx2-sx*sx)*(n*sy2-sy*sy));
+    return den===0?0:num/den;
+  }
+  function corrColor(r){ if(r==null)return 'var(--muted)'; var a=Math.abs(r); if(a>=0.7)return r>0?'#1e6b3a':'#c0392b'; if(a>=0.4)return r>0?'#4a9a68':'#e67e22'; return '#8a8479'; }
+  function corrLabel(r){ if(r==null)return 'n/a'; var a=Math.abs(r); if(a>=0.7)return 'Strong'; if(a>=0.4)return 'Moderate'; if(a>=0.2)return 'Weak'; return 'None'; }
+
+  // Compute correlations
+  var catCorrs = CATS_H.map(function(cat) {
+    var pairs = allPoints.map(function(p){ return [p[cat], p.pts]; });
+    var r = pearsonH(pairs);
+    var isLow = LOW_H.indexOf(cat) !== -1;
+    if (isLow && r!=null) r = -r;
+    return {cat:cat, label:CAT_LABELS_H[cat], r:r, isLow:isLow};
+  });
+  var sorted = catCorrs.slice().sort(function(a,b){return (b.r||0)-(a.r||0);});
+
+  var html = '';
+
+  // ── Intro note ────────────────────────────────────────────────────────────
+  html += '<div style="padding:10px 14px;background:var(--bg);border-radius:8px;border:1px solid var(--border);margin-bottom:16px;font-size:12px;color:var(--muted)">';
+  html += '<strong style="color:var(--text)">50 team-seasons</strong> — 10 teams × 5 seasons (2021–2025). ';
+  html += 'Each dot is one team\'s full season. Colors indicate year. More data = more reliable correlations.';
+  html += '</div>';
+
+  // ── Correlation summary bar ───────────────────────────────────────────────
+  html += '<div class="card" style="margin-bottom:20px">';
+  html += '<div class="card-header"><span class="card-title">Category correlations with points (all 5 seasons)</span>';
+  html += '<span style="font-size:12px;color:var(--muted)">What has historically mattered in your league?</span></div>';
+  html += '<div class="card-body" style="padding:16px 20px">';
+
+  html += '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px">';
+  sorted.forEach(function(cc) {
+    if (cc.r==null) return;
+    var barW = Math.round(Math.abs(cc.r)*100);
+    var col = corrColor(cc.r);
+    html += '<div style="display:flex;align-items:center;gap:10px">';
+    html += '<span style="width:44px;font-size:12px;font-weight:600;text-align:right;color:var(--text)">'+cc.label+'</span>';
+    html += '<div style="flex:1;height:18px;background:var(--bg);border-radius:3px;overflow:hidden">';
+    html += '<div style="height:100%;width:'+barW+'%;background:'+col+';border-radius:3px"></div></div>';
+    html += '<span style="width:110px;font-size:12px;color:'+col+';font-weight:500">'+(cc.r>=0?'+':'−')+Math.abs(cc.r).toFixed(3)+' — '+corrLabel(cc.r)+'</span>';
+    if (cc.isLow) html += '<span style="font-size:10px;color:var(--muted)">(inverted)</span>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // ── Scatterplots grid ─────────────────────────────────────────────────────
+  html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">';
+  CATS_H.forEach(function(cat) {
+    var cc = catCorrs.find(function(c){return c.cat===cat;});
+    var xVals = allPoints.map(function(p){return p[cat];});
+    var yVals = allPoints.map(function(p){return p.pts;});
+    var xMin=Math.min.apply(null,xVals), xMax=Math.max.apply(null,xVals);
+    var yMin=Math.min.apply(null,yVals)*0.95, yMax=Math.max.apply(null,yVals)*1.05;
+    var xRange=xMax-xMin||1, yRange=yMax-yMin||1;
+    var W=320, H=200, PAD=36;
+
+    html += '<div style="background:var(--bg);border-radius:var(--radius);padding:12px">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">';
+    html += '<span style="font-size:12px;font-weight:600">'+CAT_LABELS_H[cat]+' vs Points</span>';
+    if (cc&&cc.r!=null) html += '<span style="font-size:11px;color:'+corrColor(cc.r)+';font-weight:500">r = '+(cc.r>=0?'+':'')+cc.r.toFixed(3)+'</span>';
+    html += '</div>';
+
+    html += '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">';
+    // Grid lines
+    for (var gi=0;gi<=4;gi++) {
+      var gy=PAD+(H-PAD*2)*(gi/4);
+      html += '<line x1="'+PAD+'" y1="'+gy+'" x2="'+(W-8)+'" y2="'+gy+'" stroke="var(--border)" stroke-width="0.5"/>';
+      html += '<text x="'+(PAD-4)+'" y="'+(gy+4)+'" text-anchor="end" font-size="8" fill="var(--muted)">'+Math.round(yMax-(yRange*(gi/4)))+'</text>';
+    }
+    // Trend line (per-year + overall)
+    var n=allPoints.length, sx=0,sy=0,sxy=0,sxx=0;
+    allPoints.forEach(function(p){sx+=p[cat];sy+=p.pts;sxy+=p[cat]*p.pts;sxx+=p[cat]*p[cat];});
+    var denom=n*sxx-sx*sx;
+    if (denom!==0) {
+      var slope=(n*sxy-sx*sy)/denom, intercept=(sy-slope*sx)/n;
+      var px1=PAD+(xMin-xMin)/xRange*(W-PAD-8), py1=H-PAD-(slope*xMin+intercept-yMin)/yRange*(H-PAD*2);
+      var px2=PAD+(xMax-xMin)/xRange*(W-PAD-8), py2=H-PAD-(slope*xMax+intercept-yMin)/yRange*(H-PAD*2);
+      html += '<line x1="'+px1+'" y1="'+py1+'" x2="'+px2+'" y2="'+py2+'" stroke="'+(cc?corrColor(cc.r):'#aaa')+'" stroke-width="2" stroke-dasharray="4,3" opacity="0.8"/>';
+    }
+    // Dots colored by year
+    allPoints.forEach(function(p) {
+      var cx = PAD+(p[cat]-xMin)/xRange*(W-PAD-8);
+      var cy = H-PAD-(p.pts-yMin)/yRange*(H-PAD*2);
+      var fmt = cat==='avg'?p[cat].toFixed(3):(cat==='era'||cat==='whip')?p[cat].toFixed(2):Math.round(p[cat]);
+      html += '<circle cx="'+cx+'" cy="'+cy+'" r="4" fill="'+p.color+'" opacity="0.75">';
+      html += '<title>'+p.yr+' Rank '+p.rank+': '+CAT_LABELS_H[cat]+'='+fmt+', Pts='+p.pts+'</title>';
+      html += '</circle>';
+    });
+    // X axis
+    var fmtX = function(v){ return cat==='avg'?v.toFixed(3):(cat==='era'||cat==='whip')?v.toFixed(2):Math.round(v); };
+    html += '<text x="'+PAD+'" y="'+(H-4)+'" font-size="8" fill="var(--muted)">'+fmtX(xMin)+'</text>';
+    html += '<text x="'+(W-8)+'" y="'+(H-4)+'" text-anchor="end" font-size="8" fill="var(--muted)">'+fmtX(xMax)+'</text>';
+    html += '<text x="'+(W/2)+'" y="'+(H-4)+'" text-anchor="middle" font-size="9" fill="var(--muted)">'+CAT_LABELS_H[cat]+'</text>';
+    html += '</svg>';
+
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // Year legend
+  html += '<div style="display:flex;gap:16px;margin-top:16px;flex-wrap:wrap;justify-content:center">';
+  [2021,2022,2023,2024,2025].forEach(function(yr) {
+    html += '<span style="display:flex;align-items:center;gap:4px;font-size:11px">';
+    html += '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+YEAR_COLORS[yr]+'"></span>';
+    html += yr+'</span>';
+  });
+  html += '</div>';
+
+  html += '</div></div>'; // card-body + card
+
+  // ── Comparison callout: historical vs current ─────────────────────────────
+  html += '<div class="card" style="margin-bottom:20px">';
+  html += '<div class="card-header"><span class="card-title">What this means strategically</span></div>';
+  html += '<div class="card-body" style="padding:16px 20px">';
+  html += '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">Categories with strong historical correlation (|r| ≥ 0.5) have consistently driven standings in your league. Use these to guide roster decisions — they\'re signal. Categories with weak correlation are more noise than signal.</p>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
+
+  var strong = sorted.filter(function(c){return c.r!=null&&Math.abs(c.r)>=0.5;});
+  var weak   = sorted.filter(function(c){return c.r!=null&&Math.abs(c.r)<0.3;});
+
+  html += '<div style="background:#e8f0eb;border-radius:8px;padding:12px 14px">';
+  html += '<div style="font-size:12px;font-weight:700;color:#1e6b3a;margin-bottom:8px">✓ High signal — chase these</div>';
+  strong.forEach(function(c){
+    html += '<div style="font-size:12px;margin-bottom:4px"><strong>'+c.label+'</strong> <span style="color:'+corrColor(c.r)+'">r='+(c.r>=0?'+':'')+c.r.toFixed(3)+'</span></div>';
+  });
+  if (!strong.length) html += '<div style="font-size:12px;color:var(--muted)">None yet</div>';
+  html += '</div>';
+
+  html += '<div style="background:#fef3e2;border-radius:8px;padding:12px 14px">';
+  html += '<div style="font-size:12px;font-weight:700;color:#b7791f;margin-bottom:8px">⚠ Low signal — deprioritize</div>';
+  weak.forEach(function(c){
+    html += '<div style="font-size:12px;margin-bottom:4px"><strong>'+c.label+'</strong> <span style="color:var(--muted)">r='+(c.r>=0?'+':'')+c.r.toFixed(3)+'</span></div>';
+  });
+  if (!weak.length) html += '<div style="font-size:12px;color:var(--muted)">None</div>';
+  html += '</div>';
+
+  html += '</div></div></div>';
+
+  el.innerHTML = html;
+}
+
+
 
 var FWAR_PRESETS = {
   pitcher: { C:16, '1B':20, '2B':16, '3B':21, SS:25, OF:68,  SP:147, RP:63 },
@@ -6128,7 +6324,9 @@ function renderHistoricPage() {
 var SGP_STATE = {
   teamId: null,
   hitFilter: 'ALL',
-  pitFilter: 'ALL'
+  pitFilter: 'ALL',
+  hitView: 'position',
+  pitView: 'position'
 };
 
 // SGP denominators (from Historic League Data)
@@ -6159,7 +6357,19 @@ window.setSGPFilter = function(type, filter, btn) {
   drawSGPTable(type);
 };
 
+window.setSGPView = function(type, view, btn) {
+  if (type === 'hit') SGP_STATE.hitView = view;
+  else SGP_STATE.pitView = view;
+  var pillId = type === 'hit' ? 'sgp-hit-view-pills' : 'sgp-pit-view-pills';
+  document.getElementById(pillId).querySelectorAll('.pill').forEach(function(p){p.classList.remove('active');});
+  btn.classList.add('active');
+  drawSGPTable(type);
+};
+
 function drawSGPTable(type) {
+  var isHit = type === 'hit';
+  var view = isHit ? SGP_STATE.hitView : SGP_STATE.pitView;
+  if (view === 'position') { drawSGPPositionView(type); return; }
   var isHit = type === 'hit';
   var tableId = isHit ? 'sgp-hit-table' : 'sgp-pit-table';
   var el = document.getElementById(tableId);
@@ -6571,6 +6781,201 @@ function drawSGPTable(type) {
 
   html += '</tbody></table>';
   el.innerHTML = html;
+}
+
+function drawSGPPositionView(type) {
+  var isHit = type === 'hit';
+  var el = document.getElementById(isHit ? 'sgp-hit-table' : 'sgp-pit-table');
+  if (!el) return;
+  var myTeamId = SGP_STATE.teamId;
+  if (!myTeamId) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">Select your team above</div>'; return; }
+
+  var rows = isHit ? S.hitRows : S.pitRows;
+  var headers = isHit ? S.hitHeaders : S.pitHeaders;
+  if (!rows.length) { el.innerHTML = '<div class="error-msg">Player data not loaded</div>'; return; }
+
+  var fwarResults = isHit ? FWAR.hitResults : FWAR.pitResults;
+  var idx = buildStatIdx(headers);
+  function gvP(cells, key) { var i=idx[key.toUpperCase()]; if(i==null)return null; var v=parseFloat((cells[i]||{}).content); return isNaN(v)?null:v; }
+  var fwarLookup = {}; fwarResults.forEach(function(p){ fwarLookup[p.name]=p; });
+
+  // Build players
+  var players = rows.map(function(row) {
+    var sc=row.scorer||{}, cells=row.cells||[];
+    var name=sc.name||'', pos=sc.posShortNames||'', ftId=(cells[1]&&cells[1].teamId)||'';
+    var fw=fwarLookup[name];
+    if (isHit) {
+      var gp=gvP(cells,'GP')||gvP(cells,'G')||1, ab=gvP(cells,'AB')||0, h=gvP(cells,'H')||0;
+      var r=gvP(cells,'R')||0, hr=gvP(cells,'HR')||0, rbi=gvP(cells,'RBI')||0, sb=gvP(cells,'SB')||0;
+      var avg=ab>0?h/ab:0, rem=Math.max(0,162-gp), pace=gp>0?rem/gp:0;
+      return {name:name,pos:pos,ftId:ftId,isMine:ftId===myTeamId,fw:fw,rem:rem,
+              raw:{ab:ab,h:h},ros:{r:r*pace,hr:hr*pace,rbi:rbi*pace,sb:sb*pace,ab:ab*pace,avg:avg}};
+    } else {
+      var gp2=gvP(cells,'GP')||gvP(cells,'G')||1, ip=gvP(cells,'IP')||0;
+      var w=gvP(cells,'W')||0, k=gvP(cells,'K')||0, svh3=gvP(cells,'SVH3')||gvP(cells,'SV')||0;
+      var era=gvP(cells,'ERA')||0, whip=gvP(cells,'WHIP')||0;
+      var rem2=Math.max(0,162-gp2), pace2=gp2>0?rem2/gp2:0;
+      var rawEr=era>0&&ip>0?era*ip/9:0, rawBh=whip>0&&ip>0?whip*ip:0;
+      return {name:name,pos:pos,ftId:ftId,isMine:ftId===myTeamId,fw:fw,rem:rem2,
+              raw:{ip:ip,er:rawEr,bh:rawBh},ros:{w:w*pace2,k:k*pace2,svh3:svh3*pace2,ip:ip*pace2,era:era,whip:whip}};
+    }
+  });
+
+  // Team baselines
+  var myPlayers=players.filter(function(p){return p.ftId===myTeamId;});
+  var tot={ab:0,h:0,er:0,ip:0,bh:0};
+  if(isHit) myPlayers.forEach(function(p){tot.ab+=p.raw.ab;tot.h+=p.raw.h;});
+  else      myPlayers.forEach(function(p){tot.er+=p.raw.er||0;tot.ip+=p.raw.ip||0;tot.bh+=p.raw.bh||0;});
+  var myAvg=tot.ab>0?tot.h/tot.ab:0.250, myERA=tot.ip>0?tot.er*9/tot.ip:4.00, myWHIP=tot.ip>0?tot.bh/tot.ip:1.25;
+
+  // Build category weights from standings
+  var cw={}, cr={};
+  (function(){
+    var tables=(S.seasonData&&S.seasonData.data&&S.seasonData.data.tableList)||[];
+    var st=null;
+    for(var i=0;i<tables.length;i++){
+      var cap=(tables[i].caption||'').toLowerCase();
+      if(cap.indexOf('stat total')!==-1||cap.indexOf('season stat')!==-1){st=tables[i];break;}
+      if(!st&&cap!==''&&cap.indexOf('point')===-1&&(tables[i].rows||[]).length>0)st=tables[i];
+    }
+    if(!st)return;
+    var hdr=(st.header&&st.header.cells)||[], hIdx={};
+    hdr.forEach(function(h,i){if(h.key)hIdx[h.key.toUpperCase()]=i;if(h.shortName)hIdx[h.shortName.toUpperCase()]=i;if(h.name)hIdx[h.name.toUpperCase()]=i;});
+    var LOW=['ERA','WHIP'], ALL=['R','HR','RBI','SB','AVG','K','W','SVH3','ERA','WHIP'], tcv={};
+    (st.rows||[]).forEach(function(row){
+      var fc=row.fixedCells||[],cells=row.cells||[],id=(fc[1]&&fc[1].teamId)||'';if(!id)return;
+      tcv[id]={};ALL.forEach(function(cat){var ci=hIdx[cat];if(ci==null)return;var v=parseFloat((cells[ci]||{}).content);if(!isNaN(v))tcv[id][cat]=v;});
+    });
+    ALL.forEach(function(cat){
+      var isLow=LOW.indexOf(cat)!==-1;
+      var pairs=Object.keys(tcv).map(function(id){return{id:id,v:tcv[id][cat]};}).filter(function(p){return p.v!=null;}).sort(function(a,b){return isLow?a.v-b.v:b.v-a.v;});
+      var rank=pairs.findIndex(function(p){return p.id===myTeamId;})+1;if(rank<1)rank=5;
+      cr[cat]=rank;var n=pairs.length||10;cw[cat]=0.2+(rank-1)/(n-1)*(2.5-0.2);
+    });
+  })();
+
+  function sgpP(p){
+    if(isHit){
+      var s=(p.ros.r/SGP_D.r)*(cw['R']||1)+(p.ros.hr/SGP_D.hr)*(cw['HR']||1)+(p.ros.rbi/SGP_D.rbi)*(cw['RBI']||1)+(p.ros.sb/SGP_D.sb)*(cw['SB']||1);
+      var tAB=7500*(p.rem/162),abSh=tAB>0?Math.min(p.ros.ab/tAB,1):0;
+      s+=((p.ros.avg-myAvg)*abSh/SGP_D.avg)*(cw['AVG']||1); return s;
+    } else {
+      var s2=(p.ros.w/SGP_D.w)*(cw['W']||1)+(p.ros.k/SGP_D.k)*(cw['K']||1)+(p.ros.svh3/SGP_D.svh3)*(cw['SVH3']||1);
+      var tIP=1800*(p.rem/162),ipSh=tIP>0?Math.min(p.ros.ip/tIP,1):0;
+      s2+=((myERA-p.ros.era)*ipSh/SGP_D.era)*(cw['ERA']||1)+((myWHIP-p.ros.whip)*ipSh/SGP_D.whip)*(cw['WHIP']||1); return s2;
+    }
+  }
+
+  var SLOTS=isHit?['C','1B','2B','3B','SS','OF']:['SP','RP'];
+  function elig(p,slot){
+    var pts=p.pos.split(',').map(function(x){return x.trim();});
+    if(slot==='OF')return pts.some(function(x){return['OF','LF','CF','RF'].indexOf(x)!==-1;});
+    return pts.indexOf(slot)!==-1;
+  }
+
+  // Best starter per slot (my team)
+  var starters={};
+  SLOTS.forEach(function(slot){
+    var pool=myPlayers.filter(function(p){return elig(p,slot);});
+    pool.sort(function(a,b){return sgpP(b)-sgpP(a);}); starters[slot]=pool[0]||null;
+  });
+
+  // Available players (not on my team, filtered)
+  var filter=isHit?SGP_STATE.hitFilter:SGP_STATE.pitFilter;
+  var avail=players.filter(function(p){
+    if(p.isMine)return false;
+    if(filter==='FA'&&p.ftId)return false;
+    if(filter==='OWNED'&&!p.ftId)return false;
+    return true;
+  });
+
+  // Category needs legend
+  var CATS_SHOW=isHit?['R','HR','RBI','SB','AVG']:['W','K','SVH3','ERA','WHIP'];
+  var html='<div style="margin-bottom:14px;padding:10px 14px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">';
+  html+='<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-right:10px">Your needs:</span>';
+  CATS_SHOW.forEach(function(cat){
+    var rank=cr[cat]||5, w2=cw[cat]||1;
+    var col=rank<=3?'#1e6b3a':rank>=8?'#c0392b':'#b7791f';
+    html+='<span style="display:inline-flex;align-items:center;gap:3px;margin-right:8px;padding:2px 8px;border-radius:10px;background:'+col+'22;border:1px solid '+col+'55">';
+    html+='<span style="font-size:12px;font-weight:700;color:'+col+'">'+cat+'</span>';
+    html+='<span style="font-size:10px;color:'+col+'">Rank '+rank+' · '+w2.toFixed(1)+'x</span></span>';
+  });
+  html+='</div>';
+
+  html+='<div style="display:flex;flex-direction:column;gap:10px">';
+
+  SLOTS.forEach(function(slot){
+    var starter=starters[slot], sSGP=starter?sgpP(starter):0;
+    var cands=avail.filter(function(p){return elig(p,slot);});
+    cands.sort(function(a,b){return sgpP(b)-sgpP(a);});
+    var best=cands[0]||null, bSGP=best?sgpP(best):null;
+    var delta=(bSGP!=null&&starter)?bSGP-sSGP:null;
+    var isUpgrade=delta!=null&&delta>0.3, isBig=delta!=null&&delta>0.7;
+    var rowBg=isBig?'background:#e8f4fd;border:1px solid #2980b955':isUpgrade?'background:#f0f7f0;border:1px solid #4a9a6855':'background:var(--card);border:1px solid var(--border)';
+
+    html+='<div style="border-radius:10px;'+rowBg+';padding:14px 16px">';
+    html+='<div style="display:grid;grid-template-columns:56px 1fr 52px 1fr 110px;gap:12px;align-items:center">';
+
+    // Position badge
+    html+='<div style="text-align:center"><span style="display:inline-block;padding:4px 10px;border-radius:20px;background:var(--accent-light);color:var(--accent);font-weight:700;font-size:13px">'+slot+'</span></div>';
+
+    // My starter
+    html+='<div>';
+    if(starter){
+      var sFV=starter.fw?starter.fw.fWAR:null;
+      var sCol=sSGP>2?'#1e6b3a':sSGP>0.5?'#4a9a68':sSGP>-0.5?'#b7791f':'#c0392b';
+      html+='<div style="font-weight:600;font-size:13px">'+starter.name+'</div>';
+      html+='<div style="font-size:11px;color:var(--muted)">'+starter.pos+'</div>';
+      html+='<div style="margin-top:3px;display:flex;gap:8px;align-items:center">';
+      html+='<span style="font-size:12px;font-weight:700;color:'+sCol+'">SGP '+(sSGP>=0?'+':'')+sSGP.toFixed(2)+'</span>';
+      if(sFV!=null)html+='<span style="font-size:11px;color:var(--muted)">fWAR '+(sFV>=0?'+':'')+sFV.toFixed(2)+'</span>';
+      html+='</div>';
+    } else {
+      html+='<div style="color:var(--muted);font-size:12px;font-style:italic">No starter at '+slot+'</div>';
+    }
+    html+='</div>';
+
+    // Arrow + delta
+    html+='<div style="text-align:center">';
+    if(delta!=null){
+      var arC=isBig?'#2980b9':isUpgrade?'#1e6b3a':'var(--muted)';
+      html+='<div style="font-size:20px;color:'+arC+'">→</div>';
+      html+='<div style="font-size:11px;font-weight:700;color:'+arC+'">'+(delta>=0?'+':'')+delta.toFixed(2)+'</div>';
+    } else { html+='<div style="font-size:20px;color:var(--muted)">→</div>'; }
+    html+='</div>';
+
+    // Best available
+    html+='<div>';
+    if(best){
+      var bFV=best.fw?best.fw.fWAR:null;
+      var bCol=bSGP>2?'#1e6b3a':bSGP>0.5?'#4a9a68':bSGP>-0.5?'#b7791f':'#c0392b';
+      var ti=best.ftId?(S.teamInfo[best.ftId]||{}):null;
+      html+='<div style="font-weight:600;font-size:13px">'+best.name+'</div>';
+      html+='<div style="font-size:11px;color:var(--muted)">'+best.pos;
+      if(ti&&(ti.shortName||ti.name))html+=' · <span style="color:var(--accent)">'+(ti.shortName||ti.name)+'</span>';
+      else html+=' · <span class="badge fa">FA</span>';
+      html+='</div>';
+      html+='<div style="margin-top:3px;display:flex;gap:8px;align-items:center">';
+      html+='<span style="font-size:12px;font-weight:700;color:'+bCol+'">SGP '+(bSGP>=0?'+':'')+bSGP.toFixed(2)+'</span>';
+      if(bFV!=null)html+='<span style="font-size:11px;color:var(--muted)">fWAR '+(bFV>=0?'+':'')+bFV.toFixed(2)+'</span>';
+      html+='</div>';
+    } else {
+      html+='<div style="color:var(--muted);font-size:12px;font-style:italic">No upgrades available</div>';
+    }
+    html+='</div>';
+
+    // Verdict
+    html+='<div style="text-align:right">';
+    if(isBig)html+='<span style="padding:5px 12px;border-radius:10px;background:#2980b9;color:#fff;font-size:11px;font-weight:700">🔥 UPGRADE</span>';
+    else if(isUpgrade)html+='<span style="padding:5px 12px;border-radius:10px;background:#e8f0eb;color:#1e6b3a;font-size:11px;font-weight:600">↑ Consider</span>';
+    else if(starter)html+='<span style="padding:5px 12px;border-radius:10px;background:var(--bg);color:var(--muted);font-size:11px">✓ Fine</span>';
+    html+='</div>';
+
+    html+='</div></div>'; // grid + row
+  });
+
+  html+='</div>';
+  el.innerHTML=html;
 }
 
 var leadersRendered = false;
