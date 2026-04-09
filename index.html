@@ -7532,33 +7532,34 @@ function drawSGPPositionView(type) {
   function sgpBar(p, sgpTotal) {
     var cats = sgpBreakdown(p);
     var maxAbs = Math.max.apply(null, cats.map(function(c){return Math.abs(c.v);})) || 1;
-    var totalAbs = cats.reduce(function(s,c){return s+Math.abs(c.v);},0) || 1;
     var sCol = sgpTotal>2?'#1e6b3a':sgpTotal>0.5?'#4a9a68':sgpTotal>-0.5?'#b7791f':'#c0392b';
-
-    var h = '<div style="margin-top:6px">';
-    // Total SGP + fWAR on same line
     var fw = p.fw ? p.fw.fWAR : null;
-    h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
+
+    var h = '<div style="margin-top:8px">';
+    // Total SGP + fWAR
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
     h += '<span style="font-size:12px;font-weight:700;color:'+sCol+'">SGP '+(sgpTotal>=0?'+':'')+sgpTotal.toFixed(2)+'</span>';
     if (fw!=null) h += '<span style="font-size:11px;color:var(--muted)">fWAR '+(fw>=0?'+':'')+fw.toFixed(2)+'</span>';
     h += '</div>';
 
-    // Stacked bar
-    h += '<div style="display:flex;height:10px;border-radius:4px;overflow:hidden;width:100%;background:var(--bg);border:1px solid var(--border)">';
-    cats.forEach(function(c) {
-      var pct = Math.abs(c.v) / totalAbs * 100;
-      var col = c.v < 0 ? '#e55' : (CAT_COLORS[c.cat] || '#888');
-      var opacity = c.v < 0 ? '0.5' : '0.85';
-      h += '<div style="width:'+pct.toFixed(1)+'%;background:'+col+';opacity:'+opacity+';transition:width 0.3s" title="'+c.cat+': '+(c.v>=0?'+':'')+c.v.toFixed(2)+'"></div>';
-    });
-    h += '</div>';
-
-    // Category labels
-    h += '<div style="display:flex;gap:5px;margin-top:3px;flex-wrap:wrap">';
+    // Mini vertical bar chart
+    var barH = 40; // max bar height px
+    h += '<div style="display:flex;align-items:flex-end;gap:4px;height:'+(barH+28)+'px">';
     cats.forEach(function(c) {
       var col = c.v < 0 ? '#c0392b' : (CAT_COLORS[c.cat] || '#888');
+      var pct = Math.abs(c.v) / maxAbs;
+      var bh = Math.max(2, Math.round(pct * barH));
       var sign = c.v >= 0 ? '+' : '';
-      h += '<span style="font-size:9px;color:'+col+';font-weight:600">'+c.cat+' '+sign+c.v.toFixed(1)+'</span>';
+      h += '<div style="display:flex;flex-direction:column;align-items:center;width:28px">';
+      // Value on top
+      h += '<div style="font-size:8px;font-weight:700;color:'+col+';margin-bottom:2px;white-space:nowrap">'+sign+c.v.toFixed(1)+'</div>';
+      // Spacer to push bar to bottom
+      h += '<div style="flex:1"></div>';
+      // Bar
+      h += '<div style="width:18px;height:'+bh+'px;background:'+col+';border-radius:3px 3px 0 0;opacity:0.85"></div>';
+      // Category label
+      h += '<div style="font-size:8px;color:var(--muted);margin-top:2px;font-weight:600">'+c.cat+'</div>';
+      h += '</div>';
     });
     h += '</div>';
     h += '</div>';
