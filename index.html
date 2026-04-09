@@ -8104,6 +8104,9 @@ function drawTargetsTable() {
   if (window._targetPlotData) redrawQuadrantChart();
 }
 
+window._hitQuadrantHighlight = null;
+window._pitQuadrantHighlight = null;
+
 window.redrawQuadrantChart = function() {
   var wrap = document.getElementById('quadrant-chart-wrap');
   if (!wrap) return;
@@ -8209,17 +8212,20 @@ window.redrawQuadrantChart = function() {
   plotData.forEach(function(e){
     var cx=px(e.t.delta_xwoba), cy=py(e.fw.fWAR);
     var isFA=!e.ri;
+    var hl = window._hitQuadrantHighlight;
+    var tname = e.ti ? (e.ti.shortName||e.ti.name||'FA') : 'FA';
+    var dimmed = hl && tname !== hl;
     var col;
     if (colorBy === 'quadrant') {
       col = (e.t.delta_xwoba>=0&&e.fw.fWAR>=0)?'#2d5a3d'
            :(e.t.delta_xwoba<0&&e.fw.fWAR>=0)?'#c0392b'
            :(e.t.delta_xwoba>=0&&e.fw.fWAR<0)?'#2980b9':'#888';
     } else if (colorBy === 'team') {
-      var tname = e.ti ? (e.ti.shortName||e.ti.name||'FA') : 'FA';
       col = teamColorMap[tname] || '#aaa';
     } else {
       col = statColor(e.t[colorBy], statMin, statMax);
     }
+    var opacity = dimmed ? '0.08' : '0.9';
     var statLabel = {hardhit_2026:'HH%: ',delta_hardhit:'\u0394HH%: ',barrel_2026:'Barrel%: ',delta_barrel:'\u0394Barrel%: '};
     var statVal = e.t[colorBy];
     var statStr = (colorBy !== 'quadrant' && colorBy !== 'team') && statVal != null
@@ -8231,27 +8237,17 @@ window.redrawQuadrantChart = function() {
       + statStr
       + (e.ti?'&#10;'+(e.ti.shortName||e.ti.name):'&#10;FA');
     if(isFA){
-      svg += '<rect x="'+(cx-5)+'" y="'+(cy-5)+'" width="11" height="11" fill="'+col+'" opacity="0.9" stroke="white" stroke-width="1.5" style="cursor:pointer"><title>'+tip+'</title></rect>';
+      svg += '<rect x="'+(cx-5)+'" y="'+(cy-5)+'" width="11" height="11" fill="'+col+'" opacity="'+opacity+'" stroke="white" stroke-width="1.5" style="cursor:pointer"><title>'+tip+'</title></rect>';
     } else {
-      svg += '<circle cx="'+cx+'" cy="'+cy+'" r="6" fill="'+col+'" opacity="0.9" stroke="white" stroke-width="1.5" style="cursor:pointer"><title>'+tip+'</title></circle>';
+      svg += '<circle cx="'+cx+'" cy="'+cy+'" r="6" fill="'+col+'" opacity="'+opacity+'" stroke="white" stroke-width="1.5" style="cursor:pointer"><title>'+tip+'</title></circle>';
     }
   });
 
-  // Legend: shape
+  // Shape legend
   svg += '<circle cx="'+(PL+2)+'" cy="'+(PT-18)+'" r="5" fill="#666" opacity="0.8"/>';
   svg += '<text x="'+(PL+12)+'" y="'+(PT-14)+'" font-size="9" fill="var(--muted)">Rostered</text>';
   svg += '<rect x="'+(PL+74)+'" y="'+(PT-23)+'" width="10" height="10" fill="#666" opacity="0.8"/>';
   svg += '<text x="'+(PL+89)+'" y="'+(PT-14)+'" font-size="9" fill="var(--muted)">Free Agent</text>';
-
-  // Team legend — vertical on right side
-  if (colorBy === 'team') {
-    var lx = W - PR + 12, ly = PT + 10;
-    teamList.forEach(function(t, i) {
-      var ty = ly + i * 18;
-      svg += '<circle cx="'+(lx+5)+'" cy="'+(ty)+'" r="5" fill="'+teamColorMap[t]+'" opacity="0.9"/>';
-      svg += '<text x="'+(lx+14)+'" y="'+(ty+4)+'" font-size="9" fill="var(--text)">'+t+'</text>';
-    });
-  }
 
   // Gradient legend for stat-based coloring
   if (colorBy !== 'quadrant' && colorBy !== 'team' && statVals.length) {
@@ -8267,7 +8263,25 @@ window.redrawQuadrantChart = function() {
   }
 
   svg += '</svg>';
-  wrap.innerHTML = svg;
+
+  // Team legend as HTML with click handlers
+  var legendHtml = '';
+  if (colorBy === 'team') {
+    legendHtml = '<div style="position:absolute;top:'+(PT+10)+'px;right:8px;display:flex;flex-direction:column;gap:4px">';
+    var hl2 = window._hitQuadrantHighlight;
+    teamList.forEach(function(t) {
+      var isActive = hl2 === t;
+      var dim = hl2 && !isActive;
+      legendHtml += '<div onclick="window._hitQuadrantHighlight=(window._hitQuadrantHighlight===\''+t+'\'?null:\''+t+'\');redrawQuadrantChart();" '
+        + 'style="display:flex;align-items:center;gap:5px;cursor:pointer;opacity:'+(dim?'0.35':'1')+';padding:2px 4px;border-radius:4px;'+(isActive?'background:var(--accent-light)':'')+'\">';
+      legendHtml += '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+teamColorMap[t]+';flex-shrink:0"></span>';
+      legendHtml += '<span style="font-size:10px;color:var(--text);white-space:nowrap">'+t+'</span></div>';
+    });
+    legendHtml += '</div>';
+  }
+
+  wrap.style.position = 'relative';
+  wrap.innerHTML = svg + legendHtml;
 };
 
 window.setTargetsFilter = function(type, val, btn) {
@@ -8406,7 +8420,7 @@ function drawPitcherTargetsTable() {
     html += '<option value="babip_2026">BABIP 2026</option>';
     html += '<option value="velo_2026">Velo 2026</option>';
     html += '</select></div></div>';
-    html += '<div style="padding:16px">' + buildPitQuadrantSVG(pitPlotData, 'quadrant') + '</div>';
+    html += '<div style="padding:16px;position:relative">' + (function(){ var r=buildPitQuadrantSVG(pitPlotData, 'quadrant'); return r.svg+r.legend; })() + '</div>';
     html += '</div>';
   } else {
     html += '<div class="card" style="margin-bottom:20px;padding:20px;text-align:center;color:var(--muted)">No pitcher xERA data available — run the GitHub Action to populate targets_pitching.json with xERA values.</div>';
@@ -8565,16 +8579,16 @@ window.redrawPitQuadrantChart = function() {
   var plotData = window._pitTargetPlotData || [];
   if (!plotData.length) return;
   var colorBy = (document.getElementById('pit-quadrant-color-by') || {}).value || 'quadrant';
-  // Find the chart container — it's the div right after the card-header in the pitcher quadrant card
-  var wraps = document.querySelectorAll('#targets-pit-body .card > div:last-child');
-  if (!wraps.length) return;
-  // Find the one that contains the select
   var sel = document.getElementById('pit-quadrant-color-by');
   if (!sel) return;
   var card = sel.closest('.card');
   if (!card) return;
   var chartDiv = card.querySelector('div[style*="padding:16px"]');
-  if (chartDiv) chartDiv.innerHTML = buildPitQuadrantSVG(plotData, colorBy);
+  if (chartDiv) {
+    var result = buildPitQuadrantSVG(plotData, colorBy);
+    chartDiv.style.position = 'relative';
+    chartDiv.innerHTML = result.svg + result.legend;
+  }
 };
 
 function buildPitQuadrantSVG(plotData, colorBy) {
@@ -8653,31 +8667,44 @@ function buildPitQuadrantSVG(plotData, colorBy) {
   svg+='<text x="'+(PL+89)+'" y="'+(PT-14)+'" font-size="9" fill="var(--muted)">Free Agent</text>';
 
   // Dots — top-left=Sell High(red), top-right=Stars(green), bot-right=Buy Low(blue), bot-left=Drop/Avoid(gray)
+  var hl = window._pitQuadrantHighlight;
   plotData.forEach(function(e){
     var cx=px(e.t.delta_era), cy=py(e.fw.fWAR), isFA=!e.ri, col;
+    var tname = e.ti?(e.ti.shortName||e.ti.name||'FA'):'FA';
+    var dimmed = hl && tname !== hl;
     if(colorBy==='quadrant'){
       var posX = e.t.delta_era >= 0, posY = e.fw.fWAR >= 0;
-      col = (posY && posX)  ? '#2d5a3d'  // Stars — top-right green
-          : (posY && !posX) ? '#c0392b'  // Sell High — top-left red
-          : (!posY && posX) ? '#2980b9'  // Buy Low — bottom-right blue
-          : '#888';                       // Drop/Avoid — bottom-left gray
+      col = (posY && posX)  ? '#2d5a3d'
+          : (posY && !posX) ? '#c0392b'
+          : (!posY && posX) ? '#2980b9'
+          : '#888';
     } else if(colorBy==='team'){
-      var tn=e.ti?(e.ti.shortName||e.ti.name||'FA'):'FA'; col=teamColorMap[tn]||'#aaa';
+      col=teamColorMap[tname]||'#aaa';
     } else {
       col=statColor(e.t[colorBy],statMin,statMax);
     }
+    var opacity = dimmed ? '0.08' : '0.9';
     var statLabels={delta_velo:'\u0394Velo: ',k_2026:'K%: ',babip_2026:'BABIP: ',velo_2026:'Velo: '};
     var sv=e.t[colorBy];
     var statStr=(colorBy!=='quadrant'&&colorBy!=='team')&&sv!=null?'&#10;'+(statLabels[colorBy]||'')+(sv>=0&&colorBy.indexOf('delta')===0?'+':'')+sv.toFixed(1):'';
     var tip=e.t.name+'&#10;fWAR: '+(e.fw.fWAR>=0?'+':'')+e.fw.fWAR.toFixed(2)+'&#10;\u0394(ERA-xERA): '+(e.t.delta_era>=0?'+':'')+e.t.delta_era.toFixed(2)+statStr+(e.ti?'&#10;'+(e.ti.shortName||e.ti.name):'&#10;FA');
-    if(isFA){svg+='<rect x="'+(cx-5)+'" y="'+(cy-5)+'" width="11" height="11" fill="'+col+'" opacity="0.9" stroke="white" stroke-width="1.5" style="cursor:pointer"><title>'+tip+'</title></rect>';}
-    else{svg+='<circle cx="'+cx+'" cy="'+cy+'" r="6" fill="'+col+'" opacity="0.9" stroke="white" stroke-width="1.5" style="cursor:pointer"><title>'+tip+'</title></circle>';}
+    if(isFA){svg+='<rect x="'+(cx-5)+'" y="'+(cy-5)+'" width="11" height="11" fill="'+col+'" opacity="'+opacity+'" stroke="white" stroke-width="1.5" style="cursor:pointer"><title>'+tip+'</title></rect>';}
+    else{svg+='<circle cx="'+cx+'" cy="'+cy+'" r="6" fill="'+col+'" opacity="'+opacity+'" stroke="white" stroke-width="1.5" style="cursor:pointer"><title>'+tip+'</title></circle>';}
   });
 
-  // Team legend — vertical right side
+  // Team legend — HTML with click handlers
+  var legendHtml = '';
   if(colorBy==='team'){
-    var lx=W-PR+12, ly=PT+10;
-    teamList.forEach(function(t,i){var ty=ly+i*18; svg+='<circle cx="'+(lx+5)+'" cy="'+ty+'" r="5" fill="'+teamColorMap[t]+'" opacity="0.9"/>'; svg+='<text x="'+(lx+14)+'" y="'+(ty+4)+'" font-size="9" fill="var(--text)">'+t+'</text>';});
+    var hl2 = window._pitQuadrantHighlight;
+    legendHtml = '<div style="position:absolute;top:'+(PT+10)+'px;right:8px;display:flex;flex-direction:column;gap:4px">';
+    teamList.forEach(function(t){
+      var isActive = hl2 === t, dim = hl2 && !isActive;
+      legendHtml += '<div onclick="window._pitQuadrantHighlight=(window._pitQuadrantHighlight===\''+t+'\'?null:\''+t+'\');redrawPitQuadrantChart();" '
+        + 'style="display:flex;align-items:center;gap:5px;cursor:pointer;opacity:'+(dim?'0.35':'1')+';padding:2px 4px;border-radius:4px;'+(isActive?'background:var(--accent-light)':'')+'\">';
+      legendHtml += '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+teamColorMap[t]+';flex-shrink:0"></span>';
+      legendHtml += '<span style="font-size:10px;color:var(--text);white-space:nowrap">'+t+'</span></div>';
+    });
+    legendHtml += '</div>';
   }
 
   // Gradient legend
@@ -8691,7 +8718,7 @@ function buildPitQuadrantSVG(plotData, colorBy) {
   }
 
   svg+='</svg>';
-  return svg;
+  return { svg: svg, legend: legendHtml };
 }
 
 init();
