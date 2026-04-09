@@ -8517,7 +8517,7 @@ function drawPitcherTargetsTable() {
     // ERA / xERA / delta
     html += '<td>'+(t.era!=null?t.era.toFixed(2):'—')+'</td>';
     html += '<td>'+(t.xera!=null?t.xera.toFixed(2):'—')+'</td>';
-    var dec=t.delta_era; var dEc=dec==null?'var(--muted)':dec>=0.5?'#c0392b':dec<=-0.5?'#1e6b3a':'var(--text)';
+    var dec=t.delta_era; var dEc=dec==null?'var(--muted)':dec>=0.5?'#1e6b3a':dec<=-0.5?'#c0392b':'var(--text)';
     html += '<td style="font-weight:700;color:'+dEc+'">'+fmtD(t.delta_era,2)+'</td>';
 
     // BABIP
@@ -8618,7 +8618,7 @@ function buildPitQuadrantSVG(plotData, colorBy) {
   svg+='<rect x="'+x0+'" y="'+y0+'" width="'+(W-PR-x0)+'" height="'+(H-PB-y0)+'" fill="#e8f4fd" opacity="0.35"/>'; // bot-right: Buy Low (blue)
 
   // Grid
-  var step=0.5;
+  var step=1.0;
   for(var xv=Math.ceil(xMin/step)*step; xv<=xMax+0.01; xv=Math.round((xv+step)*10)/10){
     var xpx=px(xv);
     svg+='<line x1="'+xpx+'" y1="'+PT+'" x2="'+xpx+'" y2="'+(H-PB)+'" stroke="var(--border)" stroke-width="0.5"/>';
