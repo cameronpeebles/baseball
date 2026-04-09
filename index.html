@@ -8462,7 +8462,7 @@ function drawPitcherTargetsTable() {
   html += '<th style="min-width:130px">Buy/Sell</th>';
   html += th('era','ERA');
   html += th('xera','xERA');
-  html += th('delta_era','Δ xERA−ERA');
+  html += th('delta_era','Δ ERA−xERA');
   html += th('babip_2026','BABIP 2026');
   html += th('babip_2025','BABIP 2025');
   html += th('delta_babip','ΔBABIP');
@@ -8517,7 +8517,7 @@ function drawPitcherTargetsTable() {
     // ERA / xERA / delta
     html += '<td>'+(t.era!=null?t.era.toFixed(2):'—')+'</td>';
     html += '<td>'+(t.xera!=null?t.xera.toFixed(2):'—')+'</td>';
-    var dec=t.delta_era; var dEc=dec==null?'var(--muted)':dec>=0.5?'#1e6b3a':dec<=-0.5?'#c0392b':'var(--text)';
+    var dec=t.delta_era; var dEc=dec==null?'var(--muted)':dec>=0.5?'#c0392b':dec<=-0.5?'#1e6b3a':'var(--text)';
     html += '<td style="font-weight:700;color:'+dEc+'">'+fmtD(t.delta_era,2)+'</td>';
 
     // BABIP
@@ -8611,11 +8611,11 @@ function buildPitQuadrantSVG(plotData, colorBy) {
 
   var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:720px;height:auto;display:block;margin:0 auto">';
 
-  // Quadrant backgrounds — negative delta = underperforming (buy low), positive = overperforming (sell)
-  svg+='<rect x="'+PL+'" y="'+PT+'" width="'+(x0-PL)+'" height="'+(y0-PT)+'" fill="#e8f0eb" opacity="0.35"/>';
-  svg+='<rect x="'+x0+'" y="'+PT+'" width="'+(W-PR-x0)+'" height="'+(y0-PT)+'" fill="#fce8e8" opacity="0.35"/>';
-  svg+='<rect x="'+PL+'" y="'+y0+'" width="'+(x0-PL)+'" height="'+(H-PB-y0)+'" fill="#e8f4fd" opacity="0.35"/>';
-  svg+='<rect x="'+x0+'" y="'+y0+'" width="'+(W-PR-x0)+'" height="'+(H-PB-y0)+'" fill="#f5f5f0" opacity="0.35"/>';
+  // Quadrant backgrounds — positive delta = underperforming/buy low (right), negative = overperforming/sell (left)
+  svg+='<rect x="'+PL+'" y="'+PT+'" width="'+(x0-PL)+'" height="'+(y0-PT)+'" fill="#fce8e8" opacity="0.35"/>';
+  svg+='<rect x="'+x0+'" y="'+PT+'" width="'+(W-PR-x0)+'" height="'+(y0-PT)+'" fill="#e8f0eb" opacity="0.35"/>';
+  svg+='<rect x="'+PL+'" y="'+y0+'" width="'+(x0-PL)+'" height="'+(H-PB-y0)+'" fill="#f5f5f0" opacity="0.35"/>';
+  svg+='<rect x="'+x0+'" y="'+y0+'" width="'+(W-PR-x0)+'" height="'+(H-PB-y0)+'" fill="#e8f4fd" opacity="0.35"/>';
 
   // Grid
   var step=0.5;
@@ -8635,15 +8635,15 @@ function buildPitQuadrantSVG(plotData, colorBy) {
   svg+='<line x1="'+x0+'" y1="'+PT+'" x2="'+x0+'" y2="'+(H-PB)+'" stroke="var(--text)" stroke-width="1.5"/>';
   svg+='<line x1="'+PL+'" y1="'+y0+'" x2="'+(W-PR)+'" y2="'+y0+'" stroke="var(--text)" stroke-width="1.5"/>';
 
-  // Quadrant labels
-  [{x:PL+8,y:PT+18,t:'Buy Low',c:'#2980b9',a:'start'},
-   {x:W-PR-8,y:PT+18,t:'Stars / Sell High',c:'#c0392b',a:'end'},
-   {x:PL+8,y:H-PB-10,t:'Drop / Avoid',c:'#888',a:'start'},
-   {x:W-PR-8,y:H-PB-10,t:'Overperforming',c:'#e67e22',a:'end'}
+  // Quadrant labels — matching hitters layout
+  [{x:PL+8,  y:PT+18,    t:'Sell High',   c:'#c0392b', a:'start'},
+   {x:W-PR-8,y:PT+18,    t:'Stars',       c:'#1e6b3a', a:'end'},
+   {x:PL+8,  y:H-PB-10,  t:'Drop / Avoid',c:'#888',   a:'start'},
+   {x:W-PR-8,y:H-PB-10,  t:'Buy Low',     c:'#2980b9', a:'end'}
   ].forEach(function(q){svg+='<text x="'+q.x+'" y="'+q.y+'" text-anchor="'+q.a+'" font-size="11" font-weight="700" fill="'+q.c+'" opacity="0.7">'+q.t+'</text>';});
 
   // Axis labels
-  svg+='<text x="'+(W/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="11" fill="var(--muted)">\u0394(xERA \u2212 ERA) (positive = overperforming)</text>';
+  svg+='<text x="'+(W/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="11" fill="var(--muted)">\u0394(ERA \u2212 xERA) (positive = underperforming)</text>';
   svg+='<text x="14" y="'+(PT+cH/2)+'" text-anchor="middle" font-size="11" fill="var(--muted)" transform="rotate(-90,14,'+(PT+cH/2)+')">fWAR</text>';
 
   // Shape legend
@@ -8652,11 +8652,11 @@ function buildPitQuadrantSVG(plotData, colorBy) {
   svg+='<rect x="'+(PL+74)+'" y="'+(PT-23)+'" width="10" height="10" fill="#666" opacity="0.8"/>';
   svg+='<text x="'+(PL+89)+'" y="'+(PT-14)+'" font-size="9" fill="var(--muted)">Free Agent</text>';
 
-  // Dots
+  // Dots — positive delta = underperforming, same color logic as hitters
   plotData.forEach(function(e){
     var cx=px(e.t.delta_era), cy=py(e.fw.fWAR), isFA=!e.ri, col;
     if(colorBy==='quadrant'){
-      col=(e.t.delta_era<0&&e.fw.fWAR>=0)?'#2d5a3d':(e.t.delta_era>=0&&e.fw.fWAR>=0)?'#c0392b':(e.t.delta_era<0&&e.fw.fWAR<0)?'#2980b9':'#888';
+      col=(e.t.delta_era>=0&&e.fw.fWAR>=0)?'#2d5a3d':(e.t.delta_era<0&&e.fw.fWAR>=0)?'#c0392b':(e.t.delta_era>=0&&e.fw.fWAR<0)?'#2980b9':'#888';
     } else if(colorBy==='team'){
       var tn=e.ti?(e.ti.shortName||e.ti.name||'FA'):'FA'; col=teamColorMap[tn]||'#aaa';
     } else {
@@ -8665,7 +8665,7 @@ function buildPitQuadrantSVG(plotData, colorBy) {
     var statLabels={delta_velo:'\u0394Velo: ',k_2026:'K%: ',babip_2026:'BABIP: ',velo_2026:'Velo: '};
     var sv=e.t[colorBy];
     var statStr=(colorBy!=='quadrant'&&colorBy!=='team')&&sv!=null?'&#10;'+(statLabels[colorBy]||'')+(sv>=0&&colorBy.indexOf('delta')===0?'+':'')+sv.toFixed(1):'';
-    var tip=e.t.name+'&#10;fWAR: '+(e.fw.fWAR>=0?'+':'')+e.fw.fWAR.toFixed(2)+'&#10;\u0394(xERA-ERA): '+(e.t.delta_era>=0?'+':'')+e.t.delta_era.toFixed(2)+statStr+(e.ti?'&#10;'+(e.ti.shortName||e.ti.name):'&#10;FA');
+    var tip=e.t.name+'&#10;fWAR: '+(e.fw.fWAR>=0?'+':'')+e.fw.fWAR.toFixed(2)+'&#10;\u0394(ERA-xERA): '+(e.t.delta_era>=0?'+':'')+e.t.delta_era.toFixed(2)+statStr+(e.ti?'&#10;'+(e.ti.shortName||e.ti.name):'&#10;FA');
     if(isFA){svg+='<rect x="'+(cx-5)+'" y="'+(cy-5)+'" width="11" height="11" fill="'+col+'" opacity="0.9" stroke="white" stroke-width="1.5" style="cursor:pointer"><title>'+tip+'</title></rect>';}
     else{svg+='<circle cx="'+cx+'" cy="'+cy+'" r="6" fill="'+col+'" opacity="0.9" stroke="white" stroke-width="1.5" style="cursor:pointer"><title>'+tip+'</title></circle>';}
   });
