@@ -7503,6 +7503,68 @@ function drawSGPPositionView(type) {
       + '</div>';
   }
 
+  // ── SGP breakdown by category ─────────────────────────────────────────────
+  var CAT_COLORS = {R:'#3498db',HR:'#c0392b',RBI:'#e67e22',SB:'#8e44ad',AVG:'#2980b9',
+                   W:'#27ae60',K:'#e74c3c',SVH3:'#9b59b6',ERA:'#1abc9c',WHIP:'#16a085'};
+
+  function sgpBreakdown(p) {
+    if (isHit) {
+      var tAB=7500*(p.rem/162), abSh=tAB>0?Math.min(p.ros.ab/tAB,1):0;
+      return [
+        {cat:'R',   v:(p.ros.r/SGP_D.r)*(cw['R']||1)},
+        {cat:'HR',  v:(p.ros.hr/SGP_D.hr)*(cw['HR']||1)},
+        {cat:'RBI', v:(p.ros.rbi/SGP_D.rbi)*(cw['RBI']||1)},
+        {cat:'SB',  v:(p.ros.sb/SGP_D.sb)*(cw['SB']||1)},
+        {cat:'AVG', v:((p.ros.avg-myAvg)*abSh/SGP_D.avg)*(cw['AVG']||1)}
+      ];
+    } else {
+      var tIP=1800*(p.rem/162), ipSh=tIP>0?Math.min(p.ros.ip/tIP,1):0;
+      return [
+        {cat:'W',    v:(p.ros.w/SGP_D.w)*(cw['W']||1)},
+        {cat:'K',    v:(p.ros.k/SGP_D.k)*(cw['K']||1)},
+        {cat:'SVH3', v:(p.ros.svh3/SGP_D.svh3)*(cw['SVH3']||1)},
+        {cat:'ERA',  v:((myERA-p.ros.era)*ipSh/SGP_D.era)*(cw['ERA']||1)},
+        {cat:'WHIP', v:((myWHIP-p.ros.whip)*ipSh/SGP_D.whip)*(cw['WHIP']||1)}
+      ];
+    }
+  }
+
+  function sgpBar(p, sgpTotal) {
+    var cats = sgpBreakdown(p);
+    var maxAbs = Math.max.apply(null, cats.map(function(c){return Math.abs(c.v);})) || 1;
+    var totalAbs = cats.reduce(function(s,c){return s+Math.abs(c.v);},0) || 1;
+    var sCol = sgpTotal>2?'#1e6b3a':sgpTotal>0.5?'#4a9a68':sgpTotal>-0.5?'#b7791f':'#c0392b';
+
+    var h = '<div style="margin-top:6px">';
+    // Total SGP + fWAR on same line
+    var fw = p.fw ? p.fw.fWAR : null;
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
+    h += '<span style="font-size:12px;font-weight:700;color:'+sCol+'">SGP '+(sgpTotal>=0?'+':'')+sgpTotal.toFixed(2)+'</span>';
+    if (fw!=null) h += '<span style="font-size:11px;color:var(--muted)">fWAR '+(fw>=0?'+':'')+fw.toFixed(2)+'</span>';
+    h += '</div>';
+
+    // Stacked bar
+    h += '<div style="display:flex;height:10px;border-radius:4px;overflow:hidden;width:100%;background:var(--bg);border:1px solid var(--border)">';
+    cats.forEach(function(c) {
+      var pct = Math.abs(c.v) / totalAbs * 100;
+      var col = c.v < 0 ? '#e55' : (CAT_COLORS[c.cat] || '#888');
+      var opacity = c.v < 0 ? '0.5' : '0.85';
+      h += '<div style="width:'+pct.toFixed(1)+'%;background:'+col+';opacity:'+opacity+';transition:width 0.3s" title="'+c.cat+': '+(c.v>=0?'+':'')+c.v.toFixed(2)+'"></div>';
+    });
+    h += '</div>';
+
+    // Category labels
+    h += '<div style="display:flex;gap:5px;margin-top:3px;flex-wrap:wrap">';
+    cats.forEach(function(c) {
+      var col = c.v < 0 ? '#c0392b' : (CAT_COLORS[c.cat] || '#888');
+      var sign = c.v >= 0 ? '+' : '';
+      h += '<span style="font-size:9px;color:'+col+';font-weight:600">'+c.cat+' '+sign+c.v.toFixed(1)+'</span>';
+    });
+    h += '</div>';
+    h += '</div>';
+    return h;
+  }
+
   var SLOTS=isHit?['C','1B','2B','3B','SS','OF']:['SP','RP'];
   function elig(p,slot){
     var pts=p.pos.split(',').map(function(x){return x.trim();});
@@ -7559,18 +7621,13 @@ function drawSGPPositionView(type) {
     // My starter
     html+='<div>';
     if(starter){
-      var sFV=starter.fw?starter.fw.fWAR:null;
-      var sCol=sSGP>2?'#1e6b3a':sSGP>0.5?'#4a9a68':sSGP>-0.5?'#b7791f':'#c0392b';
       html+='<div style="display:flex;align-items:center;gap:8px">';
       if(starter.hs) html+='<img src="'+starter.hs+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:1px solid var(--border);flex-shrink:0" alt="" onerror="this.style.display=\'none\'">';
       html+='<div>';
       html+='<div style="font-weight:600;font-size:13px">'+starter.name+'</div>';
       html+='<div style="font-size:11px;color:var(--muted)">'+starter.pos+(starter.mlb?' · '+starter.mlb:'')+'</div>';
       html+='</div></div>';
-      html+='<div style="margin-top:4px;display:flex;gap:8px;align-items:center">';
-      html+='<span style="font-size:12px;font-weight:700;color:'+sCol+'">SGP '+(sSGP>=0?'+':'')+sSGP.toFixed(2)+'</span>';
-      if(sFV!=null)html+='<span style="font-size:11px;color:var(--muted)">fWAR '+(sFV>=0?'+':'')+sFV.toFixed(2)+'</span>';
-      html+='</div>';
+      html+=sgpBar(starter, sSGP);
       if(starter.cur) html+=statsRow(starter);
       if(starter.cur) html+=profileRow(starter);
     } else {
@@ -7590,8 +7647,6 @@ function drawSGPPositionView(type) {
     // Best available
     html+='<div>';
     if(best){
-      var bFV=best.fw?best.fw.fWAR:null;
-      var bCol=bSGP>2?'#1e6b3a':bSGP>0.5?'#4a9a68':bSGP>-0.5?'#b7791f':'#c0392b';
       var ti=best.ftId?(S.teamInfo[best.ftId]||{}):null;
       html+='<div style="display:flex;align-items:center;gap:8px">';
       if(best.hs) html+='<img src="'+best.hs+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:1px solid var(--border);flex-shrink:0" alt="" onerror="this.style.display=\'none\'">';
@@ -7601,10 +7656,7 @@ function drawSGPPositionView(type) {
       if(ti&&(ti.shortName||ti.name))html+=' · <span style="color:var(--accent)">'+(ti.shortName||ti.name)+'</span>';
       else html+=' · <span class="badge fa">FA</span>';
       html+='</div></div></div>';
-      html+='<div style="margin-top:4px;display:flex;gap:8px;align-items:center">';
-      html+='<span style="font-size:12px;font-weight:700;color:'+bCol+'">SGP '+(bSGP>=0?'+':'')+bSGP.toFixed(2)+'</span>';
-      if(bFV!=null)html+='<span style="font-size:11px;color:var(--muted)">fWAR '+(bFV>=0?'+':'')+bFV.toFixed(2)+'</span>';
-      html+='</div>';
+      html+=sgpBar(best, bSGP);
       if(best.cur) html+=statsRow(best);
       if(best.cur) html+=profileRow(best);
     } else {
