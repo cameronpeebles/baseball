@@ -1763,6 +1763,74 @@ function buildJOEPage(byWeek, schedule) {
   // Store for dashboard — same shape expected: {team, luck (normalized joe)}
   window._joeSeasonData = seasonRows;
 
+  // ── Charts: whisker + JOE bar (same layout as weekly tabs) ───────────────
+  var rowsByActual = seasonRows.slice().sort(function(a,b){ return (b.avgActual||0)-(a.avgActual||0); });
+  var rowsByJOE    = seasonRows.slice(); // already sorted by joe desc
+
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">';
+
+  // ── Whisker plot ──────────────────────────────────────────────────────────
+  var W1=520, H1=440, PL=150, PR=20, PT=30, PB=140, AL=20;
+  var chartW=W1-PL-PR, chartH=H1-PT-PB;
+  html += '<div class="card"><div class="card-header"><span class="card-title" style="font-size:12px">Win% Range — Best / Actual / Avg / Worst (Season Avg)</span></div>';
+  html += '<div style="padding:12px"><svg viewBox="0 0 ' + W1 + ' ' + H1 + '" style="width:100%;height:auto">';
+  html += '<text x="12" y="' + (PT+chartH/2) + '" text-anchor="middle" font-size="10" fill="var(--muted)" transform="rotate(-90,12,'+(PT+chartH/2)+')">Avg Win %</text>';
+  [0,0.25,0.5,0.75,1.0].forEach(function(v) {
+    var y = PT+chartH - v*chartH;
+    html += '<line x1="'+PL+'" y1="'+y+'" x2="'+(W1-PR)+'" y2="'+y+'" stroke="var(--border)" stroke-width="0.5"/>';
+    html += '<text x="'+(PL-4)+'" y="'+(y+4)+'" text-anchor="end" font-size="9" fill="var(--muted)">'+v.toFixed(2)+'</text>';
+  });
+  var n1 = rowsByActual.length;
+  rowsByActual.forEach(function(r, i) {
+    var x = PL + (i+0.5)*(chartW/n1);
+    var yBest   = PT+chartH - (r.avgBest  ||0)*chartH;
+    var yWorst  = PT+chartH - (r.avgWorst ||0)*chartH;
+    var yAvg    = PT+chartH - (r.avgCase  ||0)*chartH;
+    var yActual = PT+chartH - (r.avgActual||0)*chartH;
+    html += '<line x1="'+x+'" y1="'+yBest+'" x2="'+x+'" y2="'+yWorst+'" stroke="#ccc" stroke-width="2"/>';
+    html += '<circle cx="'+x+'" cy="'+yBest+'"   r="5" fill="#2d5a3d"/>';
+    html += '<circle cx="'+x+'" cy="'+yAvg+'"    r="4" fill="#c8a96e"/>';
+    html += '<circle cx="'+x+'" cy="'+yActual+'" r="5" fill="#4a9a68"/>';
+    html += '<circle cx="'+x+'" cy="'+yWorst+'"  r="5" fill="#c0392b"/>';
+    var label = r.team.length > 12 ? r.team.substring(0,12)+'…' : r.team;
+    html += '<text x="'+x+'" y="'+(H1-PB+AL)+'" text-anchor="end" font-size="9" fill="var(--text)" transform="rotate(-45,'+x+','+(H1-PB+AL)+')">'+label+'</text>';
+  });
+  // Legend
+  [{c:'#2d5a3d',l:'Best'},{c:'#c8a96e',l:'Avg'},{c:'#4a9a68',l:'Actual'},{c:'#c0392b',l:'Worst'}].forEach(function(lg,i){
+    var lx=PL+i*65, ly=PT-12;
+    html += '<circle cx="'+lx+'" cy="'+ly+'" r="4" fill="'+lg.c+'"/>';
+    html += '<text x="'+(lx+8)+'" y="'+(ly+4)+'" font-size="9" fill="var(--muted)">'+lg.l+'</text>';
+  });
+  html += '</svg></div></div>';
+
+  // ── JOE Factor bar chart ──────────────────────────────────────────────────
+  var W2=520, H2=440, PL2=50, PR2=20, PT2=40, PB2=140;
+  var chartW2=W2-PL2-PR2, chartH2=H2-PT2-PB2;
+  html += '<div class="card"><div class="card-header"><span class="card-title" style="font-size:12px">JOE Factor (+1 = Luckiest, −1 = Unluckiest) — Season Avg</span></div>';
+  html += '<div style="padding:12px"><svg viewBox="0 0 ' + W2 + ' ' + H2 + '" style="width:100%;height:auto">';
+  var y0 = PT2 + chartH2/2;
+  html += '<line x1="'+PL2+'" y1="'+y0+'" x2="'+(W2-PR2)+'" y2="'+y0+'" stroke="var(--border)" stroke-width="1"/>';
+  html += '<text x="'+(PL2-4)+'" y="'+(PT2+4)+'" text-anchor="end" font-size="9" fill="var(--muted)">+1</text>';
+  html += '<text x="'+(PL2-4)+'" y="'+(H2-PB2+4)+'" text-anchor="end" font-size="9" fill="var(--muted)">−1</text>';
+  html += '<text x="'+(PL2-4)+'" y="'+(y0+4)+'" text-anchor="end" font-size="9" fill="var(--muted)">0</text>';
+  html += '<text x="12" y="'+(PT2+chartH2/2)+'" text-anchor="middle" font-size="10" fill="var(--muted)" transform="rotate(-90,12,'+(PT2+chartH2/2)+')">JOE Factor</text>';
+  var n2 = rowsByJOE.length;
+  var bw = chartW2/n2*0.6;
+  rowsByJOE.forEach(function(r, i) {
+    var cx  = PL2 + (i+0.5)*(chartW2/n2);
+    var joe = r.joe || 0;
+    var barH= Math.abs(joe) * (chartH2/2);
+    var barY= joe >= 0 ? y0-barH : y0;
+    var col = joe > 0.2 ? '#2d5a3d' : joe > 0 ? '#4a9a68' : joe > -0.2 ? '#e05c4b' : '#c0392b';
+    html += '<rect x="'+(cx-bw/2)+'" y="'+barY+'" width="'+bw+'" height="'+barH+'" fill="'+col+'" rx="2"/>';
+    html += '<text x="'+cx+'" y="'+(joe>=0?barY-4:barY+barH+12)+'" text-anchor="middle" font-size="9" font-weight="600" fill="'+col+'">'+(joe>=0?'+':'')+joe.toFixed(2)+'</text>';
+    var label2 = r.team.length > 12 ? r.team.substring(0,12)+'…' : r.team;
+    html += '<text x="'+cx+'" y="'+(H2-PB2+AL)+'" text-anchor="end" font-size="9" fill="var(--text)" transform="rotate(-45,'+cx+','+(H2-PB2+AL)+')">'+label2+'</text>';
+  });
+  html += '</svg></div></div>';
+
+  html += '</div>'; // grid
+
   html += '<div class="table-wrap"><table><thead><tr>';
   html += '<th class="left">Team</th>';
   html += '<th>Weeks</th>';
