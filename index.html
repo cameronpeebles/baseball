@@ -6257,14 +6257,19 @@ function drawSGPTable(type) {
   function computePlayerSGP(p) {
     if (isHit) {
       var sgp = p.ros.r/SGP_D.r + p.ros.hr/SGP_D.hr + p.ros.rbi/SGP_D.rbi + p.ros.sb/SGP_D.sb;
-      // AVG: (playerAVG - teamAVG) × ROS_AB / denominator
-      sgp += ((p.ros.avg - myAvg) * p.ros.ab) / SGP_D.avg;
+      // AVG: player's impact on team AVG × team AB / denominator
+      // abShare = fraction of team AB this player represents (ROS)
+      var teamRosAB = TEAM_AB * (p.rem / SEASON_GAMES);
+      var abShare = teamRosAB > 0 ? Math.min(p.ros.ab / teamRosAB, 1) : 0;
+      sgp += ((p.ros.avg - myAvg) * abShare) / SGP_D.avg;
       return sgp;
     } else {
       var sgp2 = p.ros.w/SGP_D.w + p.ros.k/SGP_D.k + p.ros.sv/SGP_D.sv;
-      // ERA/WHIP: (teamRate - playerRate) × ROS_IP / denominator
-      sgp2 += ((myERA  - p.ros.era)  * p.ros.ip) / SGP_D.era;
-      sgp2 += ((myWHIP - p.ros.whip) * p.ros.ip) / SGP_D.whip;
+      // ERA/WHIP: player's impact on team rate × IP share / denominator
+      var teamRosIP = TEAM_IP * (p.rem / SEASON_GAMES);
+      var ipShare = teamRosIP > 0 ? Math.min(p.ros.ip / teamRosIP, 1) : 0;
+      sgp2 += ((myERA  - p.ros.era)  * ipShare) / SGP_D.era;
+      sgp2 += ((myWHIP - p.ros.whip) * ipShare) / SGP_D.whip;
       return sgp2;
     }
   }
@@ -6305,20 +6310,24 @@ function drawSGPTable(type) {
   // ── Category breakdown for profile ───────────────────────────────────────
   function getCatSGPs(p) {
     if (isHit) {
+      var teamRosAB2 = TEAM_AB * (p.rem / SEASON_GAMES);
+      var abShare2 = teamRosAB2 > 0 ? Math.min(p.ros.ab / teamRosAB2, 1) : 0;
       return [
         {cat:'R',  v:p.ros.r/SGP_D.r},
         {cat:'HR', v:p.ros.hr/SGP_D.hr},
         {cat:'RBI',v:p.ros.rbi/SGP_D.rbi},
         {cat:'SB', v:p.ros.sb/SGP_D.sb},
-        {cat:'AVG',v:((p.ros.avg-myAvg)*p.ros.ab)/SGP_D.avg}
+        {cat:'AVG',v:((p.ros.avg-myAvg)*abShare2)/SGP_D.avg}
       ];
     } else {
+      var teamRosIP2 = TEAM_IP * (p.rem / SEASON_GAMES);
+      var ipShare2 = teamRosIP2 > 0 ? Math.min(p.ros.ip / teamRosIP2, 1) : 0;
       return [
         {cat:'W',   v:p.ros.w/SGP_D.w},
         {cat:'K',   v:p.ros.k/SGP_D.k},
         {cat:'SV',  v:p.ros.sv/SGP_D.sv},
-        {cat:'ERA', v:((myERA-p.ros.era)*p.ros.ip)/SGP_D.era},
-        {cat:'WHIP',v:((myWHIP-p.ros.whip)*p.ros.ip)/SGP_D.whip}
+        {cat:'ERA', v:((myERA-p.ros.era)*ipShare2)/SGP_D.era},
+        {cat:'WHIP',v:((myWHIP-p.ros.whip)*ipShare2)/SGP_D.whip}
       ];
     }
   }
