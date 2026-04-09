@@ -603,7 +603,7 @@
                           "shortName": "R. Weathers"
                         },
                         "header": "Probable Starter for NY Yankees:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 14.2 &nbsp;<b>K</b> 17 &nbsp;<b>ERA</b> 3.07 &nbsp;<b>WHIP</b> 1.500 &nbsp;"
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 15 &nbsp;<b>K</b> 17 &nbsp;<b>ERA</b> 3.00 &nbsp;<b>WHIP</b> 1.467 &nbsp;"
                       }
                     },
                     {
@@ -922,7 +922,7 @@
                           "shortName": "R. Weathers"
                         },
                         "header": "Probable Starter for NY Yankees:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 14.2 &nbsp;<b>K</b> 17 &nbsp;<b>ERA</b> 3.07 &nbsp;<b>WHIP</b> 1.500 &nbsp;"
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 15 &nbsp;<b>K</b> 17 &nbsp;<b>ERA</b> 3.00 &nbsp;<b>WHIP</b> 1.467 &nbsp;"
                       }
                     },
                     {
@@ -1162,86 +1162,6 @@
                 },
                 {
                   "scorer": {
-                    "teamName": "Philadelphia Phillies",
-                    "urlName": "kyle-schwarber",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03cag_96_19.png",
-                    "scorerId": "03cag",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "014"
-                    ],
-                    "defaultPosId": "013",
-                    "posShortNames": "UT",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Apr 3, 6:35 PM: Schwarber went 1-for-3 with two walks,...",
-                        "typeId": "9"
-                      },
-                      {
-                        "tooltip": "Bats Left",
-                        "typeId": "16"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "014"
-                    ],
-                    "teamId": "10180",
-                    "name": "Kyle Schwarber",
-                    "teamShortName": "PHI",
-                    "shortName": "K. Schwarber"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "014",
-                  "cells": [
-                    {
-                      "content": "33"
-                    },
-                    {
-                      "content": ""
-                    },
-                    {
-                      "content": "41"
-                    },
-                    {
-                      "content": "5"
-                    },
-                    {
-                      "content": "8"
-                    },
-                    {
-                      "content": "3"
-                    },
-                    {
-                      "content": "6"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": ".195"
-                    },
-                    {
-                      "content": "12"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "014"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
                     "teamName": "New York Yankees",
                     "urlName": "cody-bellinger",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03120_96_15.png",
@@ -1318,11 +1238,11 @@
                           "shortName": "J. Springs"
                         },
                         "header": "Probable Starter for Athletics:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.1 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.56 &nbsp;<b>WHIP</b> 0.692 &nbsp;"
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.2 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.53 &nbsp;<b>WHIP</b> 0.679 &nbsp;"
                       }
                     },
                     {
-                      "content": "40"
+                      "content": "41"
                     },
                     {
                       "content": "9"
@@ -1340,7 +1260,7 @@
                       "content": "2"
                     },
                     {
-                      "content": ".250"
+                      "content": ".244"
                     },
                     {
                       "content": "12"
@@ -1349,6 +1269,86 @@
                   "statusId": "1",
                   "eligiblePosIds": [
                     "012",
+                    "014"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
+                    "teamName": "Philadelphia Phillies",
+                    "urlName": "kyle-schwarber",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03cag_96_19.png",
+                    "scorerId": "03cag",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "014"
+                    ],
+                    "defaultPosId": "013",
+                    "posShortNames": "UT",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Apr 3, 6:35 PM: Schwarber went 1-for-3 with two walks,...",
+                        "typeId": "9"
+                      },
+                      {
+                        "tooltip": "Bats Left",
+                        "typeId": "16"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "014"
+                    ],
+                    "teamId": "10180",
+                    "name": "Kyle Schwarber",
+                    "teamShortName": "PHI",
+                    "shortName": "K. Schwarber"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "014",
+                  "cells": [
+                    {
+                      "content": "33"
+                    },
+                    {
+                      "content": ""
+                    },
+                    {
+                      "content": "41"
+                    },
+                    {
+                      "content": "5"
+                    },
+                    {
+                      "content": "8"
+                    },
+                    {
+                      "content": "3"
+                    },
+                    {
+                      "content": "6"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": ".195"
+                    },
+                    {
+                      "content": "12"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
                     "014"
                   ],
                   "actions": [
@@ -1527,7 +1527,7 @@
                           "shortName": "J. Springs"
                         },
                         "header": "Probable Starter for Athletics:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.1 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.56 &nbsp;<b>WHIP</b> 0.692 &nbsp;"
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.2 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.53 &nbsp;<b>WHIP</b> 0.679 &nbsp;"
                       }
                     },
                     {
@@ -3316,37 +3316,8 @@
                       "content": "34"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "max-meyer",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05a2d_96_4.png",
-                          "scorerId": "05a2d",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 9:31 PM: Meyer didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Max Meyer",
-                          "shortName": "M. Meyer"
-                        },
-                        "header": "Probable Starter for Miami:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 14.2 &nbsp;<b>K</b> 15 &nbsp;<b>ERA</b> 3.68 &nbsp;<b>WHIP</b> 1.364 &nbsp;"
-                      }
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
                     },
                     {
                       "content": "7.1"
@@ -3870,37 +3841,8 @@
                       "content": "28"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "max-meyer",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05a2d_96_4.png",
-                          "scorerId": "05a2d",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 9:31 PM: Meyer didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Max Meyer",
-                          "shortName": "M. Meyer"
-                        },
-                        "header": "Probable Starter for Miami:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 14.2 &nbsp;<b>K</b> 15 &nbsp;<b>ERA</b> 3.68 &nbsp;<b>WHIP</b> 1.364 &nbsp;"
-                      }
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
                     },
                     {
                       "content": "6"
@@ -6533,40 +6475,11 @@
                       "content": "22"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "max-meyer",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05a2d_96_4.png",
-                          "scorerId": "05a2d",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 9:31 PM: Meyer didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Max Meyer",
-                          "shortName": "M. Meyer"
-                        },
-                        "header": "Probable Starter for Miami:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 14.2 &nbsp;<b>K</b> 15 &nbsp;<b>ERA</b> 3.68 &nbsp;<b>WHIP</b> 1.364 &nbsp;"
-                      }
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
                     },
                     {
-                      "content": "43"
+                      "content": "44"
                     },
                     {
                       "content": "8"
@@ -6584,7 +6497,7 @@
                       "content": "3"
                     },
                     {
-                      "content": ".372"
+                      "content": ".364"
                     },
                     {
                       "content": "13"
@@ -6927,7 +6840,7 @@
                           "shortName": "R. Weathers"
                         },
                         "header": "Probable Starter for NY Yankees:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 14.2 &nbsp;<b>K</b> 17 &nbsp;<b>ERA</b> 3.07 &nbsp;<b>WHIP</b> 1.500 &nbsp;"
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 15 &nbsp;<b>K</b> 17 &nbsp;<b>ERA</b> 3.00 &nbsp;<b>WHIP</b> 1.467 &nbsp;"
                       }
                     },
                     {
@@ -8984,37 +8897,8 @@
                       "content": "23"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "max-meyer",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05a2d_96_4.png",
-                          "scorerId": "05a2d",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 9:31 PM: Meyer didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Max Meyer",
-                          "shortName": "M. Meyer"
-                        },
-                        "header": "Probable Starter for Miami:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 14.2 &nbsp;<b>K</b> 15 &nbsp;<b>ERA</b> 3.68 &nbsp;<b>WHIP</b> 1.364 &nbsp;"
-                      }
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
                     },
                     {
                       "content": "11"
@@ -9308,37 +9192,8 @@
                       "content": "25"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "rhett-lowder",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs061bo_96_2.png",
-                          "scorerId": "061bo",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 8:09 PM: Lowder (1-0) earned the win Saturday...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Rhett Lowder",
-                          "shortName": "R. Lowder"
-                        },
-                        "header": "Probable Starter for Cincinnati:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 16.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 3.31 &nbsp;<b>WHIP</b> 1.224 &nbsp;"
-                      }
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
                     },
                     {
                       "content": "0"
@@ -9997,7 +9852,7 @@
                       "content": "22"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
+                      "content": "CIN 1<br/>@MIA 8 F",
                       "eventId": "06j8w"
                     },
                     {
@@ -10202,7 +10057,7 @@
                       "content": "21"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
+                      "content": "CIN 1<br/>@MIA 8 F",
                       "eventId": "06j8w"
                     },
                     {
@@ -11958,40 +11813,11 @@
                       "content": "34"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "max-meyer",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05a2d_96_4.png",
-                          "scorerId": "05a2d",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 9:31 PM: Meyer didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Max Meyer",
-                          "shortName": "M. Meyer"
-                        },
-                        "header": "Probable Starter for Miami:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 14.2 &nbsp;<b>K</b> 15 &nbsp;<b>ERA</b> 3.68 &nbsp;<b>WHIP</b> 1.364 &nbsp;"
-                      }
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
                     },
                     {
-                      "content": "47"
+                      "content": "48"
                     },
                     {
                       "content": "4"
@@ -12009,7 +11835,7 @@
                       "content": "0"
                     },
                     {
-                      "content": ".213"
+                      "content": ".208"
                     },
                     {
                       "content": "13"
@@ -12478,7 +12304,7 @@
                           "shortName": "J. Springs"
                         },
                         "header": "Probable Starter for Athletics:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.1 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.56 &nbsp;<b>WHIP</b> 0.692 &nbsp;"
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.2 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.53 &nbsp;<b>WHIP</b> 0.679 &nbsp;"
                       }
                     },
                     {
@@ -13302,37 +13128,8 @@
                       "content": "26"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "max-meyer",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05a2d_96_4.png",
-                          "scorerId": "05a2d",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 9:31 PM: Meyer didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Max Meyer",
-                          "shortName": "M. Meyer"
-                        },
-                        "header": "Probable Starter for Miami:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 14.2 &nbsp;<b>K</b> 15 &nbsp;<b>ERA</b> 3.68 &nbsp;<b>WHIP</b> 1.364 &nbsp;"
-                      }
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
                     },
                     {
                       "content": "17"
@@ -13663,7 +13460,7 @@
                           "shortName": "J. Springs"
                         },
                         "header": "Probable Starter for Athletics:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.1 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.56 &nbsp;<b>WHIP</b> 0.692 &nbsp;"
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.2 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.53 &nbsp;<b>WHIP</b> 0.679 &nbsp;"
                       }
                     },
                     {
@@ -14425,38 +14222,9 @@
                       "content": "24"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
+                      "content": "CIN 1<br/>@MIA 8 F",
                       "pitcher": true,
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "max-meyer",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05a2d_96_4.png",
-                          "scorerId": "05a2d",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 9:31 PM: Meyer didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Max Meyer",
-                          "shortName": "M. Meyer"
-                        },
-                        "header": "Probable Starter for Miami:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 14.2 &nbsp;<b>K</b> 15 &nbsp;<b>ERA</b> 3.68 &nbsp;<b>WHIP</b> 1.364 &nbsp;"
-                      }
+                      "eventId": "06j8w"
                     },
                     {
                       "content": "16.1"
@@ -15795,17 +15563,17 @@
                           "shortName": "J. Springs"
                         },
                         "header": "Probable Starter for Athletics:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.1 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.56 &nbsp;<b>WHIP</b> 0.692 &nbsp;"
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.2 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.53 &nbsp;<b>WHIP</b> 0.679 &nbsp;"
                       }
                     },
                     {
-                      "content": "14.2"
+                      "content": "15"
                     },
                     {
-                      "content": "3.07"
+                      "content": "3.00"
                     },
                     {
-                      "content": "1.500"
+                      "content": "1.467"
                     },
                     {
                       "content": "17"
@@ -17409,43 +17177,14 @@
                       "content": "24"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "rhett-lowder",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs061bo_96_2.png",
-                          "scorerId": "061bo",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 8:09 PM: Lowder (1-0) earned the win Saturday...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Rhett Lowder",
-                          "shortName": "R. Lowder"
-                        },
-                        "header": "Probable Starter for Cincinnati:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 16.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 3.31 &nbsp;<b>WHIP</b> 1.224 &nbsp;"
-                      }
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
                     },
                     {
-                      "content": "50"
+                      "content": "51"
                     },
                     {
-                      "content": "8"
+                      "content": "9"
                     },
                     {
                       "content": "8"
@@ -17457,10 +17196,10 @@
                       "content": "3"
                     },
                     {
-                      "content": "5"
+                      "content": "6"
                     },
                     {
-                      "content": ".160"
+                      "content": ".157"
                     },
                     {
                       "content": "13"
@@ -17706,40 +17445,11 @@
                       "content": "26"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "rhett-lowder",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs061bo_96_2.png",
-                          "scorerId": "061bo",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 8:09 PM: Lowder (1-0) earned the win Saturday...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Rhett Lowder",
-                          "shortName": "R. Lowder"
-                        },
-                        "header": "Probable Starter for Cincinnati:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 16.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 3.31 &nbsp;<b>WHIP</b> 1.224 &nbsp;"
-                      }
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
                     },
                     {
-                      "content": "47"
+                      "content": "48"
                     },
                     {
                       "content": "11"
@@ -17757,7 +17467,7 @@
                       "content": "2"
                     },
                     {
-                      "content": ".404"
+                      "content": ".396"
                     },
                     {
                       "content": "13"
@@ -18033,6 +17743,94 @@
                 },
                 {
                   "scorer": {
+                    "teamName": "Miami Marlins",
+                    "urlName": "agustin-ramirez",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04z6m_96_2.png",
+                    "scorerId": "04z6m",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "001"
+                    ],
+                    "defaultPosId": "001",
+                    "posShortNames": "C",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
+                      },
+                      {
+                        "tooltip": "Apr 4, 9:35 PM: Ramirez went 2-for-3 with an RBI, two...",
+                        "typeId": "9"
+                      },
+                      {
+                        "tooltip": "Bats Right",
+                        "typeId": "17"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "001",
+                      "014"
+                    ],
+                    "teamId": "10160",
+                    "name": "Agustin Ramirez",
+                    "teamShortName": "MIA",
+                    "shortName": "A. Ramirez"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "001",
+                  "cells": [
+                    {
+                      "content": "24"
+                    },
+                    {
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
+                    },
+                    {
+                      "content": "44"
+                    },
+                    {
+                      "content": "7"
+                    },
+                    {
+                      "content": "11"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "4"
+                    },
+                    {
+                      "content": "1"
+                    },
+                    {
+                      "content": ".250"
+                    },
+                    {
+                      "content": "12"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "001",
+                    "014"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
                     "teamName": "Chicago Cubs",
                     "urlName": "michael-busch",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04t9b_96_6.png",
@@ -18108,123 +17906,6 @@
                     "002",
                     "014",
                     "006"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
-                    "teamName": "Miami Marlins",
-                    "urlName": "agustin-ramirez",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04z6m_96_2.png",
-                    "scorerId": "04z6m",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "001"
-                    ],
-                    "defaultPosId": "001",
-                    "posShortNames": "C",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 3",
-                        "typeId": "23"
-                      },
-                      {
-                        "tooltip": "Apr 4, 9:35 PM: Ramirez went 2-for-3 with an RBI, two...",
-                        "typeId": "9"
-                      },
-                      {
-                        "tooltip": "Bats Right",
-                        "typeId": "17"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "001",
-                      "014"
-                    ],
-                    "teamId": "10160",
-                    "name": "Agustin Ramirez",
-                    "teamShortName": "MIA",
-                    "shortName": "A. Ramirez"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "001",
-                  "cells": [
-                    {
-                      "content": "24"
-                    },
-                    {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "rhett-lowder",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs061bo_96_2.png",
-                          "scorerId": "061bo",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 8:09 PM: Lowder (1-0) earned the win Saturday...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Rhett Lowder",
-                          "shortName": "R. Lowder"
-                        },
-                        "header": "Probable Starter for Cincinnati:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 16.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 3.31 &nbsp;<b>WHIP</b> 1.224 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "42"
-                    },
-                    {
-                      "content": "6"
-                    },
-                    {
-                      "content": "9"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": "2"
-                    },
-                    {
-                      "content": "1"
-                    },
-                    {
-                      "content": ".214"
-                    },
-                    {
-                      "content": "12"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "001",
-                    "014"
                   ],
                   "actions": [
                     {
@@ -18839,7 +18520,7 @@
                           "shortName": "J. Springs"
                         },
                         "header": "Probable Starter for Athletics:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.1 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.56 &nbsp;<b>WHIP</b> 0.692 &nbsp;"
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.2 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.53 &nbsp;<b>WHIP</b> 0.679 &nbsp;"
                       }
                     },
                     {
@@ -19119,37 +18800,8 @@
                       "content": "28"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "max-meyer",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05a2d_96_4.png",
-                          "scorerId": "05a2d",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 9:31 PM: Meyer didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Max Meyer",
-                          "shortName": "M. Meyer"
-                        },
-                        "header": "Probable Starter for Miami:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 14.2 &nbsp;<b>K</b> 15 &nbsp;<b>ERA</b> 3.68 &nbsp;<b>WHIP</b> 1.364 &nbsp;"
-                      }
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
                     },
                     {
                       "content": "7"
@@ -19668,7 +19320,7 @@
                           "shortName": "J. Springs"
                         },
                         "header": "Probable Starter for Athletics:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.1 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.56 &nbsp;<b>WHIP</b> 0.692 &nbsp;"
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.2 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.53 &nbsp;<b>WHIP</b> 0.679 &nbsp;"
                       }
                     },
                     {
@@ -22780,7 +22432,7 @@
                           "shortName": "R. Weathers"
                         },
                         "header": "Probable Starter for NY Yankees:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 14.2 &nbsp;<b>K</b> 17 &nbsp;<b>ERA</b> 3.07 &nbsp;<b>WHIP</b> 1.500 &nbsp;"
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 15 &nbsp;<b>K</b> 17 &nbsp;<b>ERA</b> 3.00 &nbsp;<b>WHIP</b> 1.467 &nbsp;"
                       }
                     },
                     {
@@ -24930,37 +24582,8 @@
                       "content": "32"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "rhett-lowder",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs061bo_96_2.png",
-                          "scorerId": "061bo",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 8:09 PM: Lowder (1-0) earned the win Saturday...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Rhett Lowder",
-                          "shortName": "R. Lowder"
-                        },
-                        "header": "Probable Starter for Cincinnati:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 16.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 3.31 &nbsp;<b>WHIP</b> 1.224 &nbsp;"
-                      }
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
                     },
                     {
                       "content": "4"
@@ -25283,7 +24906,7 @@
                           "shortName": "J. Springs"
                         },
                         "header": "Probable Starter for Athletics:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.1 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.56 &nbsp;<b>WHIP</b> 0.692 &nbsp;"
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.2 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.53 &nbsp;<b>WHIP</b> 0.679 &nbsp;"
                       }
                     },
                     {
@@ -26235,7 +25858,7 @@
                           "shortName": "J. Springs"
                         },
                         "header": "Probable Starter for Athletics:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.1 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.56 &nbsp;<b>WHIP</b> 0.692 &nbsp;"
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.2 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.53 &nbsp;<b>WHIP</b> 0.679 &nbsp;"
                       }
                     },
                     {
@@ -26755,7 +26378,7 @@
                           "shortName": "J. Springs"
                         },
                         "header": "Probable Starter for Athletics:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.1 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.56 &nbsp;<b>WHIP</b> 0.692 &nbsp;"
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.2 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.53 &nbsp;<b>WHIP</b> 0.679 &nbsp;"
                       }
                     },
                     {
@@ -28922,7 +28545,7 @@
                           "shortName": "R. Weathers"
                         },
                         "header": "Probable Starter for NY Yankees:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 14.2 &nbsp;<b>K</b> 17 &nbsp;<b>ERA</b> 3.07 &nbsp;<b>WHIP</b> 1.500 &nbsp;"
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 15 &nbsp;<b>K</b> 17 &nbsp;<b>ERA</b> 3.00 &nbsp;<b>WHIP</b> 1.467 &nbsp;"
                       }
                     },
                     {
@@ -29247,7 +28870,7 @@
                           "shortName": "J. Springs"
                         },
                         "header": "Probable Starter for Athletics:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.1 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.56 &nbsp;<b>WHIP</b> 0.692 &nbsp;"
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.2 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.53 &nbsp;<b>WHIP</b> 0.679 &nbsp;"
                       }
                     },
                     {
@@ -29367,7 +28990,7 @@
                           "shortName": "J. Springs"
                         },
                         "header": "Probable Starter for Athletics:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.1 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.56 &nbsp;<b>WHIP</b> 0.692 &nbsp;"
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.2 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.53 &nbsp;<b>WHIP</b> 0.679 &nbsp;"
                       }
                     },
                     {
@@ -29687,7 +29310,7 @@
                           "shortName": "R. Weathers"
                         },
                         "header": "Probable Starter for NY Yankees:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 14.2 &nbsp;<b>K</b> 17 &nbsp;<b>ERA</b> 3.07 &nbsp;<b>WHIP</b> 1.500 &nbsp;"
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 15 &nbsp;<b>K</b> 17 &nbsp;<b>ERA</b> 3.00 &nbsp;<b>WHIP</b> 1.467 &nbsp;"
                       }
                     },
                     {
@@ -30061,37 +29684,8 @@
                       "content": "24"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "max-meyer",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05a2d_96_4.png",
-                          "scorerId": "05a2d",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 9:31 PM: Meyer didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Max Meyer",
-                          "shortName": "M. Meyer"
-                        },
-                        "header": "Probable Starter for Miami:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 14.2 &nbsp;<b>K</b> 15 &nbsp;<b>ERA</b> 3.68 &nbsp;<b>WHIP</b> 1.364 &nbsp;"
-                      }
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
                     },
                     {
                       "content": "20"
@@ -30292,7 +29886,7 @@
                           "shortName": "J. Springs"
                         },
                         "header": "Probable Starter for Athletics:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.1 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.56 &nbsp;<b>WHIP</b> 0.692 &nbsp;"
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.2 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.53 &nbsp;<b>WHIP</b> 0.679 &nbsp;"
                       }
                     },
                     {
@@ -31607,7 +31201,7 @@
                           "shortName": "J. Springs"
                         },
                         "header": "Probable Starter for Athletics:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.1 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.56 &nbsp;<b>WHIP</b> 0.692 &nbsp;"
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.2 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.53 &nbsp;<b>WHIP</b> 0.679 &nbsp;"
                       }
                     },
                     {
@@ -31937,37 +31531,8 @@
                       "content": "28"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "max-meyer",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05a2d_96_4.png",
-                          "scorerId": "05a2d",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 9:31 PM: Meyer didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Max Meyer",
-                          "shortName": "M. Meyer"
-                        },
-                        "header": "Probable Starter for Miami:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 14.2 &nbsp;<b>K</b> 15 &nbsp;<b>ERA</b> 3.68 &nbsp;<b>WHIP</b> 1.364 &nbsp;"
-                      }
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
                     },
                     {
                       "content": "0"
@@ -32198,37 +31763,8 @@
                       "content": "22"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "rhett-lowder",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs061bo_96_2.png",
-                          "scorerId": "061bo",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 8:09 PM: Lowder (1-0) earned the win Saturday...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Rhett Lowder",
-                          "shortName": "R. Lowder"
-                        },
-                        "header": "Probable Starter for Cincinnati:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 16.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 3.31 &nbsp;<b>WHIP</b> 1.224 &nbsp;"
-                      }
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
                     },
                     {
                       "content": "16"
@@ -32679,7 +32215,7 @@
                           "shortName": "J. Springs"
                         },
                         "header": "Probable Starter for Athletics:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.1 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.56 &nbsp;<b>WHIP</b> 0.692 &nbsp;"
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.2 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.53 &nbsp;<b>WHIP</b> 0.679 &nbsp;"
                       }
                     },
                     {
@@ -35580,6 +35116,94 @@
                 },
                 {
                   "scorer": {
+                    "teamName": "Miami Marlins",
+                    "urlName": "owen-caissie",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05jsg_96_2.png",
+                    "scorerId": "05jsg",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "012"
+                    ],
+                    "defaultPosId": "011",
+                    "posShortNames": "OF",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 6",
+                        "typeId": "26"
+                      },
+                      {
+                        "tooltip": "Apr 6, 1:59 PM: Caissie is out of the lineup for...",
+                        "typeId": "9"
+                      },
+                      {
+                        "tooltip": "Bats Left",
+                        "typeId": "16"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "012",
+                      "014"
+                    ],
+                    "teamId": "10160",
+                    "name": "Owen Caissie",
+                    "teamShortName": "MIA",
+                    "shortName": "O. Caissie"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "012",
+                  "cells": [
+                    {
+                      "content": "23"
+                    },
+                    {
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
+                    },
+                    {
+                      "content": "34"
+                    },
+                    {
+                      "content": "6"
+                    },
+                    {
+                      "content": "11"
+                    },
+                    {
+                      "content": "2"
+                    },
+                    {
+                      "content": "12"
+                    },
+                    {
+                      "content": "1"
+                    },
+                    {
+                      "content": ".324"
+                    },
+                    {
+                      "content": "12"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "012",
+                    "014"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
                     "teamName": "Boston Red Sox",
                     "urlName": "ceddanne-rafaela",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05gsi_96_3.png",
@@ -35658,123 +35282,6 @@
                     "003",
                     "014",
                     "007"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
-                    "teamName": "Miami Marlins",
-                    "urlName": "owen-caissie",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05jsg_96_2.png",
-                    "scorerId": "05jsg",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "012"
-                    ],
-                    "defaultPosId": "011",
-                    "posShortNames": "OF",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 6",
-                        "typeId": "26"
-                      },
-                      {
-                        "tooltip": "Apr 6, 1:59 PM: Caissie is out of the lineup for...",
-                        "typeId": "9"
-                      },
-                      {
-                        "tooltip": "Bats Left",
-                        "typeId": "16"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "012",
-                      "014"
-                    ],
-                    "teamId": "10160",
-                    "name": "Owen Caissie",
-                    "teamShortName": "MIA",
-                    "shortName": "O. Caissie"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "012",
-                  "cells": [
-                    {
-                      "content": "23"
-                    },
-                    {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "rhett-lowder",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs061bo_96_2.png",
-                          "scorerId": "061bo",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 8:09 PM: Lowder (1-0) earned the win Saturday...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Rhett Lowder",
-                          "shortName": "R. Lowder"
-                        },
-                        "header": "Probable Starter for Cincinnati:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 16.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 3.31 &nbsp;<b>WHIP</b> 1.224 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "33"
-                    },
-                    {
-                      "content": "6"
-                    },
-                    {
-                      "content": "10"
-                    },
-                    {
-                      "content": "2"
-                    },
-                    {
-                      "content": "11"
-                    },
-                    {
-                      "content": "1"
-                    },
-                    {
-                      "content": ".303"
-                    },
-                    {
-                      "content": "12"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "012",
-                    "014"
                   ],
                   "actions": [
                     {
@@ -36281,37 +35788,8 @@
                       "content": "30"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "rhett-lowder",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs061bo_96_2.png",
-                          "scorerId": "061bo",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 8:09 PM: Lowder (1-0) earned the win Saturday...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Rhett Lowder",
-                          "shortName": "R. Lowder"
-                        },
-                        "header": "Probable Starter for Cincinnati:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 16.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 3.31 &nbsp;<b>WHIP</b> 1.224 &nbsp;"
-                      }
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
                     },
                     {
                       "content": "24.1"
@@ -39698,6 +39176,100 @@
                 },
                 {
                   "scorer": {
+                    "teamName": "Cincinnati Reds",
+                    "urlName": "matt-mclain",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04pks_96_5.png",
+                    "scorerId": "04pks",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "003"
+                    ],
+                    "defaultPosId": "003",
+                    "posShortNames": "2B",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
+                      {
+                        "tooltip": "Apr 7, 8:22 PM: McLain went 2-for-5 with two doubles,...",
+                        "typeId": "9"
+                      },
+                      {
+                        "tooltip": "On this team's trade block",
+                        "typeId": "35"
+                      },
+                      {
+                        "tooltip": "Bats Right",
+                        "typeId": "17"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "003",
+                      "007",
+                      "014"
+                    ],
+                    "teamId": "10210",
+                    "name": "Matt McLain",
+                    "teamShortName": "CIN",
+                    "shortName": "M. McLain"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "003",
+                  "cells": [
+                    {
+                      "content": "26"
+                    },
+                    {
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
+                    },
+                    {
+                      "content": "51"
+                    },
+                    {
+                      "content": "6"
+                    },
+                    {
+                      "content": "12"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "3"
+                    },
+                    {
+                      "content": "2"
+                    },
+                    {
+                      "content": ".235"
+                    },
+                    {
+                      "content": "13"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "003",
+                    "014",
+                    "007"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
                     "teamName": "Los Angeles Angels",
                     "urlName": "jo-adell",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04aee_96_10.png",
@@ -39937,129 +39509,6 @@
                     "002",
                     "014",
                     "006"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
-                    "teamName": "Cincinnati Reds",
-                    "urlName": "matt-mclain",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04pks_96_5.png",
-                    "scorerId": "04pks",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "003"
-                    ],
-                    "defaultPosId": "003",
-                    "posShortNames": "2B",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 2",
-                        "typeId": "22"
-                      },
-                      {
-                        "tooltip": "Apr 7, 8:22 PM: McLain went 2-for-5 with two doubles,...",
-                        "typeId": "9"
-                      },
-                      {
-                        "tooltip": "On this team's trade block",
-                        "typeId": "35"
-                      },
-                      {
-                        "tooltip": "Bats Right",
-                        "typeId": "17"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "003",
-                      "007",
-                      "014"
-                    ],
-                    "teamId": "10210",
-                    "name": "Matt McLain",
-                    "teamShortName": "CIN",
-                    "shortName": "M. McLain"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "003",
-                  "cells": [
-                    {
-                      "content": "26"
-                    },
-                    {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "max-meyer",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05a2d_96_4.png",
-                          "scorerId": "05a2d",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 9:31 PM: Meyer didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Max Meyer",
-                          "shortName": "M. Meyer"
-                        },
-                        "header": "Probable Starter for Miami:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 14.2 &nbsp;<b>K</b> 15 &nbsp;<b>ERA</b> 3.68 &nbsp;<b>WHIP</b> 1.364 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "49"
-                    },
-                    {
-                      "content": "6"
-                    },
-                    {
-                      "content": "11"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": "3"
-                    },
-                    {
-                      "content": "2"
-                    },
-                    {
-                      "content": ".224"
-                    },
-                    {
-                      "content": "13"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "003",
-                    "014",
-                    "007"
                   ],
                   "actions": [
                     {
@@ -41504,37 +40953,8 @@
                       "content": "28"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "rhett-lowder",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs061bo_96_2.png",
-                          "scorerId": "061bo",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 8:09 PM: Lowder (1-0) earned the win Saturday...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Rhett Lowder",
-                          "shortName": "R. Lowder"
-                        },
-                        "header": "Probable Starter for Cincinnati:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 16.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 3.31 &nbsp;<b>WHIP</b> 1.224 &nbsp;"
-                      }
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
                     },
                     {
                       "content": "0"
@@ -43849,7 +43269,7 @@
                           "shortName": "J. Springs"
                         },
                         "header": "Probable Starter for Athletics:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.1 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.56 &nbsp;<b>WHIP</b> 0.692 &nbsp;"
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.2 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.53 &nbsp;<b>WHIP</b> 0.679 &nbsp;"
                       }
                     },
                     {
@@ -45378,40 +44798,11 @@
                       "content": "24"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "max-meyer",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05a2d_96_4.png",
-                          "scorerId": "05a2d",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 9:31 PM: Meyer didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Max Meyer",
-                          "shortName": "M. Meyer"
-                        },
-                        "header": "Probable Starter for Miami:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 14.2 &nbsp;<b>K</b> 15 &nbsp;<b>ERA</b> 3.68 &nbsp;<b>WHIP</b> 1.364 &nbsp;"
-                      }
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
                     },
                     {
-                      "content": "50"
+                      "content": "52"
                     },
                     {
                       "content": "9"
@@ -45429,7 +44820,7 @@
                       "content": "3"
                     },
                     {
-                      "content": ".240"
+                      "content": ".231"
                     },
                     {
                       "content": "13"
@@ -46260,7 +45651,7 @@
                           "shortName": "J. Springs"
                         },
                         "header": "Probable Starter for Athletics:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.1 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.56 &nbsp;<b>WHIP</b> 0.692 &nbsp;"
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.2 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.53 &nbsp;<b>WHIP</b> 0.679 &nbsp;"
                       }
                     },
                     {
@@ -47304,7 +46695,7 @@
                           "shortName": "J. Springs"
                         },
                         "header": "Probable Starter for Athletics:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.1 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.56 &nbsp;<b>WHIP</b> 0.692 &nbsp;"
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.2 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.53 &nbsp;<b>WHIP</b> 0.679 &nbsp;"
                       }
                     },
                     {
@@ -47706,37 +47097,8 @@
                       "content": "26"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "max-meyer",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05a2d_96_4.png",
-                          "scorerId": "05a2d",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 9:31 PM: Meyer didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Max Meyer",
-                          "shortName": "M. Meyer"
-                        },
-                        "header": "Probable Starter for Miami:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 14.2 &nbsp;<b>K</b> 15 &nbsp;<b>ERA</b> 3.68 &nbsp;<b>WHIP</b> 1.364 &nbsp;"
-                      }
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
                     },
                     {
                       "content": "0"
@@ -48400,38 +47762,9 @@
                       "content": "27"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
+                      "content": "CIN 1<br/>@MIA 8 F",
                       "pitcher": true,
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "rhett-lowder",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs061bo_96_2.png",
-                          "scorerId": "061bo",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 8:09 PM: Lowder (1-0) earned the win Saturday...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Rhett Lowder",
-                          "shortName": "R. Lowder"
-                        },
-                        "header": "Probable Starter for Cincinnati:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 16.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 3.31 &nbsp;<b>WHIP</b> 1.224 &nbsp;"
-                      }
+                      "eventId": "06j8w"
                     },
                     {
                       "content": "14.2"
@@ -51610,37 +50943,8 @@
                       "content": "27"
                     },
                     {
-                      "content": "CIN 1<br/>@MIA 5",
-                      "eventId": "06j8w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "rhett-lowder",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs061bo_96_2.png",
-                          "scorerId": "061bo",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "Apr 4, 8:09 PM: Lowder (1-0) earned the win Saturday...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Rhett Lowder",
-                          "shortName": "R. Lowder"
-                        },
-                        "header": "Probable Starter for Cincinnati:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 16.1 &nbsp;<b>K</b> 11 &nbsp;<b>ERA</b> 3.31 &nbsp;<b>WHIP</b> 1.224 &nbsp;"
-                      }
+                      "content": "CIN 1<br/>@MIA 8 F",
+                      "eventId": "06j8w"
                     },
                     {
                       "content": "45"
@@ -51971,7 +51275,7 @@
                           "shortName": "J. Springs"
                         },
                         "header": "Probable Starter for Athletics:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.1 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.56 &nbsp;<b>WHIP</b> 0.692 &nbsp;"
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.2 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.53 &nbsp;<b>WHIP</b> 0.679 &nbsp;"
                       }
                     },
                     {
@@ -52100,7 +51404,7 @@
                           "shortName": "R. Weathers"
                         },
                         "header": "Probable Starter for NY Yankees:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 14.2 &nbsp;<b>K</b> 17 &nbsp;<b>ERA</b> 3.07 &nbsp;<b>WHIP</b> 1.500 &nbsp;"
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 15 &nbsp;<b>K</b> 17 &nbsp;<b>ERA</b> 3.00 &nbsp;<b>WHIP</b> 1.467 &nbsp;"
                       }
                     },
                     {
@@ -52613,7 +51917,7 @@
                           "shortName": "J. Springs"
                         },
                         "header": "Probable Starter for Athletics:",
-                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.1 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.56 &nbsp;<b>WHIP</b> 0.692 &nbsp;"
+                        "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 17.2 &nbsp;<b>K</b> 14 &nbsp;<b>ERA</b> 1.53 &nbsp;<b>WHIP</b> 0.679 &nbsp;"
                       }
                     },
                     {
