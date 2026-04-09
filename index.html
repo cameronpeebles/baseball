@@ -2137,10 +2137,28 @@ window.showJOEWeekTab = function(week, btn) {
   if (week === 'avg') {
     if (avgEl) avgEl.style.display = '';
     if (contentEl) contentEl.style.display = 'none';
+    // Show matrix for last completed week
+    var completedWeeks = window._joeCompletedWeeks || [];
+    if (completedWeeks.length) {
+      var lastWk = completedWeeks[completedWeeks.length - 1];
+      var matrixBtn = document.querySelector('#matrix-week-pills .pill.active') ||
+                      document.querySelector('#matrix-week-pills .pill');
+      showMatrixWeek(lastWk, matrixBtn);
+      // Sync matrix pills
+      document.querySelectorAll('#matrix-week-pills .pill').forEach(function(p) {
+        p.classList.toggle('active', parseInt(p.textContent.replace('Wk','').trim()) === lastWk);
+      });
+    }
   } else {
     if (avgEl) avgEl.style.display = 'none';
     if (contentEl) contentEl.style.display = '';
     renderJOEWeekContent(week);
+    // Sync matrix to same week
+    var wkNum = parseInt(week);
+    showMatrixWeek(wkNum, null);
+    document.querySelectorAll('#matrix-week-pills .pill').forEach(function(p) {
+      p.classList.toggle('active', parseInt(p.textContent.replace('Wk','').trim()) === wkNum);
+    });
   }
 };
 
