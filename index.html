@@ -529,6 +529,7 @@ td.neg { color: #c0392b; font-weight: 500; }
       <button class="trade-tab" onclick="showGuideTab('targets',this)">Trade Targets</button>
       <button class="trade-tab" onclick="showGuideTab('predictions',this)">Match Predictions</button>
       <button class="trade-tab" onclick="showGuideTab('correlations',this)">Correlations</button>
+      <button class="trade-tab" onclick="showGuideTab('positional',this)">Positional Strength</button>
       <button class="trade-tab" onclick="showGuideTab('data',this)">Data Pipeline</button>
       <button class="trade-tab" onclick="showGuideTab('glossary',this)">Glossary</button>
       <button class="trade-tab" onclick="showGuideTab('changelog',this)">Changelog</button>
@@ -754,6 +755,54 @@ td.neg { color: #c0392b; font-weight: 500; }
             <div style="font-size:12px;padding:6px 12px;background:var(--bg);border-radius:6px"><strong>|r| &lt; 0.2 — Weak.</strong> Deprioritize. Winning this category hasn't historically translated to standings.</div>
           </div>
           <p style="font-size:12px;color:var(--muted);margin-top:8px">ERA and WHIP signs are inverted (lower = better) so positive r means better ERA = more points.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Positional Strength -->
+    <div id="guide-tab-positional" class="trade-tab-content">
+      <div class="card" style="margin-top:16px;max-width:760px">
+        <div class="card-header"><span class="card-title">Positional Strength</span><span style="font-size:12px;color:var(--muted)">Team &amp; Player views</span></div>
+        <div class="card-body" style="padding:20px">
+          <p style="font-size:13px;line-height:1.7">Positional strength appears in two places: the <strong>Dashboard</strong> (team-level heat map) and the <strong>Rosters page</strong> (player-level percentile ratings). Both use the same underlying percentile engine.</p>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px;color:var(--text)">How Percentile Ratings Work</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 1 — Pool players by position group:</strong> All rostered players are grouped into Infield (C/1B/2B/3B/SS), Outfield (OF/LF/CF/RF), SP, and RP. A player's primary position determines which group they go into.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 2 — Score each player:</strong> A composite score is built from their z-scored stats within that position group. Hitting groups use R, HR, RBI, SB, AVG. Pitching groups use W, K, SVH3, ERA, WHIP (ERA/WHIP negated).</div>
+            <div style="padding:10px 14px;background:var(--accent-light);border-radius:8px;border:1px solid var(--accent);font-size:12px;line-height:1.6"><strong>Step 3 — Percentile rank:</strong> Each player is ranked vs all other rostered players in their group. The resulting 0–100 percentile is their <strong>Overall Rating</strong>. 90th percentile = elite, 50th = average, below 30th = below replacement.</div>
+          </div>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px;color:var(--text)">Dashboard — Team Positional Strength</div>
+          <p style="font-size:12px;line-height:1.6">After selecting your team on the Dashboard, a heat-map grid shows your strength at each position group vs the league. Each cell is colored by your average player percentile at that slot:</p>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0 16px">
+            <div style="padding:8px;border-radius:6px;background:#1e6b3a;color:#fff;text-align:center;font-size:11px;font-weight:600">≥ 65th<br><span style="font-weight:400">Elite</span></div>
+            <div style="padding:8px;border-radius:6px;background:#4a9a68;color:#fff;text-align:center;font-size:11px;font-weight:600">52–65th<br><span style="font-weight:400">Strong</span></div>
+            <div style="padding:8px;border-radius:6px;background:#f5c4b3;color:#6b2a1a;text-align:center;font-size:11px;font-weight:600">30–42nd<br><span style="font-weight:400">Weak</span></div>
+            <div style="padding:8px;border-radius:6px;background:#c0392b;color:#fff;text-align:center;font-size:11px;font-weight:600">&lt; 30th<br><span style="font-weight:400">Poor</span></div>
+          </div>
+          <p style="font-size:12px;color:var(--muted);line-height:1.6">The team heat map is useful for identifying which position groups need reinforcement via trade or waiver pickup. A red Infield tile + green SP tile tells you to sell pitching depth for hitting.</p>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px;color:var(--text)">Rosters Page — Player Percentile Ratings</div>
+          <p style="font-size:12px;line-height:1.6">Every player on the Rosters page has an <strong>Overall Rating</strong> column (0–100 percentile within their position group). Additional columns show their FanGraphs Statcast data:</p>
+          <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:12px">
+            <div style="font-size:11px;padding:5px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><span style="min-width:100px;color:var(--accent);font-weight:600">Hitters</span>SLG · xSLG · Barrel% · HardHit% · EV50 · BABIP</div>
+            <div style="font-size:11px;padding:5px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><span style="min-width:100px;color:var(--accent);font-weight:600">Pitchers</span>Whiff% · K% · BB%</div>
+          </div>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px;color:var(--text)">SGP By Position — Upgrade Finder</div>
+          <p style="font-size:12px;line-height:1.6">The <strong>Player Trade &amp; Market → Hitter/Pitcher SGP → By Position</strong> view combines positional strength with SGP to find specific upgrades. For each position slot it shows:</p>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:12px;padding:8px 12px;background:var(--bg);border-radius:6px">Your current best starter at that position with their SGP + fWAR</div>
+            <div style="font-size:12px;padding:8px 12px;background:var(--bg);border-radius:6px">The best available upgrade (FA or trade target) with their SGP + fWAR</div>
+            <div style="font-size:12px;padding:8px 12px;background:var(--bg);border-radius:6px">Delta SGP between them — weighted by your current standings needs</div>
+            <div style="font-size:12px;padding:8px 12px;background:var(--accent-light);border-radius:6px;border:1px solid var(--accent)">Verdict: <span style="background:#2980b9;color:#fff;padding:1px 7px;border-radius:8px;font-size:11px">🔥 UPGRADE</span> (Δ &gt; 0.7) · <span style="background:#e8f0eb;color:#1e6b3a;padding:1px 7px;border-radius:8px;font-size:11px">↑ Consider</span> (Δ &gt; 0.3) · <span style="background:var(--bg);color:var(--muted);padding:1px 7px;border-radius:8px;font-size:11px">✓ Fine</span></div>
+          </div>
+
+          <div style="margin-top:16px;padding:12px 16px;background:#fef3e2;border-radius:8px;border-left:4px solid #c8a96e">
+            <div style="font-size:12px;font-weight:700;color:#b7791f;margin-bottom:4px">How to use this week-to-week</div>
+            <div style="font-size:12px;line-height:1.7;color:#7a5c2e">Check the Dashboard team heat map first. If a position group is red, go to SGP → By Position and filter to FA to see if there's a free agent upgrade. If not, check the Trade Analyzer for a trade that improves that slot.</div>
+          </div>
         </div>
       </div>
     </div>
