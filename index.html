@@ -7305,6 +7305,17 @@ function renderLeadersPage() {
   html += '<div style="font-family:var(--font-display);font-size:18px;margin-bottom:12px;color:var(--text)">Team Leaders</div>';
   html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:24px">';
 
+  // Debug: log all available tables
+  [S.standingsData, S.seasonData].forEach(function(src, si) {
+    var tbls = (src && src.data && src.data.tableList) || [];
+    console.log('Source', si, '— tables:', tbls.length);
+    tbls.forEach(function(tbl, ti) {
+      var cols = ((tbl.header&&tbl.header.cells)||[]).map(function(h){return h.key||h.shortName||h.name||'?';});
+      var firstTeam = (tbl.rows||[]).some(function(r){return (r.fixedCells||[]).some(function(c){return c.teamId;});});
+      console.log('  Table', ti, '| caption:', tbl.caption, '| cols:', cols.slice(0,8).join(','), '| hasTeam:', firstTeam);
+    });
+  });
+
   // Pull team stat totals — try standings.json first, then standings_season.json
   // Look for any table with HR column, preferring the one with highest HR values
   var statTable2 = null;
