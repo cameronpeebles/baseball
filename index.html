@@ -7305,32 +7305,32 @@ function renderLeadersPage() {
   html += '<div style="font-family:var(--font-display);font-size:18px;margin-bottom:12px;color:var(--text)">Team Leaders</div>';
   html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:24px">';
 
-  // Pull from standings.json — find the Point Totals or Stat Totals table
-  // standings.json has cumulative season stats (not weekly like standings_season.json)
-  var tables2 = (S.standingsData && S.standingsData.data && S.standingsData.data.tableList) || [];
+  // Pull team stat totals — try standings.json first, then standings_season.json
+  // Look for any table with HR column, preferring the one with highest HR values
   var statTable2 = null;
+  var bestMaxHR = -1;
 
-  // Find table with HR column that has season-level values (not weekly ~1-5)
-  for (var ti2=0; ti2<tables2.length; ti2++) {
-    var testH = (tables2[ti2].header && tables2[ti2].header.cells) || [];
-    var colIdx2 = null;
-    testH.forEach(function(h,i){ if((h.key||h.shortName||'').toUpperCase()==='HR') colIdx2=i; });
-    if (colIdx2 == null) continue;
-    var vals2 = (tables2[ti2].rows||[]).map(function(row){
-      return parseFloat(((row.cells||[])[colIdx2]||{}).content)||0;
-    }).filter(function(v){return v>0;});
-    if (vals2.length && Math.max.apply(null,vals2) >= 10) { statTable2 = tables2[ti2]; break; }
-  }
-
-  // Fallback: seasonData
-  if (!statTable2) {
-    var tables2b = (S.seasonData && S.seasonData.data && S.seasonData.data.tableList) || [];
-    for (var ti3=0; ti3<tables2b.length; ti3++) {
-      var testH3 = (tables2b[ti3].header && tables2b[ti3].header.cells) || [];
-      var hasHR3 = testH3.some(function(h){ return (h.key||h.shortName||'').toUpperCase()==='HR'; });
-      if (hasHR3) { statTable2 = tables2b[ti3]; break; }
-    }
-  }
+  [S.standingsData, S.seasonData].forEach(function(src) {
+    var tbls = (src && src.data && src.data.tableList) || [];
+    tbls.forEach(function(tbl) {
+      var testH = (tbl.header && tbl.header.cells) || [];
+      var hrIdx = null;
+      testH.forEach(function(h,i){
+        if ((h.key||h.shortName||h.name||'').toUpperCase()==='HR') hrIdx=i;
+      });
+      if (hrIdx == null) return;
+      // Also needs a teamId in fixedCells
+      var hasTeam = (tbl.rows||[]).some(function(row){
+        return (row.fixedCells||[]).some(function(c){return c.teamId;});
+      });
+      if (!hasTeam) return;
+      var vals = (tbl.rows||[]).map(function(row){
+        return parseFloat(((row.cells||[])[hrIdx]||{}).content)||0;
+      }).filter(function(v){return v>0;});
+      var maxHR = vals.length ? Math.max.apply(null,vals) : 0;
+      if (maxHR > bestMaxHR) { bestMaxHR = maxHR; statTable2 = tbl; }
+    });
+  });
 
   if (statTable2) {
     var ph = {};
