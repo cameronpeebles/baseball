@@ -8112,7 +8112,7 @@ window.redrawQuadrantChart = function() {
 
   var colorBy = (document.getElementById('quadrant-color-by') || {}).value || 'quadrant';
 
-  var W=700, H=500, PL=62, PR=60, PT=40, PB=52;
+  var W=700, H=500, PL=62, PR=140, PT=40, PB=52;
   var cW=W-PL-PR, cH=H-PT-PB;
 
   var xVals = plotData.map(function(e){ return e.t.delta_xwoba; });
@@ -8243,13 +8243,13 @@ window.redrawQuadrantChart = function() {
   svg += '<rect x="'+(PL+74)+'" y="'+(PT-23)+'" width="10" height="10" fill="#666" opacity="0.8"/>';
   svg += '<text x="'+(PL+89)+'" y="'+(PT-14)+'" font-size="9" fill="var(--muted)">Free Agent</text>';
 
-  // Team legend
+  // Team legend — vertical on right side
   if (colorBy === 'team') {
-    var tlx = PL, tly = H - PB + 22, spacing = (W - PL - PR) / (teamList.length + 1);
+    var lx = W - PR + 12, ly = PT + 10;
     teamList.forEach(function(t, i) {
-      var tx = tlx + (i + 0.5) * spacing;
-      svg += '<circle cx="'+tx+'" cy="'+tly+'" r="5" fill="'+teamColorMap[t]+'" opacity="0.9"/>';
-      svg += '<text x="'+(tx+8)+'" y="'+(tly+4)+'" font-size="8" fill="var(--muted)">'+t+'</text>';
+      var ty = ly + i * 18;
+      svg += '<circle cx="'+(lx+5)+'" cy="'+(ty)+'" r="5" fill="'+teamColorMap[t]+'" opacity="0.9"/>';
+      svg += '<text x="'+(lx+14)+'" y="'+(ty+4)+'" font-size="9" fill="var(--text)">'+t+'</text>';
     });
   }
 
@@ -8289,7 +8289,7 @@ window.sortTargets = function(key) {
 // ── Pitcher Targets ───────────────────────────────────────────────────────────
 
 var pitTargetsData = null;
-var PIT_TARGETS_STATE = { rostFilter:'ALL', sort:'delta_era', sortDir:-1 };
+var PIT_TARGETS_STATE = { rostFilter:'ALL', sigFilter:'ALL', posFilter:'ALL', sort:'delta_era', sortDir:-1 };
 
 function renderPitcherTargetsPage() {
   var el = document.getElementById('targets-pit-body');
@@ -8345,10 +8345,19 @@ function drawPitcherTargetsTable() {
   });
 
   // Filter
+  var sf = PIT_TARGETS_STATE.sigFilter;
   var rf = PIT_TARGETS_STATE.rostFilter;
+  var pf = PIT_TARGETS_STATE.posFilter;
   var filtered = sorted.filter(function(e) {
     if (rf==='ROSTERED' && !e.ri) return false;
     if (rf==='FA'       &&  e.ri) return false;
+    if (sf==='UNDERPERFORMING' && e.t.signal !== 'Underperforming') return false;
+    if (sf==='OVERPERFORMING'  && e.t.signal !== 'Overperforming')  return false;
+    if (sf==='GRADED'          && (!e.t.grade || e.t.grade === '—')) return false;
+    if (pf !== 'ALL') {
+      var pos = (e.ri ? e.ri.pos : e.t.pos || '') || '';
+      if (pos.toUpperCase().indexOf(pf) === -1) return false;
+    }
     return true;
   });
 
@@ -8379,16 +8388,64 @@ function drawPitcherTargetsTable() {
 
   var html = '';
 
-  // Filter pills
-  html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px">';
-  html += '<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted)">Roster</span>';
+  // ── Pitcher Quadrant Chart ────────────────────────────────────────────────
+  var pitPlotData = enriched.filter(function(e){ return e.t.delta_era != null && e.fw != null; });
+  if (pitPlotData.length) {
+    window._pitTargetPlotData = pitPlotData;
+    html += '<div class="card" style="margin-bottom:20px">';
+    html += '<div class="card-header"><span class="card-title">Player Quadrant — xERA Performance vs fWAR</span>';
+    html += '<div style="display:flex;align-items:center;gap:8px">';
+    html += '<span style="font-size:11px;color:var(--muted)">Color by:</span>';
+    html += '<select id="pit-quadrant-color-by" onchange="redrawPitQuadrantChart()" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);font-size:12px">';
+    html += '<option value="quadrant">Quadrant</option>';
+    html += '<option value="team">Fantasy Team</option>';
+    html += '<option value="delta_velo">Δ Velo</option>';
+    html += '<option value="k_2026">K% 2026</option>';
+    html += '<option value="babip_2026">BABIP 2026</option>';
+    html += '<option value="velo_2026">Velo 2026</option>';
+    html += '</select></div></div>';
+    html += '<div style="padding:16px" id="pit-quadrant-chart-wrap"></div>';
+    html += '</div>';
+  }
+
+  // ── Filter controls ────────────────────────────────────────────────────────
+  var sf = PIT_TARGETS_STATE.sigFilter;
+  var rf = PIT_TARGETS_STATE.rostFilter;
+  var pf = PIT_TARGETS_STATE.posFilter;
+
+  html += '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">';
+
+  // Signal filter
+  html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
+  html += '<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);min-width:52px">Signal</span>';
+  html += '<div class="pill-group" id="pit-sig-pills">';
+  [{v:'ALL',l:'All'},{v:'UNDERPERFORMING',l:'🟢 Underperforming'},{v:'OVERPERFORMING',l:'🔴 Overperforming'},{v:'GRADED',l:'⭐ Graded'}]
+    .forEach(function(o){
+      html += '<button class="pill'+(sf===o.v?' active':'')+'" onclick="setPitTargetsFilter(\'sig\',\''+o.v+'\',this)">'+o.l+'</button>';
+    });
+  html += '</div></div>';
+
+  // Roster filter
+  html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
+  html += '<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);min-width:52px">Roster</span>';
   html += '<div class="pill-group" id="pit-rost-pills">';
   [{v:'ALL',l:'All'},{v:'ROSTERED',l:'Rostered'},{v:'FA',l:'Free Agents'}].forEach(function(o){
     html += '<button class="pill'+(rf===o.v?' active':'')+'" onclick="setPitTargetsFilter(\'rost\',\''+o.v+'\',this)">'+o.l+'</button>';
   });
+  html += '</div></div>';
+
+  // Pos filter
+  html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
+  html += '<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);min-width:52px">Pos</span>';
+  html += '<div class="pill-group" id="pit-pos-pills">';
+  ['ALL','SP','RP'].forEach(function(pos){
+    html += '<button class="pill'+(pf===pos?' active':'')+'" onclick="setPitTargetsFilter(\'pos\',\''+pos+'\',this)">'+pos+'</button>';
+  });
   html += '</div>';
   html += '<span style="font-size:12px;color:var(--muted)">'+filtered.length+' pitchers</span>';
   html += '</div>';
+
+  html += '</div>'; // filter controls
 
   // Table
   html += '<div class="card"><div class="table-wrap" style="max-height:78vh;overflow-y:auto;overflow-x:auto">';
@@ -8482,11 +8539,15 @@ function drawPitcherTargetsTable() {
 
   html += '</tbody></table></div></div>';
   el.innerHTML = html;
+  if (window._pitTargetPlotData) redrawPitQuadrantChart();
 }
 
 window.setPitTargetsFilter = function(type, val, btn) {
   if (type==='rost') PIT_TARGETS_STATE.rostFilter = val;
-  document.getElementById('pit-rost-pills').querySelectorAll('.pill').forEach(function(p){p.classList.remove('active');});
+  if (type==='sig')  PIT_TARGETS_STATE.sigFilter  = val;
+  if (type==='pos')  PIT_TARGETS_STATE.posFilter  = val;
+  var pillId = type==='rost'?'pit-rost-pills':type==='pos'?'pit-pos-pills':'pit-sig-pills';
+  document.getElementById(pillId).querySelectorAll('.pill').forEach(function(p){p.classList.remove('active');});
   btn.classList.add('active');
   drawPitcherTargetsTable();
 };
@@ -8495,6 +8556,93 @@ window.sortPitTargets = function(key) {
   if (PIT_TARGETS_STATE.sort===key) PIT_TARGETS_STATE.sortDir *= -1;
   else { PIT_TARGETS_STATE.sort=key; PIT_TARGETS_STATE.sortDir=-1; }
   drawPitcherTargetsTable();
+};
+
+window.redrawPitQuadrantChart = function() {
+  var wrap = document.getElementById('pit-quadrant-chart-wrap');
+  if (!wrap) return;
+  var plotData = window._pitTargetPlotData || [];
+  if (!plotData.length) return;
+  var colorBy = (document.getElementById('pit-quadrant-color-by') || {}).value || 'quadrant';
+  var W=700, H=500, PL=62, PR=140, PT=40, PB=52;
+  var cW=W-PL-PR, cH=H-PT-PB;
+  var xVals=plotData.map(function(e){return e.t.delta_era;}), yVals=plotData.map(function(e){return e.fw.fWAR;});
+  var xMin=Math.min.apply(null,xVals), xMax=Math.max.apply(null,xVals);
+  var yMin=Math.min.apply(null,yVals), yMax=Math.max.apply(null,yVals);
+  xMin=Math.min(xMin,-0.5)-0.2; xMax=Math.max(xMax,0.5)+0.2;
+  yMin=Math.min(yMin,-0.5)-0.3; yMax=Math.max(yMax,0.5)+0.3;
+  var xRange=xMax-xMin, yRange=yMax-yMin;
+  function px(v){return PL+(v-xMin)/xRange*cW;}
+  function py(v){return PT+(1-(v-yMin)/yRange)*cH;}
+  var x0=px(0), y0=py(0);
+  function statColor(val,mn,mx){
+    if(val==null)return '#ccc';
+    var t=mx>mn?(val-mn)/(mx-mn):0.5; t=Math.max(0,Math.min(1,t));
+    var r,g,b,s;
+    if(t>=0.5){s=(t-0.5)*2;r=Math.round(0x1e+(0xc8-0x1e)*(1-s));g=Math.round(0x6b+(0xa9-0x6b)*(1-s));b=Math.round(0x3a+(0x6e-0x3a)*(1-s));}
+    else{s=t*2;r=Math.round(0xc8+(0xc0-0xc8)*(1-s));g=Math.round(0xa9+(0x39-0xa9)*(1-s));b=Math.round(0x6e+(0x2b-0x6e)*(1-s));}
+    return 'rgb('+r+','+g+','+b+')';
+  }
+  var statVals=plotData.map(function(e){return e.t[colorBy];}).filter(function(v){return v!=null;});
+  var statMin=statVals.length?Math.min.apply(null,statVals):0, statMax=statVals.length?Math.max.apply(null,statVals):1;
+  var TEAM_COLORS=['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#34495e','#e91e8c','#00bcd4'];
+  var teamColorMap={}, teamList=[];
+  plotData.forEach(function(e){var tn=e.ti?(e.ti.shortName||e.ti.name||'FA'):'FA'; if(tn!=='FA'&&teamList.indexOf(tn)===-1)teamList.push(tn);});
+  teamList.sort(); teamList.forEach(function(t,i){teamColorMap[t]=TEAM_COLORS[i%TEAM_COLORS.length];}); teamColorMap['FA']='#aaa';
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:720px;height:auto;display:block;margin:0 auto">';
+  svg+='<rect x="'+PL+'" y="'+PT+'" width="'+(x0-PL)+'" height="'+(y0-PT)+'" fill="#fce8e8" opacity="0.35"/>';
+  svg+='<rect x="'+x0+'" y="'+PT+'" width="'+(W-PR-x0)+'" height="'+(y0-PT)+'" fill="#e8f0eb" opacity="0.35"/>';
+  svg+='<rect x="'+PL+'" y="'+y0+'" width="'+(x0-PL)+'" height="'+(H-PB-y0)+'" fill="#f5f5f0" opacity="0.35"/>';
+  svg+='<rect x="'+x0+'" y="'+y0+'" width="'+(W-PR-x0)+'" height="'+(H-PB-y0)+'" fill="#e8f4fd" opacity="0.35"/>';
+  var step=0.5;
+  for(var xv=Math.ceil(xMin/step)*step; xv<=xMax+0.01; xv=Math.round((xv+step)*10)/10){
+    var xpx=px(xv);
+    svg+='<line x1="'+xpx+'" y1="'+PT+'" x2="'+xpx+'" y2="'+(H-PB)+'" stroke="var(--border)" stroke-width="0.5"/>';
+    svg+='<text x="'+xpx+'" y="'+(H-PB+14)+'" text-anchor="middle" font-size="9" fill="var(--muted)">'+(xv>=0?'+':'')+xv.toFixed(1)+'</text>';
+  }
+  [-2,-1,0,1,2,3,4,5].forEach(function(yv){
+    if(yv<yMin||yv>yMax)return;
+    var ypx=py(yv);
+    svg+='<line x1="'+PL+'" y1="'+ypx+'" x2="'+(W-PR)+'" y2="'+ypx+'" stroke="var(--border)" stroke-width="0.5"/>';
+    svg+='<text x="'+(PL-6)+'" y="'+(ypx+4)+'" text-anchor="end" font-size="9" fill="var(--muted)">'+yv+'</text>';
+  });
+  svg+='<line x1="'+x0+'" y1="'+PT+'" x2="'+x0+'" y2="'+(H-PB)+'" stroke="var(--text)" stroke-width="1.5"/>';
+  svg+='<line x1="'+PL+'" y1="'+y0+'" x2="'+(W-PR)+'" y2="'+y0+'" stroke="var(--text)" stroke-width="1.5"/>';
+  [{x:PL+8,y:PT+18,t:'Sell High',c:'#c0392b',a:'start'},{x:W-PR-8,y:PT+18,t:'Stars',c:'#1e6b3a',a:'end'},
+   {x:PL+8,y:H-PB-10,t:'Drop / Avoid',c:'#888',a:'start'},{x:W-PR-8,y:H-PB-10,t:'Buy Low',c:'#2980b9',a:'end'}
+  ].forEach(function(q){svg+='<text x="'+q.x+'" y="'+q.y+'" text-anchor="'+q.a+'" font-size="11" font-weight="700" fill="'+q.c+'" opacity="0.7">'+q.t+'</text>';});
+  svg+='<text x="'+(W/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="11" fill="var(--muted)">Δ(xERA − ERA) (positive = underperforming)</text>';
+  svg+='<text x="14" y="'+(PT+cH/2)+'" text-anchor="middle" font-size="11" fill="var(--muted)" transform="rotate(-90,14,'+(PT+cH/2)+')">fWAR</text>';
+  svg+='<circle cx="'+(PL+2)+'" cy="'+(PT-18)+'" r="5" fill="#666" opacity="0.8"/>';
+  svg+='<text x="'+(PL+12)+'" y="'+(PT-14)+'" font-size="9" fill="var(--muted)">Rostered</text>';
+  svg+='<rect x="'+(PL+74)+'" y="'+(PT-23)+'" width="10" height="10" fill="#666" opacity="0.8"/>';
+  svg+='<text x="'+(PL+89)+'" y="'+(PT-14)+'" font-size="9" fill="var(--muted)">Free Agent</text>';
+  plotData.forEach(function(e){
+    var cx=px(e.t.delta_era), cy=py(e.fw.fWAR), isFA=!e.ri, col;
+    if(colorBy==='quadrant'){col=(e.t.delta_era>=0&&e.fw.fWAR>=0)?'#2d5a3d':(e.t.delta_era<0&&e.fw.fWAR>=0)?'#c0392b':(e.t.delta_era>=0&&e.fw.fWAR<0)?'#2980b9':'#888';}
+    else if(colorBy==='team'){var tn=e.ti?(e.ti.shortName||e.ti.name||'FA'):'FA'; col=teamColorMap[tn]||'#aaa';}
+    else{col=statColor(e.t[colorBy],statMin,statMax);}
+    var statLabels={delta_velo:'ΔVelo: ',k_2026:'K%: ',babip_2026:'BABIP: ',velo_2026:'Velo: '};
+    var sv=e.t[colorBy];
+    var statStr=(colorBy!=='quadrant'&&colorBy!=='team')&&sv!=null?'&#10;'+(statLabels[colorBy]||'')+(sv>=0&&colorBy.indexOf('delta')===0?'+':'')+sv.toFixed(1):'';
+    var tip=e.t.name+'&#10;fWAR: '+(e.fw.fWAR>=0?'+':'')+e.fw.fWAR.toFixed(2)+'&#10;Δ xERA−ERA: '+(e.t.delta_era>=0?'+':'')+e.t.delta_era.toFixed(2)+statStr+(e.ti?'&#10;'+(e.ti.shortName||e.ti.name):'&#10;FA');
+    if(isFA){svg+='<rect x="'+(cx-5)+'" y="'+(cy-5)+'" width="11" height="11" fill="'+col+'" opacity="0.9" stroke="white" stroke-width="1.5" style="cursor:pointer"><title>'+tip+'</title></rect>';}
+    else{svg+='<circle cx="'+cx+'" cy="'+cy+'" r="6" fill="'+col+'" opacity="0.9" stroke="white" stroke-width="1.5" style="cursor:pointer"><title>'+tip+'</title></circle>';}
+  });
+  if(colorBy==='team'){
+    var lx=W-PR+12, ly=PT+10;
+    teamList.forEach(function(t,i){var ty=ly+i*18; svg+='<circle cx="'+(lx+5)+'" cy="'+ty+'" r="5" fill="'+teamColorMap[t]+'" opacity="0.9"/>'; svg+='<text x="'+(lx+14)+'" y="'+(ty+4)+'" font-size="9" fill="var(--text)">'+t+'</text>';});
+  }
+  if(colorBy!=='quadrant'&&colorBy!=='team'&&statVals.length){
+    var glx=W-PR-120, gly=PT-28, glw=100, glh=10;
+    svg+='<defs><linearGradient id="pit-sg" x1="0" x2="1" y1="0" y2="0"><stop offset="0%" stop-color="#c0392b"/><stop offset="50%" stop-color="#c8a96e"/><stop offset="100%" stop-color="#1e6b3a"/></linearGradient></defs>';
+    svg+='<rect x="'+glx+'" y="'+gly+'" width="'+glw+'" height="'+glh+'" fill="url(#pit-sg)" rx="3"/>';
+    var dec2=colorBy==='babip_2026'?3:1;
+    svg+='<text x="'+glx+'" y="'+(gly+glh+11)+'" font-size="8" fill="var(--muted)" text-anchor="start">'+statMin.toFixed(dec2)+'</text>';
+    svg+='<text x="'+(glx+glw)+'" y="'+(gly+glh+11)+'" font-size="8" fill="var(--muted)" text-anchor="end">'+statMax.toFixed(dec2)+'</text>';
+  }
+  svg+='</svg>';
+  wrap.innerHTML=svg;
 };
 
 init();
