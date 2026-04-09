@@ -8618,7 +8618,7 @@ function buildPitQuadrantSVG(plotData, colorBy) {
   svg+='<rect x="'+x0+'" y="'+y0+'" width="'+(W-PR-x0)+'" height="'+(H-PB-y0)+'" fill="#e8f4fd" opacity="0.35"/>'; // bot-right: Buy Low (blue)
 
   // Grid
-  var step=1.0;
+  var step=3.0;
   for(var xv=Math.ceil(xMin/step)*step; xv<=xMax+0.01; xv=Math.round((xv+step)*10)/10){
     var xpx=px(xv);
     svg+='<line x1="'+xpx+'" y1="'+PT+'" x2="'+xpx+'" y2="'+(H-PB)+'" stroke="var(--border)" stroke-width="0.5"/>';
