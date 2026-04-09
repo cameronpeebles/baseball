@@ -6134,7 +6134,7 @@ var SGP_STATE = {
 // SGP denominators (from Historic League Data)
 var SGP_D = {
   r:65.4, hr:21.2, rbi:54.8, sb:17.0, avg:0.00178,
-  w:15.3, k:216.8, sv:18.5, era:0.106, whip:0.0191
+  w:15.3, k:216.8, svh3:18.5, era:0.106, whip:0.0191
 };
 
 var SEASON_GAMES = 162;
@@ -6195,7 +6195,7 @@ function drawSGPTable(type) {
       if (h.shortName) hIdx[h.shortName.toUpperCase()] = i;
       if (h.name)      hIdx[h.name.toUpperCase()]      = i;
     });
-    var CATS_HI  = ['R','HR','RBI','SB','AVG','K','W','SVH3','SV'];
+    var CATS_HI  = ['R','HR','RBI','SB','AVG','K','W','SVH3'];
     var CATS_LOW = ['ERA','WHIP'];
     var ALL_C    = CATS_HI.concat(CATS_LOW);
     var teamCatVals = {}; // teamId → {cat: val}
@@ -6222,10 +6222,10 @@ function drawSGPTable(type) {
       // Scale: rank 1 → 0.2, rank n → 2.5, linear interpolation
       catWeights[cat] = 0.2 + (rank - 1) / (n - 1) * (2.5 - 0.2);
     });
-    // SVH3 fallback
-    if (!catCurrentRank['SV'] && catCurrentRank['SVH3']) {
-      catCurrentRank['SV'] = catCurrentRank['SVH3'];
-      catWeights['SV'] = catWeights['SVH3'];
+    // SV fallback → SVH3
+    if (!catCurrentRank['SVH3'] && catCurrentRank['SV']) {
+      catCurrentRank['SVH3'] = catCurrentRank['SV'];
+      catWeights['SVH3'] = catWeights['SV'];
     }
   })();
 
@@ -6272,18 +6272,18 @@ function drawSGPTable(type) {
       var ip   = gv(cells,'IP') || 0;
       var w    = gv(cells,'W')  || 0;
       var k    = gv(cells,'K')  || 0;
-      var sv   = gv(cells,'SVH3')|| gv(cells,'SV') || 0;
+      var svh3 = gv(cells,'SVH3')|| gv(cells,'SV') || 0;
       var era  = gv(cells,'ERA') || 0;
       var whip = gv(cells,'WHIP')|| 0;
       var rem2 = Math.max(0, SEASON_GAMES - gp2);
       var pace2 = gp2 > 0 ? rem2/gp2 : 0;
-      var rosIP=ip*pace2, rosW=w*pace2, rosK=k*pace2, rosSV=sv*pace2;
+      var rosIP=ip*pace2, rosW=w*pace2, rosK=k*pace2, rosSVH3=svh3*pace2;
       // Use raw ER and BH (from ERA/WHIP × current IP) for team baseline
       var rawEr = era > 0 && ip > 0 ? (era * ip / 9) : 0;
       var rawBh = whip > 0 && ip > 0 ? (whip * ip) : 0;
       return { name:name, pos:pos, ftId:ftId, isMine:isMine, fw:fw, gp:gp2, rem:rem2,
-               raw:{w:w,k:k,sv:sv,era:era,whip:whip,ip:ip,er:rawEr,bh:rawBh},
-               ros:{w:rosW,k:rosK,sv:rosSV,ip:rosIP,era:era,whip:whip} };
+               raw:{w:w,k:k,svh3:svh3,era:era,whip:whip,ip:ip,er:rawEr,bh:rawBh},
+               ros:{w:rosW,k:rosK,svh3:rosSVH3,ip:rosIP,era:era,whip:whip} };
     }
   });
 
@@ -6322,7 +6322,7 @@ function drawSGPTable(type) {
     } else {
       var sgp2 = (p.ros.w/SGP_D.w)  * (w['W']  ||1)
                + (p.ros.k/SGP_D.k)  * (w['K']  ||1)
-               + (p.ros.sv/SGP_D.sv)* (w['SV'] ||1);
+               + (p.ros.svh3/SGP_D.svh3)* (w['SVH3'] ||1);
       var teamRosIP = TEAM_IP * (p.rem / SEASON_GAMES);
       var ipShare = teamRosIP > 0 ? Math.min(p.ros.ip / teamRosIP, 1) : 0;
       sgp2 += ((myERA  - p.ros.era)  * ipShare / SGP_D.era)  * (w['ERA'] ||1);
@@ -6384,7 +6384,7 @@ function drawSGPTable(type) {
       return [
         {cat:'W',   v:(p.ros.w/SGP_D.w)   * (w2['W']  ||1)},
         {cat:'K',   v:(p.ros.k/SGP_D.k)   * (w2['K']  ||1)},
-        {cat:'SV',  v:(p.ros.sv/SGP_D.sv) * (w2['SV'] ||1)},
+        {cat:'SVH3',v:(p.ros.svh3/SGP_D.svh3) * (w2['SVH3']||1)},
         {cat:'ERA', v:((myERA-p.ros.era)*ipShare2/SGP_D.era)   * (w2['ERA'] ||1)},
         {cat:'WHIP',v:((myWHIP-p.ros.whip)*ipShare2/SGP_D.whip)* (w2['WHIP']||1)}
       ];
@@ -6453,7 +6453,7 @@ function drawSGPTable(type) {
   if (!filtered.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">No players found</div>'; return; }
 
   // Category weight legend
-  var CATS_SHOW = isHit ? ['R','HR','RBI','SB','AVG'] : ['W','K','SV','ERA','WHIP'];
+  var CATS_SHOW = isHit ? ['R','HR','RBI','SB','AVG'] : ['W','K','SVH3','ERA','WHIP'];
   var legendHtml = '<div style="margin-bottom:12px;padding:10px 14px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">';
   legendHtml += '<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-right:10px">Your category needs:</span>';
   CATS_SHOW.forEach(function(cat) {
@@ -6471,7 +6471,7 @@ function drawSGPTable(type) {
   var html = legendHtml + '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>';
   var cols = isHit
     ? ['Vs.','Player','Pos','GP','Rem','fWAR','SGP','ΔSGP','ΔfWAR','ROS R','ROS HR','ROS RBI','ROS SB','ROS AVG','Best Cats','Weak Cats','Profile','Verdict']
-    : ['Vs.','Player','Pos','GP','Rem','fWAR','SGP','ΔSGP','ΔfWAR','ROS W','ROS K','ROS SV','ROS ERA','ROS WHIP','Best Cats','Weak Cats','Profile','Verdict'];
+    : ['Vs.','Player','Pos','GP','Rem','fWAR','SGP','ΔSGP','ΔfWAR','ROS W','ROS K','ROS SVH3','ROS ERA','ROS WHIP','Best Cats','Weak Cats','Profile','Verdict'];
   cols.forEach(function(c,i){
     var s = '';
     if (c==='fWAR')   s='color:var(--accent);font-weight:700';
@@ -6554,7 +6554,7 @@ function drawSGPTable(type) {
     } else {
       html += '<td>' + Math.round(e.p.ros.w) + '</td>';
       html += '<td>' + Math.round(e.p.ros.k) + '</td>';
-      html += '<td>' + Math.round(e.p.ros.sv) + '</td>';
+      html += '<td>' + Math.round(e.p.ros.svh3) + '</td>';
       html += '<td>' + e.p.ros.era.toFixed(2) + '</td>';
       html += '<td>' + e.p.ros.whip.toFixed(2) + '</td>';
     }
