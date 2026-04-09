@@ -4011,7 +4011,7 @@ function assembleDashboard(teamId, el) {
     : lastWk + 1;
 
   // Find my match in the current period from full_schedule
-  var myMatchCurrent = fullSchedule.filter(function(m){
+  var myMatchCurrent = (window._fullSchedule || []).filter(function(m){
     return m.period === currentPeriod && (m.away === teamName || m.home === teamName);
   })[0] || null;
 
