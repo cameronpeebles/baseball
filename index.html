@@ -68,6 +68,9 @@ td.neg { color: #c0392b; font-weight: 500; }
 .search-wrap input:focus { border-color: var(--accent); }
 .pill-group { display: flex; gap: 6px; flex-wrap: wrap; }
 .pill { background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 11px; font-weight: 500; cursor: pointer; color: var(--muted); transition: all 0.15s; font-family: var(--font-body); }
+.joe-pill { background: var(--bg); border: 1.5px solid var(--border); border-radius: 20px; padding: 5px 14px; font-size: 12px; font-weight: 500; cursor: pointer; color: var(--muted); transition: all 0.15s; font-family: var(--font-body); }
+.joe-pill.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.joe-pill:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
 .pill:hover { border-color: var(--accent); color: var(--accent); }
 .pill.active { background: var(--accent); border-color: var(--accent); color: white; }
 .team-selector { padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 8px; }
@@ -1689,16 +1692,16 @@ function buildJOEPage(byWeek, schedule) {
     return;
   }
 
-  // Week tabs — Season Average first, then each week
-  html += '<div class="trade-tabs" id="joe-week-tabs" style="flex-wrap:wrap">';
-  html += '<button class="trade-tab active" onclick="showJOEWeekTab(\'avg\',this)">Season Avg</button>';
+  // Week pills — pill style, scroll-to behavior
+  html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px;position:sticky;top:52px;z-index:10;background:var(--surface);padding:10px 0 8px" id="joe-week-tabs">';
+  html += '<button class="joe-pill active" onclick="showJOEWeekTab(\'avg\',this)">Season Avg</button>';
   completedWeeks.forEach(function(w) {
-    html += '<button class="trade-tab" onclick="showJOEWeekTab(' + w + ',this)">Wk ' + w + '</button>';
+    html += '<button class="joe-pill" onclick="showJOEWeekTab(' + w + ',this)">Wk ' + w + '</button>';
   });
   html += '</div>';
 
   // ── Season Average tab ───────────────────────────────────────────────────
-  html += '<div id="joe-week-tab-avg" class="trade-tab-content active" style="margin-top:16px">';
+  html += '<div id="joe-week-tab-avg" style="margin-top:4px">';
   html += '<div class="card">';
   html += '<div class="card-header"><span class="card-title">Season Average JOE Factor — All Completed Weeks</span></div>';
 
@@ -1787,9 +1790,10 @@ function buildJOEPage(byWeek, schedule) {
   });
   html += '</tbody></table></div></div></div>';
 
-  // One content div per week (all inactive — Season Avg tab is default)
+  // Weekly content divs — always visible, stacked, used as scroll anchors
   completedWeeks.forEach(function(w, i) {
-    html += '<div id="joe-week-tab-' + w + '" class="trade-tab-content">';
+    html += '<div id="joe-week-tab-' + w + '" style="margin-top:32px;scroll-margin-top:80px">';
+    html += '<div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid var(--accent)">Week ' + w + '</div>';
 
     var rows = (allResults[w] || []).slice().sort(function(a,b){ return (b.joe||0)-(a.joe||0); });
     var rowsByActual = rows.slice().sort(function(a,b){ return (b.actual||0)-(a.actual||0); });
@@ -2021,12 +2025,14 @@ window.showMatrixWeek = function(wk, btn) {
 
 
 window.showJOEWeekTab = function(week, btn) {
-  document.querySelectorAll('#joe-week-tabs .trade-tab').forEach(function(b){ b.classList.remove('active'); });
-  document.querySelectorAll('#joe-body .trade-tab-content').forEach(function(c){ c.classList.remove('active'); });
+  // Update active pill
+  document.querySelectorAll('#joe-week-tabs .joe-pill').forEach(function(b){ b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
-  var el = document.getElementById('joe-week-tab-' + week);
-  if (el) el.classList.add('active');
   _joeCurrentWeek = week;
+
+  // Scroll to the selected section
+  var el = document.getElementById('joe-week-tab-' + week);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
 var _joeCurrentWeek = null;
