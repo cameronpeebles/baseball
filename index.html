@@ -6278,12 +6278,12 @@ function drawSGPTable(type) {
       var rem2 = Math.max(0, SEASON_GAMES - gp2);
       var pace2 = gp2 > 0 ? rem2/gp2 : 0;
       var rosIP=ip*pace2, rosW=w*pace2, rosK=k*pace2, rosSV=sv*pace2;
-      // Derive ER and BB+H_allowed from ERA/WHIP/IP
-      var er = era > 0 && ip > 0 ? (era * ip / 9) : 0;
-      var bh = whip > 0 && ip > 0 ? (whip * ip) : 0;
+      // Use raw ER and BH (from ERA/WHIP × current IP) for team baseline
+      var rawEr = era > 0 && ip > 0 ? (era * ip / 9) : 0;
+      var rawBh = whip > 0 && ip > 0 ? (whip * ip) : 0;
       return { name:name, pos:pos, ftId:ftId, isMine:isMine, fw:fw, gp:gp2, rem:rem2,
-               raw:{w:w,k:k,sv:sv,era:era,whip:whip,ip:ip},
-               ros:{w:rosW,k:rosK,sv:rosSV,ip:rosIP,era:era,whip:whip,er:er*pace2,bh:bh*pace2} };
+               raw:{w:w,k:k,sv:sv,era:era,whip:whip,ip:ip,er:rawEr,bh:rawBh},
+               ros:{w:rosW,k:rosK,sv:rosSV,ip:rosIP,era:era,whip:whip} };
     }
   });
 
@@ -6293,7 +6293,7 @@ function drawSGPTable(type) {
   if (isHit) {
     myPlayers.forEach(function(p){ myTotH.ab+=p.raw.ab; myTotH.h+=p.raw.h; });
   } else {
-    myPlayers.forEach(function(p){ myTotH.er+=p.ros.er||0; myTotH.ip+=p.raw.ip||0; myTotH.bh+=p.ros.bh||0; });
+    myPlayers.forEach(function(p){ myTotH.er+=p.raw.er||0; myTotH.ip+=p.raw.ip||0; myTotH.bh+=p.raw.bh||0; });
   }
   var myAvg = myTotH.ab>0 ? myTotH.h/myTotH.ab : 0.250;
   var myERA  = myTotH.ip>0 ? (myTotH.er*9/myTotH.ip) : 4.00;
