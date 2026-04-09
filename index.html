@@ -1693,7 +1693,7 @@ function buildJOEPage(byWeek, schedule) {
   }
 
   // Week pills — pill style, scroll-to behavior
-  html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px;position:sticky;top:52px;z-index:10;background:var(--surface);padding:10px 0 8px" id="joe-week-tabs">';
+  html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px" id="joe-week-tabs">';
   html += '<button class="joe-pill active" onclick="showJOEWeekTab(\'avg\',this)">Season Avg</button>';
   completedWeeks.forEach(function(w) {
     html += '<button class="joe-pill" onclick="showJOEWeekTab(' + w + ',this)">Wk ' + w + '</button>';
@@ -1791,120 +1791,10 @@ function buildJOEPage(byWeek, schedule) {
   html += '</tbody></table></div></div></div>';
 
   // Weekly content divs — always visible, stacked, used as scroll anchors
-  completedWeeks.forEach(function(w, i) {
-    html += '<div id="joe-week-tab-' + w + '" style="margin-top:32px;scroll-margin-top:80px">';
-    html += '<div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid var(--accent)">Week ' + w + '</div>';
+  // Replace stacked weekly divs with single content container
+  html += '<div id="joe-content" style="margin-top:4px;display:none"></div>';
 
-    var rows = (allResults[w] || []).slice().sort(function(a,b){ return (b.joe||0)-(a.joe||0); });
-    var rowsByActual = rows.slice().sort(function(a,b){ return (b.actual||0)-(a.actual||0); });
-
-    // ── Chart row ────────────────────────────────────────────────────────────
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">';
-
-    // ── Chart 1: Range plot ───────────────────────────────────────────────────
-    var W1=520, H1=440, PL=150, PR=20, PT=30, PB=140, AL=20;
-    var chartW = W1-PL-PR, chartH = H1-PT-PB;
-    html += '<div class="card"><div class="card-header"><span class="card-title" style="font-size:12px">Win% Range — Best / Actual / Avg / Worst</span></div>';
-    html += '<div style="padding:12px"><svg viewBox="0 0 ' + W1 + ' ' + H1 + '" style="width:100%;height:auto">';
-
-    // Y-axis label
-    html += '<text x="12" y="' + (PT + chartH/2) + '" text-anchor="middle" font-size="10" fill="var(--muted)" transform="rotate(-90,12,' + (PT+chartH/2) + ')">Team Win %</text>';
-
-    // Grid lines
-    [0,0.25,0.5,0.75,1.0].forEach(function(v) {
-      var y = PT + chartH - v * chartH;
-      html += '<line x1="' + PL + '" y1="' + y + '" x2="' + (W1-PR) + '" y2="' + y + '" stroke="var(--border)" stroke-width="0.5"/>';
-      html += '<text x="' + (PL-4) + '" y="' + (y+4) + '" text-anchor="end" font-size="9" fill="var(--muted)">' + v.toFixed(2) + '</text>';
-    });
-
-    var n1 = rowsByActual.length;
-    rowsByActual.forEach(function(r, idx) {
-      var cx = PL + (idx + 0.5) * (chartW / n1);
-      var yBest  = PT + chartH - r.bestPct  * chartH;
-      var yWorst = PT + chartH - r.worstPct * chartH;
-      var yAvg   = PT + chartH - r.avg      * chartH;
-      var yAct   = r.actual != null ? PT + chartH - r.actual * chartH : null;
-
-      html += '<line x1="' + cx + '" y1="' + yBest + '" x2="' + cx + '" y2="' + yWorst + '" stroke="#90b4a0" stroke-width="2"/>';
-      html += '<circle cx="' + cx + '" cy="' + yBest  + '" r="3" fill="#2d5a3d"/>';
-      html += '<circle cx="' + cx + '" cy="' + yWorst + '" r="3" fill="#c0392b"/>';
-      html += '<circle cx="' + cx + '" cy="' + yAvg   + '" r="4" fill="#c8a96e"/>';
-      if (yAct != null) html += '<circle cx="' + cx + '" cy="' + yAct + '" r="5" fill="var(--accent)" stroke="white" stroke-width="1.5"/>';
-
-      // Rotated team name — full name, more room now
-      var labelX = cx, labelY = PT + chartH + 8;
-      html += '<text x="' + labelX + '" y="' + labelY + '" text-anchor="end" font-size="9" fill="var(--muted)" transform="rotate(-45,' + labelX + ',' + labelY + ')">' + r.team + '</text>';
-    });
-
-    // Legend
-    html += '<circle cx="' + (PL+4)   + '" cy="' + (PT-12) + '" r="3" fill="#2d5a3d"/><text x="' + (PL+9)   + '" y="' + (PT-9) + '" font-size="8" fill="var(--muted)">Best</text>';
-    html += '<circle cx="' + (PL+36)  + '" cy="' + (PT-12) + '" r="4" fill="#c8a96e"/><text x="' + (PL+41)  + '" y="' + (PT-9) + '" font-size="8" fill="var(--muted)">Avg</text>';
-    html += '<circle cx="' + (PL+65)  + '" cy="' + (PT-12) + '" r="5" fill="var(--accent)"/><text x="' + (PL+72) + '" y="' + (PT-9) + '" font-size="8" fill="var(--muted)">Actual</text>';
-    html += '<circle cx="' + (PL+103) + '" cy="' + (PT-12) + '" r="3" fill="#c0392b"/><text x="' + (PL+108) + '" y="' + (PT-9) + '" font-size="8" fill="var(--muted)">Worst</text>';
-
-    html += '</svg></div></div>';
-
-    // ── Chart 2: JOE Factor bar chart ─────────────────────────────────────────
-    var W2=520, H2=440, PL2=150, PR2=20, PT2=30, PB2=140;
-    var chartW2 = W2-PL2-PR2, chartH2 = H2-PT2-PB2;
-    var midY = PT2 + chartH2/2;
-
-    html += '<div class="card"><div class="card-header"><span class="card-title" style="font-size:12px">JOE Factor (+1 = Luckiest, -1 = Unluckiest)</span></div>';
-    html += '<div style="padding:12px"><svg viewBox="0 0 ' + W2 + ' ' + H2 + '" style="width:100%;height:auto">';
-
-    // Y-axis label
-    html += '<text x="12" y="' + (PT2+chartH2/2) + '" text-anchor="middle" font-size="10" fill="var(--muted)" transform="rotate(-90,12,' + (PT2+chartH2/2) + ')">JOE Factor</text>';
-
-    [-1,-0.5,0,0.5,1].forEach(function(v) {
-      var y = PT2 + chartH2/2 - v * chartH2/2;
-      html += '<line x1="' + PL2 + '" y1="' + y + '" x2="' + (W2-PR2) + '" y2="' + y + '" stroke="' + (v===0?'var(--text)':'var(--border)') + '" stroke-width="' + (v===0?'1':'0.5') + '"/>';
-      html += '<text x="' + (PL2-4) + '" y="' + (y+4) + '" text-anchor="end" font-size="9" fill="var(--muted)">' + (v>=0?'+':'') + v.toFixed(1) + '</text>';
-    });
-
-    var n2 = rows.length;
-    var barW = Math.max(8, (chartW2 / n2) * 0.65);
-    rows.forEach(function(r, idx) {
-      var cx = PL2 + (idx + 0.5) * (chartW2 / n2);
-      var barH = Math.abs(r.joe) * chartH2/2;
-      var barY = r.joe >= 0 ? midY - barH : midY;
-      var col  = r.joe >= 0.7 ? '#1e6b3a' : r.joe >= 0 ? '#4a9a68' : r.joe <= -0.7 ? '#922b21' : '#c0392b';
-      html += '<rect x="' + (cx-barW/2) + '" y="' + barY + '" width="' + barW + '" height="' + barH + '" fill="' + col + '" rx="2"/>';
-      html += '<text x="' + cx + '" y="' + (r.joe>=0 ? barY-3 : barY+barH+9) + '" text-anchor="middle" font-size="8" fill="' + col + '" font-weight="600">' + (r.joe>=0?'+':'') + r.joe.toFixed(2) + '</text>';
-      var labelX2 = cx, labelY2 = PT2 + chartH2 + 8;
-      html += '<text x="' + labelX2 + '" y="' + labelY2 + '" text-anchor="end" font-size="9" fill="var(--muted)" transform="rotate(-45,' + labelX2 + ',' + labelY2 + ')">' + r.team + '</text>';
-    });
-
-    html += '</svg></div></div>';
-    html += '</div>'; // chart grid
-
-    // ── Table ─────────────────────────────────────────────────────────────────
-    html += '<div class="card" style="margin-top:16px">';
-    html += '<div class="card-header"><span class="card-title">Week ' + w + ' — Detail</span></div>';
-    html += '<div class="table-wrap"><table><thead><tr>';
-    html += '<th class="left">Team</th>';
-    html += '<th>Actual (W-L-T)</th><th>Actual W%</th><th>Avg W%</th>';
-    html += '<th>Std Dev</th><th>Luck z</th>';
-    html += '<th style="color:var(--accent);font-weight:700">Normalized [-1,+1]</th>';
-    html += '<th>Best Case</th><th>Worst Case</th>';
-    html += '</tr></thead><tbody>';
-    rows.forEach(function(r) {
-      var joeCol = r.joe > 0.2 ? '#1e6b3a' : r.joe < -0.2 ? '#c0392b' : '#b7791f';
-      var s = function(v){ return v >= 0 ? '+' : ''; };
-      html += '<tr>';
-      html += '<td class="left"><div class="team-cell">' + joeTeamLogo(r.team) + '<span>' + r.team + '</span></div></td>';
-      html += '<td style="font-weight:600">' + r.recStr + '</td>';
-      html += '<td>' + (r.actual!=null?(r.actual).toFixed(3):'—') + '</td>';
-      html += '<td>' + r.avg.toFixed(3) + '</td>';
-      html += '<td>' + r.std.toFixed(3) + '</td>';
-      html += '<td>' + s(r.z) + r.z.toFixed(3) + '</td>';
-      html += '<td style="font-weight:700;color:' + joeCol + '">' + s(r.joe) + r.joe.toFixed(3) + '</td>';
-      html += '<td style="font-size:12px;color:var(--muted)">' + r.bestRec + ' vs ' + (r.bestOpp||'—') + '</td>';
-      html += '<td style="font-size:12px;color:var(--muted)">' + r.worstRec + ' vs ' + (r.worstOpp||'—') + '</td>';
-      html += '</tr>';
-    });
-    html += '</tbody></table></div></div></div>';
-  });
-
+  document.getElementById('joe-body').innerHTML = html;
   document.getElementById('joe-body').innerHTML = html;
 
   // ── Per-Week H2H Score Matrix ─────────────────────────────────────────────
@@ -2024,15 +1914,165 @@ window.showMatrixWeek = function(wk, btn) {
 };
 
 
+
+// ── Render week or season-avg content into #joe-content ──────────────────────
+window.renderJOEWeekContent = function(week) {
+  var el = document.getElementById('joe-content');
+  if (!el) return;
+
+  var allResults = window._joeAllResults || {};
+  var completedWeeks = window._joeCompletedWeeks || [];
+  var nameToShort = {};
+  Object.keys(S.teamInfo).forEach(function(id) {
+    var t = S.teamInfo[id];
+    if (t.name) nameToShort[t.name] = t.shortName || t.name;
+  });
+  function shortOf(name) { return nameToShort[name] || name; }
+
+  if (week === 'avg') {
+    // Season Avg already rendered in joe-week-tab-avg — just scroll to it
+    var avgEl = document.getElementById('joe-week-tab-avg');
+    if (avgEl) avgEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    el.innerHTML = '';
+    return;
+  }
+
+  var w = parseInt(week);
+  var rows = (allResults[w] || []).slice().sort(function(a,b){ return (b.joe||0)-(a.joe||0); });
+  var rowsByActual = rows.slice().sort(function(a,b){ return (b.actual||0)-(a.actual||0); });
+  if (!rows.length) { el.innerHTML = '<div class="loading">No data for week ' + w + '</div>'; return; }
+
+  var h = '';
+    h += '<div id="joe-week-tab-' + w + '" style="margin-top:32px;scroll-margin-top:80px">';
+    h += '<div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid var(--accent)">Week ' + w + '</div>';
+
+  var rows = (allResults[w] || []).slice().sort(function(a,b){ return (b.joe||0)-(a.joe||0); });
+  var rowsByActual = rows.slice().sort(function(a,b){ return (b.actual||0)-(a.actual||0); });
+
+    // ── Chart row ────────────────────────────────────────────────────────────
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">';
+
+    // ── Chart 1: Range plot ───────────────────────────────────────────────────
+  var W1=520, H1=440, PL=150, PR=20, PT=30, PB=140, AL=20;
+  var chartW = W1-PL-PR, chartH = H1-PT-PB;
+    h += '<div class="card"><div class="card-header"><span class="card-title" style="font-size:12px">Win% Range — Best / Actual / Avg / Worst</span></div>';
+    h += '<div style="padding:12px"><svg viewBox="0 0 ' + W1 + ' ' + H1 + '" style="width:100%;height:auto">';
+
+    // Y-axis label
+    h += '<text x="12" y="' + (PT + chartH/2) + '" text-anchor="middle" font-size="10" fill="var(--muted)" transform="rotate(-90,12,' + (PT+chartH/2) + ')">Team Win %</text>';
+
+    // Grid lines
+    [0,0.25,0.5,0.75,1.0].forEach(function(v) {
+    var y = PT + chartH - v * chartH;
+      h += '<line x1="' + PL + '" y1="' + y + '" x2="' + (W1-PR) + '" y2="' + y + '" stroke="var(--border)" stroke-width="0.5"/>';
+      h += '<text x="' + (PL-4) + '" y="' + (y+4) + '" text-anchor="end" font-size="9" fill="var(--muted)">' + v.toFixed(2) + '</text>';
+    });
+
+  var n1 = rowsByActual.length;
+    rowsByActual.forEach(function(r, idx) {
+    var cx = PL + (idx + 0.5) * (chartW / n1);
+    var yBest  = PT + chartH - r.bestPct  * chartH;
+    var yWorst = PT + chartH - r.worstPct * chartH;
+    var yAvg   = PT + chartH - r.avg      * chartH;
+    var yAct   = r.actual != null ? PT + chartH - r.actual * chartH : null;
+
+      h += '<line x1="' + cx + '" y1="' + yBest + '" x2="' + cx + '" y2="' + yWorst + '" stroke="#90b4a0" stroke-width="2"/>';
+      h += '<circle cx="' + cx + '" cy="' + yBest  + '" r="3" fill="#2d5a3d"/>';
+      h += '<circle cx="' + cx + '" cy="' + yWorst + '" r="3" fill="#c0392b"/>';
+      h += '<circle cx="' + cx + '" cy="' + yAvg   + '" r="4" fill="#c8a96e"/>';
+      if (yAct != null) h += '<circle cx="' + cx + '" cy="' + yAct + '" r="5" fill="var(--accent)" stroke="white" stroke-width="1.5"/>';
+
+      // Rotated team name — full name, more room now
+    var labelX = cx, labelY = PT + chartH + 8;
+      h += '<text x="' + labelX + '" y="' + labelY + '" text-anchor="end" font-size="9" fill="var(--muted)" transform="rotate(-45,' + labelX + ',' + labelY + ')">' + r.team + '</text>';
+    });
+
+    // Legend
+    h += '<circle cx="' + (PL+4)   + '" cy="' + (PT-12) + '" r="3" fill="#2d5a3d"/><text x="' + (PL+9)   + '" y="' + (PT-9) + '" font-size="8" fill="var(--muted)">Best</text>';
+    h += '<circle cx="' + (PL+36)  + '" cy="' + (PT-12) + '" r="4" fill="#c8a96e"/><text x="' + (PL+41)  + '" y="' + (PT-9) + '" font-size="8" fill="var(--muted)">Avg</text>';
+    h += '<circle cx="' + (PL+65)  + '" cy="' + (PT-12) + '" r="5" fill="var(--accent)"/><text x="' + (PL+72) + '" y="' + (PT-9) + '" font-size="8" fill="var(--muted)">Actual</text>';
+    h += '<circle cx="' + (PL+103) + '" cy="' + (PT-12) + '" r="3" fill="#c0392b"/><text x="' + (PL+108) + '" y="' + (PT-9) + '" font-size="8" fill="var(--muted)">Worst</text>';
+
+    h += '</svg></div></div>';
+
+    // ── Chart 2: JOE Factor bar chart ─────────────────────────────────────────
+  var W2=520, H2=440, PL2=150, PR2=20, PT2=30, PB2=140;
+  var chartW2 = W2-PL2-PR2, chartH2 = H2-PT2-PB2;
+  var midY = PT2 + chartH2/2;
+
+    h += '<div class="card"><div class="card-header"><span class="card-title" style="font-size:12px">JOE Factor (+1 = Luckiest, -1 = Unluckiest)</span></div>';
+    h += '<div style="padding:12px"><svg viewBox="0 0 ' + W2 + ' ' + H2 + '" style="width:100%;height:auto">';
+
+    // Y-axis label
+    h += '<text x="12" y="' + (PT2+chartH2/2) + '" text-anchor="middle" font-size="10" fill="var(--muted)" transform="rotate(-90,12,' + (PT2+chartH2/2) + ')">JOE Factor</text>';
+
+    [-1,-0.5,0,0.5,1].forEach(function(v) {
+    var y = PT2 + chartH2/2 - v * chartH2/2;
+      h += '<line x1="' + PL2 + '" y1="' + y + '" x2="' + (W2-PR2) + '" y2="' + y + '" stroke="' + (v===0?'var(--text)':'var(--border)') + '" stroke-width="' + (v===0?'1':'0.5') + '"/>';
+      h += '<text x="' + (PL2-4) + '" y="' + (y+4) + '" text-anchor="end" font-size="9" fill="var(--muted)">' + (v>=0?'+':'') + v.toFixed(1) + '</text>';
+    });
+
+  var n2 = rows.length;
+  var barW = Math.max(8, (chartW2 / n2) * 0.65);
+    rows.forEach(function(r, idx) {
+    var cx = PL2 + (idx + 0.5) * (chartW2 / n2);
+    var barH = Math.abs(r.joe) * chartH2/2;
+    var barY = r.joe >= 0 ? midY - barH : midY;
+    var col  = r.joe >= 0.7 ? '#1e6b3a' : r.joe >= 0 ? '#4a9a68' : r.joe <= -0.7 ? '#922b21' : '#c0392b';
+      h += '<rect x="' + (cx-barW/2) + '" y="' + barY + '" width="' + barW + '" height="' + barH + '" fill="' + col + '" rx="2"/>';
+      h += '<text x="' + cx + '" y="' + (r.joe>=0 ? barY-3 : barY+barH+9) + '" text-anchor="middle" font-size="8" fill="' + col + '" font-weight="600">' + (r.joe>=0?'+':'') + r.joe.toFixed(2) + '</text>';
+    var labelX2 = cx, labelY2 = PT2 + chartH2 + 8;
+      h += '<text x="' + labelX2 + '" y="' + labelY2 + '" text-anchor="end" font-size="9" fill="var(--muted)" transform="rotate(-45,' + labelX2 + ',' + labelY2 + ')">' + r.team + '</text>';
+    });
+
+    h += '</svg></div></div>';
+    h += '</div>'; // chart grid
+
+    // ── Table ─────────────────────────────────────────────────────────────────
+    h += '<div class="card" style="margin-top:16px">';
+    h += '<div class="card-header"><span class="card-title">Week ' + w + ' — Detail</span></div>';
+    h += '<div class="table-wrap"><table><thead><tr>';
+    h += '<th class="left">Team</th>';
+    h += '<th>Actual (W-L-T)</th><th>Actual W%</th><th>Avg W%</th>';
+    h += '<th>Std Dev</th><th>Luck z</th>';
+    h += '<th style="color:var(--accent);font-weight:700">Normalized [-1,+1]</th>';
+    h += '<th>Best Case</th><th>Worst Case</th>';
+    h += '</tr></thead><tbody>';
+    rows.forEach(function(r) {
+    var joeCol = r.joe > 0.2 ? '#1e6b3a' : r.joe < -0.2 ? '#c0392b' : '#b7791f';
+    var s = function(v){ return v >= 0 ? '+' : ''; };
+      h += '<tr>';
+      h += '<td class="left"><div class="team-cell">' + joeTeamLogo(r.team) + '<span>' + r.team + '</span></div></td>';
+      h += '<td style="font-weight:600">' + r.recStr + '</td>';
+      h += '<td>' + (r.actual!=null?(r.actual).toFixed(3):'—') + '</td>';
+      h += '<td>' + r.avg.toFixed(3) + '</td>';
+      h += '<td>' + r.std.toFixed(3) + '</td>';
+      h += '<td>' + s(r.z) + r.z.toFixed(3) + '</td>';
+      h += '<td style="font-weight:700;color:' + joeCol + '">' + s(r.joe) + r.joe.toFixed(3) + '</td>';
+      h += '<td style="font-size:12px;color:var(--muted)">' + r.bestRec + ' vs ' + (r.bestOpp||'—') + '</td>';
+      h += '<td style="font-size:12px;color:var(--muted)">' + r.worstRec + ' vs ' + (r.worstOpp||'—') + '</td>';
+      h += '</tr>';
+    });
+
+  el.innerHTML = h;
+};
+
 window.showJOEWeekTab = function(week, btn) {
-  // Update active pill
   document.querySelectorAll('#joe-week-tabs .joe-pill').forEach(function(b){ b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
   _joeCurrentWeek = week;
 
-  // Scroll to the selected section
-  var el = document.getElementById('joe-week-tab-' + week);
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  var avgEl = document.getElementById('joe-week-tab-avg');
+  var contentEl = document.getElementById('joe-content');
+
+  if (week === 'avg') {
+    if (avgEl) avgEl.style.display = '';
+    if (contentEl) contentEl.style.display = 'none';
+  } else {
+    if (avgEl) avgEl.style.display = 'none';
+    if (contentEl) contentEl.style.display = '';
+    renderJOEWeekContent(week);
+  }
 };
 
 var _joeCurrentWeek = null;
