@@ -7305,82 +7305,79 @@ function renderLeadersPage() {
   html += '<div style="font-family:var(--font-display);font-size:18px;margin-bottom:12px;color:var(--text)">Team Leaders</div>';
   html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:24px">';
 
-  // Debug: log all available tables
-  [S.standingsData, S.seasonData].forEach(function(src, si) {
-    var tbls = (src && src.data && src.data.tableList) || [];
-    console.log('Source', si, '— tables:', tbls.length);
-    tbls.forEach(function(tbl, ti) {
-      var cols = ((tbl.header&&tbl.header.cells)||[]).map(function(h){return h.key||h.shortName||h.name||'?';});
-      var firstTeam = (tbl.rows||[]).some(function(r){return (r.fixedCells||[]).some(function(c){return c.teamId;});});
-      console.log('  Table', ti, '| caption:', tbl.caption, '| cols:', cols.slice(0,8).join(','), '| hasTeam:', firstTeam);
-    });
+  // Use individual category tables from standings_season.json
+  // Format: caption = category name, rows have rank/pts/diff/teamName/sc(stat)/diff
+  // sc (stat count) is at index 4, team name at index 3
+  var seasonTables = (S.seasonData && S.seasonData.data && S.seasonData.data.tableList) || [];
+
+  // Build name→teamId lookup
+  var nameToId = {};
+  Object.keys(S.teamInfo).forEach(function(id) {
+    var t = S.teamInfo[id];
+    if (t.name) nameToId[t.name.toLowerCase().trim()] = id;
+    if (t.shortName) nameToId[t.shortName.toLowerCase().trim()] = id;
   });
 
-  // Pull team stat totals — try standings.json first, then standings_season.json
-  // Look for any table with HR column, preferring the one with highest HR values
-  var statTable2 = null;
-  var bestMaxHR = -1;
+  var CAT_CAPTION_MAP = [
+    {caption:'runs scored',     label:'Runs',         color:ACCENT,    hi:true,  fmt:function(v){return Math.round(v);}},
+    {caption:'home runs',       label:'Home Runs',    color:RED,       hi:true,  fmt:function(v){return Math.round(v);}},
+    {caption:'rbi',             label:'RBI',          color:ACCENT,    hi:true,  fmt:function(v){return Math.round(v);}},
+    {caption:'stolen bases',    label:'Stolen Bases', color:'#8e44ad', hi:true,  fmt:function(v){return Math.round(v);}},
+    {caption:'batting average', label:'Batting Avg',  color:BLUE,      hi:true,  fmt:function(v){return v.toFixed(3);}},
+    {caption:'wins',            label:'Wins',         color:ACCENT,    hi:true,  fmt:function(v){return Math.round(v);}},
+    {caption:'strikeouts',      label:'Strikeouts',   color:RED,       hi:true,  fmt:function(v){return Math.round(v);}},
+    {caption:'saves',           label:'SVH3',         color:'#8e44ad', hi:true,  fmt:function(v){return v.toFixed(1);}},
+    {caption:'earned run',      label:'ERA',          color:BLUE,      hi:false, fmt:function(v){return v.toFixed(2);}},
+    {caption:'whip',            label:'WHIP',         color:BLUE,      hi:false, fmt:function(v){return v.toFixed(2);}}
+  ];
 
-  [S.standingsData, S.seasonData].forEach(function(src) {
-    var tbls = (src && src.data && src.data.tableList) || [];
-    tbls.forEach(function(tbl) {
-      var testH = (tbl.header && tbl.header.cells) || [];
-      var hrIdx = null;
-      testH.forEach(function(h,i){
-        if ((h.key||h.shortName||h.name||'').toUpperCase()==='HR') hrIdx=i;
-      });
-      if (hrIdx == null) return;
-      // Also needs a teamId in fixedCells
-      var hasTeam = (tbl.rows||[]).some(function(row){
-        return (row.fixedCells||[]).some(function(c){return c.teamId;});
-      });
-      if (!hasTeam) return;
-      var vals = (tbl.rows||[]).map(function(row){
-        return parseFloat(((row.cells||[])[hrIdx]||{}).content)||0;
-      }).filter(function(v){return v>0;});
-      var maxHR = vals.length ? Math.max.apply(null,vals) : 0;
-      if (maxHR > bestMaxHR) { bestMaxHR = maxHR; statTable2 = tbl; }
+  var foundAny = false;
+
+  CAT_CAPTION_MAP.forEach(function(catDef) {
+    var tbl = null;
+    for (var ti2=0; ti2<seasonTables.length; ti2++) {
+      if ((seasonTables[ti2].caption||'').toLowerCase().trim().indexOf(catDef.caption) !== -1) {
+        tbl = seasonTables[ti2]; break;
+      }
+    }
+    if (!tbl || !(tbl.rows||[]).length) return;
+
+    // Find rank 1 row — or best sc value
+    var bestName = null, bestVal = null;
+    (tbl.rows||[]).forEach(function(row) {
+      var cells = row.cells || [];
+      var rankRaw = (cells[0]||{}).content;
+      var rank = parseFloat(rankRaw);
+      var teamName = ((cells[3]||{}).content || '').toString().trim();
+      var scRaw = (cells[4]||{}).content;
+      var sv = parseFloat((scRaw||'').toString().replace(/,/g,''));
+      if (isNaN(sv) || !teamName) return;
+      if (rank === 1 || bestVal == null ||
+          (catDef.hi && sv > bestVal) || (!catDef.hi && sv < bestVal)) {
+        bestVal = sv; bestName = teamName;
+      }
     });
+
+    if (bestName == null) return;
+    foundAny = true;
+
+    var bestId = nameToId[bestName.toLowerCase().trim()] || null;
+    if (bestId) {
+      html += teamTile(catDef.label, catDef.color, bestId, catDef.fmt(bestVal));
+    } else {
+      var ti3 = S.teamInfo[bestId] || {};
+      html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">' +
+        '<div style="padding:8px 12px;background:var(--bg);border-bottom:1px solid var(--border)">' +
+          '<span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:' + catDef.color + '">' + catDef.label + '</span>' +
+        '</div>' +
+        '<div style="padding:14px 12px">' +
+          '<div style="font-size:13px;font-weight:600">' + bestName + '</div>' +
+          '<div style="font-size:22px;font-weight:700;color:' + catDef.color + ';margin-top:4px">' + catDef.fmt(bestVal) + '</div>' +
+        '</div></div>';
+    }
   });
 
-  if (statTable2) {
-    var ph = {};
-    ((statTable2.header&&statTable2.header.cells)||[]).forEach(function(h,i){
-      if (h.key) ph[h.key.toUpperCase()]=i;
-      if (h.shortName) ph[h.shortName.toUpperCase()]=i;
-      if (h.name) ph[h.name.toUpperCase()]=i;
-    });
-
-    var TEAM_CATS = [
-      {key:'R',   label:'Runs',           color:ACCENT, hi:true,  fmt:function(v){return Math.round(v);}},
-      {key:'HR',  label:'Home Runs',       color:RED,    hi:true,  fmt:function(v){return Math.round(v);}},
-      {key:'RBI', label:'RBI',             color:ACCENT, hi:true,  fmt:function(v){return Math.round(v);}},
-      {key:'SB',  label:'Stolen Bases',    color:'#8e44ad', hi:true, fmt:function(v){return Math.round(v);}},
-      {key:'AVG', label:'Batting Avg',     color:BLUE,   hi:true,  fmt:function(v){return v.toFixed(3);}},
-      {key:'W',   label:'Wins',            color:ACCENT, hi:true,  fmt:function(v){return Math.round(v);}},
-      {key:'K',   label:'Strikeouts',      color:RED,    hi:true,  fmt:function(v){return Math.round(v);}},
-      {key:'SVH3',label:'SVH3',            color:'#8e44ad', hi:true, fmt:function(v){return v.toFixed(1);}},
-      {key:'ERA', label:'ERA',             color:BLUE,   hi:false, fmt:function(v){return v.toFixed(2);}},
-      {key:'WHIP',label:'WHIP',            color:BLUE,   hi:false, fmt:function(v){return v.toFixed(2);}}
-    ];
-
-    TEAM_CATS.forEach(function(cat) {
-      var colIdx = ph[cat.key];
-      if (colIdx == null) return;
-      var best = null, bestVal = cat.hi ? -Infinity : Infinity;
-      (statTable2.rows||[]).forEach(function(row) {
-        var fc = row.fixedCells||[], cells = row.cells||[];
-        var teamId = (fc[1]&&fc[1].teamId)||'';
-        if (!teamId) return;
-        var raw = (cells[colIdx]||{}).content;
-        var v = parseFloat((raw||'').toString().replace(/,/g,''));
-        if (isNaN(v)) return;
-        var better = cat.hi ? v > bestVal : v < bestVal;
-        if (better) { bestVal = v; best = teamId; }
-      });
-      if (best) html += teamTile(cat.label, cat.color, best, cat.fmt(bestVal));
-    });
-  } else {
+  if (!foundAny) {
     html += '<div style="color:var(--muted);font-size:13px">Standings stat totals not loaded — visit Fantrax Data first.</div>';
   }
 
