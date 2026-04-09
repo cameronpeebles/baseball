@@ -1063,11 +1063,14 @@ for pd2 in era_data:
     if era is None and xera is None:
         continue
 
-    is_under = (delta_era   is not None and delta_era   >= 0.50 and
-                delta_babip is not None and delta_babip >= 0.020 and
-                delta_k     is not None and delta_k     >= 0.0)
-    is_over  = (delta_era   is not None and delta_era   <= -0.50 and
+    # delta_era = xERA - ERA
+    # Positive delta = xERA > ERA = pitcher ERA is BETTER than expected = Overperforming
+    # Negative delta = xERA < ERA = pitcher ERA is WORSE than expected = Underperforming
+    is_over  = (delta_era   is not None and delta_era   >= 0.50 and
                 delta_babip is not None and delta_babip <= -0.020 and
+                delta_k     is not None and delta_k     >= 0.0)
+    is_under = (delta_era   is not None and delta_era   <= -0.50 and
+                delta_babip is not None and delta_babip >= 0.020 and
                 delta_k     is not None and delta_k     <= 0.0)
 
     signal = "Underperforming" if is_under else "Overperforming" if is_over else "Neutral"
@@ -1075,13 +1078,13 @@ for pd2 in era_data:
     grade = "—"
     dv = delta_velo
     if is_under and dv is not None:
-        if   dv >= 1.0:  grade = "Elite Buy Low"
-        elif dv >= 0.75: grade = "Good Buy Low"
-        elif dv >= 0.5:  grade = "Buy Low"
+        if   dv <= -1.0:  grade = "Elite Buy Low"
+        elif dv <= -0.75: grade = "Good Buy Low"
+        elif dv <= -0.5:  grade = "Buy Low"
     elif is_over and dv is not None:
-        if   dv <= -1.0:  grade = "Elite Sell High"
-        elif dv <= -0.75: grade = "Good Sell High"
-        elif dv <= -0.5:  grade = "Sell High"
+        if   dv >= 1.0:  grade = "Elite Sell High"
+        elif dv >= 0.75: grade = "Good Sell High"
+        elif dv >= 0.5:  grade = "Sell High"
 
     pit_targets.append({
         "name":         name,
