@@ -8389,7 +8389,8 @@ function drawPitcherTargetsTable() {
   var html = '';
 
   // ── Pitcher Quadrant Chart ────────────────────────────────────────────────
-  var pitPlotData = enriched.filter(function(e){ return e.t.delta_era != null && e.fw != null; });
+  var pitPlotData = enriched.filter(function(e){ return e.t.delta_era != null; });
+  pitPlotData.forEach(function(e){ if (!e.fw) e.fw = { fWAR: 0 }; });
   if (pitPlotData.length) {
     window._pitTargetPlotData = pitPlotData;
     html += '<div class="card" style="margin-bottom:20px">';
@@ -8539,7 +8540,9 @@ function drawPitcherTargetsTable() {
 
   html += '</tbody></table></div></div>';
   el.innerHTML = html;
-  if (window._pitTargetPlotData) redrawPitQuadrantChart();
+  if (window._pitTargetPlotData && window._pitTargetPlotData.length) {
+    setTimeout(redrawPitQuadrantChart, 0);
+  }
 }
 
 window.setPitTargetsFilter = function(type, val, btn) {
