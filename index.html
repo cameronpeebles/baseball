@@ -8620,7 +8620,14 @@ function drawPitcherTargetsTable() {
     html += '<option value="babip_2026">BABIP 2026</option>';
     html += '<option value="velo_2026">Velo 2026</option>';
     html += '</select></div></div>';
-    html += '<div style="padding:16px;position:relative">' + (function(){ var r=buildPitQuadrantSVG(pitPlotData, 'quadrant'); return r.svg+r.legend; })() + '</div>';
+    html += '<div style="padding:16px;position:relative" id="pit-quadrant-chart-wrap">';
+    try {
+      var r0 = buildPitQuadrantSVG(pitPlotData, 'quadrant');
+      html += r0.svg + r0.legend;
+    } catch(e) {
+      html += '<div style="color:var(--muted);font-size:12px">Chart unavailable</div>';
+    }
+    html += '</div>';
     html += '</div>';
   } else {
     html += '<div class="card" style="margin-bottom:20px;padding:20px;text-align:center;color:var(--muted)">No pitcher xERA data available — run the GitHub Action to populate targets_pitching.json with xERA values.</div>';
@@ -8779,15 +8786,14 @@ window.redrawPitQuadrantChart = function() {
   var plotData = window._pitTargetPlotData || [];
   if (!plotData.length) return;
   var colorBy = (document.getElementById('pit-quadrant-color-by') || {}).value || 'quadrant';
-  var sel = document.getElementById('pit-quadrant-color-by');
-  if (!sel) return;
-  var card = sel.closest('.card');
-  if (!card) return;
-  var chartDiv = card.querySelector('div[style*="padding:16px"]');
-  if (chartDiv) {
+  var chartDiv = document.getElementById('pit-quadrant-chart-wrap');
+  if (!chartDiv) return;
+  try {
     var result = buildPitQuadrantSVG(plotData, colorBy);
     chartDiv.style.position = 'relative';
     chartDiv.innerHTML = result.svg + result.legend;
+  } catch(e) {
+    console.error('Pitcher quadrant chart error:', e);
   }
 };
 
