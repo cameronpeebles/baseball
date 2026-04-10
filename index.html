@@ -3192,7 +3192,6 @@ function buildTradeAnalyzer() {
     var scorer = row.scorer || {};
     var cells  = row.cells || [];
     var ftId   = (cells[1] && cells[1].teamId) || '';
-    if (!ftId) return; // FA only rostered
     var pos = scorer.posShortNames || '';
     var stats = {};
     BAT_CATS.forEach(function(cat) {
@@ -3205,6 +3204,7 @@ function buildTradeAnalyzer() {
       allGroups: playerAllGroups(pos),
       mlb:       scorer.teamShortName || '',
       hs:        scorer.headshotUrl || '',
+      headshotUrl: scorer.headshotUrl || '',
       ftId:      ftId,
       type:      'bat',
       stats:     stats
@@ -3216,7 +3216,6 @@ function buildTradeAnalyzer() {
     var scorer = row.scorer || {};
     var cells  = row.cells || [];
     var ftId   = (cells[1] && cells[1].teamId) || '';
-    if (!ftId) return;
     var pos = scorer.posShortNames || '';
     var stats = {};
     PIT_CATS.forEach(function(cat) {
@@ -3229,6 +3228,7 @@ function buildTradeAnalyzer() {
       allGroups: playerAllGroups(pos),
       mlb:       scorer.teamShortName || '',
       hs:        scorer.headshotUrl || '',
+      headshotUrl: scorer.headshotUrl || '',
       ftId:      ftId,
       type:      'pit',
       stats:     stats
