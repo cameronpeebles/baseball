@@ -1047,18 +1047,19 @@ function init() {
       buildTradeAnalyzer();
     }
     // Wait for both TA.players and FWAR results, then refresh roster charts
+    window._rosterChartsNeedRefresh = true;
     (function waitForData() {
       var hasFwar = FWAR.hitResults.length > 0 || FWAR.pitResults.length > 0;
       var hasTA   = TA.players && TA.players.length > 0;
-      if (hasFwar && hasTA) {
+      if (hasFwar && hasTA && window._rosterChartsNeedRefresh) {
+        window._rosterChartsNeedRefresh = false;
         var activeBtn = document.querySelector('#team-sel .team-btn.active');
         var activeId  = activeBtn
           ? Object.keys(S.teamInfo).find(function(id){ var t=S.teamInfo[id]; return (t.shortName||t.name)===activeBtn.textContent; })
           : Object.keys(S.teamInfo)[0];
         buildRosterCharts(activeId);
-      } else {
-        setTimeout(waitForData, 400);
       }
+      setTimeout(waitForData, 600);
     })();
   }).catch(function(e) {
     console.error(e);
@@ -1433,8 +1434,8 @@ function buildRosterSelector() {
     };
     sel.appendChild(btn);
   });
-  buildRosterCharts(ids[0]);
   showRoster(ids[0]);
+  // Don't call buildRosterCharts here — waitForData will call it once data is ready
 }
 
 function buildRosterCharts(highlightId) {
@@ -3351,6 +3352,8 @@ function buildTradeAnalyzer() {
   });
 
   TA.players = allPlayers;
+  // Refresh roster charts now that positional strength data is ready
+  window._rosterChartsNeedRefresh = true;
 
   // Also build FA list (from hitRows/pitRows where ftId is empty)
   var faPlayers = [];
@@ -6684,6 +6687,7 @@ window.recalculateFWAR = function() {
   var n = allHitters.filter(function(p){return p.fWAR!=null;}).length;
   document.getElementById('fwar-status').textContent = 'Calculated fWAR for ' + n + ' hitters and ' + allPitchers.length + ' pitchers.';
   // Refresh roster charts with new fWAR data
+  window._rosterChartsNeedRefresh = true;
   var activeRosterTeam = document.querySelector('#team-sel .team-btn.active');
   if (activeRosterTeam) {
     var activeId = Object.keys(S.teamInfo).find(function(id){ var t=S.teamInfo[id]; return (t.shortName||t.name)===activeRosterTeam.textContent; });
