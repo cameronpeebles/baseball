@@ -342,42 +342,19 @@ td.neg { color: #c0392b; font-weight: 500; }
           </div>
         </div>
       </div>
-      <div style="margin-top:20px;display:flex;align-items:stretch;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;flex-wrap:wrap">
-
-        <!-- Step 1: Positional Scarcity -->
-        <div style="flex:1;min-width:220px;padding:12px 16px;border-right:1px solid var(--border);background:var(--bg)">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--accent);margin-bottom:8px">Step 1 — Positional Scarcity</div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px">
-            <button id="fwar-preset-pitcher" class="pill" style="padding:6px 12px;font-size:11px" onclick="applyFWARPreset('pitcher')">⚾ Pitcher Heavy</button>
-            <button id="fwar-preset-hybrid"  class="pill" style="padding:6px 12px;font-size:11px" onclick="applyFWARPreset('hybrid')">⚖️ Hybrid</button>
-            <button id="fwar-preset-hitter"  class="pill" style="padding:6px 12px;font-size:11px" onclick="applyFWARPreset('hitter')">🏏 Hitter Heavy</button>
-            <button id="fwar-preset-optimal" class="pill" style="padding:6px 12px;font-size:11px" onclick="applyFWARPreset('optimal')">🎯 Optimal</button>
-          </div>
-        </div>
-
-        <!-- Step 2: Category Weights -->
-        <div style="flex:1;min-width:200px;padding:12px 16px;border-right:1px solid var(--border);background:var(--bg)">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--accent);margin-bottom:8px">Step 2 — Category Weights</div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px">
-            <button class="pill" style="padding:6px 12px;font-size:11px" onclick="resetFWARDefaults()">⚖️ Default Weights</button>
-            <button class="pill" style="padding:6px 12px;font-size:11px;background:var(--accent2);border-color:var(--accent2);color:white" onclick="autoWeightFromCorrelations()">📊 Auto from Correlations</button>
-          </div>
-        </div>
-
-        <!-- Step 3: Calculate -->
-        <div style="padding:12px 16px;display:flex;align-items:center;gap:16px;background:var(--bg);flex-shrink:0">
-          <div>
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--accent);margin-bottom:8px">Step 3 — Calculate</div>
-            <button class="pill active" style="padding:8px 22px;font-size:13px;font-weight:700" onclick="recalculateFWAR()">Recalculate fWAR</button>
-          </div>
-          <div id="fwar-r2-display" style="display:none;padding:8px 14px;border-radius:8px;background:var(--accent-light);border:1px solid var(--accent);text-align:center;min-width:80px">
-            <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">Model r²</div>
-            <div id="fwar-r2-value" style="font-size:20px;font-weight:700;color:var(--accent)">—</div>
-          </div>
-        </div>
-
+      <div style="margin-top:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Positional Scarcity:</span>
+        <button id="fwar-preset-pitcher" class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('pitcher')">⚾ Pitcher Heavy</button>
+        <button id="fwar-preset-hybrid"  class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('hybrid')">⚖️ Hybrid</button>
+        <button id="fwar-preset-hitter"  class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('hitter')">🏏 Hitter Heavy</button>
+        <button id="fwar-preset-optimal" class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('optimal')">🎯 Optimal</button>
       </div>
-      <div id="fwar-status" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
+      <div style="margin-top:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <button class="pill active" style="padding:10px 28px;font-size:13px" onclick="recalculateFWAR()">Recalculate fWAR</button>
+        <button class="pill" style="padding:10px 20px;font-size:13px;background:var(--accent2);border-color:var(--accent2);color:white" onclick="autoWeightFromCorrelations()">Auto-weight from correlations</button>
+        <button class="pill" style="padding:10px 20px;font-size:13px" onclick="resetFWARDefaults()">Reset defaults</button>
+        <span id="fwar-status" style="font-size:12px;color:var(--muted)"></span>
+      </div>
       <div id="fwar-weight-summary" style="margin-top:16px"></div>
       <div id="fwar-model-summary" style="margin-top:20px"></div>
     </div>
@@ -5975,8 +5952,7 @@ window.recalculateFWAR = function() {
   });
 
   if (!S.hitRows.length || !S.pitRows.length) {
-    var fsEl = document.getElementById('fwar-status');
-    if (fsEl) fsEl.textContent = 'Player data not loaded yet.';
+    document.getElementById('fwar-status').textContent = 'Player data not loaded yet.';
     return;
   }
 
@@ -6469,37 +6445,7 @@ window.recalculateFWAR = function() {
   }
 
   var n = allHitters.filter(function(p){return p.fWAR!=null;}).length;
-  var fsEnd = document.getElementById('fwar-status');
-  if (fsEnd) fsEnd.textContent = 'Calculated fWAR for ' + n + ' hitters and ' + allPitchers.length + ' pitchers.';
-
-  // Compute and display team fWAR vs points correlation (r²)
-  (function() {
-    var tables = (S.seasonData && S.seasonData.data && S.seasonData.data.tableList) || [];
-    var ptTable = null;
-    for (var i=0; i<tables.length; i++) {
-      if ((tables[i].caption||'').toLowerCase().indexOf('point total') !== -1) { ptTable = tables[i]; break; }
-    }
-    if (!ptTable) return;
-    var phIdx = {};
-    ((ptTable.header&&ptTable.header.cells)||[]).forEach(function(h,i){ if(h.key) phIdx[h.key.toUpperCase()]=i; if(h.shortName) phIdx[h.shortName.toUpperCase()]=i; });
-    var ptsIdx = phIdx['PTS'] != null ? phIdx['PTS'] : 0;
-    var ptsById = {};
-    (ptTable.rows||[]).forEach(function(row){ var fc=row.fixedCells||[],cells=row.cells||[]; var id=(fc[1]&&fc[1].teamId)||''; if(id) ptsById[id]=parseFloat(cells[ptsIdx]&&cells[ptsIdx].content)||0; });
-    // Team fWAR totals
-    var teamFWAR = {};
-    FWAR.hitResults.concat(FWAR.pitResults).forEach(function(p){ if(p.ftId && p.fWAR!=null) teamFWAR[p.ftId]=(teamFWAR[p.ftId]||0)+p.fWAR; });
-    var pairs = Object.keys(teamFWAR).filter(function(id){ return ptsById[id]>0; }).map(function(id){ return [teamFWAR[id], ptsById[id]]; });
-    if (pairs.length < 3) return;
-    var n2=pairs.length, sx=0,sy=0,sxy=0,sx2=0,sy2=0;
-    pairs.forEach(function(p){sx+=p[0];sy+=p[1];sxy+=p[0]*p[1];sx2+=p[0]*p[0];sy2+=p[1]*p[1];});
-    var denom=(n2*sx2-sx*sx)*(n2*sy2-sy*sy);
-    if (denom <= 0) return;
-    var r = (n2*sxy-sx*sy)/Math.sqrt(denom);
-    var r2 = r*r;
-    var el2 = document.getElementById('fwar-r2-display');
-    var vEl = document.getElementById('fwar-r2-value');
-    if (el2 && vEl) { el2.style.display='block'; vEl.textContent = r2.toFixed(3); }
-  })();
+  document.getElementById('fwar-status').textContent = 'Calculated fWAR for ' + n + ' hitters and ' + allPitchers.length + ' pitchers.';
 };
 
 window.autoWeightFromCorrelations = function() {
@@ -8033,12 +7979,15 @@ function renderTargetsPage() {
 function drawTargetsTable() {
   var el = document.getElementById('targets-body');
   if (!el || !targetsData) return;
-
-  // Auto-compute fWAR with defaults if it hasn't been calculated yet
-  if (!FWAR.hitResults.length && S.hitRows.length && S.pitRows.length) {
-    renderFWARPage();   // sets up hidden inputs with defaults (guarded by fwarRendered flag)
-    recalculateFWAR();  // populates FWAR.hitResults / pitResults
+  try {
+    _drawTargetsTableInner(el);
+  } catch(err) {
+    console.error('drawTargetsTable error:', err);
+    el.innerHTML = '<div class="error-msg">Error rendering targets table: ' + err.message + '</div>';
   }
+}
+
+function _drawTargetsTableInner(el) {
 
   // Name normalization — strip accents, lowercase, alpha only
   function normName(n) {
@@ -8628,7 +8577,14 @@ function drawPitcherTargetsTable() {
     html += '<option value="babip_2026">BABIP 2026</option>';
     html += '<option value="velo_2026">Velo 2026</option>';
     html += '</select></div></div>';
-    html += '<div style="padding:16px;position:relative">' + (function(){ var r=buildPitQuadrantSVG(pitPlotData, 'quadrant'); return r.svg+r.legend; })() + '</div>';
+    html += '<div style="padding:16px;position:relative" id="pit-quadrant-chart-wrap">';
+    try {
+      var r0 = buildPitQuadrantSVG(pitPlotData, 'quadrant');
+      html += r0.svg + r0.legend;
+    } catch(e) {
+      html += '<div style="color:var(--muted);font-size:12px">Chart unavailable</div>';
+    }
+    html += '</div>';
     html += '</div>';
   } else {
     html += '<div class="card" style="margin-bottom:20px;padding:20px;text-align:center;color:var(--muted)">No pitcher xERA data available — run the GitHub Action to populate targets_pitching.json with xERA values.</div>';
@@ -8787,15 +8743,14 @@ window.redrawPitQuadrantChart = function() {
   var plotData = window._pitTargetPlotData || [];
   if (!plotData.length) return;
   var colorBy = (document.getElementById('pit-quadrant-color-by') || {}).value || 'quadrant';
-  var sel = document.getElementById('pit-quadrant-color-by');
-  if (!sel) return;
-  var card = sel.closest('.card');
-  if (!card) return;
-  var chartDiv = card.querySelector('div[style*="padding:16px"]');
-  if (chartDiv) {
+  var chartDiv = document.getElementById('pit-quadrant-chart-wrap');
+  if (!chartDiv) return;
+  try {
     var result = buildPitQuadrantSVG(plotData, colorBy);
     chartDiv.style.position = 'relative';
     chartDiv.innerHTML = result.svg + result.legend;
+  } catch(e) {
+    console.error('Pitcher quadrant chart error:', e);
   }
 };
 
