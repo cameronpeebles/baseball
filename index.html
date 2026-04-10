@@ -1420,7 +1420,10 @@ function buildRosterCharts(highlightId) {
   var el = document.getElementById('roster-charts');
   if (!el) return;
 
-  var GROUP_COLORS = { Infield:'#2980b9', Outfield:'#27ae60', SP:'#c0392b', RP:'#8e44ad' };
+  // Colors from user palette: dark navy, steel blue, mint green, light yellow
+  var GROUP_COLORS = { Infield:'#1a1f5e', Outfield:'#5b8db8', SP:'#7bc8a4', RP:'#e8f0a0' };
+  var GROUP_BORDER = { Infield:'#1a1f5e', Outfield:'#4a7ba8', SP:'#5ab88a', RP:'#d4e080' };
+
   function getGroup(p) {
     var s = (p.assignedSlot || p.pos || '').toUpperCase();
     if (['C','1B','2B','3B','SS'].some(function(x){return s.indexOf(x)!==-1;})) return 'Infield';
@@ -1446,10 +1449,18 @@ function buildRosterCharts(highlightId) {
   });
   var sortedTeams = teamIds.slice().sort(function(a,b){ return teamTotals[b].total - teamTotals[a].total; });
 
-  var CW = 320, CH = 280, PT = 22, PB = 58, PL = 12, PR = 12;
+  var CW = 320, CH = 300, PT = 38, PB = 58, PL = 12, PR = 12;
   var cW = CW-PL-PR, cH = CH-PT-PB;
 
-  // ── CHART 1: Team fWAR ────────────────────────────────────────────────────
+  // Legend HTML (shared, shown at top of card header)
+  var legendHtml = '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">';
+  GROUPS.forEach(function(g){
+    legendHtml += '<span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text)">'
+      + '<span style="display:inline-block;width:12px;height:12px;background:'+GROUP_COLORS[g]+';border-radius:2px;border:1px solid '+GROUP_BORDER[g]+'"></span>'+g+'</span>';
+  });
+  legendHtml += '</div>';
+
+  // ── CHART 1: Team fWAR vertical stacked bars ──────────────────────────────
   var n1 = sortedTeams.length;
   var bw1 = Math.max(12, Math.floor(cW/n1) - 3);
   var allVals = sortedTeams.map(function(id){ return teamTotals[id].total; });
@@ -1472,36 +1483,41 @@ function buildRosterCharts(highlightId) {
       var v = Math.max(td[g], 0); if (!v) return;
       var bh = v/maxV * (cH*0.52);
       yTop -= bh;
-      svg1 += '<rect x="'+x+'" y="'+yTop+'" width="'+bw1+'" height="'+bh+'" fill="'+GROUP_COLORS[g]+'" opacity="'+(isHL?'0.95':'0.6')+'" rx="1"><title>'+name+' '+g+': '+(td[g]>=0?'+':'')+td[g].toFixed(2)+'</title></rect>';
+      svg1 += '<rect x="'+x+'" y="'+yTop+'" width="'+bw1+'" height="'+bh+'" fill="'+GROUP_COLORS[g]+'" opacity="1" rx="1"><title>'+name+' '+g+': '+(td[g]>=0?'+':'')+td[g].toFixed(2)+'</title></rect>';
     });
     var yBot = y0_1;
     GROUPS.forEach(function(g){
       var v = Math.min(td[g], 0); if (!v) return;
       var bh = Math.abs(v)/maxV * (cH*0.42);
-      svg1 += '<rect x="'+x+'" y="'+yBot+'" width="'+bw1+'" height="'+bh+'" fill="'+GROUP_COLORS[g]+'" opacity="'+(isHL?'0.95':'0.6')+'" rx="1"><title>'+name+' '+g+': '+(td[g]>=0?'+':'')+td[g].toFixed(2)+'</title></rect>';
+      svg1 += '<rect x="'+x+'" y="'+yBot+'" width="'+bw1+'" height="'+bh+'" fill="'+GROUP_COLORS[g]+'" opacity="1" rx="1"><title>'+name+' '+g+': '+(td[g]>=0?'+':'')+td[g].toFixed(2)+'</title></rect>';
       yBot += bh;
     });
+
+    // Highlight border for selected team
     if (isHL) {
       var totalBH = Math.abs(td.total)/maxV*(td.total>=0?cH*0.52:cH*0.42);
       var bY = td.total>=0 ? y0_1-totalBH : y0_1;
-      svg1 += '<rect x="'+(x-1)+'" y="'+(bY-1)+'" width="'+(bw1+2)+'" height="'+(totalBH+2)+'" fill="none" stroke="var(--accent)" stroke-width="1.5"/>';
-      svg1 += '<text x="'+(x+bw1/2)+'" y="'+(bY-4)+'" text-anchor="middle" font-size="7" font-weight="700" fill="var(--accent)">'+(td.total>=0?'+':'')+td.total.toFixed(1)+'</text>';
+      svg1 += '<rect x="'+(x-1)+'" y="'+(bY-1)+'" width="'+(bw1+2)+'" height="'+(totalBH+2)+'" fill="none" stroke="var(--accent)" stroke-width="2"/>';
     }
-    svg1 += '<text x="'+(x+bw1/2)+'" y="'+(CH-PB+14)+'" text-anchor="end" font-size="7" fill="'+(isHL?'var(--accent)':'var(--muted)')+'" font-weight="'+(isHL?'700':'400')+'" transform="rotate(-45,'+(x+bw1/2)+','+(CH-PB+14)+')">'+name+'</text>';
-  });
-  GROUPS.forEach(function(g,i){
-    svg1 += '<rect x="'+(PL+i*75)+'" y="'+(CH-10)+'" width="7" height="7" fill="'+GROUP_COLORS[g]+'" rx="1"/>';
-    svg1 += '<text x="'+(PL+i*75+10)+'" y="'+(CH-3)+'" font-size="7" fill="var(--muted)">'+g+'</text>';
+
+    // Total fWAR label on top of every bar
+    var totalBH2 = Math.abs(td.total)/maxV*(td.total>=0?cH*0.52:cH*0.42);
+    var labelY = td.total>=0 ? y0_1-totalBH2-3 : y0_1+totalBH2+10;
+    svg1 += '<text x="'+(x+bw1/2)+'" y="'+labelY+'" text-anchor="middle" font-size="6.5" font-weight="700" fill="'+(isHL?'var(--accent)':'var(--text)')+'">'+(td.total>=0?'+':'')+td.total.toFixed(1)+'</text>';
+
+    // Team name
+    svg1 += '<text x="'+(x+bw1/2)+'" y="'+(CH-PB+14)+'" text-anchor="end" font-size="6.5" fill="'+(isHL?'var(--accent)':'var(--muted)')+'" font-weight="'+(isHL?'700':'400')+'" transform="rotate(-45,'+(x+bw1/2)+','+(CH-PB+14)+')">'+name+'</text>';
   });
   svg1 += '</svg>';
 
-  // ── CHARTS 2 & 3: Player fWAR ─────────────────────────────────────────────
+  // ── CHARTS 2 & 3: Player fWAR (all teams, 5 best + 5 worst) ───────────────
   function playerChart(players, label) {
+    // Sort and pick top 5 and bottom 5 across all teams
     var s2 = players.slice().sort(function(a,b){ return b.fWAR - a.fWAR; });
-    var top5 = s2.slice(0,5);
+    var top5 = s2.slice(0, 5);
     var bot5 = s2.filter(function(p){ return p.fWAR < 0; }).slice(-5).reverse();
-    var shown = top5.slice();
     var keys = {}; top5.forEach(function(p){ keys[p.name]=1; });
+    var shown = top5.slice();
     bot5.forEach(function(p){ if (!keys[p.name]) shown.push(p); });
 
     var bw = Math.max(16, Math.floor(cW/Math.max(shown.length,1)) - 4);
@@ -1510,17 +1526,20 @@ function buildRosterCharts(highlightId) {
 
     var svg = '<svg viewBox="0 0 '+CW+' '+CH+'" style="width:100%;height:auto;display:block">';
     svg += '<text x="'+(CW/2)+'" y="13" text-anchor="middle" font-size="10" font-weight="600" fill="var(--text)">'+label+'</text>';
-    svg += '<line x1="'+PL+'" y1="'+y0+'" x2="'+(CW-PR)+'" y2="'+y0+'" stroke="#2980b9" stroke-width="1.5"/>';
+    svg += '<line x1="'+PL+'" y1="'+y0+'" x2="'+(CW-PR)+'" y2="'+y0+'" stroke="#5b8db8" stroke-width="1.5"/>';
 
     shown.forEach(function(p, i) {
       var x = PL + i*(bw+4);
       var isPos = p.fWAR >= 0;
       var bh = Math.abs(p.fWAR)/maxAbs * (isPos ? cH*0.50 : cH*0.40);
       var barY = isPos ? y0-bh : y0;
-      var col = isPos ? GROUP_COLORS[p._group] : '#c0392b';
-      svg += '<rect x="'+x+'" y="'+barY+'" width="'+bw+'" height="'+bh+'" fill="'+col+'" opacity="0.88" rx="2"><title>'+p.name+' ('+p._group+'): '+(p.fWAR>=0?'+':'')+p.fWAR.toFixed(2)+'</title></rect>';
+      var col = GROUP_COLORS[p._group];
+      var border = GROUP_BORDER[p._group];
+      svg += '<rect x="'+x+'" y="'+barY+'" width="'+bw+'" height="'+bh+'" fill="'+col+'" opacity="1" rx="2" stroke="'+border+'" stroke-width="0.5"><title>'+p.name+' ('+p._group+'): '+(p.fWAR>=0?'+':'')+p.fWAR.toFixed(2)+'</title></rect>';
+      // Value label
       var valY = isPos ? barY-3 : barY+bh+10;
-      svg += '<text x="'+(x+bw/2)+'" y="'+valY+'" text-anchor="middle" font-size="7" font-weight="700" fill="'+col+'">'+(p.fWAR>=0?'+':'')+p.fWAR.toFixed(1)+'</text>';
+      svg += '<text x="'+(x+bw/2)+'" y="'+valY+'" text-anchor="middle" font-size="7" font-weight="700" fill="var(--text)">'+(p.fWAR>=0?'+':'')+p.fWAR.toFixed(1)+'</text>';
+      // Full player name angled
       var nameY = CH-PB+14;
       svg += '<text x="'+(x+bw/2)+'" y="'+nameY+'" text-anchor="end" font-size="7" fill="var(--text)" transform="rotate(-45,'+(x+bw/2)+','+nameY+')">'+p.name+'</text>';
     });
@@ -1528,20 +1547,23 @@ function buildRosterCharts(highlightId) {
     return svg;
   }
 
+  // Use ALL players (all teams) for the league-wide top/bottom charts
+  var allHitters  = FWAR.hitResults.filter(function(p){ return p.fWAR!=null; });
+  var allPitchers = FWAR.pitResults.filter(function(p){ return p.fWAR!=null; });
+  allHitters.forEach(function(p){ p._group=getGroup(p); });
+  allPitchers.forEach(function(p){ p._group=getGroup(p); });
+
   var hl = S.teamInfo[highlightId] || {};
   var hlName = hl.shortName || hl.name || '';
-  var teamHitters  = FWAR.hitResults.filter(function(p){ return p.ftId===highlightId && p.fWAR!=null; });
-  var teamPitchers = FWAR.pitResults.filter(function(p){ return p.ftId===highlightId && p.fWAR!=null; });
-  teamHitters.forEach(function(p){ p._group=getGroup(p); });
-  teamPitchers.forEach(function(p){ p._group=getGroup(p); });
 
   var noDataSvg = function(lbl){ return '<svg viewBox="0 0 '+CW+' '+CH+'" style="width:100%;height:auto"><text x="'+(CW/2)+'" y="'+(CH/2)+'" text-anchor="middle" font-size="11" fill="var(--muted)">'+lbl+'</text></svg>'; };
-  var svg2 = teamHitters.length  ? playerChart(teamHitters,  'Hitting fWAR — '+hlName)  : noDataSvg('No hitting data — run Recalculate fWAR');
-  var svg3 = teamPitchers.length ? playerChart(teamPitchers, 'Pitching fWAR — '+hlName) : noDataSvg('No pitching data — run Recalculate fWAR');
+  var svg2 = allHitters.length  ? playerChart(allHitters,  'Top/Bottom 5 Hitters — fWAR')  : noDataSvg('Run Recalculate fWAR first');
+  var svg3 = allPitchers.length ? playerChart(allPitchers, 'Top/Bottom 5 Pitchers — fWAR') : noDataSvg('Run Recalculate fWAR first');
 
   el.innerHTML = '<div class="card" style="margin-bottom:0">'
-    + '<div class="card-header"><span class="card-title">fWAR Overview</span>'
-    + (hlName ? '<span style="font-size:12px;color:var(--muted)">Viewing: <strong style="color:var(--accent)">'+hlName+'</strong></span>' : '')
+    + '<div class="card-header" style="flex-wrap:wrap;gap:8px">'
+    + '<span class="card-title">fWAR Overview</span>'
+    + legendHtml
     + '</div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:12px 16px">'
     + '<div>'+svg1+'</div>'
