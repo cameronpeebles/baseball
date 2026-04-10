@@ -1437,7 +1437,6 @@ function buildRosterCharts(highlightId) {
   var teamIds = Object.keys(S.teamInfo);
   var GROUPS = ['Infield','Outfield','SP','RP'];
 
-  // Team totals
   var teamTotals = {};
   teamIds.forEach(function(id){ teamTotals[id] = {total:0,Infield:0,Outfield:0,SP:0,RP:0}; });
   allPlayers.forEach(function(p){
@@ -1447,11 +1446,10 @@ function buildRosterCharts(highlightId) {
   });
   var sortedTeams = teamIds.slice().sort(function(a,b){ return teamTotals[b].total - teamTotals[a].total; });
 
-  // Shared dimensions — compact, same height as quadrant chart
-  var CW = 320, CH = 260, PT = 22, PB = 50, PL = 12, PR = 12;
+  var CW = 320, CH = 280, PT = 22, PB = 58, PL = 12, PR = 12;
   var cW = CW-PL-PR, cH = CH-PT-PB;
 
-  // ── CHART 1: Team fWAR vertical stacked bars ─────────────────────────────
+  // ── CHART 1: Team fWAR ────────────────────────────────────────────────────
   var n1 = sortedTeams.length;
   var bw1 = Math.max(12, Math.floor(cW/n1) - 3);
   var allVals = sortedTeams.map(function(id){ return teamTotals[id].total; });
@@ -1464,45 +1462,40 @@ function buildRosterCharts(highlightId) {
 
   sortedTeams.forEach(function(id, i) {
     var ti = S.teamInfo[id] || {};
-    var name = (ti.shortName || ti.name || id).substring(0,9);
+    var name = (ti.shortName || ti.name || id).substring(0,10);
     var td = teamTotals[id];
     var isHL = id === highlightId;
     var x = PL + i*(bw1+3);
 
-    // Positive stacked segments
     var yTop = y0_1;
     GROUPS.forEach(function(g){
       var v = Math.max(td[g], 0); if (!v) return;
       var bh = v/maxV * (cH*0.52);
       yTop -= bh;
-      svg1 += '<rect x="'+x+'" y="'+yTop+'" width="'+bw1+'" height="'+bh+'" fill="'+(isHL?GROUP_COLORS[g]:'#aaa')+'" opacity="'+(isHL?'0.9':'0.45')+'" rx="1"><title>'+name+' '+g+': '+(td[g]>=0?'+':'')+td[g].toFixed(2)+'</title></rect>';
+      svg1 += '<rect x="'+x+'" y="'+yTop+'" width="'+bw1+'" height="'+bh+'" fill="'+GROUP_COLORS[g]+'" opacity="'+(isHL?'0.95':'0.6')+'" rx="1"><title>'+name+' '+g+': '+(td[g]>=0?'+':'')+td[g].toFixed(2)+'</title></rect>';
     });
-    // Negative stacked segments
     var yBot = y0_1;
     GROUPS.forEach(function(g){
       var v = Math.min(td[g], 0); if (!v) return;
       var bh = Math.abs(v)/maxV * (cH*0.42);
-      svg1 += '<rect x="'+x+'" y="'+yBot+'" width="'+bw1+'" height="'+bh+'" fill="'+(isHL?GROUP_COLORS[g]:'#aaa')+'" opacity="'+(isHL?'0.9':'0.45')+'" rx="1"><title>'+name+' '+g+': '+(td[g]>=0?'+':'')+td[g].toFixed(2)+'</title></rect>';
+      svg1 += '<rect x="'+x+'" y="'+yBot+'" width="'+bw1+'" height="'+bh+'" fill="'+GROUP_COLORS[g]+'" opacity="'+(isHL?'0.95':'0.6')+'" rx="1"><title>'+name+' '+g+': '+(td[g]>=0?'+':'')+td[g].toFixed(2)+'</title></rect>';
       yBot += bh;
     });
-    // Highlight accent border
     if (isHL) {
       var totalBH = Math.abs(td.total)/maxV*(td.total>=0?cH*0.52:cH*0.42);
       var bY = td.total>=0 ? y0_1-totalBH : y0_1;
       svg1 += '<rect x="'+(x-1)+'" y="'+(bY-1)+'" width="'+(bw1+2)+'" height="'+(totalBH+2)+'" fill="none" stroke="var(--accent)" stroke-width="1.5"/>';
-      svg1 += '<text x="'+(x+bw1/2)+'" y="'+(bY-4)+'" text-anchor="middle" font-size="8" font-weight="700" fill="var(--accent)">'+(td.total>=0?'+':'')+td.total.toFixed(1)+'</text>';
+      svg1 += '<text x="'+(x+bw1/2)+'" y="'+(bY-4)+'" text-anchor="middle" font-size="7" font-weight="700" fill="var(--accent)">'+(td.total>=0?'+':'')+td.total.toFixed(1)+'</text>';
     }
-    // Team name
-    svg1 += '<text x="'+(x+bw1/2)+'" y="'+(CH-PB+14)+'" text-anchor="end" font-size="8" fill="'+(isHL?'var(--accent)':'var(--muted)')+'" font-weight="'+(isHL?'700':'400')+'" transform="rotate(-40,'+(x+bw1/2)+','+(CH-PB+14)+')">'+name+'</text>';
+    svg1 += '<text x="'+(x+bw1/2)+'" y="'+(CH-PB+14)+'" text-anchor="end" font-size="7" fill="'+(isHL?'var(--accent)':'var(--muted)')+'" font-weight="'+(isHL?'700':'400')+'" transform="rotate(-45,'+(x+bw1/2)+','+(CH-PB+14)+')">'+name+'</text>';
   });
-  // Legend
   GROUPS.forEach(function(g,i){
     svg1 += '<rect x="'+(PL+i*75)+'" y="'+(CH-10)+'" width="7" height="7" fill="'+GROUP_COLORS[g]+'" rx="1"/>';
-    svg1 += '<text x="'+(PL+i*75+10)+'" y="'+(CH-3)+'" font-size="8" fill="var(--muted)">'+g+'</text>';
+    svg1 += '<text x="'+(PL+i*75+10)+'" y="'+(CH-3)+'" font-size="7" fill="var(--muted)">'+g+'</text>';
   });
   svg1 += '</svg>';
 
-  // ── CHART 2 & 3: Player fWAR bars ─────────────────────────────────────────
+  // ── CHARTS 2 & 3: Player fWAR ─────────────────────────────────────────────
   function playerChart(players, label) {
     var s2 = players.slice().sort(function(a,b){ return b.fWAR - a.fWAR; });
     var top5 = s2.slice(0,5);
@@ -1526,13 +1519,10 @@ function buildRosterCharts(highlightId) {
       var barY = isPos ? y0-bh : y0;
       var col = isPos ? GROUP_COLORS[p._group] : '#c0392b';
       svg += '<rect x="'+x+'" y="'+barY+'" width="'+bw+'" height="'+bh+'" fill="'+col+'" opacity="0.88" rx="2"><title>'+p.name+' ('+p._group+'): '+(p.fWAR>=0?'+':'')+p.fWAR.toFixed(2)+'</title></rect>';
-      // Value label
       var valY = isPos ? barY-3 : barY+bh+10;
-      svg += '<text x="'+(x+bw/2)+'" y="'+valY+'" text-anchor="middle" font-size="8" font-weight="700" fill="'+col+'">'+(p.fWAR>=0?'+':'')+p.fWAR.toFixed(1)+'</text>';
-      // Name label
+      svg += '<text x="'+(x+bw/2)+'" y="'+valY+'" text-anchor="middle" font-size="7" font-weight="700" fill="'+col+'">'+(p.fWAR>=0?'+':'')+p.fWAR.toFixed(1)+'</text>';
       var nameY = CH-PB+14;
-      var lastName = p.name.split(' ').pop();
-      svg += '<text x="'+(x+bw/2)+'" y="'+nameY+'" text-anchor="end" font-size="8" fill="var(--text)" transform="rotate(-40,'+(x+bw/2)+','+nameY+')">'+lastName+'</text>';
+      svg += '<text x="'+(x+bw/2)+'" y="'+nameY+'" text-anchor="end" font-size="7" fill="var(--text)" transform="rotate(-45,'+(x+bw/2)+','+nameY+')">'+p.name+'</text>';
     });
     svg += '</svg>';
     return svg;
@@ -1545,14 +1535,9 @@ function buildRosterCharts(highlightId) {
   teamHitters.forEach(function(p){ p._group=getGroup(p); });
   teamPitchers.forEach(function(p){ p._group=getGroup(p); });
 
-  var svg2 = teamHitters.length  ? playerChart(teamHitters,  'Hitting fWAR — '+hlName)
-    : '<svg viewBox="0 0 '+CW+' '+CH+'" style="width:100%;height:auto"><text x="'+(CW/2)+'" y="'+(CH/2)+'" text-anchor="middle" font-size="11" fill="var(--muted)">No hitting data</text></svg>';
-  var svg3 = teamPitchers.length ? playerChart(teamPitchers, 'Pitching fWAR — '+hlName)
-    : '<svg viewBox="0 0 '+CW+' '+CH+'" style="width:100%;height:auto"><text x="'+(CW/2)+'" y="'+(CH/2)+'" text-anchor="middle" font-size="11" fill="var(--muted)">No pitching data</text></svg>';
-
-  if (!teamHitters.length && !teamPitchers.length) {
-    svg2 = ''; svg3 = '';
-  }
+  var noDataSvg = function(lbl){ return '<svg viewBox="0 0 '+CW+' '+CH+'" style="width:100%;height:auto"><text x="'+(CW/2)+'" y="'+(CH/2)+'" text-anchor="middle" font-size="11" fill="var(--muted)">'+lbl+'</text></svg>'; };
+  var svg2 = teamHitters.length  ? playerChart(teamHitters,  'Hitting fWAR — '+hlName)  : noDataSvg('No hitting data — run Recalculate fWAR');
+  var svg3 = teamPitchers.length ? playerChart(teamPitchers, 'Pitching fWAR — '+hlName) : noDataSvg('No pitching data — run Recalculate fWAR');
 
   el.innerHTML = '<div class="card" style="margin-bottom:0">'
     + '<div class="card-header"><span class="card-title">fWAR Overview</span>'
@@ -1560,8 +1545,8 @@ function buildRosterCharts(highlightId) {
     + '</div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:12px 16px">'
     + '<div>'+svg1+'</div>'
-    + '<div>'+(svg2||'<div style="padding:20px;color:var(--muted);font-size:12px;text-align:center">Run Recalculate fWAR first</div>')+'</div>'
-    + '<div>'+(svg3||'')+'</div>'
+    + '<div>'+svg2+'</div>'
+    + '<div>'+svg3+'</div>'
     + '</div></div>';
 }
 window._rosterHighlight = null;
