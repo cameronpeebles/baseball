@@ -960,7 +960,7 @@ function showPage(name, btn) {
   if (name === 'trade') renderTradeAnalyzer();
   if (name === 'historic') renderHistoricPage();
   if (name === 'leaders') renderLeadersPage();
-  if (name === 'targets') renderTargetsPage();
+  if (name === 'targets') { console.log('showPage: targets triggered'); renderTargetsPage(); }
   if (name === 'guide') {} // static content, no render needed
   // Expand main to full width for wide-table pages
   document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'rosters' || name === 'historic' || name === 'targets') ? 'none' : '';
@@ -7968,10 +7968,13 @@ function renderTargetsPage() {
   if (!el) return;
   if (targetsData) { drawTargetsTable(); return; }
   el.innerHTML = '<div class="loading">Loading targets data...</div>';
+  console.log('renderTargetsPage: fetching targets_hitting.json from', BASE);
   loadJSON('targets_hitting.json').then(function(data) {
+    console.log('targets_hitting.json loaded, rows:', data ? data.length : 'null');
     targetsData = data;
     drawTargetsTable();
-  }).catch(function() {
+  }).catch(function(e) {
+    console.error('targets_hitting.json failed:', e);
     el.innerHTML = '<div class="error-msg">targets_hitting.json not found — run the GitHub Action first.</div>';
   });
 }
@@ -7979,6 +7982,7 @@ function renderTargetsPage() {
 function drawTargetsTable() {
   var el = document.getElementById('targets-body');
   if (!el || !targetsData) return;
+  console.log('drawTargetsTable: targetsData length=' + targetsData.length);
 
   // Name normalization — strip accents, lowercase, alpha only
   function normName(n) {
@@ -8087,6 +8091,7 @@ function drawTargetsTable() {
   }
 
   var html = '';
+  console.log("checkpoint 1: html init");
 
 
   // ── Quadrant scatterplot ──────────────────────────────────────────────────
@@ -8247,8 +8252,10 @@ function drawTargetsTable() {
   });
 
   html += '</tbody></table></div></div>';
+  console.log("checkpoint 2: about to set innerHTML, html length=" + html.length);
   el.innerHTML = html;
   // Draw chart after DOM is set
+  console.log("checkpoint 3: done");
   if (window._targetPlotData) redrawQuadrantChart();
 }
 
