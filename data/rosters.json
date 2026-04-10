@@ -12920,7 +12920,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 8, 8:51 PM: Olson went 1-for-4 with a two-run home...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -17314,16 +17314,16 @@
                       }
                     },
                     {
-                      "content": "15.1"
-                    },
-                    {
-                      "content": "1.17"
-                    },
-                    {
-                      "content": "1.043"
-                    },
-                    {
                       "content": "16"
+                    },
+                    {
+                      "content": "1.13"
+                    },
+                    {
+                      "content": "1.063"
+                    },
+                    {
+                      "content": "17"
                     },
                     {
                       "content": "1"
@@ -31860,6 +31860,120 @@
                 },
                 {
                   "scorer": {
+                    "teamName": "Colorado Rockies",
+                    "urlName": "ezequiel-tovar",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04mra_96_4.png",
+                    "scorerId": "04mra",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "005"
+                    ],
+                    "defaultPosId": "005",
+                    "posShortNames": "SS",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 6",
+                        "typeId": "26"
+                      },
+                      {
+                        "tooltip": "Apr 8, 9:40 PM: Tovar went 2-for-5 with two doubles and...",
+                        "typeId": "14"
+                      },
+                      {
+                        "tooltip": "Switch Hitter",
+                        "typeId": "18"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "005",
+                      "007",
+                      "014"
+                    ],
+                    "teamId": "10270",
+                    "name": "Ezequiel Tovar",
+                    "teamShortName": "COL",
+                    "shortName": "E. Tovar"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "007",
+                  "cells": [
+                    {
+                      "content": "24"
+                    },
+                    {
+                      "content": "@SD<br/>Fri 7:40PM",
+                      "eventId": "06k9w",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "walker-buehler",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03aac_96_12.png",
+                          "scorerId": "03aac",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "Apr 5, 4:08 PM: Buehler (0-1) didn't factor into the...",
+                              "typeId": "9"
+                            },
+                            {
+                              "tooltip": "RHP",
+                              "typeId": "17"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "Walker Buehler",
+                          "shortName": "W. Buehler"
+                        },
+                        "header": "Probable Starter for San Diego:",
+                        "content": "<b>W</b>  -  &nbsp;<b>L</b> 1 &nbsp;<b>IP</b> 6.2 &nbsp;<b>K</b> 7 &nbsp;<b>ERA</b> 9.45 &nbsp;<b>WHIP</b> 1.950 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "48"
+                    },
+                    {
+                      "content": "3"
+                    },
+                    {
+                      "content": "14"
+                    },
+                    {
+                      "content": "1"
+                    },
+                    {
+                      "content": "6"
+                    },
+                    {
+                      "content": "1"
+                    },
+                    {
+                      "content": ".292"
+                    },
+                    {
+                      "content": "13"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "014",
+                    "005",
+                    "007"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
                     "teamName": "Detroit Tigers",
                     "urlName": "gleyber-torres",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs031t0_96_14.png",
@@ -31964,120 +32078,6 @@
                   "eligiblePosIds": [
                     "003",
                     "014",
-                    "007"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
-                    "teamName": "Colorado Rockies",
-                    "urlName": "ezequiel-tovar",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04mra_96_4.png",
-                    "scorerId": "04mra",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "005"
-                    ],
-                    "defaultPosId": "005",
-                    "posShortNames": "SS",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 6",
-                        "typeId": "26"
-                      },
-                      {
-                        "tooltip": "Apr 8, 9:40 PM: Tovar went 2-for-5 with two doubles and...",
-                        "typeId": "14"
-                      },
-                      {
-                        "tooltip": "Switch Hitter",
-                        "typeId": "18"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "005",
-                      "007",
-                      "014"
-                    ],
-                    "teamId": "10270",
-                    "name": "Ezequiel Tovar",
-                    "teamShortName": "COL",
-                    "shortName": "E. Tovar"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "007",
-                  "cells": [
-                    {
-                      "content": "24"
-                    },
-                    {
-                      "content": "@SD<br/>Fri 7:40PM",
-                      "eventId": "06k9w",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "walker-buehler",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03aac_96_12.png",
-                          "scorerId": "03aac",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "Apr 5, 4:08 PM: Buehler (0-1) didn't factor into the...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Walker Buehler",
-                          "shortName": "W. Buehler"
-                        },
-                        "header": "Probable Starter for San Diego:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b> 1 &nbsp;<b>IP</b> 6.2 &nbsp;<b>K</b> 7 &nbsp;<b>ERA</b> 9.45 &nbsp;<b>WHIP</b> 1.950 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "47"
-                    },
-                    {
-                      "content": "3"
-                    },
-                    {
-                      "content": "13"
-                    },
-                    {
-                      "content": "1"
-                    },
-                    {
-                      "content": "6"
-                    },
-                    {
-                      "content": "1"
-                    },
-                    {
-                      "content": ".277"
-                    },
-                    {
-                      "content": "13"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "014",
-                    "005",
                     "007"
                   ],
                   "actions": [
@@ -34288,16 +34288,16 @@
                       }
                     },
                     {
-                      "content": "10.1"
+                      "content": "11.1"
                     },
                     {
-                      "content": "5.23"
+                      "content": "4.76"
                     },
                     {
-                      "content": "1.452"
+                      "content": "1.412"
                     },
                     {
-                      "content": "12"
+                      "content": "13"
                     },
                     {
                       "content": "1"
@@ -44865,7 +44865,7 @@
                       }
                     },
                     {
-                      "content": "35"
+                      "content": "36"
                     },
                     {
                       "content": "6"
@@ -44883,7 +44883,7 @@
                       "content": "0"
                     },
                     {
-                      "content": ".200"
+                      "content": ".194"
                     },
                     {
                       "content": "12"
@@ -46840,7 +46840,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 8, 8:45 PM: Detmers (0-1) took the loss Wednesday...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -48207,7 +48207,7 @@
                 },
                 {
                   "scorer": {
-                    "teamName": "Tampa Bay Rays",
+                    "teamName": "Not on a team",
                     "urlName": "drew-rasmussen",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04eee_96_9.png",
                     "scorerId": "04eee",
@@ -48224,6 +48224,10 @@
                         "typeId": "1"
                       },
                       {
+                        "tooltip": "Inactive",
+                        "typeId": "7"
+                      },
+                      {
                         "tooltip": "Apr 9, 7:56 PM: Rasmussen is not expected to start...",
                         "typeId": "14"
                       },
@@ -48237,9 +48241,8 @@
                     "posIds": [
                       "017"
                     ],
-                    "teamId": "10040",
                     "name": "Drew Rasmussen",
-                    "teamShortName": "TB",
+                    "teamShortName": "(N/A)",
                     "shortName": "D. Rasmussen"
                   },
                   "eligibleStatusIds": [
@@ -48252,36 +48255,7 @@
                       "content": "30"
                     },
                     {
-                      "content": "NYY<br/>Fri 5:10PM",
-                      "eventId": "06iqv",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "luis-gil",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04s1h_96_9.png",
-                          "scorerId": "04s1h",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "Minor Leagues",
-                              "typeId": "4"
-                            },
-                            {
-                              "tooltip": "Mar 25, 8:32 AM: The Yankees optioned Gil to Triple-A...",
-                              "typeId": "8"
-                            },
-                            {
-                              "tooltip": "RHP",
-                              "typeId": "17"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Luis Gil",
-                          "shortName": "L. Gil"
-                        },
-                        "header": "Probable Starter for NY Yankees:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b>  -  &nbsp;<b>K</b>  -  &nbsp;<b>ERA</b>  -  &nbsp;<b>WHIP</b>  -  &nbsp;"
-                      }
+                      "content": ""
                     },
                     {
                       "content": "10"
