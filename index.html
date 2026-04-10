@@ -3551,6 +3551,8 @@ window.showTradeTab = function(tab, btn) {
     document.querySelector('main').style.maxWidth = 'none';
   } else if (tab === 'fa-ratings') {
     document.querySelector('main').style.maxWidth = 'none';
+    window._faRatingsPos_hit = 'ALL';
+    window._faRatingsPos_pit = 'ALL';
     drawFARatings();
   } else {
     document.querySelector('main').style.maxWidth = '';
@@ -3563,8 +3565,7 @@ function drawFARatings() {
   var fas = TA.faPlayers || [];
   if (!fas.length) { el.innerHTML = '<div style="padding:20px;color:var(--muted)">No free agent data — visit this tab after page load.</div>'; return; }
 
-  var hitters  = fas.filter(function(p){ return p.type === 'bat'; }).sort(function(a,b){ return (b.overallRating||0)-(a.overallRating||0); });
-  var pitchers = fas.filter(function(p){ return p.type === 'pit'; }).sort(function(a,b){ return (b.overallRating||0)-(a.overallRating||0); });
+  window._faRatingsPos = window._faRatingsPos || 'ALL';
 
   function badge(r) {
     var pct = Math.round((r||0)*100);
@@ -3576,11 +3577,39 @@ function drawFARatings() {
   }
   function fmt(v, dec) { return v!=null ? Number(v).toFixed(dec) : '—'; }
 
-  function buildTable(players, label, cats, headers, decArr) {
-    if (!players.length) return '';
+  var selPos = window._faRatingsPos;
+
+  // Collect all unique positions for pills
+  var hitPos = ['ALL','C','1B','2B','3B','SS','OF'];
+  var pitPos = ['ALL','SP','RP'];
+
+  function posFilter(players, pos) {
+    if (pos === 'ALL') return players;
+    return players.filter(function(p){
+      var parts = (p.pos||'').split(',').map(function(x){return x.trim();});
+      if (pos === 'OF') return parts.some(function(x){return ['OF','LF','CF','RF'].indexOf(x)!==-1;});
+      return parts.indexOf(pos) !== -1;
+    });
+  }
+
+  function pills(positions, type) {
+    var h = '<div class="pill-group" style="margin-bottom:12px">';
+    positions.forEach(function(p){
+      var active = (window._faRatingsPos === type+':'+p || (p==='ALL' && window._faRatingsPos===type+':ALL') || (p==='ALL' && window._faRatingsPos==='ALL'));
+      var isActive = window['_faRatingsPos_'+type] === p || (!window['_faRatingsPos_'+type] && p==='ALL');
+      h += '<button class="pill'+(isActive?' active':'')+'" onclick="window[\'_faRatingsPos_\'+\''+type+'\']=\''+p+'\';drawFARatings()">'+p+'</button>';
+    });
+    h += '</div>';
+    return h;
+  }
+
+  function buildTable(allPlayers, label, cats, headers, decArr, type, posList) {
+    var players = posFilter(allPlayers, window['_faRatingsPos_'+type]||'ALL');
+    if (!players.length) return '<div class="card" style="margin-bottom:24px"><div class="card-header"><span class="card-title">'+label+'</span></div><div style="padding:16px;color:var(--muted)">No players match this filter.</div></div>';
     var h = '<div class="card" style="margin-bottom:24px">';
     h += '<div class="card-header"><span class="card-title">'+label+'</span>';
     h += '<span style="font-size:12px;color:var(--muted)">'+players.length+' players · rated vs rostered players</span></div>';
+    h += '<div style="padding:8px 16px 0">'+pills(posList, type)+'</div>';
     h += '<div class="table-wrap"><table style="width:100%;font-size:13px"><thead><tr>';
     h += '<th class="left" style="min-width:180px">PLAYER</th>';
     h += '<th class="left">POS</th>';
@@ -3588,7 +3617,6 @@ function drawFARatings() {
     cats.forEach(function(c,i){ h += '<th>'+headers[i]+'</th>'; });
     h += '<th style="color:var(--accent)">RATING</th>';
     h += '</tr></thead><tbody>';
-
     players.forEach(function(p, i) {
       var bg = i%2===1 ? 'background:var(--bg)' : '';
       h += '<tr style="border-bottom:1px solid var(--border);'+bg+'">';
@@ -3596,7 +3624,7 @@ function drawFARatings() {
       if (p.hs) h += '<img class="player-hs" src="'+p.hs+'" alt="" onerror="this.style.display=\'none\'">';
       h += '<span><strong>'+p.name+'</strong></span></div></td>';
       h += '<td class="left">'+posBadge(p.pos||'—')+'</td>';
-      h += '<td class="left" style="color:var(--muted);font-size:12px">'+( p.mlb||'—')+'</td>';
+      h += '<td class="left" style="color:var(--muted);font-size:12px">'+(p.mlb||'—')+'</td>';
       cats.forEach(function(c,i){ h += '<td>'+fmt(p.stats[c], decArr[i])+'</td>'; });
       h += '<td>'+badge(p.overallRating)+'</td>';
       h += '</tr>';
@@ -3605,15 +3633,11 @@ function drawFARatings() {
     return h;
   }
 
-  var hitCats    = ['R','HR','RBI','SB','AVG'];
-  var hitHdrs    = ['R','HR','RBI','SB','AVG'];
-  var hitDec     = [0,0,0,0,3];
-  var pitCats    = ['K','W','SVH3','ERA','WHIP'];
-  var pitHdrs    = ['K','W','SVH3','ERA','WHIP'];
-  var pitDec     = [0,0,0,2,2];
+  var hitters  = fas.filter(function(p){ return p.type==='bat'; }).sort(function(a,b){ return (b.overallRating||0)-(a.overallRating||0); });
+  var pitchers = fas.filter(function(p){ return p.type==='pit'; }).sort(function(a,b){ return (b.overallRating||0)-(a.overallRating||0); });
 
-  el.innerHTML = buildTable(hitters, 'Free Agent Hitters', hitCats, hitHdrs, hitDec)
-               + buildTable(pitchers,'Free Agent Pitchers', pitCats, pitHdrs, pitDec);
+  el.innerHTML = buildTable(hitters,  'Free Agent Hitters',  ['R','HR','RBI','SB','AVG'], ['R','HR','RBI','SB','AVG'], [0,0,0,0,3], 'hit', hitPos)
+               + buildTable(pitchers, 'Free Agent Pitchers', ['K','W','SVH3','ERA','WHIP'],['K','W','SVH3','ERA','WHIP'],[0,0,0,2,2], 'pit', pitPos);
 }
 
 window.selectTradeTeam = function(side, teamId) {
