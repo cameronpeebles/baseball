@@ -1039,6 +1039,21 @@ function init() {
     renderDashboard();
     // Pre-build fWAR model inputs (calculation waits for user to click Recalculate)
     renderFWARPage();
+    // Auto-build trade analyzer so positional strength is available on rosters page
+    if (!tradeRendered) {
+      tradeRendered = true;
+      buildTradeAnalyzer();
+      // Once TA.players is ready, refresh roster charts
+      (function waitForTA() {
+        if (TA.players && TA.players.length) {
+          var activeBtn = document.querySelector('#team-sel .team-btn.active');
+          var activeId = activeBtn ? Object.keys(S.teamInfo).find(function(id){ var t=S.teamInfo[id]; return (t.shortName||t.name)===activeBtn.textContent; }) : null;
+          buildRosterCharts(activeId || Object.keys(S.teamInfo)[0]);
+        } else {
+          setTimeout(waitForTA, 300);
+        }
+      })();
+    }
   }).catch(function(e) {
     console.error(e);
     ['standings-body','season-body','combined-body','hit-table','pit-table','roster-body'].forEach(function(id) {
@@ -6645,6 +6660,12 @@ window.recalculateFWAR = function() {
 
   var n = allHitters.filter(function(p){return p.fWAR!=null;}).length;
   document.getElementById('fwar-status').textContent = 'Calculated fWAR for ' + n + ' hitters and ' + allPitchers.length + ' pitchers.';
+  // Refresh roster charts with new fWAR data
+  var activeRosterTeam = document.querySelector('#team-sel .team-btn.active');
+  if (activeRosterTeam) {
+    var activeId = Object.keys(S.teamInfo).find(function(id){ var t=S.teamInfo[id]; return (t.shortName||t.name)===activeRosterTeam.textContent; });
+    if (activeId) buildRosterCharts(activeId);
+  }
 };
 
 window.autoWeightFromCorrelations = function() {
