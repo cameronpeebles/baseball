@@ -415,6 +415,7 @@ td.neg { color: #c0392b; font-weight: 500; }
   <div class="page" id="page-rosters">
     <div class="page-title">Rosters</div>
     <div class="page-subtitle">Players by team</div>
+    <div id="roster-charts" style="margin-bottom:20px"></div>
     <div class="card">
       <div class="team-selector" id="team-sel"></div>
       <div id="roster-body"><div class="loading">Select a team above</div></div>
@@ -1407,10 +1408,12 @@ function buildRosterSelector() {
       document.querySelectorAll('.team-btn').forEach(function(b) { b.classList.remove('active'); });
       btn.classList.add('active');
       showRoster(id);
+      buildRosterCharts(id);
     };
     sel.appendChild(btn);
   });
   showRoster(ids[0]);
+  buildRosterCharts(ids[0]);
 }
 
 function showRoster(teamId) {
@@ -1461,6 +1464,11 @@ function showRoster(teamId) {
       html += '<th style="color:var(--accent);font-weight:700;white-space:nowrap">fWAR</th>';
       html += '<th style="color:#c8a96e;font-size:11px;white-space:nowrap">fWAR-Pts</th>';
     }
+    // Positional rating column
+    var taLookup = {};
+    (TA.players || []).forEach(function(p){ if (p.name) taLookup[p.name.toLowerCase()] = p; });
+    var hasRating = Object.keys(taLookup).length > 0;
+    if (hasRating) html += '<th style="color:#5b8db8;font-weight:700;white-space:nowrap;font-size:11px">Rating</th>';
     var statHeaders = headers.filter(function(h) { return ['age','opponent'].indexOf(h.key || '') === -1; });
     statHeaders.forEach(function(h) { html += '<th>' + (h.shortName || h.name || '') + '</th>'; });
     if (hasFG) {
@@ -1472,7 +1480,7 @@ function showRoster(teamId) {
 
     // League average row
     if (hasFG && fgLeague && Object.keys(fgLeague).length > 0) {
-      var blankCols = 4 + (hasFWAR ? 2 : 0) + statHeaders.length;
+      var blankCols = 4 + (hasFWAR ? 2 : 0) + (hasRating ? 1 : 0) + statHeaders.length;
       html += '<tr style="background:#e8f4fd;border-bottom:2px solid #2980b9">';
       html += '<td class="left" colspan="' + blankCols + '" style="font-weight:600;font-size:11px;color:#2980b9;white-space:nowrap">MLB Avg (Savant)</td>';
       fgCols.forEach(function(c) {
@@ -1525,6 +1533,17 @@ function showRoster(teamId) {
         }
       }
 
+      if (hasRating) {
+        var tp = taLookup[name.toLowerCase()];
+        if (tp && tp.overallRating != null) {
+          var pct = Math.round(tp.overallRating * 100);
+          var pc = pct >= 65 ? '#1e6b3a' : pct >= 50 ? '#4a9a68' : pct >= 35 ? '#b7791f' : '#c0392b';
+          html += '<td style="white-space:nowrap"><span style="display:inline-block;padding:2px 7px;border-radius:8px;font-size:11px;font-weight:700;background:'+pc+'22;color:'+pc+'">' + pct + '</span></td>';
+        } else {
+          html += '<td style="color:var(--muted);font-size:11px">—</td>';
+        }
+      }
+
       cells.slice(2).forEach(function(cell) { html += '<td>' + ((cell.content != null ? cell.content : '')).toString().replace(/<[^>]+>/g, '') + '</td>'; });
 
       if (hasFG) {
@@ -1539,6 +1558,178 @@ function showRoster(teamId) {
     html += '</tbody></table></div>';
   });
   document.getElementById('roster-body').innerHTML = html;
+}
+
+function buildRosterCharts(teamId) {
+  var el = document.getElementById('roster-charts');
+  if (!el) return;
+
+  var GC = { Infield:'#1a1f5e', Outfield:'#5b8db8', SP:'#7bc8a4', RP:'#e8f0a0' };
+  var GB = { Infield:'#1a1f5e', Outfield:'#4a7ba8', SP:'#5ab88a', RP:'#d4e080' };
+  var GROUPS = ['Infield','Outfield','SP','RP'];
+  var CW=320, CH=230, PT=32, PB=52, PL=12, PR=12;
+  var cW=CW-PL-PR, cH=CH-PT-PB;
+
+  function grp(p) {
+    var s=(p.assignedSlot||p.pos||'').toUpperCase();
+    if(['C','1B','2B','3B','SS'].some(function(x){return s.indexOf(x)!==-1;})) return 'Infield';
+    if(['OF','LF','CF','RF'].some(function(x){return s.indexOf(x)!==-1;})) return 'Outfield';
+    if(s.indexOf('SP')!==-1) return 'SP';
+    if(s.indexOf('RP')!==-1||s.indexOf('P')!==-1) return 'RP';
+    return 'Infield';
+  }
+
+  var teamIds=[];
+  document.querySelectorAll('#team-sel .team-btn').forEach(function(btn){
+    Object.keys(S.teamInfo).forEach(function(id){
+      var t=S.teamInfo[id];
+      if((t.shortName||t.name)===btn.textContent && teamIds.indexOf(id)===-1) teamIds.push(id);
+    });
+  });
+  if(!teamIds.length) teamIds=Object.keys(S.teamInfo);
+
+  var fwarAll=FWAR.hitResults.concat(FWAR.pitResults).filter(function(p){return p.ftId&&p.fWAR!=null;});
+  fwarAll.forEach(function(p){p._rg=grp(p);});
+  var fTot={};
+  teamIds.forEach(function(id){fTot[id]={t:0,Infield:0,Outfield:0,SP:0,RP:0};});
+  fwarAll.forEach(function(p){if(fTot[p.ftId]){fTot[p.ftId][p._rg]+=p.fWAR;fTot[p.ftId].t+=p.fWAR;}});
+
+  var taAll=(TA.players||[]).filter(function(p){return p.ftId;});
+  taAll.forEach(function(p){p._rg=p.bestGroup||grp(p);});
+  var pTot={};
+  teamIds.forEach(function(id){pTot[id]={t:0,Infield:0,Outfield:0,SP:0,RP:0,n:{Infield:0,Outfield:0,SP:0,RP:0}};});
+  taAll.forEach(function(p){
+    if(!pTot[p.ftId])return;
+    pTot[p.ftId][p._rg]+=(p.overallRating||0);
+    pTot[p.ftId].n[p._rg]++;
+  });
+  teamIds.forEach(function(id){
+    var d=pTot[id],s=0,n=0;
+    GROUPS.forEach(function(g){if(d.n[g]>0){d[g]=d[g]/d.n[g];s+=d[g];n++;}else{d[g]=0;}});
+    d.t=n>0?s/n:0;
+  });
+
+  function blank(msg){
+    return '<svg viewBox="0 0 '+CW+' '+CH+'" style="width:100%;height:auto"><text x="'+(CW/2)+'" y="'+(CH/2)+'" text-anchor="middle" font-size="10" fill="var(--muted)">'+msg+'</text></svg>';
+  }
+
+  function teamFwarSvg(){
+    if(!fwarAll.length) return blank('Calculate fWAR to see team chart');
+    var bw=Math.max(10,Math.floor(cW/teamIds.length)-3);
+    var maxV=Math.max.apply(null,teamIds.map(function(id){return Math.abs(fTot[id].t);}));
+    if(!maxV)maxV=1;
+    var y0=PT+cH*0.55;
+    var s='<svg viewBox="0 0 '+CW+' '+CH+'" style="width:100%;height:auto;display:block">';
+    s+='<text x="'+(CW/2)+'" y="12" text-anchor="middle" font-size="10" font-weight="600" fill="var(--text)">Team fWAR</text>';
+    s+='<line x1="'+PL+'" y1="'+y0+'" x2="'+(CW-PR)+'" y2="'+y0+'" stroke="var(--text)" stroke-width="1"/>';
+    teamIds.forEach(function(id,i){
+      var ti=S.teamInfo[id]||{},name=(ti.shortName||ti.name||id).substring(0,10);
+      var d=fTot[id],isHL=id===teamId,x=PL+i*(bw+3);
+      var yT=y0;
+      GROUPS.forEach(function(g){var v=Math.max(d[g],0);if(!v)return;var bh=v/maxV*(cH*0.50);yT-=bh;s+='<rect x="'+x+'" y="'+yT+'" width="'+bw+'" height="'+bh+'" fill="'+GC[g]+'" rx="1"><title>'+name+' '+g+': '+(d[g]>=0?'+':'')+d[g].toFixed(2)+'</title></rect>';});
+      var yB=y0;
+      GROUPS.forEach(function(g){var v=Math.min(d[g],0);if(!v)return;var bh=Math.abs(v)/maxV*(cH*0.40);s+='<rect x="'+x+'" y="'+yB+'" width="'+bw+'" height="'+bh+'" fill="'+GC[g]+'" rx="1"/>';yB+=bh;});
+      if(isHL){var tbh=Math.abs(d.t)/maxV*(d.t>=0?cH*0.50:cH*0.40);var bY=d.t>=0?y0-tbh:y0;s+='<rect x="'+(x-1)+'" y="'+(bY-1)+'" width="'+(bw+2)+'" height="'+(tbh+2)+'" fill="none" stroke="var(--accent)" stroke-width="2"/>';}
+      var tbh2=Math.abs(d.t)/maxV*(d.t>=0?cH*0.50:cH*0.40),lY=d.t>=0?y0-tbh2-3:y0+tbh2+9;
+      s+='<text x="'+(x+bw/2)+'" y="'+lY+'" text-anchor="middle" font-size="6" font-weight="700" fill="'+(isHL?'var(--accent)':'var(--text)')+'">'+(d.t>=0?'+':'')+d.t.toFixed(1)+'</text>';
+      s+='<text x="'+(x+bw/2)+'" y="'+(CH-PB+12)+'" text-anchor="end" font-size="6" fill="'+(isHL?'var(--accent)':'var(--muted)')+'" font-weight="'+(isHL?'700':'400')+'" transform="rotate(-45,'+(x+bw/2)+','+(CH-PB+12)+')">'+name+'</text>';
+    });
+    s+='</svg>';return s;
+  }
+
+  function teamStrSvg(){
+    if(!taAll.length) return blank('Visit Trade page to see team strength');
+    var bw=Math.max(10,Math.floor(cW/teamIds.length)-3);
+    var y0=PT+cH*0.55, scale=cH*0.90;
+    var s='<svg viewBox="0 0 '+CW+' '+CH+'" style="width:100%;height:auto;display:block">';
+    s+='<text x="'+(CW/2)+'" y="12" text-anchor="middle" font-size="10" font-weight="600" fill="var(--text)">Team Strength</text>';
+    s+='<line x1="'+PL+'" y1="'+y0+'" x2="'+(CW-PR)+'" y2="'+y0+'" stroke="var(--text)" stroke-width="1"/>';
+    s+='<line x1="'+PL+'" y1="'+(PT+cH*0.50)+'" x2="'+(CW-PR)+'" y2="'+(PT+cH*0.50)+'" stroke="#aaa" stroke-width="0.8" stroke-dasharray="3,2"/>';
+    teamIds.forEach(function(id,i){
+      var ti=S.teamInfo[id]||{},name=(ti.shortName||ti.name||id).substring(0,10);
+      var d=pTot[id],isHL=id===teamId,x=PL+i*(bw+3);
+      var yT=y0;
+      GROUPS.forEach(function(g){var v=d[g];if(!v)return;var bh=v*scale/GROUPS.length;yT-=bh;s+='<rect x="'+x+'" y="'+yT+'" width="'+bw+'" height="'+bh+'" fill="'+GC[g]+'" rx="1"><title>'+name+' '+g+': '+(v*100).toFixed(0)+'th</title></rect>';});
+      if(isHL){var tbh=d.t*scale;s+='<rect x="'+(x-1)+'" y="'+(y0-tbh-1)+'" width="'+(bw+2)+'" height="'+(tbh+2)+'" fill="none" stroke="var(--accent)" stroke-width="2"/>';}
+      s+='<text x="'+(x+bw/2)+'" y="'+(y0-d.t*scale-3)+'" text-anchor="middle" font-size="6" font-weight="700" fill="'+(isHL?'var(--accent)':'var(--text)')+'">'+(d.t*100).toFixed(0)+'</text>';
+      s+='<text x="'+(x+bw/2)+'" y="'+(CH-PB+12)+'" text-anchor="end" font-size="6" fill="'+(isHL?'var(--accent)':'var(--muted)')+'" font-weight="'+(isHL?'700':'400')+'" transform="rotate(-45,'+(x+bw/2)+','+(CH-PB+12)+')">'+name+'</text>';
+    });
+    s+='</svg>';return s;
+  }
+
+  function playerFwarSvg(players, label){
+    if(!players.length) return blank('No fWAR data');
+    var s2=players.slice().sort(function(a,b){return b.fWAR-a.fWAR;});
+    var top5=s2.slice(0,5);
+    var bot=s2.filter(function(p){return p.fWAR<0;}).slice(-5).reverse();
+    var keys={};top5.forEach(function(p){keys[p.name]=1;});
+    var shown=top5.slice();bot.forEach(function(p){if(!keys[p.name])shown.push(p);});
+    if(!shown.length) return blank('No data');
+    var bw=Math.max(14,Math.floor(cW/shown.length)-4);
+    var maxA=Math.max.apply(null,shown.map(function(p){return Math.abs(p.fWAR);}));
+    if(!maxA)maxA=1;
+    var y0=PT+cH*0.55;
+    var s='<svg viewBox="0 0 '+CW+' '+CH+'" style="width:100%;height:auto;display:block">';
+    s+='<text x="'+(CW/2)+'" y="12" text-anchor="middle" font-size="10" font-weight="600" fill="var(--text)">'+label+'</text>';
+    s+='<line x1="'+PL+'" y1="'+y0+'" x2="'+(CW-PR)+'" y2="'+y0+'" stroke="#5b8db8" stroke-width="1.5"/>';
+    shown.forEach(function(p,i){
+      var x=PL+i*(bw+4),isP=p.fWAR>=0;
+      var bh=Math.abs(p.fWAR)/maxA*(isP?cH*0.50:cH*0.38),barY=isP?y0-bh:y0;
+      s+='<rect x="'+x+'" y="'+barY+'" width="'+bw+'" height="'+bh+'" fill="'+GC[p._rg]+'" rx="2" stroke="'+GB[p._rg]+'" stroke-width="0.5"><title>'+p.name+': '+(p.fWAR>=0?'+':'')+p.fWAR.toFixed(2)+'</title></rect>';
+      s+='<text x="'+(x+bw/2)+'" y="'+(isP?barY-3:barY+bh+9)+'" text-anchor="middle" font-size="6.5" font-weight="700" fill="var(--text)">'+(p.fWAR>=0?'+':'')+p.fWAR.toFixed(1)+'</text>';
+      s+='<text x="'+(x+bw/2)+'" y="'+(CH-PB+12)+'" text-anchor="end" font-size="6.5" fill="var(--text)" transform="rotate(-45,'+(x+bw/2)+','+(CH-PB+12)+')">'+p.name+'</text>';
+    });
+    s+='</svg>';return s;
+  }
+
+  function playerStrSvg(players, label){
+    if(!players.length) return blank('Visit Trade page for strength data');
+    var s2=players.slice().sort(function(a,b){return (b.overallRating||0)-(a.overallRating||0);});
+    var top5=s2.slice(0,5);
+    var bot5=s2.slice(-5).reverse();
+    var keys={};top5.forEach(function(p){keys[p.name]=1;});
+    var shown=top5.slice();bot5.forEach(function(p){if(!keys[p.name])shown.push(p);});
+    var bw=Math.max(14,Math.floor(cW/shown.length)-4);
+    var yBase=PT+cH, y50=PT+cH*0.50;
+    var s='<svg viewBox="0 0 '+CW+' '+CH+'" style="width:100%;height:auto;display:block">';
+    s+='<text x="'+(CW/2)+'" y="12" text-anchor="middle" font-size="10" font-weight="600" fill="var(--text)">'+label+'</text>';
+    s+='<line x1="'+PL+'" y1="'+y50+'" x2="'+(CW-PR)+'" y2="'+y50+'" stroke="#5b8db8" stroke-width="1" stroke-dasharray="3,2"/>';
+    s+='<line x1="'+PL+'" y1="'+yBase+'" x2="'+(CW-PR)+'" y2="'+yBase+'" stroke="var(--text)" stroke-width="1"/>';
+    shown.forEach(function(p,i){
+      var x=PL+i*(bw+4),r=p.overallRating||0;
+      var bh=r*cH,barY=yBase-bh;
+      s+='<rect x="'+x+'" y="'+barY+'" width="'+bw+'" height="'+bh+'" fill="'+GC[p._rg]+'" rx="2" stroke="'+GB[p._rg]+'" stroke-width="0.5"><title>'+p.name+': '+(r*100).toFixed(0)+'th pct</title></rect>';
+      s+='<text x="'+(x+bw/2)+'" y="'+(barY-3)+'" text-anchor="middle" font-size="6.5" font-weight="700" fill="var(--text)">'+(r*100).toFixed(0)+'</text>';
+      s+='<text x="'+(x+bw/2)+'" y="'+(CH-PB+12)+'" text-anchor="end" font-size="6.5" fill="var(--text)" transform="rotate(-45,'+(x+bw/2)+','+(CH-PB+12)+')">'+p.name+'</text>';
+    });
+    s+='</svg>';return s;
+  }
+
+  var hl=S.teamInfo[teamId]||{}, hlName=hl.shortName||hl.name||'';
+  var myFwarHit=FWAR.hitResults.filter(function(p){return p.ftId===teamId&&p.fWAR!=null;});
+  var myFwarPit=FWAR.pitResults.filter(function(p){return p.ftId===teamId&&p.fWAR!=null;});
+  myFwarHit.forEach(function(p){p._rg=grp(p);}); myFwarPit.forEach(function(p){p._rg=grp(p);});
+  var myPosHit=taAll.filter(function(p){return p.ftId===teamId&&['Infield','Outfield'].indexOf(p._rg)!==-1;});
+  var myPosPit=taAll.filter(function(p){return p.ftId===teamId&&['SP','RP'].indexOf(p._rg)!==-1;});
+
+  var leg='<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">';
+  GROUPS.forEach(function(g){leg+='<span style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text);font-weight:500"><span style="display:inline-block;width:18px;height:18px;background:'+GC[g]+';border-radius:3px;border:1px solid '+GB[g]+'"></span>'+g+'</span>';});
+  leg+='</div>';
+
+  el.innerHTML='<div class="card" style="margin-bottom:0">'
+    +'<div class="card-header" style="flex-wrap:wrap;gap:8px"><span class="card-title">fWAR &amp; Positional Strength</span>'+leg+'</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px;padding:8px 16px 4px;align-items:start">'
+    +'<div>'+teamFwarSvg()+'</div>'
+    +'<div>'+playerFwarSvg(myFwarHit,'Hitting fWAR — '+hlName)+'</div>'
+    +'<div>'+playerFwarSvg(myFwarPit,'Pitching fWAR — '+hlName)+'</div>'
+    +'<div style="border-left:1px solid var(--border);padding-left:4px">'+teamStrSvg()+'</div>'
+    +'<div>'+playerStrSvg(myPosHit,'Hitting Strength — '+hlName)+'</div>'
+    +'<div>'+playerStrSvg(myPosPit,'Pitching Strength — '+hlName)+'</div>'
+    +'</div>'
+    +'<div style="display:flex;padding:0 16px 8px">'
+    +'<div style="flex:3;text-align:center;font-size:10px;font-weight:600;color:var(--accent);letter-spacing:0.05em">TEAM/PLAYER fWAR</div>'
+    +'<div style="flex:3;text-align:center;font-size:10px;font-weight:600;color:var(--accent);letter-spacing:0.05em">TEAM/PLAYER POSITIONAL STRENGTH</div>'
+    +'</div></div>';
 }
 
 var BAT_STATS = [
