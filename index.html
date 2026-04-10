@@ -1037,23 +1037,29 @@ function init() {
     buildRosterSelector();
     computeZScores();
     renderDashboard();
-    // Pre-build fWAR model inputs (calculation waits for user to click Recalculate)
+    // Pre-build fWAR model inputs
     renderFWARPage();
-    // Auto-build trade analyzer so positional strength is available on rosters page
+    // Auto-calculate fWAR so roster charts have data immediately
+    recalculateFWAR();
+    // Auto-build trade analyzer for positional strength
     if (!tradeRendered) {
       tradeRendered = true;
       buildTradeAnalyzer();
-      // Once TA.players is ready, refresh roster charts
-      (function waitForTA() {
-        if (TA.players && TA.players.length) {
-          var activeBtn = document.querySelector('#team-sel .team-btn.active');
-          var activeId = activeBtn ? Object.keys(S.teamInfo).find(function(id){ var t=S.teamInfo[id]; return (t.shortName||t.name)===activeBtn.textContent; }) : null;
-          buildRosterCharts(activeId || Object.keys(S.teamInfo)[0]);
-        } else {
-          setTimeout(waitForTA, 300);
-        }
-      })();
     }
+    // Wait for both TA.players and FWAR results, then refresh roster charts
+    (function waitForData() {
+      var hasFwar = FWAR.hitResults.length > 0 || FWAR.pitResults.length > 0;
+      var hasTA   = TA.players && TA.players.length > 0;
+      if (hasFwar && hasTA) {
+        var activeBtn = document.querySelector('#team-sel .team-btn.active');
+        var activeId  = activeBtn
+          ? Object.keys(S.teamInfo).find(function(id){ var t=S.teamInfo[id]; return (t.shortName||t.name)===activeBtn.textContent; })
+          : Object.keys(S.teamInfo)[0];
+        buildRosterCharts(activeId);
+      } else {
+        setTimeout(waitForData, 400);
+      }
+    })();
   }).catch(function(e) {
     console.error(e);
     ['standings-body','season-body','combined-body','hit-table','pit-table','roster-body'].forEach(function(id) {
@@ -1675,6 +1681,11 @@ function showRoster(teamId) {
       html += '<th style="color:var(--accent);font-weight:700;white-space:nowrap">fWAR</th>';
       html += '<th style="color:#c8a96e;font-size:11px;white-space:nowrap">fWAR-Pts</th>';
     }
+    // Positional rating column
+    var taLookup = {};
+    (TA.players || []).forEach(function(p){ if(p.name) taLookup[p.name.toLowerCase()] = p; });
+    var hasTA = Object.keys(taLookup).length > 0;
+    if (hasTA) html += '<th style="color:#5b8db8;font-weight:700;white-space:nowrap;font-size:11px">Rating</th>';
     var statHeaders = headers.filter(function(h) { return ['age','opponent'].indexOf(h.key || '') === -1; });
     statHeaders.forEach(function(h) { html += '<th>' + (h.shortName || h.name || '') + '</th>'; });
     if (hasFG) {
@@ -1686,7 +1697,7 @@ function showRoster(teamId) {
 
     // League average row
     if (hasFG && fgLeague && Object.keys(fgLeague).length > 0) {
-      var blankCols = 4 + (hasFWAR ? 2 : 0) + statHeaders.length;
+      var blankCols = 4 + (hasFWAR ? 2 : 0) + (hasTA ? 1 : 0) + statHeaders.length;
       html += '<tr style="background:#e8f4fd;border-bottom:2px solid #2980b9">';
       html += '<td class="left" colspan="' + blankCols + '" style="font-weight:600;font-size:11px;color:#2980b9;white-space:nowrap">MLB Avg (Savant)</td>';
       fgCols.forEach(function(c) {
@@ -1736,6 +1747,18 @@ function showRoster(teamId) {
           html += '<td style="font-size:12px;color:#c8a96e;white-space:nowrap">' + (fwP != null ? (fwP >= 0 ? '+' : '') + fwP.toFixed(1) : '—') + '</td>';
         } else {
           html += '<td style="color:var(--muted)">—</td><td></td>';
+        }
+      }
+
+      // Positional rating
+      if (hasTA) {
+        var tp = taLookup[name.toLowerCase()];
+        if (tp && tp.overallRating != null) {
+          var pct = Math.round(tp.overallRating * 100);
+          var pc = pct >= 65 ? '#1e6b3a' : pct >= 50 ? '#4a9a68' : pct >= 35 ? '#b7791f' : '#c0392b';
+          html += '<td style="white-space:nowrap"><span style="display:inline-block;padding:2px 7px;border-radius:8px;font-size:11px;font-weight:700;background:'+pc+'22;color:'+pc+'">' + pct + '</span></td>';
+        } else {
+          html += '<td style="color:var(--muted);font-size:11px">—</td>';
         }
       }
 
