@@ -415,6 +415,7 @@ td.neg { color: #c0392b; font-weight: 500; }
   <div class="page" id="page-rosters">
     <div class="page-title">Rosters</div>
     <div class="page-subtitle">Players by team</div>
+    <div id="roster-charts" style="margin-bottom:20px"></div>
     <div class="card">
       <div class="team-selector" id="team-sel"></div>
       <div id="roster-body"><div class="loading">Select a team above</div></div>
@@ -1407,14 +1408,179 @@ function buildRosterSelector() {
       document.querySelectorAll('.team-btn').forEach(function(b) { b.classList.remove('active'); });
       btn.classList.add('active');
       showRoster(id);
+      buildRosterCharts(id);
     };
     sel.appendChild(btn);
   });
+  buildRosterCharts(ids[0]);
   showRoster(ids[0]);
 }
 
+function buildRosterCharts(highlightId) {
+  var el = document.getElementById('roster-charts');
+  if (!el) return;
+
+  var allPlayers = FWAR.hitResults.concat(FWAR.pitResults).filter(function(p){ return p.ftId && p.fWAR != null; });
+  if (!allPlayers.length) { el.innerHTML = ''; return; }
+
+  // Position group from assignedSlot
+  var GROUP_COLORS = { Infield:'#2980b9', Outfield:'#27ae60', SP:'#c0392b', RP:'#8e44ad' };
+  function getGroup(p) {
+    var s = (p.assignedSlot || p.pos || '').toUpperCase();
+    if (['C','1B','2B','3B','SS'].some(function(x){return s.indexOf(x)!==-1;})) return 'Infield';
+    if (['OF','LF','CF','RF'].some(function(x){return s.indexOf(x)!==-1;})) return 'Outfield';
+    if (s.indexOf('SP')!==-1) return 'SP';
+    if (s.indexOf('RP')!==-1||s.indexOf('P')!==-1) return 'RP';
+    return 'Infield';
+  }
+  allPlayers.forEach(function(p){ p._group = getGroup(p); });
+
+  // ── LEFT: Team fWAR Stacked Bar ──────────────────────────────────────────
+  var teamIds = Object.keys(S.teamInfo);
+  var GROUPS = ['Infield','Outfield','SP','RP'];
+
+  var teamTotals = {};
+  teamIds.forEach(function(id){
+    teamTotals[id] = {total:0, Infield:0, Outfield:0, SP:0, RP:0};
+  });
+  allPlayers.forEach(function(p){
+    if (!teamTotals[p.ftId]) return;
+    teamTotals[p.ftId][p._group] += p.fWAR;
+    teamTotals[p.ftId].total += p.fWAR;
+  });
+
+  var sorted = teamIds.slice().sort(function(a,b){ return teamTotals[b].total - teamTotals[a].total; });
+  var maxTotal = Math.max.apply(null, sorted.map(function(id){ return Math.max(teamTotals[id].total, 0.1); }));
+
+  var W1=460, H1=320, PL1=110, PR1=60, PT1=24, PB1=30;
+  var cW1=W1-PL1-PR1, cH1=H1-PT1-PB1;
+  var rowH = Math.floor(cH1/sorted.length) - 2;
+
+  var svg1 = '<svg viewBox="0 0 '+W1+' '+H1+'" style="width:100%;height:auto;display:block">';
+  svg1 += '<text x="'+(W1/2)+'" y="14" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Team fWAR Breakdown</text>';
+
+  sorted.forEach(function(id, i) {
+    var ti = S.teamInfo[id] || {};
+    var name = ti.shortName || ti.name || id;
+    var y = PT1 + i*(rowH+2);
+    var td = teamTotals[id];
+    var isHL = id === highlightId;
+    var rowOpacity = highlightId ? (isHL ? '1' : '0.25') : '1';
+
+    // Team name
+    svg1 += '<text x="'+(PL1-6)+'" y="'+(y+rowH/2+4)+'" text-anchor="end" font-size="10" fill="var(--text)" opacity="'+rowOpacity+'">'+name+'</text>';
+
+    // Stacked bar segments
+    var xOff = PL1;
+    GROUPS.forEach(function(g){
+      var val = Math.max(td[g], 0);
+      var bw = val/maxTotal*cW1;
+      if (bw < 0.5) return;
+      svg1 += '<rect x="'+xOff+'" y="'+y+'" width="'+bw+'" height="'+rowH+'" fill="'+GROUP_COLORS[g]+'" opacity="'+rowOpacity+'" rx="1">';
+      svg1 += '<title>'+g+': '+(td[g]>=0?'+':'')+td[g].toFixed(2)+'</title></rect>';
+      xOff += bw;
+    });
+
+    // Negative values (light red bg)
+    if (td.total < 0) {
+      var negW = Math.abs(td.total)/maxTotal*cW1;
+      svg1 += '<rect x="'+PL1+'" y="'+y+'" width="'+negW+'" height="'+rowH+'" fill="#c0392b" opacity="'+(highlightId?(isHL?'0.4':'0.1'):'0.4')+'" rx="1"/>';
+    }
+
+    // Total label
+    svg1 += '<text x="'+(xOff+4)+'" y="'+(y+rowH/2+4)+'" font-size="9" font-weight="600" fill="var(--text)" opacity="'+rowOpacity+'">'+(td.total>=0?'+':'')+td.total.toFixed(1)+'</text>';
+  });
+
+  // Legend
+  var lx = PL1, ly = H1-16;
+  GROUPS.forEach(function(g,i){
+    svg1 += '<rect x="'+(lx+i*80)+'" y="'+ly+'" width="10" height="8" fill="'+GROUP_COLORS[g]+'" rx="1"/>';
+    svg1 += '<text x="'+(lx+i*80+13)+'" y="'+(ly+7)+'" font-size="9" fill="var(--muted)">'+g+'</text>';
+  });
+  svg1 += '</svg>';
+
+  // ── RIGHT: fWAR vs Z-Score Scatter ───────────────────────────────────────
+  var W2=460, H2=320, PL2=44, PR2=20, PT2=24, PB2=40;
+  var cW2=W2-PL2-PR2, cH2=H2-PT2-PB2;
+
+  var xVals = allPlayers.map(function(p){return p.totalZ||0;});
+  var yVals = allPlayers.map(function(p){return p.fWAR||0;});
+  var xMin=Math.min.apply(null,xVals)-0.3, xMax=Math.max.apply(null,xVals)+0.3;
+  var yMin=Math.min.apply(null,yVals)-0.3, yMax=Math.max.apply(null,yVals)+0.3;
+  var xRange=xMax-xMin||1, yRange=yMax-yMin||1;
+
+  function px2(v){return PL2+(v-xMin)/xRange*cW2;}
+  function py2(v){return PT2+(1-(v-yMin)/yRange)*cH2;}
+  var x02=px2(0), y02=py2(0);
+
+  var svg2 = '<svg viewBox="0 0 '+W2+' '+H2+'" style="width:100%;height:auto;display:block">';
+  svg2 += '<text x="'+(W2/2)+'" y="14" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">fWAR vs Z-Score</text>';
+
+  // Grid
+  [-3,-2,-1,0,1,2,3].forEach(function(v){
+    if(v<xMin||v>xMax) return;
+    var xp=px2(v);
+    svg2 += '<line x1="'+xp+'" y1="'+PT2+'" x2="'+xp+'" y2="'+(H2-PB2)+'" stroke="var(--border)" stroke-width="0.5"/>';
+    svg2 += '<text x="'+xp+'" y="'+(H2-PB2+12)+'" text-anchor="middle" font-size="8" fill="var(--muted)">'+v+'</text>';
+  });
+  [-2,-1,0,1,2,3,4,5].forEach(function(v){
+    if(v<yMin||v>yMax) return;
+    var yp=py2(v);
+    svg2 += '<line x1="'+PL2+'" y1="'+yp+'" x2="'+(W2-PR2)+'" y2="'+yp+'" stroke="var(--border)" stroke-width="0.5"/>';
+    svg2 += '<text x="'+(PL2-4)+'" y="'+(yp+4)+'" text-anchor="end" font-size="8" fill="var(--muted)">'+v+'</text>';
+  });
+
+  // Zero axes
+  svg2 += '<line x1="'+x02+'" y1="'+PT2+'" x2="'+x02+'" y2="'+(H2-PB2)+'" stroke="var(--border)" stroke-width="1.5"/>';
+  svg2 += '<line x1="'+PL2+'" y1="'+y02+'" x2="'+(W2-PR2)+'" y2="'+y02+'" stroke="var(--border)" stroke-width="1.5"/>';
+
+  // Axis labels
+  svg2 += '<text x="'+(W2/2)+'" y="'+(H2-4)+'" text-anchor="middle" font-size="9" fill="var(--muted)">Total Z-Score</text>';
+  svg2 += '<text x="10" y="'+(PT2+cH2/2)+'" text-anchor="middle" font-size="9" fill="var(--muted)" transform="rotate(-90,10,'+(PT2+cH2/2)+')">fWAR</text>';
+
+  // Dots — dimmed first, highlighted on top
+  var dimmed = allPlayers.filter(function(p){ return p.ftId !== highlightId; });
+  var bright = allPlayers.filter(function(p){ return p.ftId === highlightId; });
+
+  dimmed.forEach(function(p){
+    var cx=px2(p.totalZ||0), cy=py2(p.fWAR||0);
+    var col = highlightId ? '#ccc' : GROUP_COLORS[p._group];
+    svg2 += '<circle cx="'+cx+'" cy="'+cy+'" r="4" fill="'+col+'" opacity="'+(highlightId?'0.2':'0.7')+'">';
+    svg2 += '<title>'+p.name+' ('+p._group+')\nfWAR: '+(p.fWAR>=0?'+':'')+p.fWAR.toFixed(2)+'\nZ: '+(p.totalZ>=0?'+':'')+p.totalZ.toFixed(2)+'</title></circle>';
+  });
+  bright.forEach(function(p){
+    var cx=px2(p.totalZ||0), cy=py2(p.fWAR||0);
+    svg2 += '<circle cx="'+cx+'" cy="'+cy+'" r="5" fill="'+GROUP_COLORS[p._group]+'" opacity="0.95" stroke="white" stroke-width="1.5">';
+    svg2 += '<title>'+p.name+' ('+p._group+')\nfWAR: '+(p.fWAR>=0?'+':'')+p.fWAR.toFixed(2)+'\nZ: '+(p.totalZ>=0?'+':'')+p.totalZ.toFixed(2)+'</title></circle>';
+    // Name label for top players
+    if (p.fWAR >= 1.5) {
+      svg2 += '<text x="'+(cx+7)+'" y="'+(cy+4)+'" font-size="8" fill="var(--text)" font-weight="600">'+p.name.split(' ').pop()+'</text>';
+    }
+  });
+
+  // Legend
+  var lx2 = PL2, ly2 = H2-12;
+  GROUPS.forEach(function(g,i){
+    svg2 += '<circle cx="'+(lx2+i*80+5)+'" cy="'+(ly2)+'" r="4" fill="'+GROUP_COLORS[g]+'"/>';
+    svg2 += '<text x="'+(lx2+i*80+12)+'" y="'+(ly2+4)+'" font-size="9" fill="var(--muted)">'+g+'</text>';
+  });
+  svg2 += '</svg>';
+
+  // ── Assemble ──────────────────────────────────────────────────────────────
+  var hl = S.teamInfo[highlightId] || {};
+  el.innerHTML = '<div class="card" style="margin-bottom:0">'
+    + '<div class="card-header"><span class="card-title">League Overview</span>'
+    + (highlightId ? '<span style="font-size:12px;color:var(--muted)">Highlighted: <strong style="color:var(--accent)">'+(hl.shortName||hl.name||'')+'</strong> — click another team to switch</span>' : '')
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;padding:16px">'
+    + '<div>'+svg1+'</div>'
+    + '<div>'+svg2+'</div>'
+    + '</div></div>';
+}
+
+window._rosterHighlight = null;
+
 function showRoster(teamId) {
-  var rosterData = S.rosterRaw && S.rosterRaw.data && S.rosterRaw.data.rosters && S.rosterRaw.data.rosters[teamId];
   var ti = S.teamInfo[teamId] || {};
   if (!rosterData) { document.getElementById('roster-body').innerHTML = '<div class="loading">No roster data for <strong>' + (ti.name || teamId) + '</strong></div>'; return; }
   var tables = (rosterData.data && rosterData.data.tables) || [];
