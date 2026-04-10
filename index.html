@@ -7979,15 +7979,6 @@ function renderTargetsPage() {
 function drawTargetsTable() {
   var el = document.getElementById('targets-body');
   if (!el || !targetsData) return;
-  try {
-    _drawTargetsTableInner(el);
-  } catch(err) {
-    console.error('drawTargetsTable error:', err);
-    el.innerHTML = '<div class="error-msg">Error rendering targets table: ' + err.message + '</div>';
-  }
-}
-
-function _drawTargetsTableInner(el) {
 
   // Name normalization — strip accents, lowercase, alpha only
   function normName(n) {
