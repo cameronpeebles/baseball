@@ -1037,10 +1037,8 @@ function init() {
     buildRosterSelector();
     computeZScores();
     renderDashboard();
-    // Pre-build fWAR model inputs
+    // Pre-build fWAR model inputs — also auto-calculates fWAR
     renderFWARPage();
-    // Auto-calculate fWAR so roster charts have data immediately
-    recalculateFWAR();
     // Auto-build trade analyzer for positional strength
     if (!tradeRendered) {
       tradeRendered = true;
@@ -1051,15 +1049,19 @@ function init() {
     (function waitForData() {
       var hasFwar = FWAR.hitResults.length > 0 || FWAR.pitResults.length > 0;
       var hasTA   = TA.players && TA.players.length > 0;
-      if (hasFwar && hasTA && window._rosterChartsNeedRefresh) {
-        window._rosterChartsNeedRefresh = false;
-        var activeBtn = document.querySelector('#team-sel .team-btn.active');
-        var activeId  = activeBtn
-          ? Object.keys(S.teamInfo).find(function(id){ var t=S.teamInfo[id]; return (t.shortName||t.name)===activeBtn.textContent; })
-          : Object.keys(S.teamInfo)[0];
-        buildRosterCharts(activeId);
+      if (hasFwar && hasTA) {
+        if (window._rosterChartsNeedRefresh) {
+          window._rosterChartsNeedRefresh = false;
+          var activeBtn = document.querySelector('#team-sel .team-btn.active');
+          var activeId  = activeBtn
+            ? Object.keys(S.teamInfo).find(function(id){ var t=S.teamInfo[id]; return (t.shortName||t.name)===activeBtn.textContent; })
+            : Object.keys(S.teamInfo)[0];
+          buildRosterCharts(activeId);
+        }
+      } else {
+        // Keep polling until data is ready
+        setTimeout(waitForData, 500);
       }
-      setTimeout(waitForData, 600);
     })();
   }).catch(function(e) {
     console.error(e);
@@ -3352,8 +3354,21 @@ function buildTradeAnalyzer() {
   });
 
   TA.players = allPlayers;
-  // Refresh roster charts now that positional strength data is ready
+  // Signal roster charts need refresh and restart the poll
   window._rosterChartsNeedRefresh = true;
+  (function rosterPollTA() {
+    var hasFwar = FWAR.hitResults.length > 0 || FWAR.pitResults.length > 0;
+    if (hasFwar && window._rosterChartsNeedRefresh) {
+      window._rosterChartsNeedRefresh = false;
+      var activeBtn = document.querySelector('#team-sel .team-btn.active');
+      var activeId = activeBtn
+        ? Object.keys(S.teamInfo).find(function(id){ var t=S.teamInfo[id]; return (t.shortName||t.name)===activeBtn.textContent; })
+        : Object.keys(S.teamInfo)[0];
+      buildRosterCharts(activeId);
+    } else if (!hasFwar) {
+      setTimeout(rosterPollTA, 500);
+    }
+  })();
 
   // Also build FA list (from hitRows/pitRows where ftId is empty)
   var faPlayers = [];
