@@ -1581,6 +1581,7 @@ function buildRosterCharts(highlightId) {
 window._rosterHighlight = null;
 
 function showRoster(teamId) {
+  var rosterData = S.rosterRaw && S.rosterRaw.data && S.rosterRaw.data.rosters && S.rosterRaw.data.rosters[teamId];
   var ti = S.teamInfo[teamId] || {};
   if (!rosterData) { document.getElementById('roster-body').innerHTML = '<div class="loading">No roster data for <strong>' + (ti.name || teamId) + '</strong></div>'; return; }
   var tables = (rosterData.data && rosterData.data.tables) || [];
