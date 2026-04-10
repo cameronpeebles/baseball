@@ -852,11 +852,11 @@ for p26 in players_2026:
 
     if xwoba is None: continue  # skip players with no 2026 data
 
-    is_under = (delta_xwoba  is not None and delta_xwoba  >= 0.020 and
-                delta_babip  is not None and delta_babip  <= -0.020 and
+    is_under = (delta_xwoba  is not None and delta_xwoba  >= 0.010 and
+                delta_babip  is not None and delta_babip  <= -0.010 and
                 delta_barrel is not None and delta_barrel >= 0.0)
-    is_over  = (delta_xwoba  is not None and delta_xwoba  <= -0.020 and
-                delta_babip  is not None and delta_babip  >= 0.020 and
+    is_over  = (delta_xwoba  is not None and delta_xwoba  <= -0.010 and
+                delta_babip  is not None and delta_babip  >= 0.010 and
                 delta_barrel is not None and delta_barrel <= 0.0)
 
     signal = "Underperforming" if is_under else "Overperforming" if is_over else "Neutral"
@@ -1068,11 +1068,11 @@ for pd2 in era_data:
 
     # Underperforming (Buy Low): ERA much worse than xERA, BABIP up (bad luck), K% holding
     # Overperforming  (Sell High): ERA much better than xERA, BABIP down (good luck), K% declining
-    is_under = (delta_era   is not None and delta_era   >= 0.50 and
-                delta_babip is not None and delta_babip >= 0.020 and
+    is_under = (delta_era   is not None and delta_era   >= 0.25 and
+                delta_babip is not None and delta_babip >= 0.010 and
                 delta_k     is not None and delta_k     >= 0.0)
-    is_over  = (delta_era   is not None and delta_era   <= -0.50 and
-                delta_babip is not None and delta_babip <= -0.020 and
+    is_over  = (delta_era   is not None and delta_era   <= -0.25 and
+                delta_babip is not None and delta_babip <= -0.010 and
                 delta_k     is not None and delta_k     <= 0.0)
 
     signal = "Underperforming" if is_under else "Overperforming" if is_over else "Neutral"
