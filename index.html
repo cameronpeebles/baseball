@@ -1512,89 +1512,72 @@ function buildRosterCharts(highlightId) {
     svg+='</svg>'; return svg;
   }
 
-  // ── Positional strength team bar ───────────────────────────────────────────
+  // ── Positional strength team bar ────────────────────────────────────────
   function teamPosBar() {
     var bw=Math.max(10,Math.floor(cW/teamIds.length)-3);
-    var y0=PT+cH*0.55, midPct=0.50;
+    // Each group avg is 0-1; scale so 1.0 fills the positive half of chart
+    var y0=PT+cH*0.55;
     var svg='<svg viewBox="0 0 '+CW+' '+CH+'" style="width:100%;height:auto;display:block">';
     svg+='<text x="'+(CW/2)+'" y="12" text-anchor="middle" font-size="10" font-weight="600" fill="var(--text)">Team Strength</text>';
     svg+='<line x1="'+PL+'" y1="'+y0+'" x2="'+(CW-PR)+'" y2="'+y0+'" stroke="var(--text)" stroke-width="1"/>';
-    // 50th pct reference line
-    var y50=PT+cH*(1-midPct);
+    // 50th pct dashed reference
+    var y50=y0-(0.50*(cH*0.90));
     svg+='<line x1="'+PL+'" y1="'+y50+'" x2="'+(CW-PR)+'" y2="'+y50+'" stroke="#aaa" stroke-width="0.8" stroke-dasharray="3,2"/>';
     svg+='<text x="'+(PL-2)+'" y="'+(y50+3)+'" text-anchor="end" font-size="6" fill="var(--muted)">50</text>';
     teamIds.forEach(function(id,i){
       var ti=S.teamInfo[id]||{}, name=(ti.shortName||ti.name||id).substring(0,10);
       var td=posTotals[id], isHL=id===highlightId, x=PL+i*(bw+3);
+      // Stack groups from baseline up, each segment = avg percentile * scale
+      var scale=cH*0.90; // full height = 100th percentile
       var yTop=y0;
       GROUPS.forEach(function(g){
         var v=td[g]; if(!v)return;
-        var bh=(v*cH); // 0-1 scale maps to full chart height
+        var bh=v*scale/GROUPS.length; // divide by 4 groups so total reaches ~avg
         yTop-=bh;
         svg+='<rect x="'+x+'" y="'+yTop+'" width="'+bw+'" height="'+bh+'" fill="'+GROUP_COLORS[g]+'" rx="1"><title>'+name+' '+g+': '+(v*100).toFixed(0)+'th pct</title></rect>';
       });
-      if(isHL){ var tbh=td.total*cH; var bY=y0-tbh; svg+='<rect x="'+(x-1)+'" y="'+(bY-1)+'" width="'+(bw+2)+'" height="'+(tbh+2)+'" fill="none" stroke="var(--accent)" stroke-width="2"/>'; }
-      var tbh2=td.total*cH, lY=y0-tbh2-3;
+      if(isHL){ var tbh=td.total*scale/GROUPS.length*GROUPS.length; var bY=y0-td.total*scale; svg+='<rect x="'+(x-1)+'" y="'+(bY-1)+'" width="'+(bw+2)+'" height="'+(td.total*scale+2)+'" fill="none" stroke="var(--accent)" stroke-width="2"/>'; }
+      var lY=y0-td.total*scale-3;
       svg+='<text x="'+(x+bw/2)+'" y="'+lY+'" text-anchor="middle" font-size="6" font-weight="700" fill="'+(isHL?'var(--accent)':'var(--text)')+'">'+(td.total*100).toFixed(0)+'</text>';
       svg+='<text x="'+(x+bw/2)+'" y="'+(CH-PB+12)+'" text-anchor="end" font-size="6" fill="'+(isHL?'var(--accent)':'var(--muted)')+'" font-weight="'+(isHL?'700':'400')+'" transform="rotate(-45,'+(x+bw/2)+','+(CH-PB+12)+')">'+name+'</text>';
     });
     svg+='</svg>'; return svg;
   }
 
-  // ── fWAR player bar ────────────────────────────────────────────────────────
-  function playerFwarBar(players, label) {
-    var s2=players.slice().sort(function(a,b){return b.fWAR-a.fWAR;});
-    var top5=s2.slice(0,5), bot5=s2.filter(function(p){return p.fWAR<0;}).slice(-5).reverse();
+  // ── Positional strength player bar ──────────────────────────────────────
+  function playerPosBar(players, label) {
+    var s2=players.slice().sort(function(a,b){return (b.overallRating||0)-(a.overallRating||0);});
+    var top5=s2.slice(0,5);
+    var bot5=s2.slice(-5).reverse();
     var keys={}; top5.forEach(function(p){keys[p.name]=1;});
     var shown=top5.slice(); bot5.forEach(function(p){if(!keys[p.name])shown.push(p);});
-    if(!shown.length) return '<svg viewBox="0 0 '+CW+' '+CH+'" style="width:100%;height:auto"><text x="'+(CW/2)+'" y="'+(CH/2)+'" text-anchor="middle" font-size="10" fill="var(--muted)">No data</text></svg>';
+    if(!shown.length) return '<svg viewBox="0 0 '+CW+' '+CH+'" style="width:100%;height:auto"><text x="'+(CW/2)+'" y="'+(CH/2)+'" text-anchor="middle" font-size="10" fill="var(--muted)">No rating data</text></svg>';
     var bw=Math.max(14,Math.floor(cW/Math.max(shown.length,1))-4);
-    var maxAbs=Math.max.apply(null,shown.map(function(p){return Math.abs(p.fWAR);})) || 1;
-    var y0=PT+cH*0.55;
+    // Y-axis 0-100, bar from 0, dashed at 50
+    var yBase=PT+cH; // bottom of chart = 0
+    var y50=PT+cH*0.50; // 50th percentile line
     var svg='<svg viewBox="0 0 '+CW+' '+CH+'" style="width:100%;height:auto;display:block">';
     svg+='<text x="'+(CW/2)+'" y="12" text-anchor="middle" font-size="10" font-weight="600" fill="var(--text)">'+label+'</text>';
-    svg+='<line x1="'+PL+'" y1="'+y0+'" x2="'+(CW-PR)+'" y2="'+y0+'" stroke="#5b8db8" stroke-width="1.5"/>';
+    // 50th dashed line
+    svg+='<line x1="'+PL+'" y1="'+y50+'" x2="'+(CW-PR)+'" y2="'+y50+'" stroke="#5b8db8" stroke-width="1" stroke-dasharray="3,2"/>';
+    svg+='<text x="'+(PL-2)+'" y="'+(y50+3)+'" text-anchor="end" font-size="6" fill="var(--muted)">50</text>';
+    // Baseline
+    svg+='<line x1="'+PL+'" y1="'+yBase+'" x2="'+(CW-PR)+'" y2="'+yBase+'" stroke="var(--text)" stroke-width="1"/>';
     shown.forEach(function(p,i){
-      var x=PL+i*(bw+4), isPos=p.fWAR>=0;
-      var bh=Math.abs(p.fWAR)/maxAbs*(isPos?cH*0.50:cH*0.38), barY=isPos?y0-bh:y0;
-      svg+='<rect x="'+x+'" y="'+barY+'" width="'+bw+'" height="'+bh+'" fill="'+GROUP_COLORS[p._group]+'" rx="2" stroke="'+GROUP_BORDER[p._group]+'" stroke-width="0.5"><title>'+p.name+': '+(p.fWAR>=0?'+':'')+p.fWAR.toFixed(2)+'</title></rect>';
-      var valY=isPos?barY-3:barY+bh+9;
-      svg+='<text x="'+(x+bw/2)+'" y="'+valY+'" text-anchor="middle" font-size="6.5" font-weight="700" fill="var(--text)">'+(p.fWAR>=0?'+':'')+p.fWAR.toFixed(1)+'</text>';
+      var x=PL+i*(bw+4);
+      var rating=(p.overallRating||0); // 0-1
+      var bh=rating*cH, barY=yBase-bh;
+      var col=GROUP_COLORS[p._group]||GROUP_COLORS.Infield;
+      var border=GROUP_BORDER[p._group]||GROUP_BORDER.Infield;
+      svg+='<rect x="'+x+'" y="'+barY+'" width="'+bw+'" height="'+bh+'" fill="'+col+'" rx="2" stroke="'+border+'" stroke-width="0.5"><title>'+p.name+': '+(rating*100).toFixed(0)+'th pct</title></rect>';
+      // Value label above bar
+      svg+='<text x="'+(x+bw/2)+'" y="'+(barY-3)+'" text-anchor="middle" font-size="6.5" font-weight="700" fill="var(--text)">'+(rating*100).toFixed(0)+'</text>';
+      // Name label
       svg+='<text x="'+(x+bw/2)+'" y="'+(CH-PB+12)+'" text-anchor="end" font-size="6.5" fill="var(--text)" transform="rotate(-45,'+(x+bw/2)+','+(CH-PB+12)+')">'+p.name+'</text>';
     });
     svg+='</svg>'; return svg;
   }
 
-  // ── Positional strength player bar ────────────────────────────────────────
-  function playerPosBar(players, label) {
-    // Sort by rating, pick top5 above 50 and bottom5 below 50
-    var s2=players.slice().sort(function(a,b){return (b.overallRating||0)-(a.overallRating||0);});
-    var top5=s2.slice(0,5);
-    var bot5=s2.filter(function(p){return (p.overallRating||0)<0.5;}).slice(-5).reverse();
-    var keys={}; top5.forEach(function(p){keys[p.name]=1;});
-    var shown=top5.slice(); bot5.forEach(function(p){if(!keys[p.name])shown.push(p);});
-    if(!shown.length) return '<svg viewBox="0 0 '+CW+' '+CH+'" style="width:100%;height:auto"><text x="'+(CW/2)+'" y="'+(CH/2)+'" text-anchor="middle" font-size="10" fill="var(--muted)">No rating data</text></svg>';
-    var bw=Math.max(14,Math.floor(cW/Math.max(shown.length,1))-4);
-    var y0=PT+cH*0.55; // 50th pct baseline
-    var svg='<svg viewBox="0 0 '+CW+' '+CH+'" style="width:100%;height:auto;display:block">';
-    svg+='<text x="'+(CW/2)+'" y="12" text-anchor="middle" font-size="10" font-weight="600" fill="var(--text)">'+label+'</text>';
-    svg+='<line x1="'+PL+'" y1="'+y0+'" x2="'+(CW-PR)+'" y2="'+y0+'" stroke="#5b8db8" stroke-width="1.5"/>';
-    svg+='<text x="'+(PL-2)+'" y="'+(y0+3)+'" text-anchor="end" font-size="6" fill="var(--muted)">50</text>';
-    shown.forEach(function(p,i){
-      var x=PL+i*(bw+4);
-      var rating=(p.overallRating||0); // 0-1 scale
-      var delta=rating-0.5; // deviation from 50th
-      var isPos=delta>=0;
-      var maxDelta=0.5;
-      var bh=Math.abs(delta)/maxDelta*(cH*0.45), barY=isPos?y0-bh:y0;
-      var col=isPos?GROUP_COLORS[p._group]:'#c0392b';
-      svg+='<rect x="'+x+'" y="'+barY+'" width="'+bw+'" height="'+bh+'" fill="'+col+'" rx="2" stroke="'+(isPos?GROUP_BORDER[p._group]:'#a93226')+'" stroke-width="0.5"><title>'+p.name+': '+(rating*100).toFixed(0)+'th pct</title></rect>';
-      var valY=isPos?barY-3:barY+bh+9;
-      svg+='<text x="'+(x+bw/2)+'" y="'+valY+'" text-anchor="middle" font-size="6.5" font-weight="700" fill="var(--text)">'+(rating*100).toFixed(0)+'</text>';
-      svg+='<text x="'+(x+bw/2)+'" y="'+(CH-PB+12)+'" text-anchor="end" font-size="6.5" fill="var(--text)" transform="rotate(-45,'+(x+bw/2)+','+(CH-PB+12)+')">'+p.name+'</text>';
-    });
-    svg+='</svg>'; return svg;
-  }
 
   // Source players
   var hl=S.teamInfo[highlightId]||{}, hlName=hl.shortName||hl.name||'';
