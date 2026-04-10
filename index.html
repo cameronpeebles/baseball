@@ -3378,6 +3378,7 @@ function buildTradeAnalyzer() {
   html += '<button class="trade-tab active" onclick="showTradeTab(\'trade\', this)">Trade Suggestions</button>';
   html += '<button class="trade-tab" onclick="showTradeTab(\'suggestions\', this)">Trade Analyzer</button>';
   html += '<button class="trade-tab" onclick="showTradeTab(\'fa\', this)">Free Agent Recommendations</button>';
+  html += '<button class="trade-tab" onclick="showTradeTab(\'fa-ratings\', this)">Free Agents</button>';
   html += '<button class="trade-tab" onclick="showTradeTab(\'sgp-hit\', this)">Hitter SGP</button>';
   html += '<button class="trade-tab" onclick="showTradeTab(\'sgp-pit\', this)">Pitcher SGP</button>';
   html += '</div>';
@@ -3449,7 +3450,10 @@ function buildTradeAnalyzer() {
   html += '<div id="fa-results-area"></div>';
   html += '</div>'; // fa tab
 
-  // ── Trade Analyzer tab ────────────────────────────────────────────────────
+  // ── Free Agent Ratings tab ────────────────────────────────────────────────
+  html += '<div class="trade-tab-content" id="trade-tab-fa-ratings">';
+  html += '<div id="fa-ratings-body"><div class="loading">Loading...</div></div>';
+  html += '</div>';
   html += '<div class="trade-tab-content" id="trade-tab-trade">';
   html += '<div class="joe-info" style="margin-bottom:20px">';
   html += '<strong>How it works:</strong> Select your team. The analyzer finds your weakest and strongest positions, ';
@@ -3538,7 +3542,6 @@ window.showTradeTab = function(tab, btn) {
   btn.classList.add('active');
   document.getElementById('trade-tab-' + tab).classList.add('active');
   TA.activeTab = tab;
-  // Sync SGP team selectors when switching between sgp tabs
   if (tab === 'sgp-hit' || tab === 'sgp-pit') {
     var val = SGP_STATE.teamId || '';
     var a = document.getElementById('sgp-team-select');
@@ -3546,10 +3549,72 @@ window.showTradeTab = function(tab, btn) {
     if (a && a.value !== val) a.value = val;
     if (b2 && b2.value !== val) b2.value = val;
     document.querySelector('main').style.maxWidth = 'none';
+  } else if (tab === 'fa-ratings') {
+    document.querySelector('main').style.maxWidth = 'none';
+    drawFARatings();
   } else {
     document.querySelector('main').style.maxWidth = '';
   }
 };
+
+function drawFARatings() {
+  var el = document.getElementById('fa-ratings-body');
+  if (!el) return;
+  var fas = TA.faPlayers || [];
+  if (!fas.length) { el.innerHTML = '<div style="padding:20px;color:var(--muted)">No free agent data — visit this tab after page load.</div>'; return; }
+
+  var hitters  = fas.filter(function(p){ return p.type === 'bat'; }).sort(function(a,b){ return (b.overallRating||0)-(a.overallRating||0); });
+  var pitchers = fas.filter(function(p){ return p.type === 'pit'; }).sort(function(a,b){ return (b.overallRating||0)-(a.overallRating||0); });
+
+  function badge(r) {
+    var pct = Math.round((r||0)*100);
+    var col = pct>=65?'#1e6b3a':pct>=50?'#4a9a68':pct>=35?'#b7791f':'#c0392b';
+    return '<span style="font-weight:700;color:'+col+'">'+pct+'</span>';
+  }
+  function posBadge(pos) {
+    return '<span style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:600;background:var(--bg);border:1px solid var(--border);color:var(--muted)">'+pos+'</span>';
+  }
+  function fmt(v, dec) { return v!=null ? Number(v).toFixed(dec) : '—'; }
+
+  function buildTable(players, label, cats, headers, decArr) {
+    if (!players.length) return '';
+    var h = '<div class="card" style="margin-bottom:24px">';
+    h += '<div class="card-header"><span class="card-title">'+label+'</span>';
+    h += '<span style="font-size:12px;color:var(--muted)">'+players.length+' players · rated vs rostered players</span></div>';
+    h += '<div class="table-wrap"><table style="width:100%;font-size:13px"><thead><tr>';
+    h += '<th class="left" style="min-width:180px">PLAYER</th>';
+    h += '<th class="left">POS</th>';
+    h += '<th class="left">MLB</th>';
+    cats.forEach(function(c,i){ h += '<th>'+headers[i]+'</th>'; });
+    h += '<th style="color:var(--accent)">RATING</th>';
+    h += '</tr></thead><tbody>';
+
+    players.forEach(function(p, i) {
+      var bg = i%2===1 ? 'background:var(--bg)' : '';
+      h += '<tr style="border-bottom:1px solid var(--border);'+bg+'">';
+      h += '<td class="left"><div class="team-cell">';
+      if (p.hs) h += '<img class="player-hs" src="'+p.hs+'" alt="" onerror="this.style.display=\'none\'">';
+      h += '<span><strong>'+p.name+'</strong></span></div></td>';
+      h += '<td class="left">'+posBadge(p.pos||'—')+'</td>';
+      h += '<td class="left" style="color:var(--muted);font-size:12px">'+( p.mlb||'—')+'</td>';
+      cats.forEach(function(c,i){ h += '<td>'+fmt(p.stats[c], decArr[i])+'</td>'; });
+      h += '<td>'+badge(p.overallRating)+'</td>';
+      h += '</tr>';
+    });
+    h += '</tbody></table></div></div>';
+    return h;
+  }
+
+  var hitCats    = ['R','HR','RBI','SB','AVG'];
+  var hitHdrs    = ['R','HR','RBI','SB','AVG'];
+  var hitDec     = [0,0,0,0,3];
+  var pitCats    = ['K','W','SVH3','ERA','WHIP'];
+  var pitHdrs    = ['K','W','SVH3','ERA','WHIP'];
+  var pitDec     = [0,0,0,2,2];
+
+  el.innerHTML = buildTable(hitters, 'Free Agent Hitters', hitCats, hitHdrs, hitDec)
+               + buildTable(pitchers,'Free Agent Pitchers', pitCats, pitHdrs, pitDec);
+}
 
 window.selectTradeTeam = function(side, teamId) {
   if (side === 'a') { TA.teamA = teamId; TA.selectedA = []; }
