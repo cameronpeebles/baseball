@@ -3380,6 +3380,7 @@ function buildTradeAnalyzer() {
   html += '<button class="trade-tab" onclick="showTradeTab(\'fa\', this)">Free Agent Recommendations</button>';
   html += '<button class="trade-tab" onclick="showTradeTab(\'sgp-hit\', this)">Hitter SGP</button>';
   html += '<button class="trade-tab" onclick="showTradeTab(\'sgp-pit\', this)">Pitcher SGP</button>';
+  html += '<button class="trade-tab" onclick="showTradeTab(\'ratings\', this)">Player Ratings</button>';
   html += '</div>';
 
   // ── Trade Suggestions tab (first/default) ────────────────────────────────
@@ -3529,6 +3530,16 @@ function buildTradeAnalyzer() {
   html += '<div id="sgp-pit-table"><div class="loading">Select your team above</div></div>';
   html += '</div></div>';
 
+  // ── Player Ratings tab ────────────────────────────────────────────────────
+  html += '<div class="trade-tab-content" id="trade-tab-ratings">';
+  html += '<div class="trade-tabs" id="ratings-subtabs" style="margin-bottom:16px">';
+  html += '<button class="trade-tab active" onclick="showRatingsSubtab(\'rostered\',this)">Rostered Players</button>';
+  html += '<button class="trade-tab" onclick="showRatingsSubtab(\'fa\',this)">Free Agents</button>';
+  html += '</div>';
+  html += '<div id="ratings-subtab-rostered" class="trade-tab-content active"><div class="loading">Loading ratings...</div></div>';
+  html += '<div id="ratings-subtab-fa" class="trade-tab-content"><div class="loading">Loading ratings...</div></div>';
+  html += '</div>';
+
   document.getElementById('trade-body').innerHTML = html;
 }
 
@@ -3546,10 +3557,120 @@ window.showTradeTab = function(tab, btn) {
     if (a && a.value !== val) a.value = val;
     if (b2 && b2.value !== val) b2.value = val;
     document.querySelector('main').style.maxWidth = 'none';
+  } else if (tab === 'ratings') {
+    document.querySelector('main').style.maxWidth = 'none';
+    drawRatingsTab('rostered');
+    drawRatingsTab('fa');
   } else {
     document.querySelector('main').style.maxWidth = '';
   }
 };
+
+window.showRatingsSubtab = function(sub, btn) {
+  document.querySelectorAll('#ratings-subtabs .trade-tab').forEach(function(b){ b.classList.remove('active'); });
+  ['rostered','fa'].forEach(function(s){ var el=document.getElementById('ratings-subtab-'+s); if(el) el.classList.remove('active'); });
+  btn.classList.add('active');
+  var el = document.getElementById('ratings-subtab-' + sub);
+  if (el) el.classList.add('active');
+};
+
+function drawRatingsTab(filter) {
+  var el = document.getElementById('ratings-subtab-' + filter);
+  if (!el) return;
+  if (!TA.players || !TA.players.length) {
+    el.innerHTML = '<div style="padding:20px;color:var(--muted)">Player data loading...</div>';
+    return;
+  }
+
+  var players = TA.players.filter(function(p) {
+    if (filter === 'rostered') return !!p.ftId;
+    if (filter === 'fa')       return !p.ftId;
+    return true;
+  });
+
+  var hitters  = players.filter(function(p){ return ['Infield','Outfield'].indexOf(p.bestGroup) !== -1; });
+  var pitchers = players.filter(function(p){ return ['SP','RP'].indexOf(p.bestGroup) !== -1; });
+
+  function ratingColor(r) {
+    var pct = Math.round(r * 100);
+    if (pct >= 65) return '#1e6b3a';
+    if (pct >= 50) return '#4a9a68';
+    if (pct >= 35) return '#b7791f';
+    return '#c0392b';
+  }
+
+  function ratingBadge(r) {
+    var pct = Math.round(r * 100);
+    var col = ratingColor(r);
+    return '<span style="display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;background:'+col+'22;color:'+col+'">'+pct+'</span>';
+  }
+
+  function groupBadge(g) {
+    var cols = { Infield:'#1a1f5e', Outfield:'#5b8db8', SP:'#7bc8a4', RP:'#c8a96e' };
+    var col = cols[g] || '#888';
+    return '<span style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;background:'+col+'33;color:'+col+'">'+g+'</span>';
+  }
+
+  function buildTable(playerList, label) {
+    if (!playerList.length) return '<div style="color:var(--muted);font-size:12px;padding:8px 0">No '+label+' found</div>';
+    var sorted = playerList.slice().sort(function(a,b){ return (b.overallRating||0)-(a.overallRating||0); });
+    var h = '<div class="card" style="margin-bottom:20px">';
+    h += '<div class="card-header"><span class="card-title">'+label+'</span>';
+    h += '<span style="font-size:12px;color:var(--muted)">'+sorted.length+' players · sorted by rating</span></div>';
+    h += '<div class="table-wrap"><table style="width:100%;font-size:13px"><thead><tr>';
+    h += '<th class="left" style="min-width:160px">Player</th>';
+    h += '<th class="left">Pos</th>';
+    h += '<th class="left">Group</th>';
+    if (filter === 'rostered') h += '<th class="left">Team</th>';
+    h += '<th style="color:#5b8db8;font-weight:700">Rating</th>';
+    h += '<th style="color:#5b8db8;font-size:11px">Infield</th>';
+    h += '<th style="color:#5b8db8;font-size:11px">Outfield</th>';
+    h += '<th style="color:#7bc8a4;font-size:11px">SP</th>';
+    h += '<th style="color:#c8a96e;font-size:11px">RP</th>';
+    h += '</tr></thead><tbody>';
+
+    sorted.forEach(function(p, i) {
+      var bg = i % 2 === 1 ? 'background:var(--bg)' : '';
+      var ti = p.ftId ? (S.teamInfo[p.ftId] || {}) : null;
+      h += '<tr style="border-bottom:1px solid var(--border);'+bg+'">';
+
+      // Player name + headshot
+      h += '<td class="left"><div class="team-cell">';
+      if (p.headshotUrl) h += '<img class="player-hs" src="'+p.headshotUrl+'" alt="" onerror="this.style.display=\'none\'">';
+      h += '<span><strong>'+p.name+'</strong></span></div></td>';
+
+      // Pos
+      h += '<td class="left"><span style="font-size:11px;color:var(--muted)">'+( p.pos||'')+'</span></td>';
+
+      // Group
+      h += '<td class="left">'+groupBadge(p.bestGroup||'')+'</td>';
+
+      // Team (rostered only)
+      if (filter === 'rostered') {
+        if (ti) {
+          h += '<td class="left"><div style="display:flex;align-items:center;gap:4px">';
+          if (ti.logoUrl512) h += '<img src="'+ti.logoUrl512+'" style="width:16px;height:16px;border-radius:50%" onerror="this.style.display=\'none\'">';
+          h += '<span style="font-size:12px">'+(ti.shortName||ti.name||'')+'</span></div></td>';
+        } else h += '<td class="left"><span class="badge fa">FA</span></td>';
+      }
+
+      // Overall rating
+      h += '<td>'+ratingBadge(p.overallRating||0)+'</td>';
+
+      // Group ratings
+      ['Infield','Outfield','SP','RP'].forEach(function(g) {
+        var r = (p.groupRatings && p.groupRatings[g] != null) ? p.groupRatings[g] : null;
+        h += '<td>'+(r != null ? ratingBadge(r) : '<span style="color:var(--muted)">—</span>')+'</td>';
+      });
+
+      h += '</tr>';
+    });
+    h += '</tbody></table></div></div>';
+    return h;
+  }
+
+  el.innerHTML = buildTable(hitters, 'Hitters') + buildTable(pitchers, 'Pitchers');
+}
 
 window.selectTradeTeam = function(side, teamId) {
   if (side === 'a') { TA.teamA = teamId; TA.selectedA = []; }
