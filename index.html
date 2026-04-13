@@ -7280,9 +7280,62 @@ var SGP_STATE = {
 };
 
 // SGP denominators (from Historic League Data)
+// ── Compute SGP denominators from historical data ─────────────────────────
+// SGP denominator = average stat gap between adjacent standings positions
+// Weighted: 60% 2025, 30% 2024, 10% 2023
+function computeSGPDenominators() {
+  var weights = { 2025: 0.60, 2024: 0.30, 2023: 0.10 };
+  var cats = {
+    r:    { field:'r',    low:false },
+    hr:   { field:'hr',   low:false },
+    rbi:  { field:'rbi',  low:false },
+    sb:   { field:'sb',   low:false },
+    avg:  { field:'avg',  low:false },
+    w:    { field:'w',    low:false },
+    k:    { field:'k',    low:false },
+    svh3: { field:'sv',   low:false },
+    era:  { field:'era',  low:true  },
+    whip: { field:'whip', low:true  }
+  };
+
+  var result = {};
+  Object.keys(cats).forEach(function(cat) {
+    var cfg = cats[cat];
+    var blended = 0, totalW = 0;
+    Object.keys(weights).forEach(function(yr) {
+      var teams = (HISTORIC_DATA[yr] || []).slice().sort(function(a,b){ return a.rank-b.rank; });
+      if (teams.length < 2) return;
+      // Average absolute difference between adjacent positions
+      var gaps = [];
+      for (var i = 1; i < teams.length; i++) {
+        var diff = Math.abs(teams[i-1][cfg.field] - teams[i][cfg.field]);
+        gaps.push(diff);
+      }
+      if (!gaps.length) return;
+      var avgGap = gaps.reduce(function(s,v){return s+v;},0) / gaps.length;
+      if (avgGap === 0) return;
+      blended += weights[yr] * avgGap;
+      totalW  += weights[yr];
+    });
+    result[cat] = totalW > 0 ? blended / totalW : null;
+  });
+  return result;
+}
+
+var SGP_D_HIST = computeSGPDenominators();
+
+// Use historically-computed denominators, fall back to hardcoded if missing
 var SGP_D = {
-  r:65.4, hr:21.2, rbi:54.8, sb:17.0, avg:0.00178,
-  w:15.3, k:216.8, svh3:18.5, era:0.106, whip:0.0191
+  r:    SGP_D_HIST.r    || 65.4,
+  hr:   SGP_D_HIST.hr   || 21.2,
+  rbi:  SGP_D_HIST.rbi  || 54.8,
+  sb:   SGP_D_HIST.sb   || 17.0,
+  avg:  SGP_D_HIST.avg  || 0.00178,
+  w:    SGP_D_HIST.w    || 15.3,
+  k:    SGP_D_HIST.k    || 216.8,
+  svh3: SGP_D_HIST.svh3 || 18.5,
+  era:  SGP_D_HIST.era  || 0.106,
+  whip: SGP_D_HIST.whip || 0.0191
 };
 
 var SEASON_GAMES = 162;
