@@ -997,11 +997,14 @@ function init() {
     loadJSON('players_pitching.json'),
     loadJSON('rosters.json'),
     loadJSON('fangraphs_hitting.json').catch(function(){ return {}; }),
-    loadJSON('fangraphs_pitching.json').catch(function(){ return {}; })
+    loadJSON('fangraphs_pitching.json').catch(function(){ return {}; }),
+    loadJSON('fantasypros_hitters.json').catch(function(){ return []; }),
+    loadJSON('fantasypros_pitchers.json').catch(function(){ return []; })
   ]).then(function(results) {
     var standings = results[0], season = results[1], combined = results[2];
     var hitting = results[3], pitching = results[4], rosters = results[5];
     var fgHit = results[6], fgPit = results[7];
+    var fpHit = results[8] || [], fpPit = results[9] || [];
 
     S.teamInfo = (standings.data && standings.data.fantasyTeamInfo) || (season.data && season.data.fantasyTeamInfo) || {};
     S.seasonData = season;
@@ -1022,10 +1025,14 @@ function init() {
     (fgPit.players || []).forEach(function(p) {
       if (p.PlayerName) S.fgPitLookup[p.PlayerName.toLowerCase()] = p;
     });
-    console.log('FanGraphs hitters loaded:', Object.keys(S.fgHitLookup).length);
-    console.log('FanGraphs pitchers loaded:', Object.keys(S.fgPitLookup).length);
-    console.log('FanGraphs hit league avg:', S.fgHitLeague);
-    console.log('FanGraphs pit league avg:', S.fgPitLeague);
+
+    // Build FantasyPros ROS projection lookup (name_key → stats)
+    S.fpHitLookup = {};
+    S.fpPitLookup = {};
+    (fpHit || []).forEach(function(p){ if (p.name_key) S.fpHitLookup[p.name_key] = p; });
+    (fpPit || []).forEach(function(p){ if (p.name_key) S.fpPitLookup[p.name_key] = p; });
+    console.log('FantasyPros hitters loaded:', Object.keys(S.fpHitLookup).length);
+    console.log('FantasyPros pitchers loaded:', Object.keys(S.fpPitLookup).length);
 
     document.getElementById('ts').textContent = 'Updated ' + new Date().toLocaleString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
 
@@ -7802,28 +7809,54 @@ function drawSGPPositionView(type) {
   function gvP(cells, key) { var i=idx[key.toUpperCase()]; if(i==null)return null; var v=parseFloat((cells[i]||{}).content); return isNaN(v)?null:v; }
   var fwarLookup = {}; fwarResults.forEach(function(p){ fwarLookup[p.name]=p; });
 
+  // FantasyPros lookup helper — normalize name to match FP name_key format
+  function fpKey(name) {
+    return (name||'').toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+  }
+  var fpHitLookup = S.fpHitLookup || {};
+  var fpPitLookup = S.fpPitLookup || {};
+
   // Build players
   var players = rows.map(function(row) {
     var sc=row.scorer||{}, cells=row.cells||[];
     var name=sc.name||'', pos=sc.posShortNames||'', ftId=(cells[1]&&cells[1].teamId)||'';
     var fw=fwarLookup[name];
     var hs=sc.headshotUrl||'', mlb=sc.proTeamShortName||'';
+    var key = fpKey(name);
     if (isHit) {
       var gp=gvP(cells,'GP')||gvP(cells,'G')||1, ab=gvP(cells,'AB')||0, h=gvP(cells,'H')||0;
       var r=gvP(cells,'R')||0, hr=gvP(cells,'HR')||0, rbi=gvP(cells,'RBI')||0, sb=gvP(cells,'SB')||0;
       var avg=ab>0?h/ab:0, rem=Math.max(0,162-gp), pace=gp>0?rem/gp:0;
+      // Use FP ROS projections if available, else fall back to pace
+      var fp = fpHitLookup[key];
+      var ros;
+      if (fp && fp.R != null) {
+        ros = {r:fp.R, hr:fp.HR, rbi:fp.RBI, sb:fp.SB, ab:fp.AB||ab*pace, avg:fp.AVG||avg, _fp:true};
+      } else {
+        ros = {r:r*pace, hr:hr*pace, rbi:rbi*pace, sb:sb*pace, ab:ab*pace, avg:avg, _fp:false};
+      }
       return {name:name,pos:pos,ftId:ftId,isMine:ftId===myTeamId,fw:fw,rem:rem,hs:hs,mlb:mlb,
               cur:{r:r,hr:hr,rbi:rbi,sb:sb,avg:avg,ab:ab,h:h,gp:gp},
-              raw:{ab:ab,h:h},ros:{r:r*pace,hr:hr*pace,rbi:rbi*pace,sb:sb*pace,ab:ab*pace,avg:avg}};
+              raw:{ab:ab,h:h},ros:ros};
     } else {
       var gp2=gvP(cells,'GP')||gvP(cells,'G')||1, ip=gvP(cells,'IP')||0;
       var w=gvP(cells,'W')||0, k=gvP(cells,'K')||0, svh3=gvP(cells,'SVH3')||gvP(cells,'SV')||0;
       var era=gvP(cells,'ERA')||0, whip=gvP(cells,'WHIP')||0;
       var rem2=Math.max(0,162-gp2), pace2=gp2>0?rem2/gp2:0;
       var rawEr=era>0&&ip>0?era*ip/9:0, rawBh=whip>0&&ip>0?whip*ip:0;
+      // Use FP ROS projections if available, else fall back to pace
+      var fp2 = fpPitLookup[key];
+      var ros2;
+      if (fp2 && fp2.IP != null) {
+        ros2 = {w:fp2.W||0, k:fp2.K||0, svh3:fp2.SV||0, ip:fp2.IP||0, era:fp2.ERA||era, whip:fp2.WHIP||whip, _fp:true};
+      } else {
+        ros2 = {w:w*pace2, k:k*pace2, svh3:svh3*pace2, ip:ip*pace2, era:era, whip:whip, _fp:false};
+      }
       return {name:name,pos:pos,ftId:ftId,isMine:ftId===myTeamId,fw:fw,rem:rem2,hs:hs,mlb:mlb,
               cur:{w:w,k:k,svh3:svh3,era:era,whip:whip,ip:ip,gp:gp2},
-              raw:{ip:ip,er:rawEr,bh:rawBh},ros:{w:w*pace2,k:k*pace2,svh3:svh3*pace2,ip:ip*pace2,era:era,whip:whip}};
+              raw:{ip:ip,er:rawEr,bh:rawBh},ros:ros2};
     }
   });
 
@@ -7955,23 +7988,25 @@ function drawSGPPositionView(type) {
                    W:'#27ae60',K:'#e74c3c',SVH3:'#9b59b6',ERA:'#1abc9c',WHIP:'#16a085'};
 
   function sgpBreakdown(p) {
+    var hasFP = p.ros && p.ros._fp;
+    var sfx = hasFP ? '' : '*'; // * = pace estimate, no suffix = FP
     if (isHit) {
       var tAB=7500*(p.rem/162), abSh=tAB>0?Math.min(p.ros.ab/tAB,1):0;
       return [
-        {cat:'R',   v:(p.ros.r/SGP_D.r)*(cw['R']||1),   raw:Math.round(p.ros.r),          fmt:function(v){return Math.round(v)+' R';}},
-        {cat:'HR',  v:(p.ros.hr/SGP_D.hr)*(cw['HR']||1), raw:Math.round(p.ros.hr),         fmt:function(v){return Math.round(v)+' HR';}},
-        {cat:'RBI', v:(p.ros.rbi/SGP_D.rbi)*(cw['RBI']||1), raw:Math.round(p.ros.rbi),     fmt:function(v){return Math.round(v)+' RBI';}},
-        {cat:'SB',  v:(p.ros.sb/SGP_D.sb)*(cw['SB']||1), raw:Math.round(p.ros.sb),         fmt:function(v){return Math.round(v)+' SB';}},
-        {cat:'AVG', v:((p.ros.avg-myAvg)*abSh/SGP_D.avg)*(cw['AVG']||1), raw:p.ros.avg,    fmt:function(v){return v.toFixed(3);}}
+        {cat:'R',   v:(p.ros.r/SGP_D.r)*(cw['R']||1),   raw:Math.round(p.ros.r),          fmt:function(v){return Math.round(v)+' R'+sfx;}},
+        {cat:'HR',  v:(p.ros.hr/SGP_D.hr)*(cw['HR']||1), raw:Math.round(p.ros.hr),         fmt:function(v){return Math.round(v)+' HR'+sfx;}},
+        {cat:'RBI', v:(p.ros.rbi/SGP_D.rbi)*(cw['RBI']||1), raw:Math.round(p.ros.rbi),     fmt:function(v){return Math.round(v)+' RBI'+sfx;}},
+        {cat:'SB',  v:(p.ros.sb/SGP_D.sb)*(cw['SB']||1), raw:Math.round(p.ros.sb),         fmt:function(v){return Math.round(v)+' SB'+sfx;}},
+        {cat:'AVG', v:((p.ros.avg-myAvg)*abSh/SGP_D.avg)*(cw['AVG']||1), raw:p.ros.avg,    fmt:function(v){return v.toFixed(3)+sfx;}}
       ];
     } else {
       var tIP=1800*(p.rem/162), ipSh=tIP>0?Math.min(p.ros.ip/tIP,1):0;
       return [
-        {cat:'W',    v:(p.ros.w/SGP_D.w)*(cw['W']||1),       raw:Math.round(p.ros.w),      fmt:function(v){return Math.round(v)+' W';}},
-        {cat:'K',    v:(p.ros.k/SGP_D.k)*(cw['K']||1),       raw:Math.round(p.ros.k),      fmt:function(v){return Math.round(v)+' K';}},
-        {cat:'SVH3', v:(p.ros.svh3/SGP_D.svh3)*(cw['SVH3']||1), raw:Math.round(p.ros.svh3),fmt:function(v){return Math.round(v)+' SVH';}},
-        {cat:'ERA',  v:((myERA-p.ros.era)*ipSh/SGP_D.era)*(cw['ERA']||1),   raw:p.ros.era, fmt:function(v){return v.toFixed(2)+' ERA';}},
-        {cat:'WHIP', v:((myWHIP-p.ros.whip)*ipSh/SGP_D.whip)*(cw['WHIP']||1), raw:p.ros.whip, fmt:function(v){return v.toFixed(2)+' WHP';}}
+        {cat:'W',    v:(p.ros.w/SGP_D.w)*(cw['W']||1),       raw:Math.round(p.ros.w),      fmt:function(v){return Math.round(v)+' W'+sfx;}},
+        {cat:'K',    v:(p.ros.k/SGP_D.k)*(cw['K']||1),       raw:Math.round(p.ros.k),      fmt:function(v){return Math.round(v)+' K'+sfx;}},
+        {cat:'SVH3', v:(p.ros.svh3/SGP_D.svh3)*(cw['SVH3']||1), raw:Math.round(p.ros.svh3),fmt:function(v){return Math.round(v)+' SVH'+sfx;}},
+        {cat:'ERA',  v:((myERA-p.ros.era)*ipSh/SGP_D.era)*(cw['ERA']||1),   raw:p.ros.era, fmt:function(v){return v.toFixed(2)+' ERA'+sfx;}},
+        {cat:'WHIP', v:((myWHIP-p.ros.whip)*ipSh/SGP_D.whip)*(cw['WHIP']||1), raw:p.ros.whip, fmt:function(v){return v.toFixed(2)+' WHP'+sfx;}}
       ];
     }
   }
