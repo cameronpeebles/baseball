@@ -3093,6 +3093,32 @@ var POS_GROUPS = {
   'RP':       ['RP']
 };
 
+// Fine-grained positions for player rating buckets
+var FINE_POSITIONS = ['C','1B','2B','3B','SS','OF','SP','RP'];
+var FINE_POS_MAP = {
+  'C':'C','1B':'1B','2B':'2B','3B':'3B','SS':'SS','MI':'2B',
+  'CI':'1B','OF':'OF','LF':'OF','CF':'OF','RF':'OF',
+  'SP':'SP','RP':'RP','P':'RP'
+};
+
+// Map fine position back to broad group for team aggregation
+var FINE_TO_GROUP = {
+  'C':'Infield','1B':'Infield','2B':'Infield','3B':'Infield','SS':'Infield',
+  'OF':'Outfield','SP':'SP','RP':'RP'
+};
+
+// Returns all fine positions a player is eligible for
+function playerFinePosAll(pos) {
+  if (!pos) return [];
+  var parts = pos.split(',').map(function(p){ return p.trim(); });
+  var fps = [];
+  parts.forEach(function(p){
+    var fp = FINE_POS_MAP[p];
+    if (fp && fps.indexOf(fp) === -1) fps.push(fp);
+  });
+  return fps;
+}
+
 // Stats used per player type
 var BAT_CATS = ['R','HR','RBI','SB','AVG'];
 var PIT_CATS = ['K','W','SVH3','ERA','WHIP'];
@@ -3245,63 +3271,52 @@ function buildTradeAnalyzer() {
     });
   });
 
-  // Also index by primary position for fine-grained comparison
-  var byPos = {};
+  // Build byFinePos index — players keyed by fine position (C, 1B, 2B, 3B, SS, OF, SP, RP)
+  var byFinePos = {};
   allPlayers.forEach(function(p) {
-    var pp = primaryPos(p.pos);
-    if (!byPos[pp]) byPos[pp] = [];
-    byPos[pp].push(p);
+    var fps = playerFinePosAll(p.pos);
+    p.finePosAll = fps;
+    fps.forEach(function(fp) {
+      if (!byFinePos[fp]) byFinePos[fp] = [];
+      byFinePos[fp].push(p);
+    });
   });
 
-  // Rate each player in EVERY eligible group, store groupRatings map
-  // overallRating = best rating across all eligible groups (used for trade value)
-  // bestGroup = the group where they rate highest (used for team positional ratings)
+  // Rate each player vs peers at their fine position(s)
+  // overallRating = best rating across all eligible fine positions
+  // bestFinePos   = fine position where they rate highest
+  // bestGroup     = broad group of bestFinePos (for team aggregation)
+  // groupRatings  = rating at each fine position (for display)
   allPlayers.forEach(function(p) {
-    var cats   = p.type === 'bat' ? BAT_CATS : PIT_CATS;
-    var pp     = primaryPos(p.pos);
-    var groups = (p.allGroups && p.allGroups.length) ? p.allGroups : (p.group ? [p.group] : []);
+    var cats = p.type === 'bat' ? BAT_CATS : PIT_CATS;
+    var fps  = p.finePosAll || [];
+    p.groupRatings = {};
 
-    p.groupRatings = {}; // rating per group
-
-    groups.forEach(function(g) {
-      var groupPeers = byGroup[g] || [];
+    fps.forEach(function(fp) {
+      var peers = byFinePos[fp] || [];
       var score = 0, count = 0;
       cats.forEach(function(cat) {
         if (p.stats[cat] == null) return;
         var isLow = LOW_CATS.indexOf(cat) !== -1;
-        var vals  = groupPeers.map(function(q) { return q.stats[cat]; }).filter(function(v) { return v != null; });
+        var vals  = peers.map(function(q){ return q.stats[cat]; }).filter(function(v){ return v != null; });
         score += percentile(p.stats[cat], vals, isLow);
         count++;
       });
-      p.groupRatings[g] = count > 0 ? score / count : 0.5;
+      p.groupRatings[fp] = count > 0 ? score / count : 0.5;
     });
 
-    // posRating: vs exact same primary position
-    var posPeers = byPos[pp] || [];
-    var posScore = 0, posCount = 0;
-    cats.forEach(function(cat) {
-      if (p.stats[cat] == null) return;
-      var isLow = LOW_CATS.indexOf(cat) !== -1;
-      var vals  = posPeers.map(function(q) { return q.stats[cat]; }).filter(function(v) { return v != null; });
-      posScore += percentile(p.stats[cat], vals, isLow);
-      posCount++;
-    });
-    p.posRating = posCount > 0 ? posScore / posCount : 0.5;
-
-    // Best group rating across all eligible groups
-    var bestGroupRating = 0;
-    var bestGroup = p.group;
-    groups.forEach(function(g) {
-      if (p.groupRatings[g] > bestGroupRating) {
-        bestGroupRating = p.groupRatings[g];
-        bestGroup = g;
+    // Best fine position rating
+    var bestRating = 0, bestFinePos = fps[0] || null;
+    fps.forEach(function(fp) {
+      if (p.groupRatings[fp] > bestRating) {
+        bestRating    = p.groupRatings[fp];
+        bestFinePos   = fp;
       }
     });
 
-    p.bestGroup     = bestGroup;       // group where they rank highest
-    p.overallRating = (p.posRating * 0.6) + (bestGroupRating * 0.4);
-
-    // Keep p.group as primary group for display, but use bestGroup for team ratings
+    p.bestFinePos   = bestFinePos;
+    p.bestGroup     = FINE_TO_GROUP[bestFinePos] || p.group; // broad group for team aggregation
+    p.overallRating = bestRating;
   });
 
   TA.players = allPlayers;
@@ -3328,43 +3343,34 @@ function buildTradeAnalyzer() {
     PIT_CATS.forEach(function(cat) { stats[cat] = getStatVal(cells, cat, pitIdx); });
     faPlayers.push({ name: scorer.name || '', pos: pos, group: playerGroup(pos), allGroups: playerAllGroups(pos), mlb: scorer.teamShortName || '', hs: scorer.headshotUrl || '', type: 'pit', stats: stats });
   });
-  // Rate FAs vs rostered players in same groups
+  // Rate FAs vs rostered players at same fine position
   faPlayers.forEach(function(p) {
-    var cats   = p.type === 'bat' ? BAT_CATS : PIT_CATS;
-    var pp     = primaryPos(p.pos);
-    var groups = (p.allGroups && p.allGroups.length) ? p.allGroups : (p.group ? [p.group] : []);
-
+    var cats = p.type === 'bat' ? BAT_CATS : PIT_CATS;
+    var fps  = playerFinePosAll(p.pos);
+    p.finePosAll   = fps;
     p.groupRatings = {};
-    groups.forEach(function(g) {
-      var groupPeers = (byGroup[g] || []).concat([p]);
+
+    fps.forEach(function(fp) {
+      // Peers = rostered players at this fine pos + this FA
+      var peers = (byFinePos[fp] || []).concat([p]);
       var score = 0, count = 0;
       cats.forEach(function(cat) {
         if (p.stats[cat] == null) return;
         var isLow = LOW_CATS.indexOf(cat) !== -1;
-        var vals  = groupPeers.map(function(q) { return q.stats[cat]; }).filter(function(v) { return v != null; });
+        var vals  = peers.map(function(q){ return q.stats[cat]; }).filter(function(v){ return v != null; });
         score += percentile(p.stats[cat], vals, isLow);
         count++;
       });
-      p.groupRatings[g] = count > 0 ? score / count : 0.5;
+      p.groupRatings[fp] = count > 0 ? score / count : 0.5;
     });
 
-    var posPeers = (byPos[pp] || []).concat([p]);
-    var posScore = 0, posCount = 0;
-    cats.forEach(function(cat) {
-      if (p.stats[cat] == null) return;
-      var isLow = LOW_CATS.indexOf(cat) !== -1;
-      var vals  = posPeers.map(function(q) { return q.stats[cat]; }).filter(function(v) { return v != null; });
-      posScore += percentile(p.stats[cat], vals, isLow);
-      posCount++;
+    var bestRating = 0, bestFinePos = fps[0] || null;
+    fps.forEach(function(fp) {
+      if (p.groupRatings[fp] > bestRating) { bestRating = p.groupRatings[fp]; bestFinePos = fp; }
     });
-    p.posRating = posCount > 0 ? posScore / posCount : 0.5;
-
-    var bestGroupRating = 0, bestGroup = p.group;
-    groups.forEach(function(g) {
-      if (p.groupRatings[g] > bestGroupRating) { bestGroupRating = p.groupRatings[g]; bestGroup = g; }
-    });
-    p.bestGroup     = bestGroup;
-    p.overallRating = (p.posRating * 0.6) + (bestGroupRating * 0.4);
+    p.bestFinePos   = bestFinePos;
+    p.bestGroup     = FINE_TO_GROUP[bestFinePos] || p.group;
+    p.overallRating = bestRating;
   });
   TA.faPlayers = faPlayers;
 
