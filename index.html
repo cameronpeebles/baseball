@@ -1163,42 +1163,95 @@ function drawPlayers(type) {
   var fwarResults = isHit ? FWAR.hitResults : FWAR.pitResults;
   fwarResults.forEach(function(p) { fwarLookup[p.name] = p; });
 
-  // ── Pos Rating: fine-position percentile from TA.players ──────────────────
-  var taPosLookup = {};  // name → overallRating (fine pos)
-  (TA.players || []).forEach(function(p){ if (p.name) taPosLookup[p.name.toLowerCase()] = p.overallRating; });
+  // ── Pos Rating + League Rating: compute directly from player rows ─────────
+  // Build stat pools from the current hit/pit rows (rostered players only)
+  var hitIdx2 = buildStatIdx(S.hitHeaders);
+  var pitIdx2 = buildStatIdx(S.pitHeaders);
 
-  // ── League Rating: percentile vs all hitters or all SP / all RP ───────────
-  // Build stat pools from TA.players
-  var leagueLookup = {};  // name → leagueRating
-  var taAll = TA.players || [];
-  if (taAll.length) {
-    var hitterPool  = taAll.filter(function(p){ return p.type === 'bat'; });
-    var spPool      = taAll.filter(function(p){ return p.type === 'pit' && (p.group === 'SP' || (p.bestGroup === 'SP')); });
-    var rpPool      = taAll.filter(function(p){ return p.type === 'pit' && (p.group === 'RP' || (p.bestGroup === 'RP')); });
-    var lCats       = isHit ? BAT_CATS : PIT_CATS;
+  // Fine-position pools for Pos Rating
+  var finePools = {};   // fp → [{name, stats}]
+  // League-wide pools for League Rating
+  var lgHitPool = [];   // all hitters
+  var lgSpPool  = [];   // all SP
+  var lgRpPool  = [];   // all RP
 
-    function computeLeagueRatings(pool) {
-      pool.forEach(function(p) {
-        var score = 0, count = 0;
-        lCats.forEach(function(cat) {
-          if (p.stats[cat] == null) return;
-          var isLow = LOW_CATS.indexOf(cat) !== -1;
-          var vals = pool.map(function(q){ return q.stats[cat]; }).filter(function(v){ return v != null; });
-          score += percentile(p.stats[cat], vals, isLow);
-          count++;
-        });
-        leagueLookup[p.name.toLowerCase()] = count > 0 ? score / count : 0.5;
-      });
-    }
-
-    if (isHit) {
-      computeLeagueRatings(hitterPool);
-    } else {
-      computeLeagueRatings(spPool);
-      computeLeagueRatings(rpPool);
-    }
-    window._lgRatingLookup = leagueLookup;
+  function buildPoolEntry(row, cats, idx) {
+    var scorer = row.scorer || {}, cells = row.cells || [];
+    var ftId = (cells[1] && cells[1].teamId) || '';
+    if (!ftId) return null; // rostered only for rating pool
+    var name = scorer.name || '';
+    var pos  = scorer.posShortNames || '';
+    var stats = {};
+    cats.forEach(function(cat){ stats[cat] = getStatVal(cells, cat, idx); });
+    return { name: name, pos: pos, stats: stats };
   }
+
+  S.hitRows.forEach(function(row) {
+    var e = buildPoolEntry(row, BAT_CATS, hitIdx2);
+    if (!e) return;
+    var fps = playerFinePosAll(e.pos);
+    fps.forEach(function(fp){
+      if (!finePools[fp]) finePools[fp] = [];
+      finePools[fp].push(e);
+    });
+    lgHitPool.push(e);
+  });
+
+  S.pitRows.forEach(function(row) {
+    var e = buildPoolEntry(row, PIT_CATS, pitIdx2);
+    if (!e) return;
+    var fps = playerFinePosAll(e.pos);
+    fps.forEach(function(fp){
+      if (!finePools[fp]) finePools[fp] = [];
+      finePools[fp].push(e);
+    });
+    var pp = primaryPos(e.pos);
+    if (pp === 'SP') lgSpPool.push(e);
+    else             lgRpPool.push(e);
+  });
+
+  function calcRating(stats, cats, pool) {
+    var score = 0, count = 0;
+    cats.forEach(function(cat) {
+      if (stats[cat] == null) return;
+      var isLow = LOW_CATS.indexOf(cat) !== -1;
+      var vals  = pool.map(function(q){ return q.stats[cat]; }).filter(function(v){ return v != null; });
+      if (!vals.length) return;
+      score += percentile(stats[cat], vals, isLow);
+      count++;
+    });
+    return count > 0 ? score / count : null;
+  }
+
+  // Build per-player lookup: name.toLowerCase() → {posRating, lgRating}
+  var ratingCache = {};
+  function getRatings(name, pos, stats, type) {
+    var key = name.toLowerCase();
+    if (ratingCache[key]) return ratingCache[key];
+    var cats = type === 'hit' ? BAT_CATS : PIT_CATS;
+    var fps  = playerFinePosAll(pos);
+
+    // Pos Rating = best across fine positions
+    var bestPos = null;
+    fps.forEach(function(fp) {
+      var pool = finePools[fp] || [];
+      var r    = calcRating(stats, cats, pool);
+      if (r != null && (bestPos == null || r > bestPos)) bestPos = r;
+    });
+
+    // League Rating
+    var lgPool;
+    if (type === 'hit') lgPool = lgHitPool;
+    else { var pp = primaryPos(pos); lgPool = pp === 'SP' ? lgSpPool : lgRpPool; }
+    var lgR = calcRating(stats, cats, lgPool);
+
+    var result = { posRating: bestPos, lgRating: lgR };
+    ratingCache[key] = result;
+    return result;
+  }
+
+  // Also store lgRating for sort access
+  window._lgRatingLookup = {};
 
   function ratingBadge(r) {
     if (r == null) return '<span style="color:var(--muted)">—</span>';
@@ -1386,11 +1439,16 @@ function drawPlayers(type) {
     }
 
     // Pos Rating and League Rating
-    var nameLow = name.toLowerCase();
-    var posR   = taPosLookup[nameLow];
-    var lgR    = leagueLookup[nameLow];
-    html += '<td>' + ratingBadge(posR != null ? posR : null) + '</td>';
-    html += '<td>' + ratingBadge(lgR  != null ? lgR  : null) + '</td>';
+    var nameLow  = name.toLowerCase();
+    var pos2     = scorer.posShortNames || '';
+    var stats2   = {};
+    var rowCats  = isHit ? BAT_CATS : PIT_CATS;
+    var rowIdx   = isHit ? hitIdx2 : pitIdx2;
+    rowCats.forEach(function(cat){ stats2[cat] = getStatVal(cells, cat, rowIdx); });
+    var ratings  = getRatings(name, pos2, stats2, isHit ? 'hit' : 'pit');
+    window._lgRatingLookup[nameLow] = ratings.lgRating;
+    html += '<td>' + ratingBadge(ratings.posRating) + '</td>';
+    html += '<td>' + ratingBadge(ratings.lgRating)  + '</td>';
 
     // Fantrax cols in desired order
     ftxCols.forEach(function(d) {
