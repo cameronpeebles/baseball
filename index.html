@@ -1378,7 +1378,6 @@ function drawPlayers(type) {
   if (hasFWAR) {
     html += thSort('fWAR',       '__fwar',      'var(--accent)', 'font-weight:700;');
     html += thSort('Slot',       '__slot',      'var(--muted)', 'font-size:11px;');
-    html += thSort('totalZ',     '__totalZ',    'var(--muted)', 'font-size:11px;');
   }
   html += thSort('Pos Rating',   '__posRating',  '#5b8db8', 'font-size:11px;font-weight:700;');
   html += thSort('League Rating','__lgRating',   '#7bc8a4', 'font-size:11px;font-weight:700;');
@@ -1400,7 +1399,7 @@ function drawPlayers(type) {
   if (hasFG && fgLeague && Object.keys(fgLeague).length > 0) {
     html += '<tr class="lg-avg-row" style="border-bottom:2px solid #2980b9">';
     html += '<td class="left" style="font-weight:600;font-size:11px;color:#2980b9;white-space:nowrap" colspan="3">MLB Avg (Savant)</td>';
-    if (hasFWAR) html += '<td></td><td></td><td></td>';
+    if (hasFWAR) html += '<td></td><td></td>';
     html += '<td></td><td></td>'; // Pos Rating, League Rating
     ftxCols.forEach(function() { html += '<td></td>'; });
     fgCols.forEach(function(c) {
@@ -1432,9 +1431,8 @@ function drawPlayers(type) {
         var fc = fv >= 2 ? '#1e6b3a' : fv >= 0.5 ? '#4a9a68' : fv >= -0.5 ? '#b7791f' : '#c0392b';
         html += '<td style="font-weight:700;color:' + fc + '">' + (fv >= 0 ? '+' : '') + fv.toFixed(2) + '</td>';
         html += '<td style="font-size:11px;color:var(--muted)">' + (fw.assignedSlot || '—') + '</td>';
-        html += '<td style="font-size:11px;color:var(--muted)">' + (fw.totalZ != null ? fw.totalZ.toFixed(2) : '—') + '</td>';
       } else {
-        html += '<td style="color:var(--muted)">—</td><td></td><td></td>';
+        html += '<td style="color:var(--muted)">—</td><td></td>';
       }
     }
 
