@@ -1321,3 +1321,76 @@ except ImportError as e:
 except Exception as e:
     print(f"  Optimization error: {e}")
     import traceback; traceback.print_exc()
+
+# ── FantasyPros ROS Projections ───────────────────────────────────────────────
+import re as _re
+
+def fetch_fantasypros(url, cols):
+    """Scrape a FantasyPros projection table and return list of dicts."""
+    import requests as _req
+    try:
+        r = _req.get(url, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept": "text/html,application/xhtml+xml",
+        }, timeout=20)
+        r.raise_for_status()
+    except Exception as e:
+        print(f"  FantasyPros fetch failed: {e}")
+        return []
+
+    html = r.text
+    # Find the main table
+    table_match = _re.search(r'<table[^>]*>(.*?)</table>', html, _re.DOTALL | _re.IGNORECASE)
+    if not table_match:
+        print("  FantasyPros: table not found")
+        return []
+
+    table_html = table_match.group(1)
+    rows = _re.findall(r'<tr[^>]*>(.*?)</tr>', table_html, _re.DOTALL | _re.IGNORECASE)
+
+    def strip_tags(s):
+        return _re.sub(r'<[^>]+>', '', s).strip()
+
+    def norm_name(s):
+        # Remove team/pos suffix like "(LAD - SP,DH)", strip accents roughly
+        s = _re.sub(r'\s*\([^)]+\)', '', s).strip()
+        return s.lower()
+
+    players = []
+    for row in rows:
+        cells = _re.findall(r'<td[^>]*>(.*?)</td>', row, _re.DOTALL | _re.IGNORECASE)
+        if len(cells) < len(cols) + 2:
+            continue
+        # Col 1 = VBR rank, Col 2 = player name link
+        raw_name = strip_tags(cells[1])
+        if not raw_name or raw_name.upper() == raw_name:  # skip header rows
+            continue
+        entry = {"name": raw_name, "name_key": norm_name(raw_name)}
+        for i, col in enumerate(cols):
+            try:
+                val = strip_tags(cells[2 + i])
+                entry[col] = float(val) if val not in ('', '-', 'N/A') else None
+            except (ValueError, IndexError):
+                entry[col] = None
+        players.append(entry)
+
+    return players
+
+
+print("Fetching FantasyPros ROS hitter projections...")
+fp_hit_cols = ["AB", "R", "HR", "RBI", "SB", "AVG", "OBP", "H", "2B", "3B", "BB", "SO", "SLG", "OPS"]
+fp_hitters = fetch_fantasypros(
+    "https://www.fantasypros.com/mlb/projections/ros-hitters.php",
+    fp_hit_cols
+)
+print(f"  {len(fp_hitters)} hitters fetched")
+save("fantasypros_hitters.json", fp_hitters)
+
+print("Fetching FantasyPros ROS pitcher projections...")
+fp_pit_cols = ["IP", "K", "W", "SV", "ERA", "WHIP", "ER", "H", "BB", "HR", "G", "GS", "L", "CG"]
+fp_pitchers = fetch_fantasypros(
+    "https://www.fantasypros.com/mlb/projections/ros-pitchers.php",
+    fp_pit_cols
+)
+print(f"  {len(fp_pitchers)} pitchers fetched")
+save("fantasypros_pitchers.json", fp_pitchers)
