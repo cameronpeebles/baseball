@@ -219,6 +219,27 @@ for period in range(1, MAX_PERIODS + 1):
         print(f"  Period {period}: empty rows, stopping.")
         break
 
+    # Check if this period has any actual activity — if all counting stats
+    # are zero across all rows it's a future unplayed week, stop here
+    def period_has_activity(rows, idx):
+        counting = ["R", "HR", "RBI", "SB", "K"]
+        for row in rows:
+            cells = row.get("cells") or []
+            for cat in counting:
+                i = idx.get(cat.upper())
+                if i is not None:
+                    try:
+                        v = float((cells[i] or {}).get("content") or 0)
+                        if v > 0:
+                            return True
+                    except (ValueError, TypeError):
+                        pass
+        return False
+
+    if not all_rows:
+        print(f"  Period {period}: empty rows, stopping.")
+        break
+
     # Build key -> column-index map from headers
     idx = {}
     for i, h in enumerate(var_headers):
@@ -226,8 +247,9 @@ for period in range(1, MAX_PERIODS + 1):
         if h.get("name"):      idx[h["name"].upper()]      = i
         if h.get("shortName"): idx[h["shortName"].upper()] = i
 
-    if period == 1:
-        print(f"  DEBUG period 1 idx keys: {sorted(idx.keys())}")
+    if not period_has_activity(all_rows, idx):
+        print(f"  Period {period}: no activity (future week), stopping.")
+        break
 
     def get_stat(cells, key, default=0):
         i = idx.get(key.upper())
