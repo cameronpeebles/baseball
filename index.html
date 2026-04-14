@@ -809,6 +809,76 @@ td.neg { color: #c0392b; font-weight: 500; }
           </div>
         </div>
       </div>
+
+      <div class="card" style="margin-top:16px;max-width:800px">
+        <div class="card-header"><span class="card-title">Player Archetypes</span><span style="font-size:12px;color:var(--muted)">Combining fWAR%, Pos Rating &amp; League Rating</span></div>
+        <div class="card-body" style="padding:20px">
+          <p style="font-size:13px;line-height:1.7">Every player is assigned an archetype based on the relationship between their three key metrics. This surfaces actionable insights — whether a player is a keeper, a sell-high, or a hidden gem.</p>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 10px">Thresholds</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;font-size:12px">
+            <div style="padding:10px;background:var(--bg);border-radius:8px"><strong>fWAR%</strong><br><span style="color:var(--muted)">High ≥ 60 · Low &lt; 60</span></div>
+            <div style="padding:10px;background:var(--bg);border-radius:8px"><strong>Pos Rating</strong><br><span style="color:var(--muted)">High ≥ 55 · Low &lt; 55</span></div>
+            <div style="padding:10px;background:var(--bg);border-radius:8px"><strong>League Rating</strong><br><span style="color:var(--muted)">High ≥ 55 · Med 40–54 · Low &lt; 40</span></div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:grid;grid-template-columns:28px 140px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+              <div style="width:14px;height:14px;border-radius:3px;background:#1e6b3a;margin-top:2px"></div>
+              <div><strong style="color:#1e6b3a">True Elite</strong><div style="font-size:11px;color:var(--muted)">High · High · High</div></div>
+              <div style="line-height:1.5">Dominant production, skill, and positional advantage.</div>
+              <div style="white-space:nowrap;font-weight:600;color:#1e6b3a">Untouchable cornerstone</div>
+            </div>
+            <div style="display:grid;grid-template-columns:28px 140px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+              <div style="width:14px;height:14px;border-radius:3px;background:#2d7a5a;margin-top:2px"></div>
+              <div><strong style="color:#2d7a5a">Elite Asset</strong><div style="font-size:11px;color:var(--muted)">High · High · Low/Med</div></div>
+              <div style="line-height:1.5">Producing and strong at position, skill slightly lagging.</div>
+              <div style="white-space:nowrap;font-weight:600;color:#2d7a5a">Hold (monitor for regression)</div>
+            </div>
+            <div style="display:grid;grid-template-columns:28px 140px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+              <div style="width:14px;height:14px;border-radius:3px;background:#2980b9;margin-top:2px"></div>
+              <div><strong style="color:#2980b9">Format Mismatch Star</strong><div style="font-size:11px;color:var(--muted)">High · Low · High</div></div>
+              <div style="line-height:1.5">Great player, producing, but position reduces edge.</div>
+              <div style="white-space:nowrap;font-weight:600;color:#2980b9">Hold / slight sell-high</div>
+            </div>
+            <div style="display:grid;grid-template-columns:28px 140px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+              <div style="width:14px;height:14px;border-radius:3px;background:#c0392b;margin-top:2px"></div>
+              <div><strong style="color:#c0392b">Overperformer</strong><div style="font-size:11px;color:var(--muted)">High · Low · Low</div></div>
+              <div style="line-height:1.5">Fantasy output inflated vs underlying skill.</div>
+              <div style="white-space:nowrap;font-weight:600;color:#c0392b">Sell-high</div>
+            </div>
+            <div style="display:grid;grid-template-columns:28px 140px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+              <div style="width:14px;height:14px;border-radius:3px;background:#8e44ad;margin-top:2px"></div>
+              <div><strong style="color:#8e44ad">Breakout Candidate</strong><div style="font-size:11px;color:var(--muted)">Low · High · High</div></div>
+              <div style="line-height:1.5">Strong skill + positional edge, results lagging.</div>
+              <div style="white-space:nowrap;font-weight:600;color:#8e44ad">Buy-low</div>
+            </div>
+            <div style="display:grid;grid-template-columns:28px 140px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+              <div style="width:14px;height:14px;border-radius:3px;background:#16a085;margin-top:2px"></div>
+              <div><strong style="color:#16a085">Positional Play</strong><div style="font-size:11px;color:var(--muted)">Low · High · Low/Med</div></div>
+              <div style="line-height:1.5">Value driven mostly by scarcity, not skill.</div>
+              <div style="white-space:nowrap;font-weight:600;color:#16a085">Hold / stream</div>
+            </div>
+            <div style="display:grid;grid-template-columns:28px 140px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+              <div style="width:14px;height:14px;border-radius:3px;background:#e67e22;margin-top:2px"></div>
+              <div><strong style="color:#e67e22">Underperforming Stud</strong><div style="font-size:11px;color:var(--muted)">Low · Low · High</div></div>
+              <div style="line-height:1.5">Great player, not converting to fantasy yet.</div>
+              <div style="white-space:nowrap;font-weight:600;color:#e67e22">Buy-low</div>
+            </div>
+            <div style="display:grid;grid-template-columns:28px 140px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+              <div style="width:14px;height:14px;border-radius:3px;background:#888888;margin-top:2px"></div>
+              <div><strong style="color:#888888">Replacement Level</strong><div style="font-size:11px;color:var(--muted)">Low · Low · Low</div></div>
+              <div style="line-height:1.5">Weak across the board.</div>
+              <div style="white-space:nowrap;font-weight:600;color:#888888">Drop / ignore</div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px;padding:12px 16px;background:#fef3e2;border-radius:8px;border-left:4px solid #c8a96e">
+            <div style="font-size:12px;font-weight:700;color:#b7791f;margin-bottom:4px">How to use archetypes</div>
+            <div style="font-size:12px;line-height:1.7;color:#7a5c2e">The gap between League Rating and fWAR% is the key signal. A high League Rating with low fWAR% means a real baseball star who doesn't fit this league's scoring — sell-high opportunity. A low League Rating with high fWAR% means an undervalued fantasy gem — hold or buy more. Click any player row on the Player Data page to see their full archetype breakdown.</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- SGP -->
@@ -3565,18 +3635,18 @@ function getArchetype(fwarPct, posRating, lgRating) {
   var lr  = lgRating * 100;  // 0–1 → 0–100
 
   var fHigh = fp  >= 60;
-  var pHigh = pr  >= 60;
-  var lHigh = lr  >= 65;
-  var lMed  = lr  >= 45 && lr < 65;
+  var pHigh = pr  >= 55;
+  var lHigh = lr  >= 55;
+  var lMed  = lr  >= 40 && lr < 55;
 
   if ( fHigh &&  pHigh &&  lHigh)               return { name: 'True Elite',          color: '#1e6b3a', action: 'Untouchable cornerstone',      desc: 'Dominant production, skill, and positional advantage.' };
   if ( fHigh &&  pHigh && (lMed || !lHigh))      return { name: 'Elite Asset',         color: '#2d7a5a', action: 'Hold (monitor for regression)', desc: 'Producing and strong at position, skill slightly lagging.' };
   if ( fHigh && !pHigh &&  lHigh)               return { name: 'Format Mismatch Star', color: '#2980b9', action: 'Hold / slight sell-high',       desc: 'Great player, producing, but position reduces edge.' };
-  if ( fHigh && !pHigh && !lHigh && !lMed)      return { name: 'Overperformer',        color: '#e67e22', action: 'Sell-high',                     desc: 'Fantasy output inflated vs underlying skill.' };
+  if ( fHigh && !pHigh && !lHigh && !lMed)      return { name: 'Overperformer',        color: '#c0392b', action: 'Sell-high',                     desc: 'Fantasy output inflated vs underlying skill.' };
   if (!fHigh &&  pHigh &&  lHigh)               return { name: 'Breakout Candidate',   color: '#8e44ad', action: 'Buy-low',                       desc: 'Strong skill + positional edge, results lagging.' };
   if (!fHigh &&  pHigh && (lMed || !lHigh))      return { name: 'Positional Play',      color: '#16a085', action: 'Hold / stream',                 desc: 'Value driven mostly by scarcity, not skill.' };
-  if (!fHigh && !pHigh &&  lHigh)               return { name: 'Underperforming Stud',  color: '#c0392b', action: 'Buy-low',                       desc: 'Great player, not converting to fantasy yet.' };
-  return                                                 { name: 'Replacement Level',   color: '#888',    action: 'Drop / ignore',                desc: 'Weak across the board.' };
+  if (!fHigh && !pHigh &&  lHigh)               return { name: 'Underperforming Stud',  color: '#e67e22', action: 'Buy-low',                       desc: 'Great player, not converting to fantasy yet.' };
+  return                                                 { name: 'Replacement Level',   color: '#888888', action: 'Drop / ignore',                desc: 'Weak across the board.' };
 }
 
 function percentile(val, vals, lowIsBetter) {
