@@ -315,6 +315,20 @@ td.neg { color: #c0392b; font-weight: 500; }
   <div class="page" id="page-fwar">
     <div class="page-title">Player Data</div>
     <div class="page-subtitle">Fantasy WAR and player ratings — sortable by position, fWAR, and ratings.</div>
+
+    <!-- Player Profile Panel (hidden until player clicked) -->
+    <div id="fwar-player-profile" style="display:none;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <img id="fwar-profile-hs" src="" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid var(--border)" onerror="this.style.display='none'">
+        <div>
+          <div id="fwar-profile-name" style="font-weight:700;font-size:15px"></div>
+          <div id="fwar-profile-sub" style="font-size:12px;color:var(--muted)"></div>
+        </div>
+        <button onclick="clearFWARProfile()" style="margin-left:auto;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--muted);cursor:pointer">✕ Clear</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px" id="fwar-profile-charts"></div>
+    </div>
+
     <div class="trade-tabs" id="fwar-tabs">
       <button class="trade-tab active" onclick="showFWARTab('hitting',this)">Hitting</button>
       <button class="trade-tab" onclick="showFWARTab('pitching',this)">Pitching</button>
@@ -1625,7 +1639,7 @@ function drawPlayers(type) {
     var isFa = !e.ftId;
     var fw   = e.fw, fgRow = e.fgRow;
 
-    html += '<tr>';
+    html += '<tr style="cursor:pointer" onclick="showFWARProfile(\'' + name.replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\',\'' + (isHit?'hit':'pit') + '\')">';
     html += '<td class="left" style="position:sticky;left:0;background:var(--surface);z-index:1;box-shadow:2px 0 4px rgba(0,0,0,0.04)">';
     html += '<div class="team-cell">' + (hs ? '<img class="player-hs" src="' + hs + '" alt="" onerror="this.style.display=\'none\'">' : '') + '<span><strong>' + name + '</strong></span></div></td>';
     html += '<td class="left"><span style="color:var(--muted);font-size:12px">' + pos + '</span></td>';
@@ -6512,6 +6526,198 @@ window.showFWARTab = function(tab, btn) {
   document.querySelectorAll('#page-fwar .trade-tab-content').forEach(function(c){c.classList.remove('active');});
   if (btn) btn.classList.add('active');
   document.getElementById('fwar-tab-' + tab).classList.add('active');
+  clearFWARProfile();
+};
+
+function clearFWARProfile() {
+  var el = document.getElementById('fwar-player-profile');
+  if (el) el.style.display = 'none';
+  window._fwarProfileName = null;
+}
+
+window.showFWARProfile = function(name, type) {
+  window._fwarProfileName = name;
+  var isHit = type === 'hit';
+  var rows  = isHit ? S.hitRows : S.pitRows;
+  var hdrs  = isHit ? S.hitHeaders : S.pitHeaders;
+  var idx   = buildStatIdx(hdrs);
+  var cats  = isHit ? BAT_CATS : PIT_CATS;
+  var CAT_COLORS = {R:'#3498db',HR:'#c0392b',RBI:'#e67e22',SB:'#8e44ad',AVG:'#2980b9',
+                   W:'#27ae60',K:'#e74c3c',SVH3:'#9b59b6',ERA:'#1abc9c',WHIP:'#16a085'};
+
+  // Find the player row
+  var row = null;
+  for (var i = 0; i < rows.length; i++) {
+    var rn = (rows[i].scorer && rows[i].scorer.name) || '';
+    if (rn === name) { row = rows[i]; break; }
+  }
+  if (!row) return;
+
+  var scorer = row.scorer || {}, cells = row.cells || [];
+  var pos = scorer.posShortNames || '';
+  var hs  = scorer.headshotUrl || '';
+  var mlb = scorer.teamShortName || '';
+  var ftId = (cells[1] && cells[1].teamId) || '';
+
+  function gv(cat) {
+    var i2 = idx[cat.toUpperCase()]; if (i2 == null) return null;
+    var v = parseFloat((cells[i2]||{}).content); return isNaN(v) ? null : v;
+  }
+
+  var stats = {};
+  cats.forEach(function(c){ stats[c] = gv(c); });
+  stats['AB'] = gv('AB'); stats['IP'] = gv('IP');
+
+  // fWAR data
+  var fwarLookup = {};
+  (isHit ? FWAR.hitResults : FWAR.pitResults).forEach(function(p){ fwarLookup[p.name] = p; });
+  var fw = fwarLookup[name];
+
+  // Replacement level z-scores for fWAR% panel
+  var replLookup = {};
+  var allFW = isHit ? FWAR.hitResults : FWAR.pitResults;
+  var pp2 = primaryPos(pos);
+  var replPool;
+  if (isHit) {
+    replPool = allFW; // all hitters
+  } else {
+    replPool = allFW.filter(function(p){ return pp2==='SP' ? p.isSP : p.isRP; });
+  }
+  // Get replacement player (Nth ranked)
+  var sorted = replPool.slice().sort(function(a,b){ return b.totalZ - a.totalZ; });
+  var repRank = isHit ? (FWAR.repRanks['OF']||85) : (pp2==='SP' ? (FWAR.repRanks['SP']||123) : (FWAR.repRanks['RP']||53));
+  var replPlayer = sorted[repRank - 1] || sorted[sorted.length - 1];
+
+  // Build pools for pos/league rating computation
+  var hitIdx2 = buildStatIdx(S.hitHeaders);
+  var pitIdx2 = buildStatIdx(S.pitHeaders);
+  var finePools2 = {}, lgHitPool2 = [], lgSpPool2 = [], lgRpPool2 = [];
+  S.hitRows.forEach(function(r2){
+    var sc2=r2.scorer||{}, ce2=r2.cells||[];
+    if (!(ce2[1]&&ce2[1].teamId)) return;
+    var st2={}, p2=sc2.posShortNames||'';
+    BAT_CATS.forEach(function(c){ st2[c]=getStatVal(ce2,c,hitIdx2); });
+    st2['AB']=getStatVal(ce2,'AB',hitIdx2);
+    playerFinePosAll(p2).forEach(function(fp){ if(!finePools2[fp])finePools2[fp]=[]; finePools2[fp].push({stats:st2,pos:p2}); });
+    lgHitPool2.push({stats:st2,pos:p2});
+  });
+  S.pitRows.forEach(function(r2){
+    var sc2=r2.scorer||{}, ce2=r2.cells||[];
+    if (!(ce2[1]&&ce2[1].teamId)) return;
+    var st2={}, p2=sc2.posShortNames||'';
+    PIT_CATS.forEach(function(c){ st2[c]=getStatVal(ce2,c,pitIdx2); });
+    st2['IP']=getStatVal(ce2,'IP',pitIdx2);
+    playerFinePosAll(p2).forEach(function(fp){ if(!finePools2[fp])finePools2[fp]=[]; finePools2[fp].push({stats:st2,pos:p2}); });
+    var pp3=primaryPos(p2); if(pp3==='SP') lgSpPool2.push({stats:st2,pos:p2}); else lgRpPool2.push({stats:st2,pos:p2});
+  });
+
+  function catPct(cat, pool) {
+    if (stats[cat] == null || !pool.length) return 0.5;
+    var isLow = ['ERA','WHIP'].indexOf(cat) !== -1;
+    var vals = pool.map(function(q){ return q.stats[cat]; }).filter(function(v){ return v!=null; });
+    if (!vals.length) return 0.5;
+    var below = vals.filter(function(v){ return isLow ? v > stats[cat] : v < stats[cat]; }).length;
+    return below / vals.length;
+  }
+
+  function lgPool() {
+    if (isHit) return lgHitPool2;
+    return pp2==='SP' ? lgSpPool2 : lgRpPool2;
+  }
+  function posPool() {
+    var fps = playerFinePosAll(pos);
+    if (!fps.length) return lgPool();
+    var best = null, bestPool = null;
+    fps.forEach(function(fp){
+      var pool = finePools2[fp]||[];
+      var score = 0, cnt = 0;
+      cats.forEach(function(c){ if(stats[c]==null)return; score+=catPct(c,pool); cnt++; });
+      var r = cnt>0?score/cnt:0;
+      if (best==null||r>best){ best=r; bestPool=pool; }
+    });
+    return bestPool || lgPool();
+  }
+
+  // Build per-category data for each panel
+  function buildCatData(poolFn) {
+    return cats.map(function(cat) {
+      var factor = sampleFactor(cat, stats, pos);
+      var pct    = catPct(cat, poolFn()) * factor;
+      return { cat: cat, v: pct - 0.5 }; // center at 0
+    });
+  }
+
+  function buildFWARCatData() {
+    if (!fw) return cats.map(function(c){ return {cat:c,v:0}; });
+    var catW = isHit ? FWAR.hitWeights : FWAR.pitWeights;
+    return cats.map(function(cat) {
+      var zVal = (fw.z && fw.z[cat] != null) ? fw.z[cat] : 0;
+      var w = catW[cat] != null ? catW[cat] : 1;
+      return { cat: cat, v: zVal * w };
+    });
+  }
+
+  function buildFWARPctCatData() {
+    if (!fw || !replPlayer) return cats.map(function(c){ return {cat:c,v:0}; });
+    var catW = isHit ? FWAR.hitWeights : FWAR.pitWeights;
+    return cats.map(function(cat) {
+      var pZ   = (fw.z && fw.z[cat] != null) ? fw.z[cat] : 0;
+      var rZ   = (replPlayer.z && replPlayer.z[cat] != null) ? replPlayer.z[cat] : 0;
+      var w    = catW[cat] != null ? catW[cat] : 1;
+      return { cat: cat, v: (pZ - rZ) * w };
+    });
+  }
+
+  var panels = [
+    { title: 'League Rating', data: buildCatData(lgPool),  fmt: function(v){ return (v>=0?'+':'')+Math.round(v*100)+'%'; } },
+    { title: 'Pos Rating',    data: buildCatData(posPool), fmt: function(v){ return (v>=0?'+':'')+Math.round(v*100)+'%'; } },
+    { title: 'Player fWAR',   data: buildFWARCatData(),    fmt: function(v){ return (v>=0?'+':'')+v.toFixed(2); } },
+    { title: 'Player fWAR%',  data: buildFWARPctCatData(), fmt: function(v){ return (v>=0?'+':'')+v.toFixed(2); } }
+  ];
+
+  // Render panels as SVG bar charts
+  var chartsHtml = panels.map(function(panel) {
+    var data = panel.data;
+    var maxAbs = Math.max.apply(null, data.map(function(d){ return Math.abs(d.v); })) || 1;
+    var W = 200, H = 120, barW = 24, gap = 8;
+    var totalW = data.length * (barW + gap) - gap;
+    var startX = (W - totalW) / 2;
+    var midY = 60;
+    var scale = 48 / maxAbs;
+
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="display:block">';
+    // Zero line
+    svg += '<line x1="0" y1="' + midY + '" x2="' + W + '" y2="' + midY + '" stroke="var(--border)" stroke-width="1"/>';
+
+    data.forEach(function(d, i) {
+      var x = startX + i * (barW + gap);
+      var col = d.v < 0 ? '#c0392b' : (CAT_COLORS[d.cat] || '#888');
+      var barH = Math.abs(d.v) * scale;
+      var y = d.v >= 0 ? midY - barH : midY;
+      svg += '<rect x="' + x + '" y="' + y + '" width="' + barW + '" height="' + barH + '" fill="' + col + '" rx="2"/>';
+      // Value label
+      var labelY = d.v >= 0 ? y - 3 : y + barH + 10;
+      svg += '<text x="' + (x + barW/2) + '" y="' + labelY + '" text-anchor="middle" font-size="8" fill="var(--text)" font-family="var(--font-body)">' + panel.fmt(d.v) + '</text>';
+      // Cat label
+      svg += '<text x="' + (x + barW/2) + '" y="' + (H - 2) + '" text-anchor="middle" font-size="9" fill="var(--muted)" font-family="var(--font-body)">' + d.cat + '</text>';
+    });
+    svg += '</svg>';
+
+    return '<div class="card" style="padding:12px">' +
+      '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">' + panel.title + '</div>' +
+      svg + '</div>';
+  }).join('');
+
+  // Update header
+  document.getElementById('fwar-profile-hs').src = hs;
+  document.getElementById('fwar-profile-hs').style.display = hs ? '' : 'none';
+  document.getElementById('fwar-profile-name').textContent = name;
+  document.getElementById('fwar-profile-sub').textContent = pos + (mlb ? ' · ' + mlb : '') + (ftId ? '' : ' · FA');
+  document.getElementById('fwar-profile-charts').innerHTML = chartsHtml;
+  document.getElementById('fwar-player-profile').style.display = '';
+
+  // Highlight selected row
+  document.querySelectorAll('#hit-table tr, #pit-table tr').forEach(function(r){ r.style.background=''; });
 };
 
 function buildFWARModelInputs() {
