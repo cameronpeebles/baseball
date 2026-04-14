@@ -2261,10 +2261,10 @@ function buildJOEPage(byWeek, schedule) {
   var ALL_CATS_J  = ['R','HR','RBI','SB','AVG','K','W','SV','ERA','WHIP'];
   var LOW_CATS_J  = ['ERA','WHIP'];
 
-  // Find completed weeks — at least 8 teams have stats
+  // Find completed weeks — at least 2 teams have stats (show all weeks with any data)
   var completedWeeks = Object.keys(byWeek)
     .map(Number)
-    .filter(function(w) { return Object.keys(byWeek[w]).length >= 8; })
+    .filter(function(w) { return Object.keys(byWeek[w]).length >= 2; })
     .sort(function(a,b){ return a-b; });
 
   // Build opponent lookup from schedule
@@ -5300,7 +5300,7 @@ function parseStandingsByWeek(standingsData) {
         ERA:gv(cells,'ERA'),WHIP:gv(cells,'WHIP')
       };
     });
-    if(Object.keys(bw[wk]).length<8) delete bw[wk];
+    if(Object.keys(bw[wk]).length < 2) delete bw[wk];
   });
   return bw;
 }
