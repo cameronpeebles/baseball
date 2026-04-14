@@ -6687,6 +6687,8 @@ window.showFWARProfile = function(name, type) {
     }
   };
 
+  var PROFILE_COLORS = ['#d42b2b','#e8853a','#f5f0a0','#a8d5b5','#2e7fbc'];
+
   var panels = [
     { title: 'League Rating', data: buildCatData(lgPool),  fmt: function(v){ return (v>=0?'+':'')+Math.round(v*100)+'%'; } },
     { title: 'Pos Rating',    data: buildCatData(posPool), fmt: function(v){ return (v>=0?'+':'')+Math.round(v*100)+'%'; } },
@@ -6709,7 +6711,7 @@ window.showFWARProfile = function(name, type) {
 
     data.forEach(function(d, i) {
       var x = startX + i * (barW + gap);
-      var col = d.v < 0 ? '#c0392b' : (CAT_COLORS[d.cat] || '#888');
+      var col = PROFILE_COLORS[i % PROFILE_COLORS.length];
       var barH = Math.abs(d.v) * scale;
       var y = d.v >= 0 ? midY - barH : midY;
       svg += '<rect x="' + x + '" y="' + y + '" width="' + barW + '" height="' + barH + '" fill="' + col + '" rx="2"/>';
