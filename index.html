@@ -5271,6 +5271,8 @@ function posHeatColorDash(pct) {
 function parseStandingsByWeek(standingsData) {
   var tbls = (standingsData.data && standingsData.data.tableList) || [];
   var bw = {};
+  console.log('parseStandingsByWeek: total tables =', tbls.length);
+  console.log('parseStandingsByWeek: captions =', tbls.map(function(t){return t.caption||'(none)';}));
   tbls.forEach(function(tbl) {
     var m = (tbl.caption||'').match(/scoring period[:\s]+(\d+)/i);
     if (!m) return;
