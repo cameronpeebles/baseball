@@ -626,6 +626,40 @@ td.neg { color: #c0392b; font-weight: 500; }
 
     <!-- fWAR -->
     <div id="guide-tab-fwar" class="trade-tab-content">
+
+      <!-- Quick Reference Table -->
+      <div class="card" style="margin-top:16px;max-width:800px">
+        <div class="card-header"><span class="card-title">Player Data — Metric Reference</span></div>
+        <div class="card-body" style="padding:20px">
+          <p style="font-size:13px;line-height:1.7;margin-bottom:16px">The Player Data page surfaces four key metrics for every player. Here's what each one means:</p>
+          <table style="width:100%;font-size:12px;border-collapse:collapse">
+            <thead>
+              <tr style="border-bottom:2px solid var(--border)">
+                <th class="left" style="padding:8px 12px;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted)">Metric</th>
+                <th class="left" style="padding:8px 12px;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted)">What It Measures</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:10px 12px;white-space:nowrap"><span style="display:inline-block;padding:2px 10px;border-radius:8px;font-size:11px;font-weight:700;background:#7bc8a422;color:#2d7a5a">League Rating</span></td>
+                <td style="padding:10px 12px;line-height:1.6">How a player's overall performance stacks up against all players at their type (all hitters or all pitchers), adjusted for sample size.</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);background:var(--bg)">
+                <td style="padding:10px 12px;white-space:nowrap"><span style="display:inline-block;padding:2px 10px;border-radius:8px;font-size:11px;font-weight:700;background:#5b8db822;color:#5b8db8">Pos Rating</span></td>
+                <td style="padding:10px 12px;line-height:1.6">How strong a player is relative to others at their specific position, highlighting positional advantage or scarcity.</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:10px 12px;white-space:nowrap"><span style="display:inline-block;padding:2px 10px;border-radius:8px;font-size:11px;font-weight:700;background:var(--accent-light);color:var(--accent)">fWAR</span></td>
+                <td style="padding:10px 12px;line-height:1.6">The total value a player has produced this season above a replacement-level option, based on your league's scoring categories.</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 12px;white-space:nowrap"><span style="display:inline-block;padding:2px 10px;border-radius:8px;font-size:11px;font-weight:700;background:#9b59b622;color:#9b59b6">fWAR %</span></td>
+                <td style="padding:10px 12px;line-height:1.6">The player's percentile rank in fWAR within their pool (all hitters, all SP, or all RP), showing how their production compares to peers in the league.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
       <div class="card" style="margin-top:16px;max-width:800px">
         <div class="card-header"><span class="card-title">fWAR — Fantasy Wins Above Replacement</span></div>
         <div class="card-body" style="padding:20px">
@@ -738,7 +772,7 @@ td.neg { color: #c0392b; font-weight: 500; }
                   <div style="background:var(--surface);padding:6px 10px;border-radius:6px"><strong>Hitters (AB)</strong><br>0–49 → 0.2×<br>50–99 → 0.4×<br>100–149 → 0.6×<br>150+ → 1.0×</div>
                   <div style="background:var(--surface);padding:6px 10px;border-radius:6px"><strong>SP (IP)</strong><br>0–9 → 0.2×<br>10–19 → 0.4×<br>20–34 → 0.6×<br>35–49 → 0.8×<br>50+ → 1.0×</div>
                 </div>
-                <div style="margin-top:6px;font-size:11px;background:var(--surface);padding:6px 10px;border-radius:6px;display:inline-block"><strong>RP (IP):</strong> 0–4 → 0.2× · 5–9 → 0.4× · 10–14 → 0.6× · 15–24 → 0.8× · 25+ → 0.9× (caps at 0.9)</div>
+                <div style="margin-top:6px;font-size:11px;background:var(--surface);padding:6px 10px;border-radius:6px;display:inline-block"><strong>RP (IP):</strong> 0–4 → 0.2× · 5–9 → 0.4× · 10–14 → 0.6× · 15–24 → 0.8× · 25+ → 1.0×</div>
               </div>
             </div>
             <div style="display:flex;align-items:stretch">
@@ -3430,8 +3464,8 @@ function sampleFactor(cat, stats, pos) {
     if (ip >= 10)   return 0.4;
     return 0.2;
   } else {
-    // RP — caps at 0.9
-    if (ip >= 25)   return 0.9;
+    // RP
+    if (ip >= 25)   return 1.0;
     if (ip >= 15)   return 0.8;
     if (ip >= 10)   return 0.6;
     if (ip >=  5)   return 0.4;
