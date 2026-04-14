@@ -626,25 +626,115 @@ td.neg { color: #c0392b; font-weight: 500; }
 
     <!-- fWAR -->
     <div id="guide-tab-fwar" class="trade-tab-content">
-      <div class="card" style="margin-top:16px;max-width:760px">
+      <div class="card" style="margin-top:16px;max-width:800px">
         <div class="card-header"><span class="card-title">fWAR — Fantasy Wins Above Replacement</span></div>
         <div class="card-body" style="padding:20px">
-          <p style="font-size:13px;line-height:1.7">fWAR estimates how many fantasy wins a player contributes above a freely available replacement-level player at their position. Higher = more valuable.</p>
+          <p style="font-size:13px;line-height:1.7">fWAR estimates how many fantasy wins a player contributes above a freely available replacement-level player at their position. Higher = more valuable. Configure the model on the <strong>Models</strong> page.</p>
 
-          <div style="font-weight:700;font-size:13px;margin:16px 0 8px">Calculation Steps</div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>1. Z-Score</strong> — Each player is z-scored vs all rostered players at their position group. z = (value − mean) / std. ERA/WHIP are negated.</div>
-            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>2. Total Z</strong> — Weighted sum of z-scores across relevant categories × category weights.</div>
-            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>3. Replacement Level</strong> — The z-score of the Nth-ranked player at that position (N = positional replacement rank).</div>
-            <div style="padding:10px 14px;background:var(--accent-light);border-radius:8px;font-size:12px;line-height:1.6;border:1px solid var(--accent)"><strong>4. fWAR = player Total Z − replacement level Z</strong></div>
+          <div style="font-weight:700;font-size:13px;margin:20px 0 10px">fWAR Calculation Flow</div>
+          <div style="display:flex;flex-direction:column;gap:0;margin-bottom:20px">
+            <div style="display:flex;align-items:stretch;gap:0">
+              <div style="width:4px;background:var(--accent);border-radius:4px 4px 0 0;flex-shrink:0"></div>
+              <div style="padding:12px 16px;background:var(--bg);border-radius:0 8px 0 0;flex:1;font-size:12px;line-height:1.6;border-bottom:1px solid var(--border)">
+                <strong style="color:var(--accent)">Step 1 — Z-Score each stat</strong><br>
+                For every rostered player, each scoring category is z-scored against all rostered players in their broad position group (Infield, Outfield, SP, RP).<br>
+                <code style="background:var(--surface);padding:2px 6px;border-radius:4px;font-size:11px;display:inline-block;margin-top:4px">z = (player_stat − group_mean) / group_std</code><br>
+                <span style="color:var(--muted);font-size:11px">ERA and WHIP are negated so lower = better.</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:stretch;gap:0">
+              <div style="width:4px;background:var(--accent);flex-shrink:0"></div>
+              <div style="padding:12px 16px;background:var(--bg);flex:1;font-size:12px;line-height:1.6;border-bottom:1px solid var(--border)">
+                <strong style="color:var(--accent)">Step 2 — Weighted Total Z</strong><br>
+                Z-scores are summed across all relevant categories, each scaled by its category weight (0–1, adjustable in the Models page).<br>
+                <code style="background:var(--surface);padding:2px 6px;border-radius:4px;font-size:11px;display:inline-block;margin-top:4px">totalZ = Σ (z_cat × weight_cat)</code>
+              </div>
+            </div>
+            <div style="display:flex;align-items:stretch;gap:0">
+              <div style="width:4px;background:var(--accent);flex-shrink:0"></div>
+              <div style="padding:12px 16px;background:var(--bg);flex:1;font-size:12px;line-height:1.6;border-bottom:1px solid var(--border)">
+                <strong style="color:var(--accent)">Step 3 — Replacement Level</strong><br>
+                The Nth-ranked player at each position defines replacement level — the baseline of a freely available player. N is the positional replacement rank (configurable in Models). A lower N = harder position to fill = higher bar.
+              </div>
+            </div>
+            <div style="display:flex;align-items:stretch;gap:0">
+              <div style="width:4px;background:var(--accent);border-radius:0 0 4px 4px;flex-shrink:0"></div>
+              <div style="padding:12px 16px;background:var(--accent-light);border-radius:0 0 8px 0;flex:1;font-size:12px;line-height:1.6;border:1px solid var(--accent)">
+                <strong style="color:var(--accent)">Step 4 — fWAR</strong><br>
+                <code style="background:var(--surface);padding:2px 6px;border-radius:4px;font-size:11px;display:inline-block">fWAR = playerTotalZ − replacementLevelZ</code><br>
+                <span style="color:var(--muted);font-size:11px;display:block;margin-top:4px">Positive = above replacement. Negative = below replacement. A +2.0 fWAR player contributes roughly 2 wins above what you'd get by picking up a free agent.</span>
+              </div>
+            </div>
           </div>
 
-          <div style="font-weight:700;font-size:13px;margin:16px 0 8px">Positional Scarcity Presets</div>
-          <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="font-weight:700;font-size:13px;margin:16px 0 10px">Positional Scarcity Presets</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
             <div style="font-size:12px;padding:8px 12px;background:var(--bg);border-radius:6px"><strong>⚾ Pitcher Heavy</strong> — SP:147, RP:63. Values pitching depth.</div>
             <div style="font-size:12px;padding:8px 12px;background:var(--bg);border-radius:6px"><strong>⚖️ Hybrid (default)</strong> — SP:123, RP:53, OF:85. Balanced.</div>
             <div style="font-size:12px;padding:8px 12px;background:var(--bg);border-radius:6px"><strong>🏏 Hitter Heavy</strong> — SP:98, OF:100. Values hitting depth.</div>
-            <div style="font-size:12px;padding:8px 12px;background:var(--accent-light);border-radius:6px;border:1px solid var(--accent)"><strong>🎯 Optimal</strong> — Weights derived from scipy optimizer maximizing Spearman rank correlation between team fWAR and points standings across 50 historical team-seasons. Spearman r shown on button.</div>
+            <div style="font-size:12px;padding:8px 12px;background:var(--accent-light);border-radius:6px;border:1px solid var(--accent)"><strong>🎯 Optimal</strong> — Weights derived from a scipy optimizer maximizing Spearman rank correlation between team fWAR and points standings across 50 historical team-seasons (2021–2025). Spearman r is shown on the button.</div>
+          </div>
+
+          <div style="padding:12px 16px;background:#fef3e2;border-radius:8px;border-left:4px solid #c8a96e">
+            <div style="font-size:12px;font-weight:700;color:#b7791f;margin-bottom:4px">Important: fWAR uses cumulative season stats</div>
+            <div style="font-size:12px;line-height:1.7;color:#7a5c2e">fWAR reflects how a player has performed so far this season relative to their peers — it is not a projection. Use the SGP Engine (Player Trade &amp; Market) for forward-looking player value.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:800px">
+        <div class="card-header"><span class="card-title">Player Ratings — Pos Rating &amp; League Rating</span></div>
+        <div class="card-body" style="padding:20px">
+          <p style="font-size:13px;line-height:1.7">The Player Data page shows two rating columns alongside fWAR. Both are 0–100 percentile scores but measure different things.</p>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0">
+            <div style="padding:14px;background:var(--bg);border-radius:8px;border-top:3px solid #5b8db8">
+              <div style="font-weight:700;font-size:12px;color:#5b8db8;margin-bottom:6px">POS RATING</div>
+              <div style="font-size:12px;line-height:1.6">How good is this player <em>at their specific position</em>?<br><br>A catcher is rated only against other catchers. A shortstop only against shortstops. Multi-position players take their best rating across all eligible positions.</div>
+            </div>
+            <div style="padding:14px;background:var(--bg);border-radius:8px;border-top:3px solid #7bc8a4">
+              <div style="font-weight:700;font-size:12px;color:#2d7a5a;margin-bottom:6px">LEAGUE RATING</div>
+              <div style="font-size:12px;line-height:1.6">How good is this player <em>vs all hitters or all pitchers</em>?<br><br>All hitters compete in one pool. SP in one pool, RP in another. A 90 League Rating means the player outperforms 90% of all rostered players at their type.</div>
+            </div>
+          </div>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 10px">Rating Calculation Flow</div>
+          <div style="display:flex;flex-direction:column;gap:0;margin-bottom:16px">
+            <div style="display:flex;align-items:stretch">
+              <div style="width:4px;background:#5b8db8;border-radius:4px 4px 0 0;flex-shrink:0"></div>
+              <div style="padding:12px 16px;background:var(--bg);border-radius:0 8px 0 0;flex:1;font-size:12px;line-height:1.6;border-bottom:1px solid var(--border)">
+                <strong style="color:#5b8db8">Step 1 — Build position pools</strong><br>
+                All rostered players are indexed by fine position: C, 1B, 2B, 3B, SS, OF, SP, RP. Multi-position players appear in multiple pools.
+              </div>
+            </div>
+            <div style="display:flex;align-items:stretch">
+              <div style="width:4px;background:#5b8db8;flex-shrink:0"></div>
+              <div style="padding:12px 16px;background:var(--bg);flex:1;font-size:12px;line-height:1.6;border-bottom:1px solid var(--border)">
+                <strong style="color:#5b8db8">Step 2 — Percentile each category with sample-size weighting</strong><br>
+                For each scoring category, the player's percentile rank within their pool is computed. Rate stats (AVG, ERA, WHIP) are downweighted based on sample size:<br>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;font-size:11px">
+                  <div style="background:var(--surface);padding:6px 10px;border-radius:6px"><strong>Hitters (AB)</strong><br>0–49 → 0.2×<br>50–99 → 0.4×<br>100–149 → 0.6×<br>150+ → 1.0×</div>
+                  <div style="background:var(--surface);padding:6px 10px;border-radius:6px"><strong>SP (IP)</strong><br>0–9 → 0.2×<br>10–19 → 0.4×<br>20–34 → 0.6×<br>35–49 → 0.8×<br>50+ → 1.0×</div>
+                </div>
+                <div style="margin-top:6px;font-size:11px;background:var(--surface);padding:6px 10px;border-radius:6px;display:inline-block"><strong>RP (IP):</strong> 0–4 → 0.2× · 5–9 → 0.4× · 10–14 → 0.6× · 15–24 → 0.8× · 25+ → 0.9× (caps at 0.9)</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:stretch">
+              <div style="width:4px;background:#5b8db8;border-radius:0 0 4px 4px;flex-shrink:0"></div>
+              <div style="padding:12px 16px;background:var(--accent-light);border-radius:0 0 8px 0;flex:1;font-size:12px;line-height:1.6;border:1px solid var(--accent)">
+                <strong style="color:var(--accent)">Step 3 — Weighted average → 0–100 score</strong><br>
+                <code style="background:var(--surface);padding:2px 6px;border-radius:4px;font-size:11px">rating = Σ(percentile_cat × factor_cat) / Σ(factor_cat)</code><br>
+                <span style="color:var(--muted);font-size:11px">Multi-pos players keep the best rating across all eligible positions as their Pos Rating.</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px">Rating Color Scale</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <div style="padding:4px 12px;border-radius:8px;background:#1e6b3a22;color:#1e6b3a;font-size:12px;font-weight:700">65+ Elite</div>
+            <div style="padding:4px 12px;border-radius:8px;background:#4a9a6822;color:#4a9a68;font-size:12px;font-weight:700">50–64 Above Avg</div>
+            <div style="padding:4px 12px;border-radius:8px;background:#b7791f22;color:#b7791f;font-size:12px;font-weight:700">35–49 Below Avg</div>
+            <div style="padding:4px 12px;border-radius:8px;background:#c0392b22;color:#c0392b;font-size:12px;font-weight:700">&lt;35 Poor</div>
           </div>
         </div>
       </div>
@@ -764,47 +854,66 @@ td.neg { color: #c0392b; font-weight: 500; }
 
     <!-- Positional Strength -->
     <div id="guide-tab-positional" class="trade-tab-content">
-      <div class="card" style="margin-top:16px;max-width:760px">
-        <div class="card-header"><span class="card-title">Positional Strength</span><span style="font-size:12px;color:var(--muted)">Team &amp; Player views</span></div>
+      <div class="card" style="margin-top:16px;max-width:800px">
+        <div class="card-header"><span class="card-title">Team Positional Strength</span><span style="font-size:12px;color:var(--muted)">Dashboard heat map</span></div>
         <div class="card-body" style="padding:20px">
-          <p style="font-size:13px;line-height:1.7">Positional strength appears in two places: the <strong>Dashboard</strong> (team-level heat map) and the <strong>Rosters page</strong> (player-level percentile ratings). Both use the same underlying percentile engine.</p>
+          <p style="font-size:13px;line-height:1.7">The Dashboard heat map shows how strong your team is at each broad position group compared to the rest of the league. It answers: <em>"Where am I strong, and where do I need to upgrade?"</em></p>
 
-          <div style="font-weight:700;font-size:13px;margin:16px 0 8px;color:var(--text)">How Percentile Ratings Work</div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 1 — Pool players by position group:</strong> All rostered players are grouped into Infield (C/1B/2B/3B/SS), Outfield (OF/LF/CF/RF), SP, and RP. A player's primary position determines which group they go into.</div>
-            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 2 — Score each player:</strong> A composite score is built from their z-scored stats within that position group. Hitting groups use R, HR, RBI, SB, AVG. Pitching groups use W, K, SVH3, ERA, WHIP (ERA/WHIP negated).</div>
-            <div style="padding:10px 14px;background:var(--accent-light);border-radius:8px;border:1px solid var(--accent);font-size:12px;line-height:1.6"><strong>Step 3 — Percentile rank:</strong> Each player is ranked vs all other rostered players in their group. The resulting 0–100 percentile is their <strong>Overall Rating</strong>. 90th percentile = elite, 50th = average, below 30th = below replacement.</div>
+          <div style="font-weight:700;font-size:13px;margin:20px 0 10px">How Team Positional Strength is Calculated</div>
+          <div style="display:flex;flex-direction:column;gap:0;margin-bottom:20px">
+            <div style="display:flex;align-items:stretch">
+              <div style="width:4px;background:#e8a838;border-radius:4px 4px 0 0;flex-shrink:0"></div>
+              <div style="padding:12px 16px;background:var(--bg);border-radius:0 8px 0 0;flex:1;font-size:12px;line-height:1.6;border-bottom:1px solid var(--border)">
+                <strong style="color:#c8841c">Step 1 — Compute each player's Pos Rating</strong><br>
+                Every rostered player gets a 0–100 Pos Rating — their percentile vs all other players at the same fine position (C vs C, SS vs SS, etc.). See the Player Ratings section for the full methodology.
+              </div>
+            </div>
+            <div style="display:flex;align-items:stretch">
+              <div style="width:4px;background:#e8a838;flex-shrink:0"></div>
+              <div style="padding:12px 16px;background:var(--bg);flex:1;font-size:12px;line-height:1.6;border-bottom:1px solid var(--border)">
+                <strong style="color:#c8841c">Step 2 — Map fine positions to broad groups</strong><br>
+                Each player's best fine position maps up to one of four broad groups for team aggregation:
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px;font-size:11px">
+                  <div style="background:var(--surface);padding:6px 10px;border-radius:6px;text-align:center"><strong>Infield</strong><br>C · 1B · 2B · 3B · SS</div>
+                  <div style="background:var(--surface);padding:6px 10px;border-radius:6px;text-align:center"><strong>Outfield</strong><br>OF</div>
+                  <div style="background:var(--surface);padding:6px 10px;border-radius:6px;text-align:center"><strong>SP</strong><br>SP</div>
+                  <div style="background:var(--surface);padding:6px 10px;border-radius:6px;text-align:center"><strong>RP</strong><br>RP</div>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:stretch">
+              <div style="width:4px;background:#e8a838;flex-shrink:0"></div>
+              <div style="padding:12px 16px;background:var(--bg);flex:1;font-size:12px;line-height:1.6;border-bottom:1px solid var(--border)">
+                <strong style="color:#c8841c">Step 3 — Average Pos Ratings per group per team</strong><br>
+                For each team, the Pos Ratings of all players in each broad group are averaged. A team with three strong shortstops and weak catchers will show a mid-range Infield score — it's an average across all infield positions.<br>
+                <code style="background:var(--surface);padding:2px 6px;border-radius:4px;font-size:11px;display:inline-block;margin-top:4px">team_group_score = avg(Pos Rating of all players in group)</code>
+              </div>
+            </div>
+            <div style="display:flex;align-items:stretch">
+              <div style="width:4px;background:#e8a838;border-radius:0 0 4px 4px;flex-shrink:0"></div>
+              <div style="padding:12px 16px;background:#fef3e2;border-radius:0 0 8px 0;flex:1;font-size:12px;line-height:1.6;border:1px solid #e8a838">
+                <strong style="color:#c8841c">Step 4 — Color the heat map</strong><br>
+                Each cell is colored by the team's average group score vs the league:
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">
+                  <div style="padding:8px;border-radius:6px;background:#1e6b3a;color:#fff;text-align:center;font-size:11px;font-weight:600">≥ 65<br><span style="font-weight:400">Elite</span></div>
+                  <div style="padding:8px;border-radius:6px;background:#4a9a68;color:#fff;text-align:center;font-size:11px;font-weight:600">52–65<br><span style="font-weight:400">Strong</span></div>
+                  <div style="padding:8px;border-radius:6px;background:#f5c4b3;color:#6b2a1a;text-align:center;font-size:11px;font-weight:600">30–42<br><span style="font-weight:400">Weak</span></div>
+                  <div style="padding:8px;border-radius:6px;background:#c0392b;color:#fff;text-align:center;font-size:11px;font-weight:600">&lt; 30<br><span style="font-weight:400">Poor</span></div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div style="font-weight:700;font-size:13px;margin:16px 0 8px;color:var(--text)">Dashboard — Team Positional Strength</div>
-          <p style="font-size:12px;line-height:1.6">After selecting your team on the Dashboard, a heat-map grid shows your strength at each position group vs the league. Each cell is colored by your average player percentile at that slot:</p>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0 16px">
-            <div style="padding:8px;border-radius:6px;background:#1e6b3a;color:#fff;text-align:center;font-size:11px;font-weight:600">≥ 65th<br><span style="font-weight:400">Elite</span></div>
-            <div style="padding:8px;border-radius:6px;background:#4a9a68;color:#fff;text-align:center;font-size:11px;font-weight:600">52–65th<br><span style="font-weight:400">Strong</span></div>
-            <div style="padding:8px;border-radius:6px;background:#f5c4b3;color:#6b2a1a;text-align:center;font-size:11px;font-weight:600">30–42nd<br><span style="font-weight:400">Weak</span></div>
-            <div style="padding:8px;border-radius:6px;background:#c0392b;color:#fff;text-align:center;font-size:11px;font-weight:600">&lt; 30th<br><span style="font-weight:400">Poor</span></div>
-          </div>
-          <p style="font-size:12px;color:var(--muted);line-height:1.6">The team heat map is useful for identifying which position groups need reinforcement via trade or waiver pickup. A red Infield tile + green SP tile tells you to sell pitching depth for hitting.</p>
-
-          <div style="font-weight:700;font-size:13px;margin:16px 0 8px;color:var(--text)">Rosters Page — Player Percentile Ratings</div>
-          <p style="font-size:12px;line-height:1.6">Every player on the Rosters page has an <strong>Overall Rating</strong> column (0–100 percentile within their position group). Additional columns show their FanGraphs Statcast data:</p>
-          <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:12px">
-            <div style="font-size:11px;padding:5px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><span style="min-width:100px;color:var(--accent);font-weight:600">Hitters</span>SLG · xSLG · Barrel% · HardHit% · EV50 · BABIP</div>
-            <div style="font-size:11px;padding:5px 10px;background:var(--bg);border-radius:5px;display:flex;gap:8px"><span style="min-width:100px;color:var(--accent);font-weight:600">Pitchers</span>Whiff% · K% · BB%</div>
+          <div style="padding:12px 16px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.7;margin-bottom:16px">
+            <strong>How to use it:</strong> A red Infield tile + green SP tile = sell pitching depth for infield help. Cross-reference with the SGP By Position view to find specific upgrade targets at the weak position.
           </div>
 
-          <div style="font-weight:700;font-size:13px;margin:16px 0 8px;color:var(--text)">SGP By Position — Upgrade Finder</div>
-          <p style="font-size:12px;line-height:1.6">The <strong>Player Trade &amp; Market → Hitter/Pitcher SGP → By Position</strong> view combines positional strength with SGP to find specific upgrades. For each position slot it shows:</p>
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <div style="font-size:12px;padding:8px 12px;background:var(--bg);border-radius:6px">Your current best starter at that position with their SGP + fWAR</div>
-            <div style="font-size:12px;padding:8px 12px;background:var(--bg);border-radius:6px">The best available upgrade (FA or trade target) with their SGP + fWAR</div>
-            <div style="font-size:12px;padding:8px 12px;background:var(--bg);border-radius:6px">Delta SGP between them — weighted by your current standings needs</div>
-            <div style="font-size:12px;padding:8px 12px;background:var(--accent-light);border-radius:6px;border:1px solid var(--accent)">Verdict: <span style="background:#2980b9;color:#fff;padding:1px 7px;border-radius:8px;font-size:11px">🔥 UPGRADE</span> (Δ &gt; 0.7) · <span style="background:#e8f0eb;color:#1e6b3a;padding:1px 7px;border-radius:8px;font-size:11px">↑ Consider</span> (Δ &gt; 0.3) · <span style="background:var(--bg);color:var(--muted);padding:1px 7px;border-radius:8px;font-size:11px">✓ Fine</span></div>
-          </div>
-
-          <div style="margin-top:16px;padding:12px 16px;background:#fef3e2;border-radius:8px;border-left:4px solid #c8a96e">
-            <div style="font-size:12px;font-weight:700;color:#b7791f;margin-bottom:4px">How to use this week-to-week</div>
-            <div style="font-size:12px;line-height:1.7;color:#7a5c2e">Check the Dashboard team heat map first. If a position group is red, go to SGP → By Position and filter to FA to see if there's a free agent upgrade. If not, check the Trade Analyzer for a trade that improves that slot.</div>
+          <div style="font-weight:700;font-size:13px;margin:16px 0 8px">SGP By Position — Upgrade Finder</div>
+          <p style="font-size:12px;line-height:1.6">The <strong>Player Trade &amp; Market → Hitter/Pitcher SGP → By Position</strong> view combines positional strength with SGP to find specific upgrades. For each position slot it shows your current best starter vs the best available upgrade, with a delta SGP verdict:</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+            <div style="padding:4px 12px;border-radius:8px;background:#2980b9;color:#fff;font-size:12px;font-weight:600">🔥 UPGRADE (Δ &gt; 0.7)</div>
+            <div style="padding:4px 12px;border-radius:8px;background:#e8f0eb;color:#1e6b3a;font-size:12px;font-weight:600">↑ Consider (Δ &gt; 0.3)</div>
+            <div style="padding:4px 12px;border-radius:8px;background:var(--bg);color:var(--muted);font-size:12px;font-weight:600">✓ Fine</div>
           </div>
         </div>
       </div>
