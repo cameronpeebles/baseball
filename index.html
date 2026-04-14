@@ -327,6 +327,7 @@ td.neg { color: #c0392b; font-weight: 500; }
         <button onclick="clearFWARProfile()" style="margin-left:auto;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--muted);cursor:pointer">✕ Clear</button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px" id="fwar-profile-charts"></div>
+      <div id="fwar-profile-archetype" style="margin-top:12px"></div>
     </div>
 
     <div class="trade-tabs" id="fwar-tabs">
@@ -1571,6 +1572,7 @@ function drawPlayers(type) {
   }
   html += thSort('Pos Rating',   '__posRating',  '#5b8db8', 'font-size:11px;font-weight:700;');
   html += thSort('League Rating','__lgRating',   '#7bc8a4', 'font-size:11px;font-weight:700;');
+  html += '<th style="font-size:11px;font-weight:700;white-space:nowrap;color:#8e44ad">Archetype</th>';
   // Fantrax cols in desired order
   ftxCols.forEach(function(d) {
     html += thSort(d.label, '__hdr_' + d.idx, null, '');
@@ -1590,7 +1592,7 @@ function drawPlayers(type) {
     html += '<tr class="lg-avg-row" style="border-bottom:2px solid #2980b9">';
     html += '<td class="left" style="font-weight:600;font-size:11px;color:#2980b9;white-space:nowrap" colspan="3">MLB Avg (Savant)</td>';
     if (hasFWAR) html += '<td></td><td></td><td></td>';
-    html += '<td></td><td></td>'; // Pos Rating, League Rating
+    html += '<td></td><td></td><td></td>'; // Pos Rating, League Rating, Archetype
     ftxCols.forEach(function() { html += '<td></td>'; });
     fgCols.forEach(function(c) {
       var v = fgLeague[c];
@@ -1674,6 +1676,15 @@ function drawPlayers(type) {
     window._posRatingLookup[nameLow] = ratings.posRating;
     html += '<td>' + ratingBadge(ratings.posRating) + '</td>';
     html += '<td>' + ratingBadge(ratings.lgRating)  + '</td>';
+
+    // Archetype cell
+    var fpctA = fwarPctLookup[nameLow];
+    var arch  = getArchetype(fpctA != null ? fpctA / 100 : null, ratings.posRating, ratings.lgRating);
+    if (arch) {
+      html += '<td style="white-space:nowrap"><span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:' + arch.color + '22;color:' + arch.color + ';border:1px solid ' + arch.color + '44">' + arch.name + '</span></td>';
+    } else {
+      html += '<td style="color:var(--muted);font-size:11px">—</td>';
+    }
 
     // Fantrax cols in desired order
     ftxCols.forEach(function(d) {
@@ -3543,6 +3554,31 @@ function getStatVal(cells, key, idx) {
 
 // Percentile rank of val within array (0-1), higher = better
 // For low-is-better stats, invert
+// ── Player Archetype ─────────────────────────────────────────────────────────
+// Thresholds: fWAR% and Pos Rating: High ≥ 60, Low < 40
+//             League Rating:        High ≥ 65, Med 45–64, Low < 45
+function getArchetype(fwarPct, posRating, lgRating) {
+  if (fwarPct == null || posRating == null || lgRating == null) return null;
+
+  var fp  = fwarPct * 100;   // already 0–100
+  var pr  = posRating * 100; // 0–1 → 0–100
+  var lr  = lgRating * 100;  // 0–1 → 0–100
+
+  var fHigh = fp  >= 60;
+  var pHigh = pr  >= 60;
+  var lHigh = lr  >= 65;
+  var lMed  = lr  >= 45 && lr < 65;
+
+  if ( fHigh &&  pHigh &&  lHigh)               return { name: 'True Elite',          color: '#1e6b3a', action: 'Untouchable cornerstone',      desc: 'Dominant production, skill, and positional advantage.' };
+  if ( fHigh &&  pHigh && (lMed || !lHigh))      return { name: 'Elite Asset',         color: '#2d7a5a', action: 'Hold (monitor for regression)', desc: 'Producing and strong at position, skill slightly lagging.' };
+  if ( fHigh && !pHigh &&  lHigh)               return { name: 'Format Mismatch Star', color: '#2980b9', action: 'Hold / slight sell-high',       desc: 'Great player, producing, but position reduces edge.' };
+  if ( fHigh && !pHigh && !lHigh && !lMed)      return { name: 'Overperformer',        color: '#e67e22', action: 'Sell-high',                     desc: 'Fantasy output inflated vs underlying skill.' };
+  if (!fHigh &&  pHigh &&  lHigh)               return { name: 'Breakout Candidate',   color: '#8e44ad', action: 'Buy-low',                       desc: 'Strong skill + positional edge, results lagging.' };
+  if (!fHigh &&  pHigh && (lMed || !lHigh))      return { name: 'Positional Play',      color: '#16a085', action: 'Hold / stream',                 desc: 'Value driven mostly by scarcity, not skill.' };
+  if (!fHigh && !pHigh &&  lHigh)               return { name: 'Underperforming Stud',  color: '#c0392b', action: 'Buy-low',                       desc: 'Great player, not converting to fantasy yet.' };
+  return                                                 { name: 'Replacement Level',   color: '#888',    action: 'Drop / ignore',                desc: 'Weak across the board.' };
+}
+
 function percentile(val, vals, lowIsBetter) {
   if (val == null || vals.length === 0) return 0.5;
   var below = vals.filter(function(v) { return lowIsBetter ? v > val : v < val; }).length;
@@ -6737,6 +6773,29 @@ window.showFWARProfile = function(name, type) {
   document.getElementById('fwar-profile-name').textContent = name;
   document.getElementById('fwar-profile-sub').textContent = pos + (mlb ? ' · ' + mlb : '') + (ftId ? '' : ' · FA');
   document.getElementById('fwar-profile-charts').innerHTML = chartsHtml;
+
+  // Compute and render archetype
+  var nameLow2   = name.toLowerCase();
+  var fpctVal    = window._fwarPctLookup  ? (window._fwarPctLookup[nameLow2]  != null ? window._fwarPctLookup[nameLow2]  : null) : null;
+  var posRatVal  = window._posRatingLookup ? (window._posRatingLookup[nameLow2] != null ? window._posRatingLookup[nameLow2] : null) : null;
+  var lgRatVal   = window._lgRatingLookup  ? (window._lgRatingLookup[nameLow2]  != null ? window._lgRatingLookup[nameLow2]  : null) : null;
+  var arch = getArchetype(fpctVal != null ? fpctVal / 100 : null, posRatVal, lgRatVal);
+  var archEl = document.getElementById('fwar-profile-archetype');
+  if (arch && archEl) {
+    archEl.innerHTML = '<div class="card" style="padding:14px 18px;border-left:4px solid ' + arch.color + ';display:flex;align-items:center;gap:16px;flex-wrap:wrap">' +
+      '<div>' +
+        '<span style="font-size:13px;font-weight:700;color:' + arch.color + '">' + arch.name + '</span>' +
+        '<span style="font-size:12px;color:var(--muted);margin-left:10px">' + arch.desc + '</span>' +
+      '</div>' +
+      '<div style="margin-left:auto;white-space:nowrap">' +
+        '<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted)">Action: </span>' +
+        '<span style="font-size:12px;font-weight:700;color:' + arch.color + '">' + arch.action + '</span>' +
+      '</div>' +
+    '</div>';
+  } else if (archEl) {
+    archEl.innerHTML = '';
+  }
+
   document.getElementById('fwar-player-profile').style.display = '';
 
   // Highlight selected row
