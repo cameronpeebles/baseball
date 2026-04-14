@@ -1366,9 +1366,9 @@ function drawPlayers(type) {
     return result;
   }
 
-  // Also store lgRating and posRating for sort access
-  window._lgRatingLookup  = {};
-  window._posRatingLookup = {};
+  // Ensure rating lookups exist (don't reset — hitters and pitchers both need to accumulate)
+  window._lgRatingLookup  = window._lgRatingLookup  || {};
+  window._posRatingLookup = window._posRatingLookup || {};
 
   function ratingBadge(r) {
     if (r == null) return '<span style="color:var(--muted)">—</span>';
@@ -6485,6 +6485,9 @@ window.applyFWARPreset = function(preset) {
 };
 
 window.recalculateFWAR = function() {
+  // Clear rating lookups so hitters and pitchers both repopulate fresh
+  window._lgRatingLookup  = {};
+  window._posRatingLookup = {};
   // Read current inputs
   var positions = ['C','1B','2B','3B','SS','OF','SP','RP'];
   positions.forEach(function(pos) {
