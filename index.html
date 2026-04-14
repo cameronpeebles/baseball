@@ -347,6 +347,20 @@ td.neg { color: #c0392b; font-weight: 500; }
           </div>
         </div>
         <div style="padding:8px 20px 6px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="font-size:11px;color:#c0392b;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-right:4px">Archetype:</span>
+          <div class="pill-group" id="hit-arch-pills">
+            <button class="pill active" onclick="setArch('hit','ALL',this)">All</button>
+            <button class="pill" onclick="setArch('hit','True Elite',this)">True Elite</button>
+            <button class="pill" onclick="setArch('hit','Elite Asset',this)">Elite Asset</button>
+            <button class="pill" onclick="setArch('hit','Format Mismatch Star',this)">Format Mismatch</button>
+            <button class="pill" onclick="setArch('hit','Overperformer',this)">Overperformer</button>
+            <button class="pill" onclick="setArch('hit','Breakout Candidate',this)">Breakout</button>
+            <button class="pill" onclick="setArch('hit','Positional Play',this)">Positional Play</button>
+            <button class="pill" onclick="setArch('hit','Underperforming Stud',this)">Underperforming Stud</button>
+            <button class="pill" onclick="setArch('hit','Replacement Level',this)">Replacement Level</button>
+          </div>
+        </div>
+        <div style="padding:8px 20px 6px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <span style="font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:0.05em;margin-right:4px">Position:</span>
           <div class="pill-group" id="hit-pos-pills">
             <button class="pill active" onclick="setPos('hit','ALL',this)">All</button>
@@ -372,6 +386,20 @@ td.neg { color: #c0392b; font-weight: 500; }
             <button class="pill active" onclick="setF('pit','ALL',this)">All</button>
             <button class="pill" onclick="setF('pit','FA',this)">Free Agents</button>
             <button class="pill" onclick="setF('pit','OWNED',this)">Rostered</button>
+          </div>
+        </div>
+        <div style="padding:8px 20px 6px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="font-size:11px;color:#c0392b;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-right:4px">Archetype:</span>
+          <div class="pill-group" id="pit-arch-pills">
+            <button class="pill active" onclick="setArch('pit','ALL',this)">All</button>
+            <button class="pill" onclick="setArch('pit','True Elite',this)">True Elite</button>
+            <button class="pill" onclick="setArch('pit','Elite Asset',this)">Elite Asset</button>
+            <button class="pill" onclick="setArch('pit','Format Mismatch Star',this)">Format Mismatch</button>
+            <button class="pill" onclick="setArch('pit','Overperformer',this)">Overperformer</button>
+            <button class="pill" onclick="setArch('pit','Breakout Candidate',this)">Breakout</button>
+            <button class="pill" onclick="setArch('pit','Positional Play',this)">Positional Play</button>
+            <button class="pill" onclick="setArch('pit','Underperforming Stud',this)">Underperforming Stud</button>
+            <button class="pill" onclick="setArch('pit','Replacement Level',this)">Replacement Level</button>
           </div>
         </div>
         <div style="padding:8px 20px 6px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -1163,6 +1191,7 @@ var S = {
   hitHeaders: [], pitHeaders: [],
   hitF: 'ALL', pitF: 'ALL', hitQ: '', pitQ: '',
   hitPos: 'ALL', pitPos: 'ALL',
+  hitArch: 'ALL', pitArch: 'ALL',
   hitSort: null, hitSortDir: -1,
   pitSort: null, pitSortDir: -1,
   rosterRaw: null, seasonData: null, zData: null,
@@ -1400,6 +1429,14 @@ function setPos(type, pos, btn) {
   drawPlayers(type);
 }
 
+window.setArch = function(type, arch, btn) {
+  if (type === 'hit') S.hitArch = arch; else S.pitArch = arch;
+  var groupId = type === 'hit' ? 'hit-arch-pills' : 'pit-arch-pills';
+  document.getElementById(groupId).querySelectorAll('.pill').forEach(function(p) { p.classList.remove('active'); });
+  btn.classList.add('active');
+  drawPlayers(type);
+};
+
 function drawPlayers(type) {
   var isHit = type === 'hit';
   var rows = isHit ? S.hitRows : S.pitRows;
@@ -1560,6 +1597,8 @@ function drawPlayers(type) {
     'RP': ['RP']
   };
 
+  var archFilter = isHit ? S.hitArch : S.pitArch;
+
   // Filter
   var filtered = enriched.filter(function(e) {
     var nameLow = e.name.toLowerCase();
@@ -1574,6 +1613,14 @@ function drawPlayers(type) {
         var parts = pos.split(',').map(function(p){return p.trim();});
         if (!parts.some(function(p){return eligible.indexOf(p) !== -1;})) return false;
       }
+    }
+    // Archetype filter — uses pre-computed lookups (may be empty on first render)
+    if (archFilter && archFilter !== 'ALL') {
+      var fpctA2  = window._fwarPctLookup  ? window._fwarPctLookup[nameLow]  : null;
+      var posRA2  = window._posRatingLookup ? window._posRatingLookup[nameLow] : null;
+      var lgRA2   = window._lgRatingLookup  ? window._lgRatingLookup[nameLow]  : null;
+      var arch2   = getArchetype(fpctA2 != null ? fpctA2 / 100 : null, posRA2, lgRA2);
+      if (!arch2 || arch2.name !== archFilter) return false;
     }
     return true;
   });
@@ -1642,7 +1689,7 @@ function drawPlayers(type) {
   }
   html += thSort('Pos Rating',   '__posRating',  '#5b8db8', 'font-size:11px;font-weight:700;');
   html += thSort('League Rating','__lgRating',   '#7bc8a4', 'font-size:11px;font-weight:700;');
-  html += '<th style="font-size:11px;font-weight:700;white-space:nowrap;color:#8e44ad">Archetype</th>';
+  html += '<th style="font-size:11px;font-weight:700;white-space:nowrap;color:#c0392b">Archetype</th>';
   // Fantrax cols in desired order
   ftxCols.forEach(function(d) {
     html += thSort(d.label, '__hdr_' + d.idx, null, '');
