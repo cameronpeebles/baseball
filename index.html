@@ -1692,13 +1692,9 @@ function showRoster(teamId) {
     html += '<th class="left">Player</th><th class="left">Pos</th><th class="left">MLB Team</th><th class="left">Status</th>';
     if (hasFWAR) {
       html += '<th style="color:var(--accent);font-weight:700;white-space:nowrap">fWAR</th>';
-      html += '<th style="color:#c8a96e;font-size:11px;white-space:nowrap">fWAR-Pts</th>';
     }
-    // Positional rating column
-    var taLookup = {};
-    (TA.players || []).forEach(function(p){ if (p.name) taLookup[p.name.toLowerCase()] = p; });
-    var hasRating = Object.keys(taLookup).length > 0;
-    if (hasRating) html += '<th style="color:#5b8db8;font-weight:700;white-space:nowrap;font-size:11px">Rating</th>';
+    html += '<th style="color:#5b8db8;font-weight:700;white-space:nowrap;font-size:11px">Pos Rating</th>';
+    html += '<th style="color:#2d7a5a;font-weight:700;white-space:nowrap;font-size:11px">League Rating</th>';
     var statHeaders = headers.filter(function(h) { return ['age','opponent'].indexOf(h.key || '') === -1; });
     statHeaders.forEach(function(h) { html += '<th>' + (h.shortName || h.name || '') + '</th>'; });
     if (hasFG) {
@@ -1710,7 +1706,7 @@ function showRoster(teamId) {
 
     // League average row
     if (hasFG && fgLeague && Object.keys(fgLeague).length > 0) {
-      var blankCols = 4 + (hasFWAR ? 2 : 0) + (hasRating ? 1 : 0) + statHeaders.length;
+      var blankCols = 4 + (hasFWAR ? 1 : 0) + 2 + statHeaders.length;
       html += '<tr style="background:#e8f4fd;border-bottom:2px solid #2980b9">';
       html += '<td class="left" colspan="' + blankCols + '" style="font-weight:600;font-size:11px;color:#2980b9;white-space:nowrap">MLB Avg (Savant)</td>';
       fgCols.forEach(function(c) {
@@ -1756,23 +1752,23 @@ function showRoster(teamId) {
           var fv = fw.fWAR;
           var fc = fv >= 2 ? '#1e6b3a' : fv >= 0.5 ? '#4a9a68' : fv >= -0.5 ? '#b7791f' : '#c0392b';
           html += '<td style="font-weight:700;color:' + fc + ';white-space:nowrap">' + (fv >= 0 ? '+' : '') + fv.toFixed(2) + '</td>';
-          var fwP = fw.fWAR_Pts;
-          html += '<td style="font-size:12px;color:#c8a96e;white-space:nowrap">' + (fwP != null ? (fwP >= 0 ? '+' : '') + fwP.toFixed(1) : '—') + '</td>';
         } else {
-          html += '<td style="color:var(--muted)">—</td><td></td>';
+          html += '<td style="color:var(--muted)">—</td>';
         }
       }
 
-      if (hasRating) {
-        var tp = taLookup[name.toLowerCase()];
-        if (tp && tp.overallRating != null) {
-          var pct = Math.round(tp.overallRating * 100);
-          var pc = pct >= 65 ? '#1e6b3a' : pct >= 50 ? '#4a9a68' : pct >= 35 ? '#b7791f' : '#c0392b';
-          html += '<td style="white-space:nowrap"><span style="display:inline-block;padding:2px 7px;border-radius:8px;font-size:11px;font-weight:700;background:'+pc+'22;color:'+pc+'">' + pct + '</span></td>';
-        } else {
-          html += '<td style="color:var(--muted);font-size:11px">—</td>';
-        }
+      // Pos Rating and League Rating from drawPlayers lookups
+      function rosterRatingBadge(r) {
+        if (r == null) return '<span style="color:var(--muted)">—</span>';
+        var pct = Math.round(r * 100);
+        var col = pct >= 65 ? '#1e6b3a' : pct >= 50 ? '#4a9a68' : pct >= 35 ? '#b7791f' : '#c0392b';
+        return '<span style="display:inline-block;padding:2px 7px;border-radius:8px;font-size:11px;font-weight:700;background:'+col+'22;color:'+col+'">' + pct + '</span>';
       }
+      var nameLow = name.toLowerCase();
+      var posR = window._posRatingLookup ? window._posRatingLookup[nameLow] : null;
+      var lgR  = window._lgRatingLookup  ? window._lgRatingLookup[nameLow]  : null;
+      html += '<td style="white-space:nowrap">' + rosterRatingBadge(posR != null ? posR : null) + '</td>';
+      html += '<td style="white-space:nowrap">' + rosterRatingBadge(lgR  != null ? lgR  : null) + '</td>';
 
       cells.slice(2).forEach(function(cell) { html += '<td>' + ((cell.content != null ? cell.content : '')).toString().replace(/<[^>]+>/g, '') + '</td>'; });
 
