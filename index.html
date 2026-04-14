@@ -6854,7 +6854,16 @@ window.recalculateFWAR = function() {
   // Hitter stats from rostered players
   var rAVGs = rosteredHitters.map(function(r){ return getVal(r.cells||[],  'AVG', hitIdx); }).filter(function(v){return v!=null;});
   var rABs  = rosteredHitters.map(function(r){ return getVal(r.cells||[], 'AB',  hitIdx); }).filter(function(v){return v!=null;});
-  var lgAVG   = mean(rAVGs);
+  // AB-weighted league AVG: Σ(AVG×AB) / Σ(AB) — more stable than mean of AVGs
+  var lgAVG = (function() {
+    var totalH = 0, totalAB = 0;
+    rosteredHitters.forEach(function(r) {
+      var avg = getVal(r.cells||[], 'AVG', hitIdx);
+      var ab  = getVal(r.cells||[], 'AB',  hitIdx);
+      if (avg != null && ab != null && ab > 0) { totalH += avg * ab; totalAB += ab; }
+    });
+    return totalAB > 0 ? totalH / totalAB : mean(rAVGs);
+  })();
   var lgAB    = mean(rABs);
 
   // Pitcher league stats
