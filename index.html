@@ -6567,10 +6567,6 @@ window.showFWARProfile = function(name, type) {
   var stats = {};
   cats.forEach(function(c){ stats[c] = gv(c); });
   stats['AB'] = gv('AB'); stats['IP'] = gv('IP');
-  console.log('[Profile] stats:', JSON.stringify(stats));
-  if (isHit) {
-    console.log('[Profile] lgHitPool AVG sample:', lgHitPool2.slice(0,5).map(function(p){ return p.stats['AVG']; }));
-  }
 
   // fWAR data
   var fwarLookup = {};
@@ -6646,8 +6642,9 @@ window.showFWARProfile = function(name, type) {
   function buildCatData(poolFn) {
     return cats.map(function(cat) {
       var factor = sampleFactor(cat, stats, pos);
-      var pct    = catPct(cat, poolFn()) * factor;
-      return { cat: cat, v: pct - 0.5 }; // center at 0
+      var pct    = catPct(cat, poolFn());
+      var dev    = (pct - 0.5) * factor; // scale the deviation, not the raw percentile
+      return { cat: cat, v: dev };
     });
   }
 
