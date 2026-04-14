@@ -5271,8 +5271,6 @@ function posHeatColorDash(pct) {
 function parseStandingsByWeek(standingsData) {
   var tbls = (standingsData.data && standingsData.data.tableList) || [];
   var bw = {};
-  console.log('parseStandingsByWeek: total tables =', tbls.length);
-  console.log('parseStandingsByWeek: captions =', tbls.map(function(t){return t.caption||'(none)';}));
   tbls.forEach(function(tbl) {
     var m = (tbl.caption||'').match(/scoring period[:\s]+(\d+)/i);
     if (!m) return;
@@ -5308,11 +5306,33 @@ function parseStandingsByWeek(standingsData) {
 }
 
 // Shared loader: ensures _joeByWeek/_joeAllResults/_joeCompletedWeeks are populated
+function parseJoeStatsByWeek(joeStats) {
+  var bw = {};
+  (joeStats || []).forEach(function(row) {
+    var wk = row.week;
+    if (!wk) return;
+    if (!bw[wk]) bw[wk] = {};
+    bw[wk][row.team] = {
+      R:    row.R    || 0,
+      HR:   row.HR   || 0,
+      RBI:  row.RBI  || 0,
+      SB:   row.SB   || 0,
+      AVG:  row.AVG  || 0,
+      K:    row.K    || 0,
+      W:    row.W    || 0,
+      SVH3: row.SVH3 || row.SV || 0,
+      ERA:  row.ERA  || 0,
+      WHIP: row.WHIP || 0
+    };
+  });
+  return bw;
+}
+
 function ensureJOEData(callback) {
   if (window._joeByWeek && window._joeAllResults) { callback(); return; }
-  Promise.all([loadJSON('standings.json'), loadJSON('full_schedule.json')])
+  Promise.all([loadJSON('joe_stats.json'), loadJSON('full_schedule.json')])
     .then(function(res) {
-      var bw = parseStandingsByWeek(res[0]);
+      var bw = parseJoeStatsByWeek(res[0]);
       window._joeByWeek = bw;
       buildJOEPage(bw, res[1]);
       callback();
