@@ -357,6 +357,7 @@ td.neg { color: #c0392b; font-weight: 500; }
             <button class="pill" onclick="setArch('hit','Breakout Candidate',this)">Breakout</button>
             <button class="pill" onclick="setArch('hit','Positional Play',this)">Positional Play</button>
             <button class="pill" onclick="setArch('hit','Underperforming Stud',this)">Underperforming Stud</button>
+            <button class="pill" onclick="setArch('hit','Stable Contributor',this)">Stable Contributor</button>
             <button class="pill" onclick="setArch('hit','Replacement Level',this)">Replacement Level</button>
           </div>
         </div>
@@ -399,6 +400,7 @@ td.neg { color: #c0392b; font-weight: 500; }
             <button class="pill" onclick="setArch('pit','Breakout Candidate',this)">Breakout</button>
             <button class="pill" onclick="setArch('pit','Positional Play',this)">Positional Play</button>
             <button class="pill" onclick="setArch('pit','Underperforming Stud',this)">Underperforming Stud</button>
+            <button class="pill" onclick="setArch('pit','Stable Contributor',this)">Stable Contributor</button>
             <button class="pill" onclick="setArch('pit','Replacement Level',this)">Replacement Level</button>
           </div>
         </div>
@@ -844,10 +846,35 @@ td.neg { color: #c0392b; font-weight: 500; }
           <p style="font-size:13px;line-height:1.7">Every player is assigned an archetype based on the relationship between their three key metrics. This surfaces actionable insights — whether a player is a keeper, a sell-high, or a hidden gem.</p>
 
           <div style="font-weight:700;font-size:13px;margin:16px 0 10px">Thresholds</div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;font-size:12px">
-            <div style="padding:10px;background:var(--bg);border-radius:8px"><strong>fWAR%</strong><br><span style="color:var(--muted)">High ≥ 60 · Low &lt; 60</span></div>
-            <div style="padding:10px;background:var(--bg);border-radius:8px"><strong>Pos Rating</strong><br><span style="color:var(--muted)">High ≥ 55 · Low &lt; 55</span></div>
-            <div style="padding:10px;background:var(--bg);border-radius:8px"><strong>League Rating</strong><br><span style="color:var(--muted)">High ≥ 55 · Med 40–54 · Low &lt; 40</span></div>
+          <div style="overflow-x:auto;margin-bottom:20px">
+            <table style="width:100%;font-size:12px;border-collapse:collapse">
+              <thead><tr style="border-bottom:2px solid var(--border)">
+                <th class="left" style="padding:6px 12px;color:var(--muted);font-size:11px;text-transform:uppercase">Metric</th>
+                <th style="padding:6px 12px;color:#1e6b3a;font-size:11px;text-transform:uppercase">High</th>
+                <th style="padding:6px 12px;color:#b7791f;font-size:11px;text-transform:uppercase">Mid</th>
+                <th style="padding:6px 12px;color:#c0392b;font-size:11px;text-transform:uppercase">Low</th>
+              </tr></thead>
+              <tbody>
+                <tr style="border-bottom:1px solid var(--border)">
+                  <td style="padding:8px 12px;font-weight:600">fWAR%</td>
+                  <td style="padding:8px 12px;text-align:center">≥ 70</td>
+                  <td style="padding:8px 12px;text-align:center">50–69</td>
+                  <td style="padding:8px 12px;text-align:center">&lt; 50</td>
+                </tr>
+                <tr style="border-bottom:1px solid var(--border);background:var(--bg)">
+                  <td style="padding:8px 12px;font-weight:600">Pos Rating</td>
+                  <td style="padding:8px 12px;text-align:center">≥ 60</td>
+                  <td style="padding:8px 12px;text-align:center">45–59</td>
+                  <td style="padding:8px 12px;text-align:center">&lt; 45</td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 12px;font-weight:600">League Rating</td>
+                  <td style="padding:8px 12px;text-align:center">≥ 60</td>
+                  <td style="padding:8px 12px;text-align:center">45–59</td>
+                  <td style="padding:8px 12px;text-align:center">&lt; 45</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
           <div style="display:flex;flex-direction:column;gap:8px">
@@ -892,6 +919,12 @@ td.neg { color: #c0392b; font-weight: 500; }
               <div><strong style="color:#e67e22">Underperforming Stud</strong><div style="font-size:11px;color:var(--muted)">Low · Low · High</div></div>
               <div style="line-height:1.5">Great player, not converting to fantasy yet.</div>
               <div style="white-space:nowrap;font-weight:600;color:#e67e22">Buy-low</div>
+            </div>
+            <div style="display:grid;grid-template-columns:28px 140px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+              <div style="width:14px;height:14px;border-radius:3px;background:#1a1a1a;margin-top:2px"></div>
+              <div><strong style="color:#1a1a1a">Stable Contributor</strong><div style="font-size:11px;color:var(--muted)">Mid · Mid · Mid</div></div>
+              <div style="line-height:1.5">Consistent across the board — reliable but not elite.</div>
+              <div style="white-space:nowrap;font-weight:600;color:#1a1a1a">Hold</div>
             </div>
             <div style="display:grid;grid-template-columns:28px 140px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
               <div style="width:14px;height:14px;border-radius:3px;background:#888888;margin-top:2px"></div>
@@ -3681,19 +3714,22 @@ function getArchetype(fwarPct, posRating, lgRating) {
   var pr  = posRating * 100; // 0–1 → 0–100
   var lr  = lgRating * 100;  // 0–1 → 0–100
 
-  var fHigh = fp  >= 60;
-  var pHigh = pr  >= 55;
-  var lHigh = lr  >= 55;
-  var lMed  = lr  >= 40 && lr < 55;
+  var fHigh = fp  >= 70;
+  var fMid  = fp  >= 50 && fp  < 70;
+  var pHigh = pr  >= 60;
+  var pMid  = pr  >= 45 && pr  < 60;
+  var lHigh = lr  >= 60;
+  var lMed  = lr  >= 45 && lr  < 60;
 
-  if ( fHigh &&  pHigh &&  lHigh)               return { name: 'True Elite',          color: '#1e6b3a', action: 'Untouchable cornerstone',      desc: 'Dominant production, skill, and positional advantage.' };
-  if ( fHigh &&  pHigh && (lMed || !lHigh))      return { name: 'Elite Asset',         color: '#2d7a5a', action: 'Hold (monitor for regression)', desc: 'Producing and strong at position, skill slightly lagging.' };
-  if ( fHigh && !pHigh &&  lHigh)               return { name: 'Format Mismatch Star', color: '#2980b9', action: 'Hold / slight sell-high',       desc: 'Great player, producing, but position reduces edge.' };
-  if ( fHigh && !pHigh && !lHigh && !lMed)      return { name: 'Overperformer',        color: '#c0392b', action: 'Sell-high',                     desc: 'Fantasy output inflated vs underlying skill.' };
-  if (!fHigh &&  pHigh &&  lHigh)               return { name: 'Breakout Candidate',   color: '#8e44ad', action: 'Buy-low',                       desc: 'Strong skill + positional edge, results lagging.' };
-  if (!fHigh &&  pHigh && (lMed || !lHigh))      return { name: 'Positional Play',      color: '#16a085', action: 'Hold / stream',                 desc: 'Value driven mostly by scarcity, not skill.' };
-  if (!fHigh && !pHigh &&  lHigh)               return { name: 'Underperforming Stud',  color: '#e67e22', action: 'Buy-low',                       desc: 'Great player, not converting to fantasy yet.' };
-  return                                                 { name: 'Replacement Level',   color: '#888888', action: 'Drop / ignore',                desc: 'Weak across the board.' };
+  if ( fHigh &&  pHigh &&  lHigh)                    return { name: 'True Elite',          color: '#1e6b3a', action: 'Untouchable cornerstone',      desc: 'Dominant production, skill, and positional advantage.' };
+  if ( fHigh &&  pHigh && (lMed  || !lHigh))          return { name: 'Elite Asset',         color: '#2d7a5a', action: 'Hold (monitor for regression)', desc: 'Producing and strong at position, skill slightly lagging.' };
+  if ( fHigh && !pHigh &&  lHigh)                    return { name: 'Format Mismatch Star', color: '#2980b9', action: 'Hold / slight sell-high',       desc: 'Great player, producing, but position reduces edge.' };
+  if ( fHigh && !pHigh && !lHigh && !lMed)           return { name: 'Overperformer',        color: '#c0392b', action: 'Sell-high',                     desc: 'Fantasy output inflated vs underlying skill.' };
+  if (!fHigh &&  pHigh &&  lHigh)                    return { name: 'Breakout Candidate',   color: '#8e44ad', action: 'Buy-low',                       desc: 'Strong skill + positional edge, results lagging.' };
+  if (!fHigh &&  pHigh && (lMed  || !lHigh))          return { name: 'Positional Play',      color: '#16a085', action: 'Hold / stream',                 desc: 'Value driven mostly by scarcity, not skill.' };
+  if (!fHigh && !pHigh &&  lHigh)                    return { name: 'Underperforming Stud',  color: '#e67e22', action: 'Buy-low',                       desc: 'Great player, not converting to fantasy yet.' };
+  if ( fMid  &&  pMid  && (lMed  || lHigh || !lHigh)) return { name: 'Stable Contributor',   color: '#1a1a1a', action: 'Hold',                          desc: 'Consistent across the board — reliable but not elite.' };
+  return                                                      { name: 'Replacement Level',   color: '#888888', action: 'Drop / ignore',                desc: 'Weak across the board.' };
 }
 
 function percentile(val, vals, lowIsBetter) {
