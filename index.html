@@ -679,6 +679,28 @@ td.neg { color: #c0392b; font-weight: 500; }
             <div style="font-size:12px;font-weight:700;color:#b7791f;margin-bottom:4px">Important: fWAR uses cumulative season stats</div>
             <div style="font-size:12px;line-height:1.7;color:#7a5c2e">fWAR reflects how a player has performed so far this season relative to their peers — it is not a projection. Use the SGP Engine (Player Trade &amp; Market) for forward-looking player value.</div>
           </div>
+
+          <div style="font-weight:700;font-size:13px;margin:20px 0 10px">fWAR % — Percentile Column</div>
+          <p style="font-size:12px;line-height:1.6;margin-bottom:12px">The <strong>fWAR %</strong> column on the Player Data page converts a player's raw fWAR into a 0–100 percentile rank within their pool of rostered players. It answers: <em>"How does this player's fWAR compare to everyone else currently rostered?"</em></p>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+            <div style="padding:10px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6;text-align:center">
+              <div style="font-weight:700;color:var(--accent);margin-bottom:4px">Hitters</div>
+              All rostered IF + OF in one pool
+            </div>
+            <div style="padding:10px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6;text-align:center">
+              <div style="font-weight:700;color:var(--accent);margin-bottom:4px">SP</div>
+              All rostered SP in one pool
+            </div>
+            <div style="padding:10px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6;text-align:center">
+              <div style="font-weight:700;color:var(--accent);margin-bottom:4px">RP</div>
+              All rostered RP in one pool
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+            <div style="font-size:12px;padding:8px 12px;background:var(--bg);border-radius:6px"><strong>Why separate SP and RP?</strong> SPs and RPs have fundamentally different workloads and fWAR scales. A closer with 15 saves and a 2.50 ERA shouldn't be compared against a SP with 180 IP — they're contributing in different ways.</div>
+            <div style="font-size:12px;padding:8px 12px;background:var(--bg);border-radius:6px"><strong>Why rostered only?</strong> The percentile measures your standing among active competition — the players other managers are actually deploying. FA players vary wildly in quality and would dilute the signal.</div>
+            <div style="font-size:12px;padding:8px 12px;background:var(--accent-light);border-radius:6px;border:1px solid var(--accent)"><strong>How to use it:</strong> A hitter in the 80th percentile is more valuable than 80% of all rostered hitters by fWAR. Sort by fWAR % descending to quickly identify the most impactful players in the league — useful for trade targets and waiver wire decisions.</div>
+          </div>
         </div>
       </div>
 
@@ -1491,11 +1513,13 @@ function drawPlayers(type) {
   html += '<tr>';
   html += thSort('Player',  '__name',  null, 'text-align:left;');
   html += thSort('Pos',     '__pos',   null, 'text-align:left;');
+  if (hasFWAR) {
+    html += thSort('Slot',   '__slot',  'var(--muted)', 'font-size:11px;text-align:left;');
+  }
   html += thSort('MLB',     '__mlb',   null, 'text-align:left;');
   if (hasFWAR) {
-    html += thSort('fWAR',          '__fwar',      'var(--accent)', 'font-weight:700;');
-    html += thSort('fWAR %ile',     '__fwarPct',   '#9b59b6',       'font-size:11px;font-weight:700;');
-    html += thSort('Slot',          '__slot',      'var(--muted)',  'font-size:11px;');
+    html += thSort('fWAR',   '__fwar',  'var(--accent)', 'font-weight:700;');
+    html += thSort('fWAR %', '__fwarPct', '#9b59b6', 'font-size:11px;font-weight:700;');
   }
   html += thSort('Pos Rating',   '__posRating',  '#5b8db8', 'font-size:11px;font-weight:700;');
   html += thSort('League Rating','__lgRating',   '#7bc8a4', 'font-size:11px;font-weight:700;');
@@ -1571,6 +1595,9 @@ function drawPlayers(type) {
     html += '<td class="left" style="position:sticky;left:0;background:var(--surface);z-index:1;box-shadow:2px 0 4px rgba(0,0,0,0.04)">';
     html += '<div class="team-cell">' + (hs ? '<img class="player-hs" src="' + hs + '" alt="" onerror="this.style.display=\'none\'">' : '') + '<span><strong>' + name + '</strong></span></div></td>';
     html += '<td class="left"><span style="color:var(--muted);font-size:12px">' + pos + '</span></td>';
+    if (hasFWAR) {
+      html += '<td class="left" style="font-size:11px;color:var(--muted)">' + (fw ? (fw.assignedSlot || '—') : '—') + '</td>';
+    }
     html += '<td class="left">' + mlb + '</td>';
 
     if (hasFWAR) {
@@ -1580,9 +1607,8 @@ function drawPlayers(type) {
         html += '<td style="font-weight:700;color:' + fc + '">' + (fv >= 0 ? '+' : '') + fv.toFixed(2) + '</td>';
         var fpct = fwarPctLookup[name.toLowerCase()];
         html += '<td>' + ratingBadge(fpct != null ? fpct / 100 : null) + '</td>';
-        html += '<td style="font-size:11px;color:var(--muted)">' + (fw.assignedSlot || '—') + '</td>';
       } else {
-        html += '<td style="color:var(--muted)">—</td><td></td><td></td>';
+        html += '<td style="color:var(--muted)">—</td><td></td>';
       }
     }
 
