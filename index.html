@@ -1257,8 +1257,9 @@ function drawPlayers(type) {
     return result;
   }
 
-  // Also store lgRating for sort access
-  window._lgRatingLookup = {};
+  // Also store lgRating and posRating for sort access
+  window._lgRatingLookup  = {};
+  window._posRatingLookup = {};
 
   function ratingBadge(r) {
     if (r == null) return '<span style="color:var(--muted)">—</span>';
@@ -1455,7 +1456,8 @@ function drawPlayers(type) {
     stats2['AB'] = getStatVal(cells, 'AB', rowIdx);
     stats2['IP'] = getStatVal(cells, 'IP', rowIdx);
     var ratings  = getRatings(name, pos2, stats2, isHit ? 'hit' : 'pit');
-    window._lgRatingLookup[nameLow] = ratings.lgRating;
+    window._lgRatingLookup[nameLow]  = ratings.lgRating;
+    window._posRatingLookup[nameLow] = ratings.posRating;
     html += '<td>' + ratingBadge(ratings.posRating) + '</td>';
     html += '<td>' + ratingBadge(ratings.lgRating)  + '</td>';
 
@@ -1498,8 +1500,8 @@ function getPlayerSortVal(e, col, headers) {
   if (col === '__slot')      return e.fw ? (e.fw.assignedSlot || '') : '';
   if (col === '__fwar')      return e.fw ? e.fw.fWAR   : null;
   if (col === '__totalZ')    return e.fw ? e.fw.totalZ : null;
-  if (col === '__posRating') { var pr=(TA.players||[]).find(function(p){return p.name&&p.name.toLowerCase()===e.name.toLowerCase();}); return pr?pr.overallRating:null; }
-  if (col === '__lgRating')  return window._lgRatingLookup ? (window._lgRatingLookup[e.name.toLowerCase()]||null) : null;
+  if (col === '__posRating') return window._posRatingLookup ? (window._posRatingLookup[e.name.toLowerCase()]||null) : null;
+  if (col === '__lgRating')  return window._lgRatingLookup  ? (window._lgRatingLookup[e.name.toLowerCase()]||null)  : null;
   if (col.indexOf('__fg_') === 0) {
     var c = col.slice(5);
     return e.fgRow ? e.fgRow[c] : null;
