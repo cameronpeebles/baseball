@@ -86,6 +86,7 @@ td.neg { color: #c0392b; font-weight: 500; }
 #page-fwar .table-wrap { overflow-x: auto; }
 #page-fwar table { min-width: max-content; }
 #page-fwar .card { overflow: visible; }
+#page-models { max-width: none; }
 /* Rosters wide tables */
 #page-rosters { max-width: none; }
 #page-rosters .table-wrap { overflow-x: auto; }
@@ -248,7 +249,8 @@ td.neg { color: #c0392b; font-weight: 500; }
   <button onclick="showPage('joe',this)">JOE Factor</button>
   <button onclick="showPage('matchup',this)">Match Predictions</button>
   <button onclick="showPage('correlations',this)">Correlations</button>
-  <button onclick="showPage('fwar',this)">fWAR</button>
+  <button onclick="showPage('fwar',this)">Player Data</button>
+  <button onclick="showPage('models',this)">Models</button>
   <button onclick="showPage('rosters',this)">Rosters</button>
   <button onclick="showPage('trade',this)">Player Trade &amp; Market</button>
   <button onclick="showPage('targets',this)">Trade Waiver Wire Targets</button>
@@ -311,56 +313,15 @@ td.neg { color: #c0392b; font-weight: 500; }
   </div>
 
   <div class="page" id="page-fwar">
-    <div class="page-title">fWAR</div>
-    <div class="page-subtitle">Fantasy WAR — player value above replacement level, adjustable by position and category weights.</div>
+    <div class="page-title">Player Data</div>
+    <div class="page-subtitle">Fantasy WAR and player ratings — sortable by position, fWAR, and ratings.</div>
     <div class="trade-tabs" id="fwar-tabs">
-      <button class="trade-tab active" onclick="showFWARTab('model',this)">fWAR Model</button>
-      <button class="trade-tab" onclick="showFWARTab('hitting',this)">Hitting</button>
+      <button class="trade-tab active" onclick="showFWARTab('hitting',this)">Hitting</button>
       <button class="trade-tab" onclick="showFWARTab('pitching',this)">Pitching</button>
     </div>
 
-    <!-- Model Tab -->
-    <div id="fwar-tab-model" class="trade-tab-content active">
-      <div class="two-col" style="margin-top:16px">
-        <div class="card">
-          <div class="card-header"><span class="card-title">Replacement rank by position</span></div>
-          <div class="card-body" style="padding:16px 20px">
-            <p style="font-size:12px;color:var(--muted);margin-bottom:14px">The Nth-ranked player at each position defines replacement level. Lower = harder to find, raises the bar.</p>
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px" id="fwar-rep-inputs">
-              <!-- filled by JS -->
-            </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header"><span class="card-title">Category weights</span></div>
-          <div class="card-body" style="padding:16px 20px">
-            <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Scale each category's contribution to fWAR from 0 (ignore) to 1 (full weight).</p>
-            <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent2);margin-bottom:8px">Hitting</div>
-            <div id="fwar-hit-weights" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-bottom:16px"></div>
-            <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent2);margin-bottom:8px">Pitching</div>
-            <div id="fwar-pit-weights" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px"></div>
-          </div>
-        </div>
-      </div>
-      <div style="margin-top:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <span style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Positional Scarcity:</span>
-        <button id="fwar-preset-pitcher" class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('pitcher')">⚾ Pitcher Heavy</button>
-        <button id="fwar-preset-hybrid"  class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('hybrid')">⚖️ Hybrid</button>
-        <button id="fwar-preset-hitter"  class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('hitter')">🏏 Hitter Heavy</button>
-        <button id="fwar-preset-optimal" class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('optimal')">🎯 Optimal</button>
-      </div>
-      <div style="margin-top:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-        <button class="pill active" style="padding:10px 28px;font-size:13px" onclick="recalculateFWAR()">Recalculate fWAR</button>
-        <button class="pill" style="padding:10px 20px;font-size:13px;background:var(--accent2);border-color:var(--accent2);color:white" onclick="autoWeightFromCorrelations()">Auto-weight from correlations</button>
-        <button class="pill" style="padding:10px 20px;font-size:13px" onclick="resetFWARDefaults()">Reset defaults</button>
-        <span id="fwar-status" style="font-size:12px;color:var(--muted)"></span>
-      </div>
-      <div id="fwar-weight-summary" style="margin-top:16px"></div>
-      <div id="fwar-model-summary" style="margin-top:20px"></div>
-    </div>
-
     <!-- Hitting Tab -->
-    <div id="fwar-tab-hitting" class="trade-tab-content">
+    <div id="fwar-tab-hitting" class="trade-tab-content active">
       <div class="card" style="margin-top:16px">
         <div class="card-header">
           <span class="card-title">All Hitters</span>
@@ -410,6 +371,47 @@ td.neg { color: #c0392b; font-weight: 500; }
         <div class="table-wrap" id="pit-table"><div class="loading">Loading...</div></div>
       </div>
     </div>
+  </div>
+
+  <div class="page" id="page-models">
+    <div class="page-title">Models</div>
+    <div class="page-subtitle">fWAR model configuration — adjust replacement levels, category weights, and recalculate.</div>
+    <div class="two-col" style="margin-top:16px">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Replacement rank by position</span></div>
+        <div class="card-body" style="padding:16px 20px">
+          <p style="font-size:12px;color:var(--muted);margin-bottom:14px">The Nth-ranked player at each position defines replacement level. Lower = harder to find, raises the bar.</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px" id="fwar-rep-inputs">
+            <!-- filled by JS -->
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Category weights</span></div>
+        <div class="card-body" style="padding:16px 20px">
+          <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Scale each category's contribution to fWAR from 0 (ignore) to 1 (full weight).</p>
+          <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent2);margin-bottom:8px">Hitting</div>
+          <div id="fwar-hit-weights" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-bottom:16px"></div>
+          <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent2);margin-bottom:8px">Pitching</div>
+          <div id="fwar-pit-weights" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px"></div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Positional Scarcity:</span>
+      <button id="fwar-preset-pitcher" class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('pitcher')">⚾ Pitcher Heavy</button>
+      <button id="fwar-preset-hybrid"  class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('hybrid')">⚖️ Hybrid</button>
+      <button id="fwar-preset-hitter"  class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('hitter')">🏏 Hitter Heavy</button>
+      <button id="fwar-preset-optimal" class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('optimal')">🎯 Optimal</button>
+    </div>
+    <div style="margin-top:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <button class="pill active" style="padding:10px 28px;font-size:13px" onclick="recalculateFWAR()">Recalculate fWAR</button>
+      <button class="pill" style="padding:10px 20px;font-size:13px;background:var(--accent2);border-color:var(--accent2);color:white" onclick="autoWeightFromCorrelations()">Auto-weight from correlations</button>
+      <button class="pill" style="padding:10px 20px;font-size:13px" onclick="resetFWARDefaults()">Reset defaults</button>
+      <span id="fwar-status" style="font-size:12px;color:var(--muted)"></span>
+    </div>
+    <div id="fwar-weight-summary" style="margin-top:16px"></div>
+    <div id="fwar-model-summary" style="margin-top:20px"></div>
   </div>
 
   <div class="page" id="page-rosters">
@@ -958,13 +960,14 @@ function showPage(name, btn) {
   if (name === 'matchup') renderMatchPredictions();
   if (name === 'correlations') renderCorrelations();
   if (name === 'fwar') renderFWARPage();
+  if (name === 'models') renderFWARPage();
   if (name === 'trade') renderTradeAnalyzer();
   if (name === 'historic') renderHistoricPage();
   if (name === 'leaders') renderLeadersPage();
   if (name === 'targets') renderTargetsPage();
   if (name === 'guide') {} // static content, no render needed
   // Expand main to full width for wide-table pages
-  document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'rosters' || name === 'historic' || name === 'targets') ? 'none' : '';
+  document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'models' || name === 'rosters' || name === 'historic' || name === 'targets') ? 'none' : '';
   if (name === 'trade' && (TA.activeTab === 'sgp-hit' || TA.activeTab === 'sgp-pit')) {
     document.querySelector('main').style.maxWidth = 'none';
   }
