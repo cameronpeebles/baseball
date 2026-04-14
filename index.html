@@ -1183,6 +1183,9 @@ function drawPlayers(type) {
     var pos  = scorer.posShortNames || '';
     var stats = {};
     cats.forEach(function(cat){ stats[cat] = getStatVal(cells, cat, idx); });
+    // Always store AB and IP for sample-size bin factor
+    stats['AB'] = getStatVal(cells, 'AB', idx);
+    stats['IP'] = getStatVal(cells, 'IP', idx);
     return { name: name, pos: pos, stats: stats };
   }
 
@@ -1210,15 +1213,16 @@ function drawPlayers(type) {
     else             lgRpPool.push(e);
   });
 
-  function calcRating(stats, cats, pool) {
+  function calcRating(stats, cats, pool, pos) {
     var score = 0, count = 0;
     cats.forEach(function(cat) {
       if (stats[cat] == null) return;
-      var isLow = LOW_CATS.indexOf(cat) !== -1;
-      var vals  = pool.map(function(q){ return q.stats[cat]; }).filter(function(v){ return v != null; });
+      var isLow  = LOW_CATS.indexOf(cat) !== -1;
+      var vals   = pool.map(function(q){ return q.stats[cat]; }).filter(function(v){ return v != null; });
       if (!vals.length) return;
-      score += percentile(stats[cat], vals, isLow);
-      count++;
+      var factor = sampleFactor(cat, stats, pos || '');
+      score += percentile(stats[cat], vals, isLow) * factor;
+      count += factor;
     });
     return count > 0 ? score / count : null;
   }
@@ -1235,7 +1239,7 @@ function drawPlayers(type) {
     var bestPos = null;
     fps.forEach(function(fp) {
       var pool = finePools[fp] || [];
-      var r    = calcRating(stats, cats, pool);
+      var r    = calcRating(stats, cats, pool, pos);
       if (r != null && (bestPos == null || r > bestPos)) bestPos = r;
     });
 
@@ -1243,7 +1247,7 @@ function drawPlayers(type) {
     var lgPool;
     if (type === 'hit') lgPool = lgHitPool;
     else { var pp = primaryPos(pos); lgPool = pp === 'SP' ? lgSpPool : lgRpPool; }
-    var lgR = calcRating(stats, cats, lgPool);
+    var lgR = calcRating(stats, cats, lgPool, pos);
 
     var result = { posRating: bestPos, lgRating: lgR };
     ratingCache[key] = result;
@@ -1445,6 +1449,8 @@ function drawPlayers(type) {
     var rowCats  = isHit ? BAT_CATS : PIT_CATS;
     var rowIdx   = isHit ? hitIdx2 : pitIdx2;
     rowCats.forEach(function(cat){ stats2[cat] = getStatVal(cells, cat, rowIdx); });
+    stats2['AB'] = getStatVal(cells, 'AB', rowIdx);
+    stats2['IP'] = getStatVal(cells, 'IP', rowIdx);
     var ratings  = getRatings(name, pos2, stats2, isHit ? 'hit' : 'pit');
     window._lgRatingLookup[nameLow] = ratings.lgRating;
     html += '<td>' + ratingBadge(ratings.posRating) + '</td>';
@@ -3234,6 +3240,37 @@ var BAT_CATS = ['R','HR','RBI','SB','AVG'];
 var PIT_CATS = ['K','W','SVH3','ERA','WHIP'];
 var LOW_CATS = ['ERA','WHIP']; // lower is better
 
+// Sample-size bin factor for rate stats (AVG, ERA, WHIP)
+// Downweights rate stats when sample size is too small to be meaningful
+function sampleFactor(cat, stats, pos) {
+  var RATE_CATS = ['AVG','ERA','WHIP'];
+  if (RATE_CATS.indexOf(cat) === -1) return 1.0; // counting stats always full weight
+  if (cat === 'AVG') {
+    var ab = stats['AB'] || stats['ab'] || 0;
+    if (ab >= 150) return 1.0;
+    if (ab >= 100) return 0.6;
+    if (ab >=  50) return 0.4;
+    return 0.2;
+  }
+  // ERA or WHIP — determine SP vs RP by position
+  var ip = stats['IP'] || stats['ip'] || 0;
+  var isSP = pos && (pos.indexOf('SP') !== -1);
+  if (isSP) {
+    if (ip >= 50)   return 1.0;
+    if (ip >= 35)   return 0.8;
+    if (ip >= 20)   return 0.6;
+    if (ip >= 10)   return 0.4;
+    return 0.2;
+  } else {
+    // RP — caps at 0.9
+    if (ip >= 25)   return 0.9;
+    if (ip >= 15)   return 0.8;
+    if (ip >= 10)   return 0.6;
+    if (ip >=  5)   return 0.4;
+    return 0.2;
+  }
+}
+
 function isPitcher(pos) {
   return pos && (pos.indexOf('SP') !== -1 || pos.indexOf('RP') !== -1);
 }
@@ -3334,6 +3371,7 @@ function buildTradeAnalyzer() {
     BAT_CATS.forEach(function(cat) {
       stats[cat] = getStatVal(cells, cat, hitIdx);
     });
+    stats['AB'] = getStatVal(cells, 'AB', hitIdx);
     allPlayers.push({
       name:      scorer.name || '',
       pos:       pos,
@@ -3358,6 +3396,7 @@ function buildTradeAnalyzer() {
     PIT_CATS.forEach(function(cat) {
       stats[cat] = getStatVal(cells, cat, pitIdx);
     });
+    stats['IP'] = getStatVal(cells, 'IP', pitIdx);
     allPlayers.push({
       name:      scorer.name || '',
       pos:       pos,
@@ -3407,10 +3446,11 @@ function buildTradeAnalyzer() {
       var score = 0, count = 0;
       cats.forEach(function(cat) {
         if (p.stats[cat] == null) return;
-        var isLow = LOW_CATS.indexOf(cat) !== -1;
-        var vals  = peers.map(function(q){ return q.stats[cat]; }).filter(function(v){ return v != null; });
-        score += percentile(p.stats[cat], vals, isLow);
-        count++;
+        var isLow  = LOW_CATS.indexOf(cat) !== -1;
+        var vals   = peers.map(function(q){ return q.stats[cat]; }).filter(function(v){ return v != null; });
+        var factor = sampleFactor(cat, p.stats, p.pos || '');
+        score += percentile(p.stats[cat], vals, isLow) * factor;
+        count += factor;
       });
       p.groupRatings[fp] = count > 0 ? score / count : 0.5;
     });
@@ -3441,6 +3481,7 @@ function buildTradeAnalyzer() {
     var pos = scorer.posShortNames || '';
     var stats = {};
     BAT_CATS.forEach(function(cat) { stats[cat] = getStatVal(cells, cat, hitIdx); });
+    stats['AB'] = getStatVal(cells, 'AB', hitIdx);
     faPlayers.push({ name: scorer.name || '', pos: pos, group: playerGroup(pos), allGroups: playerAllGroups(pos), mlb: scorer.teamShortName || '', hs: scorer.headshotUrl || '', type: 'bat', stats: stats });
   });
   S.pitRows.forEach(function(row) {
@@ -3451,6 +3492,7 @@ function buildTradeAnalyzer() {
     var pos = scorer.posShortNames || '';
     var stats = {};
     PIT_CATS.forEach(function(cat) { stats[cat] = getStatVal(cells, cat, pitIdx); });
+    stats['IP'] = getStatVal(cells, 'IP', pitIdx);
     faPlayers.push({ name: scorer.name || '', pos: pos, group: playerGroup(pos), allGroups: playerAllGroups(pos), mlb: scorer.teamShortName || '', hs: scorer.headshotUrl || '', type: 'pit', stats: stats });
   });
   // Rate FAs vs rostered players at same fine position
@@ -3466,10 +3508,11 @@ function buildTradeAnalyzer() {
       var score = 0, count = 0;
       cats.forEach(function(cat) {
         if (p.stats[cat] == null) return;
-        var isLow = LOW_CATS.indexOf(cat) !== -1;
-        var vals  = peers.map(function(q){ return q.stats[cat]; }).filter(function(v){ return v != null; });
-        score += percentile(p.stats[cat], vals, isLow);
-        count++;
+        var isLow  = LOW_CATS.indexOf(cat) !== -1;
+        var vals   = peers.map(function(q){ return q.stats[cat]; }).filter(function(v){ return v != null; });
+        var factor = sampleFactor(cat, p.stats, p.pos || '');
+        score += percentile(p.stats[cat], vals, isLow) * factor;
+        count += factor;
       });
       p.groupRatings[fp] = count > 0 ? score / count : 0.5;
     });
