@@ -5325,6 +5325,14 @@ function parseJoeStatsByWeek(joeStats) {
       WHIP: row.WHIP || 0
     };
   });
+  // Remove weeks that haven't been played — all counting stats are zero
+  Object.keys(bw).forEach(function(wk) {
+    var teams = Object.values(bw[wk]);
+    var hasActivity = teams.some(function(t) {
+      return (t.R + t.HR + t.RBI + t.SB + t.K + t.W) > 0;
+    });
+    if (!hasActivity) delete bw[wk];
+  });
   return bw;
 }
 
