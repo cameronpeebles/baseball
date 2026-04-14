@@ -6668,6 +6668,25 @@ window.showFWARProfile = function(name, type) {
     });
   }
 
+  var PANEL_DESC = {
+    'League Rating': {
+      desc: 'How a player\'s overall performance stacks up against all ' + (isHit ? 'hitters' : 'pitchers') + ', adjusted for sample size.',
+      example: '+25% means this category places them 25 points above the average rostered ' + (isHit ? 'hitter' : 'pitcher') + '.'
+    },
+    'Pos Rating': {
+      desc: 'How strong a player is relative to others at their specific position, highlighting positional advantage or scarcity.',
+      example: '+30% means this category ranks them 30 points above the average player at their position.'
+    },
+    'Player fWAR': {
+      desc: 'Per-category contribution to total fWAR — the value produced above a replacement-level player.',
+      example: '+0.8 means this category contributes +0.8 wins above replacement toward their total fWAR.'
+    },
+    'Player fWAR%': {
+      desc: 'Per-category z-score gap vs the replacement player — what drives their fWAR percentile rank.',
+      example: '+0.5 means this category\'s gap vs replacement contributes +0.5 to their fWAR advantage.'
+    }
+  };
+
   var panels = [
     { title: 'League Rating', data: buildCatData(lgPool),  fmt: function(v){ return (v>=0?'+':'')+Math.round(v*100)+'%'; } },
     { title: 'Pos Rating',    data: buildCatData(posPool), fmt: function(v){ return (v>=0?'+':'')+Math.round(v*100)+'%'; } },
@@ -6686,7 +6705,6 @@ window.showFWARProfile = function(name, type) {
     var scale = 48 / maxAbs;
 
     var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="display:block">';
-    // Zero line
     svg += '<line x1="0" y1="' + midY + '" x2="' + W + '" y2="' + midY + '" stroke="var(--border)" stroke-width="1"/>';
 
     data.forEach(function(d, i) {
@@ -6695,16 +6713,18 @@ window.showFWARProfile = function(name, type) {
       var barH = Math.abs(d.v) * scale;
       var y = d.v >= 0 ? midY - barH : midY;
       svg += '<rect x="' + x + '" y="' + y + '" width="' + barW + '" height="' + barH + '" fill="' + col + '" rx="2"/>';
-      // Value label
       var labelY = d.v >= 0 ? y - 3 : y + barH + 10;
       svg += '<text x="' + (x + barW/2) + '" y="' + labelY + '" text-anchor="middle" font-size="8" fill="var(--text)" font-family="var(--font-body)">' + panel.fmt(d.v) + '</text>';
-      // Cat label
       svg += '<text x="' + (x + barW/2) + '" y="' + (H - 2) + '" text-anchor="middle" font-size="9" fill="var(--muted)" font-family="var(--font-body)">' + d.cat + '</text>';
     });
     svg += '</svg>';
 
+    var meta = PANEL_DESC[panel.title] || {};
+
     return '<div class="card" style="padding:12px">' +
-      '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">' + panel.title + '</div>' +
+      '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">' + panel.title + '</div>' +
+      '<div style="font-size:11px;color:var(--text);line-height:1.5;margin-bottom:4px">' + (meta.desc || '') + '</div>' +
+      '<div style="font-size:10px;color:var(--muted);font-style:italic;margin-bottom:8px">' + (meta.example || '') + '</div>' +
       svg + '</div>';
   }).join('');
 
