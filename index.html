@@ -1314,8 +1314,11 @@ var S = {
   pitSort: null, pitSortDir: -1,
   rosterRaw: null, seasonData: null, zData: null,
   fgHitLookup: {}, fgPitLookup: {},
+  scHitLookup: {}, scPitLookup: {},
+  scHitLeague: null, scPitLeague: null,
+  scHitCols: [], scPitCols: [],
   fgHitLeague: null, fgPitLeague: null,
-  fgHitCols: ['SLG','xSLG','Barrel%','HardHit%','EV50','BABIP'],
+  fgHitCols: ['SLG','xSLG','Barrel%','HardHit%','EV50','BABIP','xwOBA','wOBA'],
   fgPitCols: ['Whiff%','K%','BB%']
 };
 
@@ -1397,23 +1400,26 @@ function init() {
     loadJSON('players_pitching.json'),
     loadJSON('rosters.json'),
     loadJSON('fangraphs_hitting.json').catch(function(){ return {}; }),
-    loadJSON('fangraphs_pitching.json').catch(function(){ return {}; })
+    loadJSON('fangraphs_pitching.json').catch(function(){ return {}; }),
+    loadJSON('statcast_hitting.json').catch(function(){ return {}; }),
+    loadJSON('statcast_pitching.json').catch(function(){ return {}; })
   ]).then(function(results) {
     var standings = results[0], season = results[1], combined = results[2];
     var hitting = results[3], pitching = results[4], rosters = results[5];
     var fgHit = results[6], fgPit = results[7];
+    var scHit = results[8], scPit = results[9];
 
     S.teamInfo = (standings.data && standings.data.fantasyTeamInfo) || (season.data && season.data.fantasyTeamInfo) || {};
     S.seasonData = season;
     S.standingsData = standings;
     S.combinedData = combined;
 
-    // Build FanGraphs lookup by player name (lowercase for matching)
+    // Build FanGraphs lookup by player name (lowercase for matching) — legacy, kept for backward compat
     S.fgHitLookup = {};
     S.fgPitLookup = {};
     S.fgHitLeague = (fgHit && fgHit.league_avg) || null;
     S.fgPitLeague = (fgPit && fgPit.league_avg) || null;
-    S.fgHitCols   = (fgHit && fgHit.cols) || ['SLG','xSLG','Barrel%','HardHit%','EV50','BABIP'];
+    S.fgHitCols   = (fgHit && fgHit.cols) || ['SLG','xSLG','Barrel%','HardHit%','EV50','BABIP','xwOBA','wOBA'];
     S.fgPitCols   = (fgPit && fgPit.cols) || ['Whiff%','K%','BB%'];
 
     (fgHit.players || []).forEach(function(p) {
@@ -1422,10 +1428,35 @@ function init() {
     (fgPit.players || []).forEach(function(p) {
       if (p.PlayerName) S.fgPitLookup[p.PlayerName.toLowerCase()] = p;
     });
+
+    // Build unified Statcast lookups — name-keyed dicts from statcast_hitting/pitching.json
+    // Falls back to fangraphs lookup if statcast files not yet generated
+    S.scHitLookup  = (scHit && scHit.players && typeof scHit.players === 'object' && !Array.isArray(scHit.players))
+                       ? scHit.players
+                       : S.fgHitLookup;
+    S.scPitLookup  = (scPit && scPit.players && typeof scPit.players === 'object' && !Array.isArray(scPit.players))
+                       ? scPit.players
+                       : S.fgPitLookup;
+    S.scHitLeague  = (scHit && scHit.league_avg) || S.fgHitLeague;
+    S.scPitLeague  = (scPit && scPit.league_avg) || S.fgPitLeague;
+    S.scHitCols    = (scHit && scHit.cols) || S.fgHitCols;
+    S.scPitCols    = (scPit && scPit.cols) || S.fgPitCols;
+
+    // Also mirror into fgHitLookup from statcast for backward compat
+    if (scHit && scHit.players && !Array.isArray(scHit.players)) {
+      Object.keys(scHit.players).forEach(function(k) {
+        if (!S.fgHitLookup[k]) S.fgHitLookup[k] = scHit.players[k];
+      });
+    }
+    if (scPit && scPit.players && !Array.isArray(scPit.players)) {
+      Object.keys(scPit.players).forEach(function(k) {
+        if (!S.fgPitLookup[k]) S.fgPitLookup[k] = scPit.players[k];
+      });
+    }
+
     console.log('FanGraphs hitters loaded:', Object.keys(S.fgHitLookup).length);
-    console.log('FanGraphs pitchers loaded:', Object.keys(S.fgPitLookup).length);
-    console.log('FanGraphs hit league avg:', S.fgHitLeague);
-    console.log('FanGraphs pit league avg:', S.fgPitLeague);
+    console.log('Statcast hitters loaded:', Object.keys(S.scHitLookup).length);
+    console.log('Statcast pitchers loaded:', Object.keys(S.scPitLookup).length);
 
     document.getElementById('ts').textContent = 'Updated ' + new Date().toLocaleString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
 
@@ -1674,7 +1705,7 @@ function drawPlayers(type) {
   }
 
   // FanGraphs data
-  var fgLookup = isHit ? S.fgHitLookup : S.fgPitLookup;
+  var fgLookup = isHit ? (S.scHitLookup || S.fgHitLookup) : (S.scPitLookup || S.fgPitLookup);
   var fgLeague = isHit ? S.fgHitLeague : S.fgPitLeague;
   var fgCols   = isHit ? S.fgHitCols   : S.fgPitCols;
   var hasFWAR  = fwarResults.length > 0;
@@ -7142,9 +7173,9 @@ window.showFWARProfile = function(name, type) {
     '<div style="font-size:11px;color:var(--muted);margin-top:4px">Top ' + posTopPct + '%</div>';
 
   // ── Season Stats panel ────────────────────────────────────────────────────
-  var fgLookupP = isHit ? S.fgHitLookup : S.fgPitLookup;
-  var hasFG = fgLookupP && Object.keys(fgLookupP).length > 0;
-  var fgRow2 = hasFG ? (fgLookupP[nameLow2] || null) : null;
+  var scLookup = isHit ? S.scHitLookup : S.scPitLookup;
+  var hasFG = scLookup && Object.keys(scLookup).length > 0;
+  var fgRow2 = hasFG ? (scLookup[nameLow2] || null) : null;
   function fgv(col) { return fgRow2 ? fgRow2[col] : null; }
   function fmtFG2(v, col) {
     if (v == null) return '—';
