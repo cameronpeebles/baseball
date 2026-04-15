@@ -1317,6 +1317,7 @@ var S = {
   scHitLookup: {}, scPitLookup: {},
   scHitLeague: null, scPitLeague: null,
   scHitCols: [], scPitCols: [],
+  targetsHitLookup: {},
   fgHitLeague: null, fgPitLeague: null,
   fgHitCols: ['SLG','xSLG','Barrel%','HardHit%','EV50','BABIP','xwOBA','wOBA'],
   fgPitCols: ['Whiff%','K%','BB%']
@@ -1422,11 +1423,20 @@ function init() {
     S.fgHitCols   = (fgHit && fgHit.cols) || ['SLG','xSLG','Barrel%','HardHit%','EV50','BABIP','xwOBA','wOBA'];
     S.fgPitCols   = (fgPit && fgPit.cols) || ['Whiff%','K%','BB%'];
 
+    function normNameJS(n) {
+      return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+    }
     (fgHit.players || []).forEach(function(p) {
-      if (p.PlayerName) S.fgHitLookup[p.PlayerName.toLowerCase()] = p;
+      if (p.PlayerName) {
+        S.fgHitLookup[p.PlayerName.toLowerCase()] = p;
+        S.fgHitLookup[normNameJS(p.PlayerName)] = p;
+      }
     });
     (fgPit.players || []).forEach(function(p) {
-      if (p.PlayerName) S.fgPitLookup[p.PlayerName.toLowerCase()] = p;
+      if (p.PlayerName) {
+        S.fgPitLookup[p.PlayerName.toLowerCase()] = p;
+        S.fgPitLookup[normNameJS(p.PlayerName)] = p;
+      }
     });
 
     // Build unified Statcast lookups — name-keyed dicts from statcast_hitting/pitching.json
@@ -1728,7 +1738,7 @@ function drawPlayers(type) {
     var name   = scorer.name || scorer.shortName || '';
     var ftId   = (cells[1] && cells[1].teamId) || '';
     var fw     = fwarLookup[name];
-    var fgRow  = hasFG ? (fgLookup[name.toLowerCase()] || null) : null;
+    var fgRow  = hasFG ? (fgLookup[name.toLowerCase().replace(/[^a-z ]/g,'').replace(/s+/g,' ').trim()] || fgLookup[name.toLowerCase()] || null) : null;
     return { row: row, scorer: scorer, cells: cells, name: name, ftId: ftId, fw: fw, fgRow: fgRow };
   });
 
@@ -2124,7 +2134,7 @@ function showRoster(teamId) {
       var hs = scorer.headshotUrl || '';
       var statusId = row.statusId || '1';
       var fw = fwarLookup[name];
-      var fgRow = hasFG ? (fgLookup[name.toLowerCase()] || null) : null;
+      var fgRow = hasFG ? (fgLookup[name.toLowerCase().replace(/[^a-z ]/g,'').replace(/s+/g,' ').trim()] || fgLookup[name.toLowerCase()] || null) : null;
 
       html += '<tr>';
       html += '<td class="left"><div class="team-cell">' + (hs ? '<img class="player-hs" src="' + hs + '" alt="" onerror="this.style.display=\'none\'">' : '') + '<span><strong>' + name + '</strong></span></div></td>';
@@ -7175,7 +7185,15 @@ window.showFWARProfile = function(name, type) {
   // ── Season Stats panel ────────────────────────────────────────────────────
   var scLookup = isHit ? S.scHitLookup : S.scPitLookup;
   var hasFG = scLookup && Object.keys(scLookup).length > 0;
-  var fgRow2 = hasFG ? (scLookup[nameLow2] || null) : null;
+  // Try normalized name (statcast_hitting.json uses norm_name), then raw lowercase, then fgLookup fallback
+  function normName(n) {
+    return n.toLowerCase().replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
+  }
+  var nameLowNorm = normName(name);
+  var fgFallback = isHit ? S.fgHitLookup : S.fgPitLookup;
+  var fgRow2 = hasFG
+    ? (scLookup[nameLowNorm] || scLookup[nameLow2] || fgFallback[nameLowNorm] || fgFallback[nameLow2] || null)
+    : (fgFallback[nameLowNorm] || fgFallback[nameLow2] || null);
   function fgv(col) { return fgRow2 ? fgRow2[col] : null; }
   function fmtFG2(v, col) {
     if (v == null) return '—';
@@ -7222,6 +7240,38 @@ window.showFWARProfile = function(name, type) {
   var xwobaDiff = (xwoba != null && woba != null) ? (xwoba - woba) : null;
   var xwobaColor = xwobaDiff != null ? (xwobaDiff >= 0.010 ? '#0F6E56' : xwobaDiff <= -0.010 ? '#A32D2D' : 'var(--text)') : 'var(--text)';
 
+  // Look up signal/grade from targets data (hitters only)
+  var tgt = null;
+  if (isHit && S.targetsHitLookup) {
+    tgt = S.targetsHitLookup[nameLowNorm] || S.targetsHitLookup[nameLow2] || null;
+  }
+
+  function fmtDelta(v, decimals) {
+    if (v == null) return null;
+    return (v >= 0 ? '+' : '') + v.toFixed(decimals);
+  }
+
+  var signalBox = '';
+  if (tgt && tgt.signal && tgt.signal !== 'Neutral') {
+    var isUnder = tgt.signal === 'Underperforming';
+    var bgColor  = isUnder ? '#EAF3DE' : '#FCEBEB';
+    var txtColor = isUnder ? '#27500A' : '#791F1F';
+    var pilBg    = isUnder ? '#C0DD97' : '#F7C1C1';
+    var pilTxt   = isUnder ? '#173404' : '#501313';
+    var grade    = tgt.grade || tgt.signal;
+    var dxw  = fmtDelta(tgt.delta_xwoba,  3);
+    var dbap = fmtDelta(tgt.delta_babip,   3);
+    var dbar = fmtDelta(tgt.delta_barrel,  1);
+    var pills = '';
+    if (dxw)  pills += '<span style="font-size:10px;background:' + pilBg + ';color:' + pilTxt + ';padding:2px 6px;border-radius:4px;white-space:nowrap">\u0394 xwOBA ' + dxw + '</span>';
+    if (dbap) pills += '<span style="font-size:10px;background:' + pilBg + ';color:' + pilTxt + ';padding:2px 6px;border-radius:4px;white-space:nowrap">\u0394 BABIP ' + dbap + '</span>';
+    if (dbar) pills += '<span style="font-size:10px;background:' + pilBg + ';color:' + pilTxt + ';padding:2px 6px;border-radius:4px;white-space:nowrap">\u0394 Barrel ' + dbar + '</span>';
+    signalBox = '<div style="padding:7px 9px;background:' + bgColor + ';border-radius:7px;margin-bottom:8px">' +
+      '<div style="font-size:11px;font-weight:500;color:' + txtColor + ';margin-bottom:5px">' + grade + '</div>' +
+      '<div style="display:flex;gap:4px;flex-wrap:wrap">' + pills + '</div>' +
+    '</div>';
+  }
+
   var statRows = hasFG
     ? (isHit
         ? srRow('SLG',        fmtFG2(fgv('SLG'),'SLG')) +
@@ -7236,7 +7286,11 @@ window.showFWARProfile = function(name, type) {
           srLast('BB%',   fmtFG2(fgv('BB%'),'BB%'),       fgv('BB%')    != null && fgv('BB%')    <= 7  ? '#A32D2D' : ''))
     : '<div style="font-size:11px;color:var(--muted)">No Statcast data</div>';
 
-  document.getElementById('fwar-profile-statcast').innerHTML = plabel + 'Savant / Statcast</div>' + statRows;
+  // Update panel label to include signal indicator
+  var scLabel = 'Savant / Statcast' + (tgt && tgt.signal && tgt.signal !== 'Neutral'
+    ? ' — ' + tgt.signal : '');
+
+  document.getElementById('fwar-profile-statcast').innerHTML = plabel + scLabel + '</div>' + signalBox + statRows;
 
   document.getElementById('fwar-player-profile').style.display = '';
   document.querySelectorAll('#hit-table tr, #pit-table tr').forEach(function(r){ r.style.background=''; });
@@ -9389,6 +9443,15 @@ function renderTargetsPage() {
   el.innerHTML = '<div class="loading">Loading targets data...</div>';
   loadJSON('targets_hitting.json').then(function(data) {
     targetsData = data;
+    // Build name-keyed lookup for profile panel
+    S.targetsHitLookup = {};
+    function normNameT(n) {
+      return (n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+    }
+    (data || []).forEach(function(t) {
+      var k = normNameT(t.name || '');
+      if (k) S.targetsHitLookup[k] = t;
+    });
     drawTargetsTable();
   }).catch(function() {
     el.innerHTML = '<div class="error-msg">targets_hitting.json not found — run the GitHub Action first.</div>';
