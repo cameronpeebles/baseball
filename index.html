@@ -1806,6 +1806,8 @@ function drawPlayers(type) {
       fwarPctLookup[e.name.toLowerCase()] = pool.length > 1 ? Math.round(below / (pool.length) * 100) : 50;
     });
     window._fwarPctLookup = fwarPctLookup;
+    if (isHit) window._fwarPctLookupHit = fwarPctLookup;
+    else       window._fwarPctLookupPit = fwarPctLookup;
   }
 
   // ── Player rows ───────────────────────────────────────────────────────────
@@ -6887,7 +6889,8 @@ window.showFWARProfile = function(name, type) {
 
   // ── Compute archetype ────────────────────────────────────────────────────
   var nameLow2   = name.toLowerCase();
-  var fpctVal    = window._fwarPctLookup   ? (window._fwarPctLookup[nameLow2]   != null ? window._fwarPctLookup[nameLow2]   : null) : null;
+  var fwarPctLookupTyped = isHit ? (window._fwarPctLookupHit || window._fwarPctLookup) : (window._fwarPctLookupPit || window._fwarPctLookup);
+  var fpctVal    = fwarPctLookupTyped ? (fwarPctLookupTyped[nameLow2] != null ? fwarPctLookupTyped[nameLow2] : null) : null;
   var posRatVal  = window._posRatingLookup ? (window._posRatingLookup[nameLow2] != null ? window._posRatingLookup[nameLow2] : null) : null;
   var lgRatVal   = window._lgRatingLookup  ? (window._lgRatingLookup[nameLow2]  != null ? window._lgRatingLookup[nameLow2]  : null) : null;
   var arch = getArchetype(fpctVal != null ? fpctVal / 100 : null, posRatVal, lgRatVal);
@@ -7130,15 +7133,16 @@ window.showFWARProfile = function(name, type) {
 
   var statRows = hasFG
     ? (isHit
-        ? srRow('xSLG',       fmtFG2(fgv('xSLG'),'xSLG')) +
-          srRow('xwOBA−wOBA', xwobaDiff != null ? (xwobaDiff >= 0 ? '+' : '') + xwobaDiff.toFixed(3) : '—', xwobaColor) +
-          srRow('Barrel%',    fmtFG2(fgv('Barrel%'),'Barrel%'), fgv('Barrel%') >= 10 ? '#0F6E56' : '') +
-          srRow('Hard Hit%',  fmtFG2(fgv('HardHit%'),'HardHit%'), fgv('HardHit%') >= 40 ? '#0F6E56' : '') +
+        ? srRow('SLG',        fmtFG2(fgv('SLG'),'SLG')) +
+          srRow('xSLG',       fmtFG2(fgv('xSLG'),'xSLG')) +
+          srRow('Barrel%',    fmtFG2(fgv('Barrel%'),'Barrel%'),  fgv('Barrel%')  != null && fgv('Barrel%')  >= 10 ? '#0F6E56' : '') +
+          srRow('Hard Hit%',  fmtFG2(fgv('HardHit%'),'HardHit%'),fgv('HardHit%') != null && fgv('HardHit%') >= 40 ? '#0F6E56' : '') +
           srRow('EV50',       fmtFG2(fgv('EV50'),'EV50')) +
-          srLast('BABIP',     fmtFG2(fgv('BABIP'),'BABIP'))
-        : srRow('Whiff%', fmtFG2(fgv('Whiff%'),'Whiff%'), fgv('Whiff%') >= 28 ? '#0F6E56' : '') +
-          srRow('K%',     fmtFG2(fgv('K%'),'K%'), fgv('K%') >= 25 ? '#0F6E56' : '') +
-          srLast('BB%',   fmtFG2(fgv('BB%'),'BB%'), fgv('BB%') <= 7 ? '#A32D2D' : ''))
+          srRow('BABIP',      fmtFG2(fgv('BABIP'),'BABIP')) +
+          srLast('xwOBA−wOBA', xwobaDiff != null ? (xwobaDiff >= 0 ? '+' : '') + xwobaDiff.toFixed(3) : '—', xwobaColor)
+        : srRow('Whiff%', fmtFG2(fgv('Whiff%'),'Whiff%'), fgv('Whiff%') != null && fgv('Whiff%') >= 28 ? '#0F6E56' : '') +
+          srRow('K%',     fmtFG2(fgv('K%'),'K%'),         fgv('K%')     != null && fgv('K%')     >= 25 ? '#0F6E56' : '') +
+          srLast('BB%',   fmtFG2(fgv('BB%'),'BB%'),       fgv('BB%')    != null && fgv('BB%')    <= 7  ? '#A32D2D' : ''))
     : '<div style="font-size:11px;color:var(--muted)">No Statcast data</div>';
 
   document.getElementById('fwar-profile-statcast').innerHTML = plabel + 'Savant / Statcast</div>' + statRows;
