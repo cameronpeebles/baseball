@@ -497,6 +497,8 @@ HIT_FIELD_MAP = {
     "hard_hit_percent":   "HardHit%",
     "avg_hyper_speed":    "EV50",
     "babip":              "BABIP",
+    "est_woba":           "xwOBA",
+    "woba":               "wOBA",
 }
 
 PIT_FIELD_MAP = {
@@ -625,6 +627,7 @@ hit_players, hit_lg = fetch_via_requests_csv("batter", HIT_FIELD_MAP, "hitters")
 print("\n=== Fetching pitching advanced stats ===")
 pit_players, pit_lg = fetch_via_requests_csv("pitcher", PIT_FIELD_MAP, "pitchers")
 
+# Keep fangraphs files for backward compatibility
 save("fangraphs_hitting.json", {
     "players":    hit_players,
     "league_avg": hit_lg,
@@ -633,6 +636,37 @@ save("fangraphs_hitting.json", {
 
 save("fangraphs_pitching.json", {
     "players":    pit_players,
+    "league_avg": pit_lg,
+    "cols":       list(PIT_FIELD_MAP.values())
+})
+
+# Build name-keyed dicts for statcast unified files
+import unicodedata as _ud2
+def norm_name(n):
+    n = n.lower().strip()
+    n = ''.join(c for c in _ud2.normalize('NFD', n) if _ud2.category(c) != 'Mn')
+    return ' '.join(''.join(c for c in n if c.isalpha() or c == ' ').split())
+
+hit_by_name = {}
+for p in hit_players:
+    key = norm_name(p.get('PlayerName') or '')
+    if key:
+        hit_by_name[key] = {k: v for k, v in p.items() if k != 'PlayerName'}
+
+pit_by_name = {}
+for p in pit_players:
+    key = norm_name(p.get('PlayerName') or '')
+    if key:
+        pit_by_name[key] = {k: v for k, v in p.items() if k != 'PlayerName'}
+
+save("statcast_hitting.json", {
+    "players":    hit_by_name,
+    "league_avg": hit_lg,
+    "cols":       list(HIT_FIELD_MAP.values())
+})
+
+save("statcast_pitching.json", {
+    "players":    pit_by_name,
     "league_avg": pit_lg,
     "cols":       list(PIT_FIELD_MAP.values())
 })
