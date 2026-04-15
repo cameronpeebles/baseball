@@ -321,7 +321,7 @@ td.neg { color: #c0392b; font-weight: 500; }
       <div style="display:flex;gap:10px;align-items:stretch;min-width:900px" id="fwar-profile-inner">
 
         <!-- 1. Player / Archetype -->
-        <div style="width:250px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column">
+        <div style="width:250px;height:250px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
             <img id="fwar-profile-hs" src="" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'">
             <div style="flex:1;min-width:0">
@@ -337,22 +337,22 @@ td.neg { color: #c0392b; font-weight: 500; }
         </div>
 
         <!-- 2. Pos Scarcity -->
-        <div style="width:250px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column" id="fwar-profile-scarcity"></div>
+        <div style="width:250px;height:250px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column" id="fwar-profile-scarcity"></div>
 
         <!-- 3. Season Stats -->
-        <div style="width:250px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-stats"></div>
+        <div style="width:250px;height:250px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-stats"></div>
 
         <!-- 4. Bar chart -->
-        <div style="width:250px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column" id="fwar-profile-bars"></div>
+        <div style="width:250px;height:250px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column" id="fwar-profile-bars"></div>
 
         <!-- 5. Radar -->
-        <div style="width:250px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column" id="fwar-profile-charts"></div>
+        <div style="width:250px;height:250px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column" id="fwar-profile-charts"></div>
 
         <!-- 6. Statcast -->
-        <div style="width:250px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-statcast"></div>
+        <div style="width:250px;height:250px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-statcast"></div>
 
         <!-- 7. Strengths & Weaknesses -->
-        <div style="width:250px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-sw"></div>
+        <div style="width:250px;height:250px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-sw"></div>
 
       </div>
     </div>
@@ -7019,11 +7019,11 @@ window.showFWARProfile = function(name, type) {
 
   document.getElementById('fwar-profile-bars').innerHTML =
     plabel + 'Ratings</div>' +
-    '<div style="position:relative;flex:1;min-height:75px"><canvas id="' + chartId1 + '" role="img" aria-label="Ratings bar chart">bars</canvas></div>';
+    '<div style="position:relative;flex:1;min-height:75px;height:180px"><canvas id="' + chartId1 + '" role="img" aria-label="Ratings bar chart">bars</canvas></div>';
 
   document.getElementById('fwar-profile-charts').innerHTML =
     plabel + 'Category breakdown</div>' +
-    '<div style="position:relative;flex:1;min-height:135px"><canvas id="' + chartId2 + '" role="img" aria-label="Radar chart">radar</canvas></div>' +
+    '<div style="position:relative;flex:1;min-height:135px;height:185px"><canvas id="' + chartId2 + '" role="img" aria-label="Radar chart">radar</canvas></div>' +
     '<div style="display:flex;gap:10px;margin-top:6px;font-size:10px;justify-content:center;flex-wrap:wrap">' +
       '<span style="display:flex;align-items:center;gap:3px"><span style="width:10px;height:3px;background:' + CY + ';border:1px solid #b8aa30;display:inline-block;border-radius:1px"></span><span style="color:var(--muted)">fWAR%</span></span>' +
       '<span style="display:flex;align-items:center;gap:3px"><span style="width:10px;height:3px;background:' + CM + ';display:inline-block;border-radius:1px"></span><span style="color:var(--muted)">Pos</span></span>' +
