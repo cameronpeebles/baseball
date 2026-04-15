@@ -321,37 +321,38 @@ td.neg { color: #c0392b; font-weight: 500; }
       <div style="display:flex;gap:10px;align-items:stretch;min-width:900px" id="fwar-profile-inner">
 
         <!-- 1. Player / Archetype -->
-        <div style="width:160px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column">
+        <div style="width:250px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-            <img id="fwar-profile-hs" src="" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'">
-            <div>
-              <div id="fwar-profile-name" style="font-size:12px;font-weight:700;color:var(--text);line-height:1.2"></div>
+            <img id="fwar-profile-hs" src="" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'">
+            <div style="flex:1;min-width:0">
+              <div id="fwar-profile-name" style="font-size:13px;font-weight:700;color:var(--text);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
               <div id="fwar-profile-sub" style="font-size:10px;color:var(--muted)"></div>
             </div>
           </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px" id="fwar-profile-meta"></div>
           <div style="font-size:10px;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:0.06em;font-weight:500">Archetype</div>
-          <div id="fwar-profile-arch-badge" style="margin-bottom:6px"></div>
+          <div id="fwar-profile-arch-badge" style="margin-bottom:5px"></div>
           <div id="fwar-profile-arch-desc" style="font-size:10px;color:var(--muted);line-height:1.4;margin-top:auto"></div>
           <button onclick="clearFWARProfile()" style="margin-top:8px;background:none;border:1px solid var(--border);border-radius:6px;padding:2px 7px;font-size:10px;color:var(--muted);cursor:pointer;align-self:flex-start">✕ Clear</button>
         </div>
 
         <!-- 2. Pos Scarcity -->
-        <div style="width:160px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column" id="fwar-profile-scarcity"></div>
+        <div style="width:250px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column" id="fwar-profile-scarcity"></div>
 
         <!-- 3. Season Stats -->
-        <div style="width:160px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-stats"></div>
+        <div style="width:250px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-stats"></div>
 
         <!-- 4. Bar chart -->
-        <div style="width:160px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column" id="fwar-profile-bars"></div>
+        <div style="width:250px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column" id="fwar-profile-bars"></div>
 
         <!-- 5. Radar -->
-        <div style="width:160px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column" id="fwar-profile-charts"></div>
+        <div style="width:250px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column" id="fwar-profile-charts"></div>
 
         <!-- 6. Statcast -->
-        <div style="width:160px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-statcast"></div>
+        <div style="width:250px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-statcast"></div>
 
         <!-- 7. Strengths & Weaknesses -->
-        <div style="width:160px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-sw"></div>
+        <div style="width:250px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-sw"></div>
 
       </div>
     </div>
@@ -6899,8 +6900,8 @@ window.showFWARProfile = function(name, type) {
     ? { R:'Run scorer', HR:'Power hitter', RBI:'Run producer', SB:'Base stealer', AVG:'Contact hitter' }
     : { W:'Win contributor', K:'Strikeout artist', SVH3:'Saves/holds', ERA:'ERA leader', WHIP:'WHIP leader' };
   lgData.forEach(function(d) {
-    if (d.v >= 0.12) sw.strengths.push(d.cat);
-    else if (d.v <= -0.12) sw.weaknesses.push(d.cat);
+    if (d.v >= 0.20) sw.strengths.push(d.cat);
+    else if (d.v <= -0.20) sw.weaknesses.push(d.cat);
   });
 
   // ── Position scarcity rank ─────────────────────────────────────────────────
@@ -6935,6 +6936,27 @@ window.showFWARProfile = function(name, type) {
   document.getElementById('fwar-profile-hs').style.display = hs ? '' : 'none';
   document.getElementById('fwar-profile-name').textContent = name;
   document.getElementById('fwar-profile-sub').textContent = pos + (mlb ? ' · ' + mlb : '') + (!ftId ? ' · FA' : '');
+
+  // Meta grid: roster status, fWAR, slot, sample size
+  var ftTeam   = ftId ? (S.teamInfo[ftId] || {}) : null;
+  var ftName   = ftTeam ? (ftTeam.shortName || ftTeam.name || 'Rostered') : 'Free Agent';
+  var fwarDisp = fw ? ((fw.fWAR >= 0 ? '+' : '') + fw.fWAR.toFixed(2)) : '—';
+  var fwarDispCol = fw ? (fw.fWAR >= 2 ? '#1e6b3a' : fw.fWAR >= 0.5 ? '#4a9a68' : fw.fWAR >= -0.5 ? '#b7791f' : '#c0392b') : 'var(--muted)';
+  var slotDisp = (fw && fw.assignedSlot) ? fw.assignedSlot : '—';
+  var sampleDisp = isHit ? ((stats['AB'] || 0) + ' AB') : ((stats['IP'] ? stats['IP'].toFixed(1) : 0) + ' IP');
+
+  function metaCell(label, val, color) {
+    return '<div style="background:var(--bg);border-radius:6px;padding:4px 6px">' +
+      '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:1px">' + label + '</div>' +
+      '<div style="font-size:11px;font-weight:600;color:' + (color || 'var(--text)') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + val + '</div>' +
+    '</div>';
+  }
+
+  document.getElementById('fwar-profile-meta').innerHTML =
+    metaCell('Team',   ftName,    ftId ? 'var(--text)' : 'var(--muted)') +
+    metaCell('fWAR',   fwarDisp,  fwarDispCol) +
+    metaCell('Slot',   slotDisp,  'var(--text)') +
+    metaCell('Sample', sampleDisp,'var(--muted)');
 
   var badgeEl = document.getElementById('fwar-profile-arch-badge');
   var descEl  = document.getElementById('fwar-profile-arch-desc');
