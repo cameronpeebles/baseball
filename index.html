@@ -321,7 +321,7 @@ td.neg { color: #c0392b; font-weight: 500; }
       <div style="display:flex;gap:10px;align-items:stretch;min-width:900px" id="fwar-profile-inner">
 
         <!-- 1. Player / Archetype -->
-        <div style="width:250px;height:250px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column">
+        <div style="width:200px;height:200px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
             <img id="fwar-profile-hs" src="" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'">
             <div style="flex:1;min-width:0">
@@ -337,22 +337,25 @@ td.neg { color: #c0392b; font-weight: 500; }
         </div>
 
         <!-- 2. Pos Scarcity -->
-        <div style="width:250px;height:250px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column" id="fwar-profile-scarcity"></div>
+        <div style="width:200px;height:200px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column" id="fwar-profile-scarcity"></div>
 
         <!-- 3. Season Stats -->
-        <div style="width:250px;height:250px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-stats"></div>
+        <div style="width:200px;height:200px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-stats"></div>
 
         <!-- 4. Bar chart -->
-        <div style="width:250px;height:250px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column" id="fwar-profile-bars"></div>
+        <div style="width:200px;height:200px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column" id="fwar-profile-bars"></div>
 
         <!-- 5. Radar -->
-        <div style="width:250px;height:250px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column" id="fwar-profile-charts"></div>
+        <div style="width:200px;height:200px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column" id="fwar-profile-charts"></div>
 
         <!-- 6. Statcast -->
-        <div style="width:250px;height:250px;flex-shrink:0;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-statcast"></div>
+        <div style="width:200px;height:200px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-statcast"></div>
 
-        <!-- 7. Strengths & Weaknesses -->
-        <div style="width:250px;height:250px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-sw"></div>
+        <!-- 7. Performance signal -->
+        <div style="width:200px;height:200px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-signal"></div>
+
+        <!-- 8. Strengths & Weaknesses -->
+        <div style="width:200px;height:200px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-sw"></div>
 
       </div>
     </div>
@@ -7249,12 +7252,7 @@ window.showFWARProfile = function(name, type) {
 
   document.getElementById('fwar-profile-stats').innerHTML = plabel + 'Season stats</div>' + seasonRows;
 
-  // ── Statcast panel ────────────────────────────────────────────────────────
-  var xwoba = fgv('xwOBA'); var woba = fgv('wOBA');
-  var xwobaDiff = (xwoba != null && woba != null) ? (xwoba - woba) : null;
-  var xwobaColor = xwobaDiff != null ? (xwobaDiff >= 0.010 ? '#0F6E56' : xwobaDiff <= -0.010 ? '#A32D2D' : 'var(--text)') : 'var(--text)';
-
-  // Look up signal/grade from targets data (hitters only)
+  // ── Performance signal panel ──────────────────────────────────────────────
   var tgt = null;
   if (isHit && S.targetsHitLookup) {
     tgt = S.targetsHitLookup[nameLowNorm] || S.targetsHitLookup[nameLow2] || null;
@@ -7265,26 +7263,46 @@ window.showFWARProfile = function(name, type) {
     return (v >= 0 ? '+' : '') + v.toFixed(decimals);
   }
 
-  var signalBox = '';
-  if (tgt && tgt.signal && tgt.signal !== 'Neutral') {
-    var isUnder = tgt.signal === 'Underperforming';
-    var bgColor  = isUnder ? '#EAF3DE' : '#FCEBEB';
-    var txtColor = isUnder ? '#27500A' : '#791F1F';
-    var pilBg    = isUnder ? '#C0DD97' : '#F7C1C1';
-    var pilTxt   = isUnder ? '#173404' : '#501313';
-    var grade    = tgt.grade || tgt.signal;
-    var dxw  = fmtDelta(tgt.delta_xwoba,  3);
-    var dbap = fmtDelta(tgt.delta_babip,   3);
-    var dbar = fmtDelta(tgt.delta_barrel,  1);
-    var pills = '';
-    if (dxw)  pills += '<span style="font-size:10px;background:' + pilBg + ';color:' + pilTxt + ';padding:2px 6px;border-radius:4px;white-space:nowrap">\u0394 xwOBA ' + dxw + '</span>';
-    if (dbap) pills += '<span style="font-size:10px;background:' + pilBg + ';color:' + pilTxt + ';padding:2px 6px;border-radius:4px;white-space:nowrap">\u0394 BABIP ' + dbap + '</span>';
-    if (dbar) pills += '<span style="font-size:10px;background:' + pilBg + ';color:' + pilTxt + ';padding:2px 6px;border-radius:4px;white-space:nowrap">\u0394 Barrel ' + dbar + '</span>';
-    signalBox = '<div style="padding:7px 9px;background:' + bgColor + ';border-radius:7px;margin-bottom:8px">' +
-      '<div style="font-size:11px;font-weight:500;color:' + txtColor + ';margin-bottom:5px">' + grade + '</div>' +
-      '<div style="display:flex;gap:4px;flex-wrap:wrap">' + pills + '</div>' +
-    '</div>';
+  var signalEl = document.getElementById('fwar-profile-signal');
+  if (signalEl) {
+    var signalContent = plabel + 'Performance</div>';
+    if (tgt && tgt.signal && tgt.signal !== 'Neutral') {
+      var isUnder  = tgt.signal === 'Underperforming';
+      var bgColor  = isUnder ? '#EAF3DE' : '#FCEBEB';
+      var txtColor = isUnder ? '#27500A' : '#791F1F';
+      var pilBg    = isUnder ? '#C0DD97' : '#F7C1C1';
+      var pilTxt   = isUnder ? '#173404' : '#501313';
+      var grade    = tgt.grade || tgt.signal;
+      var dxw      = fmtDelta(tgt.delta_xwoba,  3);
+      var dbap     = fmtDelta(tgt.delta_babip,   3);
+      var dbar     = fmtDelta(tgt.delta_barrel,  1);
+      var dhh      = fmtDelta(tgt.delta_hardhit, 1);
+      var pills = '';
+      if (dxw)  pills += '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:0.5px solid rgba(0,0,0,0.08)"><span style="font-size:11px;color:' + txtColor + '">Δ xwOBA</span><span style="font-size:11px;font-weight:500;color:' + txtColor + '">' + dxw + '</span></div>';
+      if (dbap) pills += '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:0.5px solid rgba(0,0,0,0.08)"><span style="font-size:11px;color:' + txtColor + '">Δ BABIP</span><span style="font-size:11px;font-weight:500;color:' + txtColor + '">' + dbap + '</span></div>';
+      if (dbar) pills += '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:0.5px solid rgba(0,0,0,0.08)"><span style="font-size:11px;color:' + txtColor + '">Δ Barrel%</span><span style="font-size:11px;font-weight:500;color:' + txtColor + '">' + dbar + '</span></div>';
+      if (dhh)  pills += '<div style="display:flex;justify-content:space-between;padding:3px 0"><span style="font-size:11px;color:' + txtColor + '">Δ Hard Hit%</span><span style="font-size:11px;font-weight:500;color:' + txtColor + '">' + dhh + '</span></div>';
+      signalContent +=
+        '<div style="padding:8px 10px;background:' + bgColor + ';border-radius:7px;margin-bottom:8px">' +
+          '<div style="font-size:12px;font-weight:500;color:' + txtColor + ';margin-bottom:6px">' + grade + '</div>' +
+          pills +
+        '</div>';
+    } else {
+      signalContent += '<div style="font-size:11px;color:var(--muted);margin-top:4px">' +
+        (tgt ? 'Neutral — no strong over/underperformance signal.' : 'No signal data available.') +
+        '</div>';
+    }
+    signalEl.innerHTML = signalContent;
   }
+
+  // ── Statcast panel ────────────────────────────────────────────────────────
+  var xwoba = fgv('xwOBA'); var woba = fgv('wOBA');
+  var xwobaDiff = (xwoba != null && woba != null) ? (xwoba - woba) : null;
+  var xwobaColor = xwobaDiff != null ? (xwobaDiff >= 0.010 ? '#0F6E56' : xwobaDiff <= -0.010 ? '#A32D2D' : 'var(--text)') : 'var(--text)';
+
+  // Look up signal/grade from targets data (hitters only) — used by Performance panel above
+  var tgt = null;  // already set above
+  if (false) {} // placeholder
 
   var statRows = hasFG
     ? (isHit
@@ -7300,11 +7318,7 @@ window.showFWARProfile = function(name, type) {
           srLast('BB%',   fmtFG2(fgv('BB%'),'BB%'),       fgv('BB%')    != null && fgv('BB%')    <= 7  ? '#A32D2D' : ''))
     : '<div style="font-size:11px;color:var(--muted)">No Statcast data</div>';
 
-  // Update panel label to include signal indicator
-  var scLabel = 'Savant / Statcast' + (tgt && tgt.signal && tgt.signal !== 'Neutral'
-    ? ' — ' + tgt.signal : '');
-
-  document.getElementById('fwar-profile-statcast').innerHTML = plabel + scLabel + '</div>' + signalBox + statRows;
+  document.getElementById('fwar-profile-statcast').innerHTML = plabel + 'Savant / Statcast</div>' + statRows;
 
   document.getElementById('fwar-player-profile').style.display = '';
   document.querySelectorAll('#hit-table tr, #pit-table tr').forEach(function(r){ r.style.background=''; });
