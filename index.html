@@ -6861,18 +6861,22 @@ window.showFWARProfile = function(name, type) {
     return cats.map(function(cat) {
       var factor = sampleFactor(cat, stats, pos);
       var pct    = catPct(cat, poolFn());
-      var dev    = (pct - 0.5) * factor; // scale the deviation, not the raw percentile
-      return { cat: cat, v: dev };
+      var dev    = (pct - 0.5) * factor;
+      return { cat: cat, v: dev + 0.5 }; // return 0-1 for consistent radar scaling
     });
   }
 
   function buildFWARCatData() {
-    if (!fw) return cats.map(function(c){ return {cat:c,v:0}; });
-    var catW = isHit ? FWAR.hitWeights : FWAR.pitWeights;
+    if (!fw) return cats.map(function(c){ return {cat:c,v:0.5}; });
+    var allFW2 = isHit ? FWAR.hitResults : FWAR.pitResults;
+    var pool2  = isHit ? allFW2 : allFW2.filter(function(p){ return pp2==='SP' ? p.isSP : p.isRP; });
     return cats.map(function(cat) {
-      var zVal = (fw.z && fw.z[cat] != null) ? fw.z[cat] : 0;
-      var w = catW[cat] != null ? catW[cat] : 1;
-      return { cat: cat, v: zVal * w };
+      var myZ = (fw.z && fw.z[cat] != null) ? fw.z[cat] : 0;
+      var isLow = ['ERA','WHIP'].indexOf(cat) !== -1;
+      var allZ  = pool2.map(function(p){ return p.z && p.z[cat] != null ? p.z[cat] : 0; });
+      if (!allZ.length) return { cat: cat, v: 0.5 };
+      var below = allZ.filter(function(z){ return isLow ? z > myZ : z < myZ; }).length;
+      return { cat: cat, v: below / allZ.length };
     });
   }
 
@@ -6903,8 +6907,8 @@ window.showFWARProfile = function(name, type) {
     ? { R:'Run scorer', HR:'Power hitter', RBI:'Run producer', SB:'Base stealer', AVG:'Contact hitter' }
     : { W:'Win contributor', K:'Strikeout artist', SVH3:'Saves/holds', ERA:'ERA leader', WHIP:'WHIP leader' };
   lgData.forEach(function(d) {
-    if (d.v >= 0.20) sw.strengths.push(d.cat);
-    else if (d.v <= -0.20) sw.weaknesses.push(d.cat);
+    if (d.v >= 0.70) sw.strengths.push(d.cat);
+    else if (d.v <= 0.30) sw.weaknesses.push(d.cat);
   });
 
   // ── Position scarcity rank ─────────────────────────────────────────────────
@@ -7013,9 +7017,7 @@ window.showFWARProfile = function(name, type) {
   var posData     = buildCatData(posPool);
   var lgData2     = buildCatData(lgPool);
 
-  function toRadar(arr) { return arr.map(function(d){ return Math.round(Math.min(100,Math.max(0,(d.v+0.5)*100))); }); }
-  var fwarMax = Math.max.apply(null, fwarPctData.map(function(d){ return Math.abs(d.v); })) || 1;
-  function toRadarFWAR(arr) { return arr.map(function(d){ return Math.round(50 + (d.v/fwarMax)*40); }); }
+  function toRadar(arr) { return arr.map(function(d){ return Math.round(Math.min(100,Math.max(0,(d.v)*100))); }); }
 
   document.getElementById('fwar-profile-bars').innerHTML =
     plabel + 'Ratings</div>' +
@@ -7058,7 +7060,7 @@ window.showFWARProfile = function(name, type) {
     new Chart(document.getElementById(chartId2), {
       type:'radar',
       data:{ labels:cats, datasets:[
-        {label:'fWAR%',        data:toRadarFWAR(fwarPctData), borderColor:CY, backgroundColor:'rgba(245,240,160,0.10)', borderWidth:2, pointBackgroundColor:CY, pointRadius:2, pointBorderColor:'#b8aa30'},
+        {label:'fWAR%',        data:toRadar(fwarPctData), borderColor:CY, backgroundColor:'rgba(245,240,160,0.10)', borderWidth:2, pointBackgroundColor:CY, pointRadius:2, pointBorderColor:'#b8aa30'},
         {label:'Pos Rating',   data:toRadar(posData),         borderColor:CM, backgroundColor:'rgba(168,213,181,0.10)', borderWidth:2, pointBackgroundColor:CM, pointRadius:2},
         {label:'League Rating',data:toRadar(lgData2),         borderColor:CB, backgroundColor:'rgba(46,127,188,0.10)',  borderWidth:2, pointBackgroundColor:CB, pointRadius:2}
       ]},
