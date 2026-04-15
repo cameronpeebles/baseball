@@ -1403,12 +1403,14 @@ function init() {
     loadJSON('fangraphs_hitting.json').catch(function(){ return {}; }),
     loadJSON('fangraphs_pitching.json').catch(function(){ return {}; }),
     loadJSON('statcast_hitting.json').catch(function(){ return {}; }),
-    loadJSON('statcast_pitching.json').catch(function(){ return {}; })
+    loadJSON('statcast_pitching.json').catch(function(){ return {}; }),
+    loadJSON('targets_hitting.json').catch(function(){ return []; })
   ]).then(function(results) {
     var standings = results[0], season = results[1], combined = results[2];
     var hitting = results[3], pitching = results[4], rosters = results[5];
     var fgHit = results[6], fgPit = results[7];
     var scHit = results[8], scPit = results[9];
+    var tgtHit = results[10];
 
     S.teamInfo = (standings.data && standings.data.fantasyTeamInfo) || (season.data && season.data.fantasyTeamInfo) || {};
     S.seasonData = season;
@@ -1467,6 +1469,18 @@ function init() {
     console.log('FanGraphs hitters loaded:', Object.keys(S.fgHitLookup).length);
     console.log('Statcast hitters loaded:', Object.keys(S.scHitLookup).length);
     console.log('Statcast pitchers loaded:', Object.keys(S.scPitLookup).length);
+
+    // Build targets lookup eagerly
+    function normNameT(n) {
+      return (n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+    }
+    S.targetsHitLookup = {};
+    (tgtHit || []).forEach(function(t) {
+      var k = normNameT(t.name || '');
+      if (k) S.targetsHitLookup[k] = t;
+    });
+    if (tgtHit && tgtHit.length) targetsData = tgtHit;
+    console.log('Targets hitters loaded:', Object.keys(S.targetsHitLookup).length);
 
     document.getElementById('ts').textContent = 'Updated ' + new Date().toLocaleString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
 
@@ -9443,15 +9457,17 @@ function renderTargetsPage() {
   el.innerHTML = '<div class="loading">Loading targets data...</div>';
   loadJSON('targets_hitting.json').then(function(data) {
     targetsData = data;
-    // Build name-keyed lookup for profile panel
-    S.targetsHitLookup = {};
-    function normNameT(n) {
-      return (n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+    // Build name-keyed lookup if not already done at startup
+    if (!S.targetsHitLookup || !Object.keys(S.targetsHitLookup).length) {
+      S.targetsHitLookup = {};
+      function normNameT2(n) {
+        return (n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+      }
+      (data || []).forEach(function(t) {
+        var k = normNameT2(t.name || '');
+        if (k) S.targetsHitLookup[k] = t;
+      });
     }
-    (data || []).forEach(function(t) {
-      var k = normNameT(t.name || '');
-      if (k) S.targetsHitLookup[k] = t;
-    });
     drawTargetsTable();
   }).catch(function() {
     el.innerHTML = '<div class="error-msg">targets_hitting.json not found — run the GitHub Action first.</div>';
