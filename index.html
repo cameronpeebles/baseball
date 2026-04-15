@@ -6898,11 +6898,27 @@ window.showFWARProfile = function(name, type) {
   // ── Position scarcity rank ─────────────────────────────────────────────────
   var finePos = pos ? playerFinePosAll(pos)[0] || '' : '';
   var posPool2 = finePos ? (finePools2[finePos] || []) : [];
+  // Use posRatVal directly — count how many peers have a higher posRating from the lookup
   var posRank = 1;
-  posPool2.forEach(function(peer) {
-    var peerRatings = getRatings(peer.name || '', peer.pos || '', peer.stats || {}, isHit ? 'hit' : 'pit');
-    if ((peerRatings.posRating || 0) > (posRatVal || 0)) posRank++;
-  });
+  if (posRatVal != null) {
+    posPool2.forEach(function(peer) {
+      // Compute pos rating for peer inline using catPct
+      var cats2 = isHit ? BAT_CATS : PIT_CATS;
+      var score = 0, cnt = 0;
+      cats2.forEach(function(cat) {
+        if (peer.stats[cat] == null) return;
+        var isLow2 = ['ERA','WHIP'].indexOf(cat) !== -1;
+        var vals2 = posPool2.map(function(q){ return q.stats[cat]; }).filter(function(v){ return v!=null; });
+        if (!vals2.length) return;
+        var factor = sampleFactor(cat, peer.stats, peer.pos || '');
+        var below2 = vals2.filter(function(v){ return isLow2 ? v > peer.stats[cat] : v < peer.stats[cat]; }).length;
+        score += (below2 / vals2.length - 0.5) * factor;
+        cnt++;
+      });
+      var peerRating = cnt > 0 ? (score / cnt + 0.5) : 0.5;
+      if (peerRating > posRatVal) posRank++;
+    });
+  }
   var posTotal = posPool2.length || 1;
   var posTopPct = Math.round((posRank / posTotal) * 100);
 
@@ -7001,7 +7017,9 @@ window.showFWARProfile = function(name, type) {
   });
 
   // ── Right column: scarcity + season stats + statcast ──────────────────────
-  var fgRow2 = hasFG ? (fgLookup[nameLow2] || null) : null;
+  var fgLookupP = isHit ? S.fgHitLookup : S.fgPitLookup;
+  var hasFG = fgLookupP && Object.keys(fgLookupP).length > 0;
+  var fgRow2 = hasFG ? (fgLookupP[nameLow2] || null) : null;
   function fgv(col) { return fgRow2 ? fgRow2[col] : null; }
   function fmtFG2(v, col) {
     if (v == null) return '—';
