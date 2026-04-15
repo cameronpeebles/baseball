@@ -999,7 +999,7 @@ td.neg { color: #c0392b; font-weight: 500; }
               <div style="width:4px;background:#2e7fbc;border-radius:4px 4px 0 0;flex-shrink:0"></div>
               <div style="padding:12px 16px;background:var(--bg);border-radius:0 8px 0 0;flex:1;font-size:12px;line-height:1.6;border-bottom:1px solid var(--border)">
                 <strong style="color:#2e7fbc">fWAR% line — z-score percentile</strong><br>
-                For each category, the player's <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">fw.z[cat]</code> is ranked against all rostered players in the same pool. <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">below / total → 0–1 → × 100</code>. ERA and WHIP are inverted (lower is better).
+                For each category, the player's <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">fw.z[cat]</code> is ranked against all rostered players in the same pool. <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">below / total → 0–1 → × 100</code>. ERA and WHIP z-scores are already negated in the fWAR model (lower ERA = higher z-score), so all categories are treated as higher = better — no additional inversion needed.
               </div>
             </div>
             <div style="display:flex;align-items:stretch">
@@ -6929,11 +6929,11 @@ window.showFWARProfile = function(name, type) {
     var allFW2 = isHit ? FWAR.hitResults : FWAR.pitResults;
     var pool2  = isHit ? allFW2 : allFW2.filter(function(p){ return pp2==='SP' ? p.isSP : p.isRP; });
     return cats.map(function(cat) {
-      var myZ = (fw.z && fw.z[cat] != null) ? fw.z[cat] : 0;
-      var isLow = ['ERA','WHIP'].indexOf(cat) !== -1;
-      var allZ  = pool2.map(function(p){ return p.z && p.z[cat] != null ? p.z[cat] : 0; });
+      var myZ  = (fw.z && fw.z[cat] != null) ? fw.z[cat] : 0;
+      var allZ = pool2.map(function(p){ return p.z && p.z[cat] != null ? p.z[cat] : 0; });
       if (!allZ.length) return { cat: cat, v: 0.5 };
-      var below = allZ.filter(function(z){ return isLow ? z > myZ : z < myZ; }).length;
+      // ERA/WHIP z-scores are already negated in fWAR model (lower ERA = higher z), so treat all as higher=better
+      var below = allZ.filter(function(z){ return z < myZ; }).length;
       return { cat: cat, v: below / allZ.length };
     });
   }
