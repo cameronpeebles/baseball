@@ -349,7 +349,7 @@ td.neg { color: #c0392b; font-weight: 500; }
         <div style="width:250px;height:250px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column" id="fwar-profile-charts"></div>
 
         <!-- 6. Statcast -->
-        <div style="width:250px;height:250px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-statcast"></div>
+        <div style="width:250px;height:250px;flex-shrink:0;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-statcast"></div>
 
         <!-- 7. Strengths & Weaknesses -->
         <div style="width:250px;height:250px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-sw"></div>
@@ -7258,8 +7258,6 @@ window.showFWARProfile = function(name, type) {
   var tgt = null;
   if (isHit && S.targetsHitLookup) {
     tgt = S.targetsHitLookup[nameLowNorm] || S.targetsHitLookup[nameLow2] || null;
-    console.log('[targets] name:', name, '| norm:', nameLowNorm, '| found:', !!tgt, '| lookup size:', Object.keys(S.targetsHitLookup).length);
-    if (!tgt) console.log('[targets] sample keys:', Object.keys(S.targetsHitLookup).slice(0,5));
   }
 
   function fmtDelta(v, decimals) {
