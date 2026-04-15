@@ -317,35 +317,42 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div class="page-subtitle">Fantasy WAR and player ratings — sortable by position, fWAR, and ratings.</div>
 
     <!-- Player Profile Panel (hidden until player clicked) -->
-    <div id="fwar-player-profile" style="display:none;margin-bottom:16px">
-      <div style="display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:12px" id="fwar-profile-inner">
-        <!-- Left column -->
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <!-- Header card -->
-          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px">
-            <div style="display:flex;align-items:center;gap:12px">
-              <img id="fwar-profile-hs" src="" alt="" style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid var(--border);flex-shrink:0" onerror="this.style.display='none'">
-              <div style="flex:1">
-                <div id="fwar-profile-name" style="font-weight:700;font-size:15px;color:var(--text)"></div>
-                <div id="fwar-profile-sub" style="font-size:12px;color:var(--muted)"></div>
-              </div>
-              <div style="text-align:right">
-                <div style="font-size:11px;color:var(--muted);margin-bottom:3px">Archetype</div>
-                <div id="fwar-profile-arch-badge"></div>
-              </div>
-              <button onclick="clearFWARProfile()" style="margin-left:8px;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--muted);cursor:pointer">✕</button>
+    <div id="fwar-player-profile" style="display:none;margin-bottom:16px;overflow-x:auto">
+      <div style="display:flex;gap:10px;align-items:stretch;min-width:900px" id="fwar-profile-inner">
+
+        <!-- 1. Player / Archetype -->
+        <div style="width:155px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <img id="fwar-profile-hs" src="" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'">
+            <div>
+              <div id="fwar-profile-name" style="font-size:13px;font-weight:700;color:var(--text);line-height:1.2"></div>
+              <div id="fwar-profile-sub" style="font-size:11px;color:var(--muted)"></div>
             </div>
-            <div id="fwar-profile-arch-desc" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)"></div>
           </div>
-          <!-- Strengths / Weaknesses -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="fwar-profile-sw"></div>
-          <!-- Metric bar chart -->
-          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px" id="fwar-profile-bars"></div>
-          <!-- Radar breakdown -->
-          <div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px" id="fwar-profile-charts"></div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:0.06em;font-weight:500">Archetype</div>
+          <div id="fwar-profile-arch-badge" style="margin-bottom:8px"></div>
+          <div id="fwar-profile-arch-desc" style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:auto"></div>
+          <button onclick="clearFWARProfile()" style="margin-top:10px;background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:10px;color:var(--muted);cursor:pointer;align-self:flex-start">✕ Clear</button>
         </div>
-        <!-- Right column -->
-        <div style="display:flex;flex-direction:column;gap:10px" id="fwar-profile-right"></div>
+
+        <!-- 2. Pos Scarcity -->
+        <div style="width:125px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column" id="fwar-profile-scarcity"></div>
+
+        <!-- 3. Season Stats -->
+        <div style="width:148px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px" id="fwar-profile-stats"></div>
+
+        <!-- 4. Bar chart -->
+        <div style="width:175px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column" id="fwar-profile-bars"></div>
+
+        <!-- 5. Radar -->
+        <div style="flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column" id="fwar-profile-charts"></div>
+
+        <!-- 6. Statcast -->
+        <div style="width:158px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px" id="fwar-profile-statcast"></div>
+
+        <!-- 7. Strengths & Weaknesses -->
+        <div style="width:145px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px" id="fwar-profile-sw"></div>
+
       </div>
     </div>
 
@@ -6956,9 +6963,23 @@ window.showFWARProfile = function(name, type) {
     });
   } else { swHtml += '<div style="font-size:12px;color:var(--muted)">None identified</div>'; }
   swHtml += '</div>';
+  // ── S&W panel ─────────────────────────────────────────────────────────────
+  var plabel = '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:7px">';
+  var swHtml = plabel + 'Strengths</div>';
+  if (sw.strengths.length) {
+    sw.strengths.slice(0,3).forEach(function(c) {
+      swHtml += '<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px"><span style="display:inline-flex;align-items:center;justify-content:center;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:500;background:#E1F5EE;color:#0F6E56;min-width:30px">' + c + '</span><span style="font-size:11px;color:var(--muted)">' + (catDesc[c]||c) + '</span></div>';
+    });
+  } else { swHtml += '<div style="font-size:11px;color:var(--muted)">None identified</div>'; }
+  swHtml += '<div style="margin:8px 0 7px;border-top:1px solid var(--border)"></div>' + plabel + 'Weaknesses</div>';
+  if (sw.weaknesses.length) {
+    sw.weaknesses.slice(0,3).forEach(function(c) {
+      swHtml += '<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px"><span style="display:inline-flex;align-items:center;justify-content:center;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:500;background:#FCEBEB;color:#A32D2D;min-width:30px">' + c + '</span><span style="font-size:11px;color:var(--muted)">' + (catDesc[c]||c) + '</span></div>';
+    });
+  } else { swHtml += '<div style="font-size:11px;color:var(--muted)">None identified</div>'; }
   document.getElementById('fwar-profile-sw').innerHTML = swHtml;
 
-  // ── Metric bar chart (own panel) ─────────────────────────────────────────
+  // ── Charts ────────────────────────────────────────────────────────────────
   var CY = '#f5f0a0', CM = '#a8d5b5', CB = '#2e7fbc';
   var chartId1 = 'prof-bar-' + Date.now();
   var chartId2 = 'prof-radar-' + Date.now();
@@ -6971,19 +6992,17 @@ window.showFWARProfile = function(name, type) {
   var fwarMax = Math.max.apply(null, fwarPctData.map(function(d){ return Math.abs(d.v); })) || 1;
   function toRadarFWAR(arr) { return arr.map(function(d){ return Math.round(50 + (d.v/fwarMax)*40); }); }
 
-  // Bar chart panel
   document.getElementById('fwar-profile-bars').innerHTML =
-    '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:10px">Ratings</div>' +
-    '<div style="position:relative;height:100px"><canvas id="' + chartId1 + '" role="img" aria-label="fWAR%, Pos Rating, League Rating bars">bars</canvas></div>';
+    plabel + 'Ratings</div>' +
+    '<div style="position:relative;flex:1;min-height:100px"><canvas id="' + chartId1 + '" role="img" aria-label="Ratings bar chart">bars</canvas></div>';
 
-  // Radar panel
   document.getElementById('fwar-profile-charts').innerHTML =
-    '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:10px">Category breakdown</div>' +
-    '<div style="position:relative;min-height:220px"><canvas id="' + chartId2 + '" role="img" aria-label="Radar chart">radar</canvas></div>' +
-    '<div style="display:flex;gap:12px;margin-top:8px;font-size:11px;justify-content:center;flex-wrap:wrap">' +
-      '<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:3px;background:' + CY + ';border:1px solid #b8aa30;display:inline-block;border-radius:2px"></span><span style="color:var(--muted)">fWAR%</span></span>' +
-      '<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:3px;background:' + CM + ';display:inline-block;border-radius:2px"></span><span style="color:var(--muted)">Pos Rating</span></span>' +
-      '<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:3px;background:' + CB + ';display:inline-block;border-radius:2px"></span><span style="color:var(--muted)">League Rating</span></span>' +
+    plabel + 'Category breakdown</div>' +
+    '<div style="position:relative;flex:1;min-height:180px"><canvas id="' + chartId2 + '" role="img" aria-label="Radar chart">radar</canvas></div>' +
+    '<div style="display:flex;gap:10px;margin-top:6px;font-size:10px;justify-content:center;flex-wrap:wrap">' +
+      '<span style="display:flex;align-items:center;gap:3px"><span style="width:10px;height:3px;background:' + CY + ';border:1px solid #b8aa30;display:inline-block;border-radius:1px"></span><span style="color:var(--muted)">fWAR%</span></span>' +
+      '<span style="display:flex;align-items:center;gap:3px"><span style="width:10px;height:3px;background:' + CM + ';display:inline-block;border-radius:1px"></span><span style="color:var(--muted)">Pos</span></span>' +
+      '<span style="display:flex;align-items:center;gap:3px"><span style="width:10px;height:3px;background:' + CB + ';display:inline-block;border-radius:1px"></span><span style="color:var(--muted)">League</span></span>' +
     '</div>';
 
   requestAnimationFrame(function() {
@@ -6991,31 +7010,53 @@ window.showFWARProfile = function(name, type) {
     var posR = posRatVal != null ? Math.round(posRatVal * 100) : 50;
     var lgR  = lgRatVal  != null ? Math.round(lgRatVal  * 100) : 50;
 
-    new Chart(document.getElementById(chartId1), {
+    var barChart = new Chart(document.getElementById(chartId1), {
       type: 'bar',
-      data: { labels: ['fWAR%', 'Pos Rating', 'League Rating'], datasets: [{ data: [fpct, posR, lgR], backgroundColor: [CY, CM, CB], borderRadius: 4, borderSkipped: false }] },
-      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(ctx){ return ' ' + ctx.raw; } } } },
-        scales: { x: { min: 0, max: 100, ticks: { stepSize: 25, font: { size: 10 }, color: '#999' }, grid: { color: 'rgba(128,128,128,0.1)' } }, y: { ticks: { font: { size: 11 }, color: '#888' }, grid: { display: false } } }
+      data: { labels: ['fWAR%','Pos Rating','League Rating'], datasets: [{ data:[fpct,posR,lgR], backgroundColor:[CY,CM,CB], borderRadius:3, borderSkipped:false }] },
+      options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins: { legend:{display:false}, tooltip:{callbacks:{label:function(ctx){return ' '+ctx.raw;}}} },
+        scales: {
+          x:{min:0,max:100,ticks:{stepSize:25,font:{size:9},color:'#999'},grid:{color:'rgba(128,128,128,0.1)'}},
+          y:{ticks:{font:{size:10},color:'#888'},grid:{display:false}}
+        },
+        animation: { onComplete: function(e) {
+          var ch = e.chart, ctx2 = ch.ctx, meta = ch.getDatasetMeta(0);
+          ctx2.save(); ctx2.font = '500 11px sans-serif'; ctx2.fillStyle = '#555'; ctx2.textBaseline = 'middle';
+          meta.data.forEach(function(bar, i) {
+            ctx2.fillText(ch.data.datasets[0].data[i], bar.x + 5, bar.y);
+          });
+          ctx2.restore();
+        }}
       }
     });
 
     new Chart(document.getElementById(chartId2), {
-      type: 'radar',
-      data: { labels: cats, datasets: [
-        { label: 'fWAR%',        data: toRadarFWAR(fwarPctData), borderColor: CY, backgroundColor: 'rgba(245,240,160,0.10)', borderWidth: 2, pointBackgroundColor: CY, pointRadius: 3, pointBorderColor: '#b8aa30' },
-        { label: 'Pos Rating',   data: toRadar(posData),         borderColor: CM, backgroundColor: 'rgba(168,213,181,0.10)', borderWidth: 2, pointBackgroundColor: CM, pointRadius: 3 },
-        { label: 'League Rating',data: toRadar(lgData2),         borderColor: CB, backgroundColor: 'rgba(46,127,188,0.10)',  borderWidth: 2, pointBackgroundColor: CB, pointRadius: 3 }
+      type:'radar',
+      data:{ labels:cats, datasets:[
+        {label:'fWAR%',        data:toRadarFWAR(fwarPctData), borderColor:CY, backgroundColor:'rgba(245,240,160,0.10)', borderWidth:2, pointBackgroundColor:CY, pointRadius:2, pointBorderColor:'#b8aa30'},
+        {label:'Pos Rating',   data:toRadar(posData),         borderColor:CM, backgroundColor:'rgba(168,213,181,0.10)', borderWidth:2, pointBackgroundColor:CM, pointRadius:2},
+        {label:'League Rating',data:toRadar(lgData2),         borderColor:CB, backgroundColor:'rgba(46,127,188,0.10)',  borderWidth:2, pointBackgroundColor:CB, pointRadius:2}
       ]},
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-        scales: { r: { min: 0, max: 100, ticks: { stepSize: 25, font: { size: 9 }, color: '#999', backdropColor: 'transparent' },
-          pointLabels: { font: { size: 11, weight: '500' }, color: '#888' },
-          grid: { color: 'rgba(128,128,128,0.12)' }, angleLines: { color: 'rgba(128,128,128,0.12)' } } }
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+        scales:{r:{min:0,max:100,
+          ticks:{stepSize:25,font:{size:8},color:'#999',backdropColor:'transparent'},
+          pointLabels:{font:{size:10,weight:'500'},color:'#888'},
+          grid:{color:'rgba(128,128,128,0.12)'},angleLines:{color:'rgba(128,128,128,0.12)'}}}
       }
     });
   });
 
-  // ── Right column: scarcity + season stats + statcast ──────────────────────
+  // ── Pos Scarcity panel ───────────────────────────────────────────────────
+  document.getElementById('fwar-profile-scarcity').innerHTML =
+    plabel + 'Pos scarcity</div>' +
+    '<div style="font-size:32px;font-weight:700;color:#2e7fbc;line-height:1">#' + posRank + '</div>' +
+    '<div style="font-size:11px;color:var(--muted);margin-top:2px">of ' + posTotal + ' rostered ' + (finePos||pos) + '</div>' +
+    '<div style="margin-top:8px;height:4px;background:var(--bg);border-radius:2px;overflow:hidden">' +
+      '<div style="width:' + posTopPct + '%;height:100%;background:#2e7fbc;border-radius:2px"></div>' +
+    '</div>' +
+    '<div style="font-size:11px;color:var(--muted);margin-top:4px">Top ' + posTopPct + '%</div>';
+
+  // ── Season Stats panel ────────────────────────────────────────────────────
   var fgLookupP = isHit ? S.fgHitLookup : S.fgPitLookup;
   var hasFG = fgLookupP && Object.keys(fgLookupP).length > 0;
   var fgRow2 = hasFG ? (fgLookupP[nameLow2] || null) : null;
@@ -7028,83 +7069,56 @@ window.showFWARProfile = function(name, type) {
     return v.toFixed(3);
   }
 
-  var xwoba = fgv('xwOBA'); var woba = fgv('wOBA');
-  var xwobaDiff = (xwoba != null && woba != null) ? (xwoba - woba) : null;
-  var xwobaColor = xwobaDiff != null ? (xwobaDiff >= 0.010 ? '#0F6E56' : xwobaDiff <= -0.010 ? '#A32D2D' : 'var(--text)') : 'var(--text)';
-
-  function srRow(label, val, color) {
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">' +
-      '<span style="font-size:12px;color:var(--muted)">' + label + '</span>' +
-      '<span style="font-size:13px;font-weight:600;color:' + (color||'var(--text)') + '">' + val + '</span></div>';
-  }
-  function srLast(label, val, color) {
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0">' +
-      '<span style="font-size:12px;color:var(--muted)">' + label + '</span>' +
-      '<span style="font-size:13px;font-weight:600;color:' + (color||'var(--text)') + '">' + val + '</span></div>';
-  }
-
   var ab  = stats['AB'] || 0;
   var ip  = stats['IP'] || 0;
   var fwarVal = fw ? ((fw.fWAR >= 0 ? '+' : '') + fw.fWAR.toFixed(2)) : '—';
   var fwarCol = fw ? (fw.fWAR >= 2 ? '#1e6b3a' : fw.fWAR >= 0.5 ? '#4a9a68' : fw.fWAR >= -0.5 ? '#b7791f' : '#c0392b') : 'var(--muted)';
 
-  var seasonHtml = isHit
+  function srRow(label, val, color) {
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border)">' +
+      '<span style="font-size:12px;color:var(--muted)">' + label + '</span>' +
+      '<span style="font-size:12px;font-weight:500;color:' + (color||'var(--text)') + '">' + val + '</span></div>';
+  }
+  function srLast(label, val, color) {
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">' +
+      '<span style="font-size:12px;color:var(--muted)">' + label + '</span>' +
+      '<span style="font-size:12px;font-weight:500;color:' + (color||'var(--text)') + '">' + val + '</span></div>';
+  }
+
+  var seasonRows = isHit
     ? srRow('AB', ab||'—') + srRow('AVG', stats['AVG'] != null ? stats['AVG'].toFixed(3) : '—', stats['AVG'] >= 0.280 ? '#0F6E56' : '') +
-      srRow('R · HR · RBI', (stats['R']||0) + ' · ' + (stats['HR']||0) + ' · ' + (stats['RBI']||0)) +
+      srRow('R · HR · RBI', (stats['R']||0)+'·'+(stats['HR']||0)+'·'+(stats['RBI']||0)) +
       srRow('SB', stats['SB']||0, (stats['SB']||0) >= 5 ? '#0F6E56' : '') +
       srLast('fWAR', fwarVal, fwarCol)
-    : srRow('IP', ip.toFixed(1)||'—') + srRow('ERA', stats['ERA'] != null ? stats['ERA'].toFixed(2) : '—', stats['ERA'] < 3.5 ? '#0F6E56' : stats['ERA'] > 5 ? '#A32D2D' : '') +
+    : srRow('IP', ip ? ip.toFixed(1) : '—') +
+      srRow('ERA', stats['ERA'] != null ? stats['ERA'].toFixed(2) : '—', stats['ERA'] < 3.5 ? '#0F6E56' : stats['ERA'] > 5 ? '#A32D2D' : '') +
       srRow('WHIP', stats['WHIP'] != null ? stats['WHIP'].toFixed(2) : '—', stats['WHIP'] < 1.20 ? '#0F6E56' : stats['WHIP'] > 1.50 ? '#A32D2D' : '') +
-      srRow('K · W · SVH3', (stats['K']||0) + ' · ' + (stats['W']||0) + ' · ' + (stats['SVH3']||0)) +
+      srRow('K · W · SVH3', (stats['K']||0)+'·'+(stats['W']||0)+'·'+(stats['SVH3']||0)) +
       srLast('fWAR', fwarVal, fwarCol);
 
-  var statcastHtml = hasFG
+  document.getElementById('fwar-profile-stats').innerHTML = plabel + 'Season stats</div>' + seasonRows;
+
+  // ── Statcast panel ────────────────────────────────────────────────────────
+  var xwoba = fgv('xwOBA'); var woba = fgv('wOBA');
+  var xwobaDiff = (xwoba != null && woba != null) ? (xwoba - woba) : null;
+  var xwobaColor = xwobaDiff != null ? (xwobaDiff >= 0.010 ? '#0F6E56' : xwobaDiff <= -0.010 ? '#A32D2D' : 'var(--text)') : 'var(--text)';
+
+  var statRows = hasFG
     ? (isHit
-        ? srRow('xSLG',        fmtFG2(fgv('xSLG'),'xSLG')) +
-          srRow('xwOBA − wOBA', xwobaDiff != null ? (xwobaDiff >= 0 ? '+' : '') + xwobaDiff.toFixed(3) : '—', xwobaColor) +
-          srRow('Barrel%',     fmtFG2(fgv('Barrel%'),'Barrel%'), fgv('Barrel%') >= 10 ? '#0F6E56' : '') +
-          srRow('Hard Hit%',   fmtFG2(fgv('HardHit%'),'HardHit%'), fgv('HardHit%') >= 40 ? '#0F6E56' : '') +
-          srRow('EV50',        fmtFG2(fgv('EV50'),'EV50')) +
-          srLast('BABIP',      fmtFG2(fgv('BABIP'),'BABIP'))
-        : srRow('Whiff%',      fmtFG2(fgv('Whiff%'),'Whiff%'), fgv('Whiff%') >= 28 ? '#0F6E56' : '') +
-          srRow('K%',          fmtFG2(fgv('K%'),'K%'), fgv('K%') >= 25 ? '#0F6E56' : '') +
-          srLast('BB%',        fmtFG2(fgv('BB%'),'BB%'), fgv('BB%') <= 7 ? '#A32D2D' : '')
-      )
-    : '<div style="font-size:12px;color:var(--muted)">No Statcast data</div>';
+        ? srRow('xSLG',       fmtFG2(fgv('xSLG'),'xSLG')) +
+          srRow('xwOBA−wOBA', xwobaDiff != null ? (xwobaDiff >= 0 ? '+' : '') + xwobaDiff.toFixed(3) : '—', xwobaColor) +
+          srRow('Barrel%',    fmtFG2(fgv('Barrel%'),'Barrel%'), fgv('Barrel%') >= 10 ? '#0F6E56' : '') +
+          srRow('Hard Hit%',  fmtFG2(fgv('HardHit%'),'HardHit%'), fgv('HardHit%') >= 40 ? '#0F6E56' : '') +
+          srRow('EV50',       fmtFG2(fgv('EV50'),'EV50')) +
+          srLast('BABIP',     fmtFG2(fgv('BABIP'),'BABIP'))
+        : srRow('Whiff%', fmtFG2(fgv('Whiff%'),'Whiff%'), fgv('Whiff%') >= 28 ? '#0F6E56' : '') +
+          srRow('K%',     fmtFG2(fgv('K%'),'K%'), fgv('K%') >= 25 ? '#0F6E56' : '') +
+          srLast('BB%',   fmtFG2(fgv('BB%'),'BB%'), fgv('BB%') <= 7 ? '#A32D2D' : ''))
+    : '<div style="font-size:11px;color:var(--muted)">No Statcast data</div>';
 
-  var rightHtml =
-    '<div style="flex:1.3;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
-        '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted)">Season stats</div>' +
-        '<div style="width:8px;height:8px;border-radius:2px;background:#f5f0a0;border:1px solid #b8aa30"></div>' +
-      '</div>' +
-      seasonHtml +
-    '</div>' +
+  document.getElementById('fwar-profile-statcast').innerHTML = plabel + 'Savant / Statcast</div>' + statRows;
 
-    '<div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
-        '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted)">Position scarcity</div>' +
-        '<div style="width:8px;height:8px;border-radius:2px;background:#a8d5b5;border:0.5px solid #5DCAA5"></div>' +
-      '</div>' +
-      '<div style="font-size:34px;font-weight:700;color:#2e7fbc;line-height:1.1">#' + posRank + '</div>' +
-      '<div style="font-size:12px;color:var(--muted);margin-top:2px">of ' + posTotal + ' rostered ' + (finePos||pos) + '</div>' +
-      '<div style="margin-top:8px;height:5px;background:var(--bg);border-radius:3px;overflow:hidden">' +
-        '<div style="width:' + posTopPct + '%;height:100%;background:#2e7fbc;border-radius:3px"></div>' +
-      '</div>' +
-      '<div style="font-size:11px;color:var(--muted);margin-top:4px">Top ' + posTopPct + '% at position</div>' +
-    '</div>' +
-
-    '<div style="flex:1.6;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
-        '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted)">Savant / Statcast</div>' +
-        '<div style="width:8px;height:8px;border-radius:2px;background:#2e7fbc"></div>' +
-      '</div>' +
-      statcastHtml +
-    '</div>';
-
-  document.getElementById('fwar-profile-right').innerHTML = rightHtml;
   document.getElementById('fwar-player-profile').style.display = '';
-
   document.querySelectorAll('#hit-table tr, #pit-table tr').forEach(function(r){ r.style.background=''; });
 };
 
