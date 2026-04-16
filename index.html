@@ -1429,7 +1429,7 @@ function init() {
     S.fgPitCols   = (fgPit && fgPit.cols) || ['Whiff%','K%','BB%'];
 
     function normNameJS(n) {
-      return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+      return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
     }
     (fgHit.players || []).forEach(function(p) {
       if (p.PlayerName) {
@@ -1755,7 +1755,7 @@ function drawPlayers(type) {
     var name   = scorer.name || scorer.shortName || '';
     var ftId   = (cells[1] && cells[1].teamId) || '';
     var fw     = fwarLookup[name];
-    var fgRow  = hasFG ? (fgLookup[name.toLowerCase().replace(/[^a-z ]/g,'').replace(/s+/g,' ').trim()] || fgLookup[name.toLowerCase()] || null) : null;
+    var fgRow  = hasFG ? (fgLookup[name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim()] || fgLookup[name.toLowerCase()] || null) : null;
     return { row: row, scorer: scorer, cells: cells, name: name, ftId: ftId, fw: fw, fgRow: fgRow };
   });
 
@@ -2151,7 +2151,7 @@ function showRoster(teamId) {
       var hs = scorer.headshotUrl || '';
       var statusId = row.statusId || '1';
       var fw = fwarLookup[name];
-      var fgRow = hasFG ? (fgLookup[name.toLowerCase().replace(/[^a-z ]/g,'').replace(/s+/g,' ').trim()] || fgLookup[name.toLowerCase()] || null) : null;
+      var fgRow = hasFG ? (fgLookup[name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim()] || fgLookup[name.toLowerCase()] || null) : null;
 
       html += '<tr>';
       html += '<td class="left"><div class="team-cell">' + (hs ? '<img class="player-hs" src="' + hs + '" alt="" onerror="this.style.display=\'none\'">' : '') + '<span><strong>' + name + '</strong></span></div></td>';
@@ -7204,7 +7204,7 @@ window.showFWARProfile = function(name, type) {
   var hasFG = scLookup && Object.keys(scLookup).length > 0;
   // Try normalized name (statcast_hitting.json uses norm_name), then raw lowercase, then fgLookup fallback
   function normName(n) {
-    return n.toLowerCase().replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
+    return n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
   }
   var nameLowNorm = normName(name);
   var fgFallback = isHit ? S.fgHitLookup : S.fgPitLookup;
