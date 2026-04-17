@@ -2781,7 +2781,7 @@ function heatColor(v) {
 }
 
 function buildJOEPage(byWeek, schedule) {
-  var ALL_CATS_J  = ['R','HR','RBI','SB','AVG','K','W','SV','ERA','WHIP'];
+  var ALL_CATS_J  = ['R','HR','RBI','SB','AVG','K','W','SVH3','ERA','WHIP'];
   var LOW_CATS_J  = ['ERA','WHIP'];
 
   // Find completed weeks — at least 8 teams have stats
@@ -3125,7 +3125,7 @@ window.showMatrixWeek = function(wk, btn) {
 
   var byWeek     = window._joeByWeek || {};
   var allResults = window._joeAllResults || {};
-  var ALL_CATS_M = ['R','HR','RBI','SB','AVG','K','W','SV','ERA','WHIP'];
+  var ALL_CATS_M = ['R','HR','RBI','SB','AVG','K','W','SVH3','ERA','WHIP'];
   var LOW_CATS_M = ['ERA','WHIP'];
 
   var weekStats = byWeek[wk];
@@ -5950,7 +5950,7 @@ window.showWeekStats = function(week, btn) {
   if (btn) btn.classList.add('active');
   var weekData = (window._joeWeekStats||{})[week] || {};
   var teams = Object.keys(weekData).sort();
-  var CATS  = ['R','HR','RBI','SB','AVG','K','W','SV','ERA','WHIP'];
+  var CATS  = ['R','HR','RBI','SB','AVG','K','W','SVH3','ERA','WHIP'];
   var catMax = {}, catMin = {};
   CATS.forEach(function(c) {
     var vals = teams.map(function(t){ return weekData[t][c]; }).filter(function(v){ return v != null; });
