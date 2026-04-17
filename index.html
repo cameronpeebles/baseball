@@ -6651,15 +6651,31 @@ function buildCorrelations(el) {
   html += '<div class="card-body" style="padding:16px 20px">';
 
   // Read Win% directly from ptTable
-  var winPctColIdx = null;
-  ['WIN_PCT','WIN%','W%','WPCT','PCT','WINPCT'].forEach(function(k) {
-    if (winPctColIdx == null && ptIdx[k] != null) winPctColIdx = ptIdx[k];
+  // Win% comes from standings.json (S.standingsData), not the roto points table
+  var stTables = (S.standingsData && S.standingsData.data && S.standingsData.data.tableList) || [];
+  function buildStIdx(table) {
+    var idx = {};
+    ((table.header && table.header.cells) || []).forEach(function(h, i) {
+      if (h.key)       idx[h.key.toUpperCase()]       = i;
+      if (h.shortName) idx[h.shortName.toUpperCase()] = i;
+      if (h.name)      idx[h.name.toUpperCase()]      = i;
+    });
+    return idx;
+  }
+  var winPctColIdx = null, winPctTable = null;
+  stTables.forEach(function(t) {
+    if (winPctColIdx != null) return;
+    var idx = buildStIdx(t);
+    console.log('[stTable] cap:', t.caption, '| keys:', Object.keys(idx).join(' | '));
+    ['WIN_PCT','WIN%','W%','WPCT','PCT','WINPCT'].forEach(function(k) {
+      if (winPctColIdx == null && idx[k] != null) { winPctColIdx = idx[k]; winPctTable = t; }
+    });
   });
-  console.log('[corr] ptIdx keys:', Object.keys(ptIdx).join(' | '), '| winPctColIdx:', winPctColIdx);
+  console.log('[corr] winPctColIdx:', winPctColIdx);
 
   var teamWinPct = {};
-  if (ptTable && winPctColIdx != null) {
-    (ptTable.rows || []).forEach(function(row) {
+  if (winPctTable && winPctColIdx != null) {
+    (winPctTable.rows || []).forEach(function(row) {
       var fc = row.fixedCells || [], cells = row.cells || [];
       var id = (fc[1] && fc[1].teamId) || '';
       if (!id) return;
@@ -6667,6 +6683,8 @@ function buildCorrelations(el) {
       if (!isNaN(v)) teamWinPct[id] = v > 1 ? v / 100 : v;
     });
   }
+  console.log('[corr] teamWinPct sample:', JSON.stringify(Object.values(teamWinPct).slice(0,3)));
+
 
   var h2hPairs = dataset.map(function(d) {
     var wp = teamWinPct[d.id];
