@@ -763,14 +763,23 @@ td.neg { color: #c0392b; font-weight: 500; }
             <div style="display:flex;align-items:stretch;gap:0">
               <div style="width:4px;background:var(--accent);flex-shrink:0"></div>
               <div style="padding:12px 16px;background:var(--bg);flex:1;font-size:12px;line-height:1.6;border-bottom:1px solid var(--border)">
-                <strong style="color:var(--accent)">Step 3 — Replacement Level</strong><br>
+                <strong style="color:var(--accent)">Step 3 — Playing Time Weight</strong><br>
+                Total Z is scaled by how much a player has played relative to the average rostered player at their role — capped at 1.0 (never penalises players for playing too much).<br>
+                <code style="background:var(--surface);padding:2px 6px;border-radius:4px;font-size:11px;display:inline-block;margin-top:4px">ptWeight = min(1.0, playerIP / avgRosteredIP)</code><br>
+                <span style="color:var(--muted);font-size:11px;display:block;margin-top:4px">Hitters use AB. Pitchers use IP — <strong>computed separately for SP and RP</strong> so closers are compared to other closers, not penalised by starters who accumulate IP much faster. A closer at 10 IP is compared against the average rostered RP's IP total, not the SP average.</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:stretch;gap:0">
+              <div style="width:4px;background:var(--accent);flex-shrink:0"></div>
+              <div style="padding:12px 16px;background:var(--bg);flex:1;font-size:12px;line-height:1.6;border-bottom:1px solid var(--border)">
+                <strong style="color:var(--accent)">Step 4 — Replacement Level</strong><br>
                 The Nth-ranked player at each position defines replacement level — the baseline of a freely available player. N is the positional replacement rank (configurable in Models). A lower N = harder position to fill = higher bar.
               </div>
             </div>
             <div style="display:flex;align-items:stretch;gap:0">
               <div style="width:4px;background:var(--accent);border-radius:0 0 4px 4px;flex-shrink:0"></div>
               <div style="padding:12px 16px;background:var(--accent-light);border-radius:0 0 8px 0;flex:1;font-size:12px;line-height:1.6;border:1px solid var(--accent)">
-                <strong style="color:var(--accent)">Step 4 — fWAR</strong><br>
+                <strong style="color:var(--accent)">Step 5 — fWAR</strong><br>
                 <code style="background:var(--surface);padding:2px 6px;border-radius:4px;font-size:11px;display:inline-block">fWAR = playerTotalZ − replacementLevelZ</code><br>
                 <span style="color:var(--muted);font-size:11px;display:block;margin-top:4px">Positive = above replacement. Negative = below replacement. A +2.0 fWAR player contributes roughly 2 wins above what you'd get by picking up a free agent.</span>
               </div>
@@ -7456,7 +7465,18 @@ window.recalculateFWAR = function() {
   var rIPs   = rosteredPitchers.map(function(r){ return getVal(r.cells||[], 'IP',   pitIdx); }).filter(function(v){return v!=null;});
   var lgERA  = mean(rERAs);
   var lgWHIP = mean(rWHIPs);
-  var lgIP   = mean(rIPs) || 1;
+
+  // Separate mean IP for SP and RP so RPs aren't penalised by SP volume
+  var rSpIPs = rosteredPitchers.filter(function(r){
+    var pos = (r.scorer||{}).posShortNames||'';
+    return pos.split(',').map(function(x){return x.trim();}).indexOf('SP') !== -1;
+  }).map(function(r){ return getVal(r.cells||[],'IP',pitIdx); }).filter(function(v){return v!=null;});
+  var rRpIPs = rosteredPitchers.filter(function(r){
+    var pos = (r.scorer||{}).posShortNames||'';
+    return pos.split(',').map(function(x){return x.trim();}).indexOf('RP') !== -1;
+  }).map(function(r){ return getVal(r.cells||[],'IP',pitIdx); }).filter(function(v){return v!=null;});
+  var lgSpIP = mean(rSpIPs) || 1;
+  var lgRpIP = mean(rRpIPs) || 1;
 
   // ── Build hitter dataset ─────────────────────────────────────────────────
   var allHitters = S.hitRows.map(function(row) {
@@ -7580,8 +7600,9 @@ window.recalculateFWAR = function() {
     var rawZ = Object.keys(FWAR.pitWeights).reduce(function(s, cat) {
       return s + (FWAR.pitWeights[cat] * (p.z[cat] || 0));
     }, 0);
-    // PT weight: scale by IP relative to league avg rostered IP, capped at 1.0
-    var ptWeight = lgIP > 0 ? Math.min(1.0, p.raw.IP / lgIP) : 1.0;
+    // PT weight: scale by IP relative to league avg IP for same role (SP vs RP), capped at 1.0
+    var lgIPRole = p.isSP ? lgSpIP : lgRpIP;
+    var ptWeight = lgIPRole > 0 ? Math.min(1.0, p.raw.IP / lgIPRole) : 1.0;
     p.ptWeight = ptWeight;
     p.totalZ = rawZ * ptWeight;
   });
