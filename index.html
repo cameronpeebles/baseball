@@ -6644,6 +6644,108 @@ function buildCorrelations(el) {
   }
   html += '</div></div>';
 
+  // ── Section 5: H2H Record (W%) vs Roto Points ───────────────────────────
+  html += '<div class="card" style="margin-bottom:20px">';
+  html += '<div class="card-header"><span class="card-title">H2H win% vs standings points</span>';
+  html += '<span style="font-size:12px;color:var(--muted)">Do teams that win more matchups earn more roto points?</span></div>';
+  html += '<div class="card-body" style="padding:16px 20px">';
+
+  // Build H2H W-L-T from _joeByTeamWeek actual results
+  var joeWeekData = window._joeByTeamWeek || [];
+  var teamH2H = {};
+  joeWeekData.forEach(function(r) {
+    if (r.actual == null || r.opponent == null) return;
+    if (!teamH2H[r.team]) teamH2H[r.team] = {W:0,L:0,T:0};
+    if (r.actual > 0.5)      teamH2H[r.team].W++;
+    else if (r.actual < 0.5) teamH2H[r.team].L++;
+    else                     teamH2H[r.team].T++;
+  });
+
+  var h2hPairs = dataset.map(function(d) {
+    var rec = teamH2H[d.name];
+    if (!rec) return null;
+    var total = rec.W + rec.L + rec.T;
+    if (!total) return null;
+    var winPct = (rec.W + rec.T * 0.5) / total;
+    return { name: d.short, fullName: d.name, winPct: winPct, pts: d.pts, color: d.color,
+             record: rec.W + '-' + rec.L + (rec.T ? '-' + rec.T : '') };
+  }).filter(Boolean);
+
+  if (h2hPairs.length >= 3) {
+    var h2hR = pearson(h2hPairs.map(function(p){ return [p.winPct, p.pts]; }));
+    var W5=500, H5=280, P5=44;
+    var wVals = h2hPairs.map(function(p){return p.winPct;});
+    var wMin=Math.min.apply(null,wVals), wMax=Math.max.apply(null,wVals);
+    var margin5=(wMax-wMin)*0.08||0.05; wMin-=margin5; wMax+=margin5;
+    var p5Vals = h2hPairs.map(function(p){return p.pts;});
+    var p5Min=Math.min.apply(null,p5Vals)*0.97, p5Max=Math.max.apply(null,p5Vals)*1.03;
+    var wRange=wMax-wMin||1, pRange5=p5Max-p5Min||1;
+
+    html += '<div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;flex-wrap:wrap">';
+    html += '<div style="font-size:13px">H2H win% vs Points correlation: <strong style="color:' + corrColor(h2hR) + '">r = ' + (h2hR>=0?'+':'') + h2hR.toFixed(2) + '</strong></div>';
+    html += '<div style="font-size:12px;color:var(--muted)">' + corrLabel(h2hR) + '</div>';
+    html += '</div>';
+
+    html += '<svg viewBox="0 0 ' + W5 + ' ' + H5 + '" style="width:100%;max-width:600px;height:auto;display:block">';
+    for (var gi5=0;gi5<=4;gi5++) {
+      var gy5=P5+(H5-P5*2)*(gi5/4);
+      html += '<line x1="' + P5 + '" y1="' + gy5 + '" x2="' + (W5-8) + '" y2="' + gy5 + '" stroke="var(--border)" stroke-width="0.5"/>';
+      html += '<text x="' + (P5-4) + '" y="' + (gy5+4) + '" text-anchor="end" font-size="9" fill="var(--muted)">' + Math.round(p5Max-(pRange5*(gi5/4))) + '</text>';
+      var xLbl5=Math.round((wMin+wRange*(gi5/4))*100)+'%';
+      html += '<text x="' + (P5+((W5-P5-8)*(gi5/4))) + '" y="' + (H5-P5+14) + '" text-anchor="middle" font-size="9" fill="var(--muted)">' + xLbl5 + '</text>';
+    }
+    // Trend line
+    var n5=h2hPairs.length,sx5=0,sy5=0,sxy5=0,sx25=0;
+    h2hPairs.forEach(function(p){sx5+=p.winPct;sy5+=p.pts;sxy5+=p.winPct*p.pts;sx25+=p.winPct*p.winPct;});
+    var denom5=n5*sx25-sx5*sx5;
+    if (denom5!==0) {
+      var slope5=(n5*sxy5-sx5*sy5)/denom5, int5=(sy5-slope5*sx5)/n5;
+      var tpx5a=P5, tpy5a=H5-P5-(slope5*wMin+int5-p5Min)/pRange5*(H5-P5*2);
+      var tpx5b=P5+(W5-P5-8), tpy5b=H5-P5-(slope5*wMax+int5-p5Min)/pRange5*(H5-P5*2);
+      html += '<line x1="'+tpx5a+'" y1="'+tpy5a+'" x2="'+tpx5b+'" y2="'+tpy5b+'" stroke="'+corrColor(h2hR)+'" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>';
+    }
+    // Dots
+    h2hPairs.forEach(function(p) {
+      var cx5=P5+(p.winPct-wMin)/wRange*(W5-P5-8);
+      var cy5=H5-P5-(p.pts-p5Min)/pRange5*(H5-P5*2);
+      html += '<circle cx="'+cx5+'" cy="'+cy5+'" r="5" fill="'+p.color+'" opacity="0.85">';
+      html += '<title>'+p.fullName+': '+p.record+' ('+Math.round(p.winPct*100)+'%) · '+p.pts+' pts</title>';
+      html += '</circle>';
+      html += '<text x="'+(cx5+7)+'" y="'+(cy5+4)+'" font-size="8" fill="var(--muted)" opacity="0.9">'+p.name.substring(0,6)+'</text>';
+    });
+    html += '<text x="'+(W5/2)+'" y="'+(H5-4)+'" text-anchor="middle" font-size="10" fill="var(--muted)">H2H win% (W-L-T record)</text>';
+    html += '<text x="12" y="'+(H5/2)+'" text-anchor="middle" font-size="10" fill="var(--muted)" transform="rotate(-90,12,'+(H5/2)+')">Fantasy points</text>';
+    html += '</svg>';
+
+    // Summary table
+    var h2hSorted = h2hPairs.slice().sort(function(a,b){return b.winPct-a.winPct;});
+    var ptsSorted = h2hPairs.slice().sort(function(a,b){return b.pts-a.pts;});
+    html += '<div style="margin-top:14px;overflow-x:auto"><table style="width:100%;font-size:12px;border-collapse:collapse">';
+    html += '<thead><tr style="border-bottom:2px solid var(--border)">';
+    ['Team','Record','Win%','Roto Pts','Pts Rank vs H2H Rank'].forEach(function(h){
+      html += '<th class="' + (h==='Team'?'left':'') + '" style="padding:6px 10px">'+h+'</th>';
+    });
+    html += '</tr></thead><tbody>';
+    h2hSorted.forEach(function(p,i) {
+      var ptsRank = ptsSorted.findIndex(function(x){return x.name===p.name;})+1;
+      var diff = (i+1)-ptsRank;
+      var diffStr = diff===0 ? '=' : diff>0 ? '▼'+diff : '▲'+Math.abs(diff);
+      var diffCol = diff===0 ? 'var(--muted)' : diff>0 ? '#c0392b' : '#1e6b3a';
+      html += '<tr style="border-bottom:1px solid var(--border)">';
+      html += '<td class="left" style="padding:5px 10px"><div class="team-cell">'+joeTeamLogo(p.fullName)+'<span>'+p.fullName+'</span></div></td>';
+      html += '<td style="padding:5px 10px;text-align:center">'+p.record+'</td>';
+      html += '<td style="padding:5px 10px;text-align:center;font-weight:600">'+Math.round(p.winPct*100)+'%</td>';
+      html += '<td style="padding:5px 10px;text-align:center">'+p.pts+'</td>';
+      html += '<td style="padding:5px 10px;text-align:center"><span style="color:'+diffCol+';font-weight:600">'+diffStr+'</span></td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    html += '<div style="margin-top:8px;font-size:11px;color:var(--muted)">▲ = roto points rank higher than H2H rank (good category contributor, fewer wins). ▼ = H2H record better than roto points rank.</div>';
+  } else {
+    html += '<div style="color:var(--muted);font-size:13px">Not enough schedule data yet — visit the JOE Factor page first to load H2H results.</div>';
+  }
+  html += '</div></div>';
+
   el.innerHTML = html;
 }
 
