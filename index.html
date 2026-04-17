@@ -253,6 +253,7 @@ td.neg { color: #c0392b; font-weight: 500; }
   <button onclick="showPage('models',this)">Models</button>
   <button onclick="showPage('rosters',this)">Rosters</button>
   <button onclick="showPage('trade',this)">Player Trade &amp; Market</button>
+  <button onclick="showPage('sgp',this)">SGP</button>
   <button onclick="showPage('targets',this)">Trade Waiver Wire Targets</button>
   <button onclick="showPage('guide',this)">Site Guide</button>
 </nav>
@@ -579,6 +580,11 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div class="page-title">League Leaders</div>
     <div class="page-subtitle">Top players and teams across every scoring category.</div>
     <div id="leaders-body"><div class="loading">Loading...</div></div>
+  </div>
+  <div class="page" id="page-sgp">
+    <div class="page-title">SGP — Roster Impact</div>
+    <div class="page-subtitle">How would adding a player change your team's standings position in each category?</div>
+    <div id="sgp-ros-body"><div class="loading">Loading...</div></div>
   </div>
   <div class="page" id="page-targets">
     <div class="page-title">Trade Waiver Wire Targets</div>
@@ -1378,9 +1384,10 @@ function showPage(name, btn) {
   if (name === 'historic') renderHistoricPage();
   if (name === 'leaders') renderLeadersPage();
   if (name === 'targets') renderTargetsPage();
+  if (name === 'sgp') renderSGPRosPage();
   if (name === 'guide') {} // static content, no render needed
   // Expand main to full width for wide-table pages
-  document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'models' || name === 'rosters' || name === 'historic' || name === 'targets') ? 'none' : '';
+  document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'models' || name === 'rosters' || name === 'historic' || name === 'targets' || name === 'sgp') ? 'none' : '';
   if (name === 'trade' && (TA.activeTab === 'sgp-hit' || TA.activeTab === 'sgp-pit')) {
     document.querySelector('main').style.maxWidth = 'none';
   }
@@ -6666,12 +6673,10 @@ function buildCorrelations(el) {
   stTables.forEach(function(t) {
     if (winPctColIdx != null) return;
     var idx = buildStIdx(t);
-    console.log('[stTable] cap:', t.caption, '| keys:', Object.keys(idx).join(' | '));
     ['WIN_PCT','WIN%','W%','WPCT','PCT','WINPCT'].forEach(function(k) {
       if (winPctColIdx == null && idx[k] != null) { winPctColIdx = idx[k]; winPctTable = t; }
     });
   });
-  console.log('[corr] winPctColIdx:', winPctColIdx);
 
   var teamWinPct = {};
   if (winPctTable && winPctColIdx != null) {
@@ -6683,7 +6688,6 @@ function buildCorrelations(el) {
       if (!isNaN(v)) teamWinPct[id] = v > 1 ? v / 100 : v;
     });
   }
-  console.log('[corr] teamWinPct sample:', JSON.stringify(Object.values(teamWinPct).slice(0,3)));
 
 
   var h2hPairs = dataset.map(function(d) {
@@ -9598,6 +9602,300 @@ window.showTargetsTab = function(tab, btn) {
   document.getElementById('targets-tab-' + tab).classList.add('active');
   if (tab === 'pitchers') renderPitcherTargetsPage();
 };
+
+// ── SGP ROS Impact Page ──────────────────────────────────────────────────────
+var _sgpRosBuilt = false;
+function renderSGPRosPage() {
+  var el = document.getElementById('sgp-ros-body');
+  if (!el) return;
+  if (_sgpRosBuilt) return;
+
+  var fpHitData = null, fpPitData = null;
+  var loaded = 0;
+  function tryBuild() {
+    loaded++;
+    if (loaded < 2) return;
+    _sgpRosBuilt = true;
+    buildSGPRos(el, fpHitData || [], fpPitData || []);
+  }
+  loadJSON('fantasypros_hitters.json').then(function(d){ fpHitData = d; tryBuild(); }).catch(function(){ tryBuild(); });
+  loadJSON('fantasypros_pitchers.json').then(function(d){ fpPitData = d; tryBuild(); }).catch(function(){ tryBuild(); });
+}
+
+function buildSGPRos(el, fpHit, fpPit) {
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  function normN(n) {
+    return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+  }
+
+  var HIT_CATS = ['R','HR','RBI','SB','AVG'];
+  var PIT_CATS = ['K','W','SVH3','ERA','WHIP'];
+  var ALL_CATS = HIT_CATS.concat(PIT_CATS);
+  var LOW_CATS = ['ERA','WHIP'];
+
+  // ── Build FP lookups keyed by normalized name ────────────────────────────
+  var fpHitLookup = {}, fpPitLookup = {};
+  (fpHit || []).forEach(function(p){ var k=normN(p.name||p.name_key||''); if(k) fpHitLookup[k]=p; });
+  (fpPit || []).forEach(function(p){ var k=normN(p.name||p.name_key||''); if(k) fpPitLookup[k]=p; });
+
+  // ── Get current team stats from seasonData ───────────────────────────────
+  var tables = (S.seasonData && S.seasonData.data && S.seasonData.data.tableList) || [];
+  var statTable = null;
+  for (var i=0;i<tables.length;i++) {
+    var cap=(tables[i].caption||'').toLowerCase();
+    if (cap.indexOf('stat total')!==-1||cap.indexOf('season stat')!==-1) { statTable=tables[i]; break; }
+    if (!statTable&&cap!==''&&cap.indexOf('point')===-1&&(tables[i].rows||[]).length>0&&tables[i].tableType!=='SECTION_HEADING') statTable=tables[i];
+  }
+  if (!statTable) { el.innerHTML='<div class="error-msg">Season stat data not available.</div>'; return; }
+
+  function buildIdx(tbl) {
+    var idx={};
+    ((tbl.header&&tbl.header.cells)||[]).forEach(function(h,i){
+      if(h.key) idx[h.key.toUpperCase()]=i;
+      if(h.shortName) idx[h.shortName.toUpperCase()]=i;
+      if(h.name) idx[h.name.toUpperCase()]=i;
+    });
+    return idx;
+  }
+  var sIdx = buildIdx(statTable);
+
+  function gv(cells, key) {
+    var i=sIdx[key]; if(i==null) return null;
+    var v=parseFloat((cells[i]||{}).content); return isNaN(v)?null:v;
+  }
+
+  // teamId → {R,HR,RBI,SB,AVG,K,W,SVH3,ERA,WHIP, AB,IP}
+  var teamStats = {};
+  (statTable.rows||[]).forEach(function(row) {
+    var fc=row.fixedCells||[], cells=row.cells||[];
+    var id=(fc[1]&&fc[1].teamId)||''; if(!id) return;
+    var ab=gv(cells,'AB')||0, ip=gv(cells,'IP')||0;
+    var avg=gv(cells,'AVG'), era=gv(cells,'ERA'), whip=gv(cells,'WHIP');
+    teamStats[id]={
+      R:gv(cells,'R')||0, HR:gv(cells,'HR')||0, RBI:gv(cells,'RBI')||0,
+      SB:gv(cells,'SB')||0, AVG:avg, AB:ab,
+      K:gv(cells,'K')||0, W:gv(cells,'W')||0,
+      SVH3:gv(cells,'SVH3')||gv(cells,'SV')||0,
+      ERA:era, WHIP:whip, IP:ip
+    };
+  });
+
+  var teamIds = Object.keys(teamStats);
+  if (!teamIds.length) { el.innerHTML='<div class="error-msg">No team stat data found.</div>'; return; }
+
+  // ── Compute current category standings ranks ─────────────────────────────
+  // rank[cat][teamId] = 1-based rank (1=best)
+  function computeRanks(stats) {
+    var ranks = {};
+    ALL_CATS.forEach(function(cat) {
+      var vals = teamIds.map(function(id){ return {id:id, v:stats[id]?stats[id][cat]:null}; })
+                        .filter(function(x){return x.v!=null;});
+      var isLow = LOW_CATS.indexOf(cat)!==-1;
+      vals.sort(function(a,b){ return isLow ? a.v-b.v : b.v-a.v; });
+      ranks[cat]={};
+      vals.forEach(function(x,i){ ranks[cat][x.id]=i+1; });
+    });
+    return ranks;
+  }
+  var baseRanks = computeRanks(teamStats);
+
+  // ── Build team options ───────────────────────────────────────────────────
+  var teamOptions = teamIds.map(function(id){
+    return { id:id, name:(S.teamInfo[id]&&S.teamInfo[id].name)||id };
+  }).sort(function(a,b){ return a.name.localeCompare(b.name); });
+
+  // ── Build player pool from rostered + FP data ───────────────────────────
+  var POS_GROUPS = {
+    'C':['C'],'1B':['1B'],'2B':['2B'],'3B':['3B'],'SS':['SS'],'OF':['OF'],
+    'SP':['SP'],'RP':['RP']
+  };
+
+  // Collect all players with FP projections
+  var allPlayers = [];
+  S.hitRows.forEach(function(row) {
+    var sc=row.scorer||{}, ce=row.cells||[];
+    var name=sc.name||''; if(!name) return;
+    var fp=fpHitLookup[normN(name)]; if(!fp) return;
+    var pos=sc.posShortNames||'';
+    allPlayers.push({
+      name:name, pos:pos, mlb:sc.teamShortName||'', hs:sc.headshotUrl||'',
+      isHit:true, fp:fp,
+      ros:{ R:fp.R||0, HR:fp.HR||0, RBI:fp.RBI||0, SB:fp.SB||0,
+            AVG:fp.AVG, AB:fp.AB||0,
+            K:0, W:0, SVH3:0, ERA:null, WHIP:null, IP:0 }
+    });
+  });
+  S.pitRows.forEach(function(row) {
+    var sc=row.scorer||{}, ce=row.cells||[];
+    var name=sc.name||''; if(!name) return;
+    var fp=fpPitLookup[normN(name)]; if(!fp) return;
+    var pos=sc.posShortNames||'';
+    allPlayers.push({
+      name:name, pos:pos, mlb:sc.teamShortName||'', hs:sc.headshotUrl||'',
+      isHit:false, fp:fp,
+      ros:{ R:0, HR:0, RBI:0, SB:0, AVG:null, AB:0,
+            K:fp.K||0, W:fp.W||0, SVH3:fp.SV||0,
+            ERA:fp.ERA, WHIP:fp.WHIP, IP:fp.IP||0 }
+    });
+  });
+
+  // ── Simulate adding a player to a team ──────────────────────────────────
+  function simulate(teamId, player) {
+    // Clone team stats and add player ROS projections
+    var ts = teamStats[teamId];
+    if (!ts) return null;
+    var newStats = JSON.parse(JSON.stringify(teamStats));
+    var t = newStats[teamId];
+    var ros = player.ros;
+
+    if (player.isHit) {
+      t.R   += ros.R||0;
+      t.HR  += ros.HR||0;
+      t.RBI += ros.RBI||0;
+      t.SB  += ros.SB||0;
+      // Weighted AVG: (current hits + new hits) / (current AB + new AB)
+      if (ros.AVG != null && ros.AB) {
+        var curHits = (ts.AVG||0) * (ts.AB||0);
+        var newHits = ros.AVG * ros.AB;
+        var newAB   = (ts.AB||0) + ros.AB;
+        t.AVG = newAB > 0 ? (curHits + newHits) / newAB : ts.AVG;
+        t.AB  = newAB;
+      }
+    } else {
+      t.K    += ros.K||0;
+      t.W    += ros.W||0;
+      t.SVH3 += ros.SVH3||0;
+      // Weighted ERA/WHIP by IP
+      var curIP = ts.IP||0, rosIP = ros.IP||0;
+      var newIP = curIP + rosIP;
+      if (ros.ERA != null && rosIP > 0) {
+        var curER  = (ts.ERA||0) * curIP / 9;
+        var rosER  = ros.ERA * rosIP / 9;
+        t.ERA = newIP > 0 ? (curER + rosER) * 9 / newIP : ts.ERA;
+      }
+      if (ros.WHIP != null && rosIP > 0) {
+        var curWH  = (ts.WHIP||0) * curIP;
+        var rosWH  = ros.WHIP * rosIP;
+        t.WHIP = newIP > 0 ? (curWH + rosWH) / newIP : ts.WHIP;
+      }
+      t.IP = newIP;
+    }
+
+    return computeRanks(newStats);
+  }
+
+  // ── Render ───────────────────────────────────────────────────────────────
+  var selectedTeam = teamOptions[0].id;
+  var selectedPos  = 'C';
+
+  function getTeamShort(id) {
+    var t = S.teamInfo[id]; return (t&&(t.shortName||t.name))||id;
+  }
+
+  function render() {
+    var cats = (selectedPos==='SP'||selectedPos==='RP') ? PIT_CATS : HIT_CATS;
+
+    // Filter players by position
+    var filtered = allPlayers.filter(function(p) {
+      var parts = p.pos.split(',').map(function(x){return x.trim();});
+      return parts.indexOf(selectedPos) !== -1;
+    }).sort(function(a,b){ return a.name.localeCompare(b.name); });
+
+    var html = '';
+
+    // ── Controls ─────────────────────────────────────────────────────────
+    html += '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px">';
+
+    // Team selector
+    html += '<div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">Team</label>';
+    html += '<select id="sgp-team-sel" style="font-size:13px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text)">';
+    teamOptions.forEach(function(t) {
+      html += '<option value="'+t.id+'"'+(t.id===selectedTeam?' selected':'')+'>'+t.name+'</option>';
+    });
+    html += '</select></div>';
+
+    // Position selector
+    html += '<div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">Position</label>';
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap">';
+    Object.keys(POS_GROUPS).forEach(function(pos) {
+      var active = pos===selectedPos;
+      html += '<button onclick="window._sgpSetPos(\''+pos+'\')" style="padding:5px 12px;border-radius:6px;font-size:12px;font-weight:'+(active?'700':'400')+';border:1px solid '+(active?'var(--accent)':'var(--border)')+';background:'+(active?'var(--accent-light)':'var(--surface)')+';color:'+(active?'var(--accent)':'var(--text)')+';cursor:pointer">'+pos+'</button>';
+    });
+    html += '</div></div></div>';
+
+    // ── Players grid ─────────────────────────────────────────────────────
+    if (!filtered.length) {
+      html += '<div style="color:var(--muted);font-size:13px;padding:20px">No '+selectedPos+' players with ROS projections found.</div>';
+      el.innerHTML = html; return;
+    }
+
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px">';
+
+    filtered.forEach(function(player) {
+      var newRanks = simulate(selectedTeam, player);
+      if (!newRanks) return;
+
+      html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px">';
+
+      // Player header
+      html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">';
+      if (player.hs) html += '<img src="'+player.hs+'" style="width:36px;height:36px;border-radius:50%;object-fit:cover" onerror="this.style.display=\'none\'">';
+      html += '<div><div style="font-size:13px;font-weight:600">'+player.name+'</div>';
+      html += '<div style="font-size:11px;color:var(--muted)">'+player.mlb+' · '+player.pos+'</div></div></div>';
+
+      // Category bars
+      html += '<div style="display:flex;flex-direction:column;gap:6px">';
+      cats.forEach(function(cat) {
+        var before = baseRanks[cat] ? (baseRanks[cat][selectedTeam]||null) : null;
+        var after  = newRanks[cat]  ? (newRanks[cat][selectedTeam]||null)  : null;
+        var total  = teamIds.length;
+        if (before==null||after==null) return;
+
+        var delta = before - after; // positive = moved up (better)
+        var isLow = LOW_CATS.indexOf(cat)!==-1;
+        // For low cats, moving from rank 8 to rank 3 is good (delta=+5)
+        var improved = delta > 0;
+        var same     = delta === 0;
+        var barCol   = same ? 'var(--muted)' : improved ? '#1e6b3a' : '#c0392b';
+        var deltaStr = same ? '=' : (improved ? '▲'+delta : '▼'+Math.abs(delta));
+
+        // Bar width: position as % of total teams (inverted: rank 1 = 100%)
+        var beforeW = Math.round((1 - (before-1)/(total-1||1)) * 100);
+        var afterW  = Math.round((1 - (after-1)/(total-1||1))  * 100);
+
+        html += '<div>';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">';
+        html += '<span style="font-size:11px;font-weight:600;color:var(--text);width:40px">'+cat+'</span>';
+        html += '<div style="flex:1;display:flex;gap:6px;align-items:center">';
+        // Before bar
+        html += '<div style="flex:1;height:10px;background:var(--bg);border-radius:3px;overflow:hidden">';
+        html += '<div style="height:100%;width:'+beforeW+'%;background:var(--muted);opacity:0.4;border-radius:3px"></div></div>';
+        // Arrow + after bar
+        html += '<span style="font-size:9px;color:var(--muted)">→</span>';
+        html += '<div style="flex:1;height:10px;background:var(--bg);border-radius:3px;overflow:hidden">';
+        html += '<div style="height:100%;width:'+afterW+'%;background:'+barCol+';opacity:0.85;border-radius:3px"></div></div>';
+        html += '</div>';
+        // Rank labels + delta
+        html += '<div style="display:flex;align-items:center;gap:6px;margin-left:8px">';
+        html += '<span style="font-size:10px;color:var(--muted);white-space:nowrap">'+before+'→'+after+'</span>';
+        html += '<span style="font-size:11px;font-weight:700;color:'+barCol+';min-width:24px;text-align:right">'+deltaStr+'</span>';
+        html += '</div></div></div>';
+      });
+      html += '</div></div>';
+    });
+
+    html += '</div>';
+    el.innerHTML = html;
+
+    // Wire up controls
+    document.getElementById('sgp-team-sel').addEventListener('change', function() {
+      selectedTeam = this.value; render();
+    });
+    window._sgpSetPos = function(pos) { selectedPos = pos; render(); };
+  }
+
+  render();
+}
 
 function renderTargetsPage() {
   var el = document.getElementById('targets-body');
