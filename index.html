@@ -6655,7 +6655,7 @@ function buildCorrelations(el) {
   ['WIN_PCT','WIN%','W%','WPCT','PCT','WINPCT'].forEach(function(k) {
     if (winPctColIdx == null && ptIdx[k] != null) winPctColIdx = ptIdx[k];
   });
-  console.log('[corr] ptIdx keys:', Object.keys(ptIdx), '| winPctColIdx:', winPctColIdx);
+  console.log('[corr] ptIdx keys:', Object.keys(ptIdx).join(' | '), '| winPctColIdx:', winPctColIdx);
 
   var teamWinPct = {};
   if (ptTable && winPctColIdx != null) {
