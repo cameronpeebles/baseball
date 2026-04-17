@@ -6985,7 +6985,9 @@ window.showFWARProfile = function(name, type) {
   function buildFWARCatData() {
     if (!fw) return cats.map(function(c){ return {cat:c,v:0.5}; });
     var allFW2 = isHit ? FWAR.hitResults : FWAR.pitResults;
-    var pool2  = isHit ? allFW2 : allFW2.filter(function(p){ return pp2==='SP' ? p.isSP : p.isRP; });
+    var pool2  = isHit
+      ? allFW2.filter(function(p){ return p.ftId; })
+      : allFW2.filter(function(p){ return p.ftId && (pp2==='SP' ? p.isSP : p.isRP); });
     return cats.map(function(cat) {
       var myZ  = (fw.z && fw.z[cat] != null) ? fw.z[cat] : 0;
       var allZ = pool2.map(function(p){ return p.z && p.z[cat] != null ? p.z[cat] : 0; });
