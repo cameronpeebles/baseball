@@ -9712,11 +9712,15 @@ function buildSGPRos(el, fpHit, fpPit) {
 
   // Collect all players with FP projections
   var allPlayers = [];
+  console.log('[sgp] fpHitLookup size:', Object.keys(fpHitLookup).length, '| sample keys:', Object.keys(fpHitLookup).slice(0,5));
   S.hitRows.forEach(function(row) {
     var sc=row.scorer||{}, ce=row.cells||[];
     var name=sc.name||''; if(!name) return;
-    var fp=fpHitLookup[normN(name)]; if(!fp) return;
+    var key=normN(name);
+    var fp=fpHitLookup[key];
     var pos=sc.posShortNames||'';
+    if (pos.indexOf('C')!==-1) console.log('[sgp] C player:', name, '| key:', key, '| fp found:', !!fp);
+    if(!fp) return;
     allPlayers.push({
       name:name, pos:pos, mlb:sc.teamShortName||'', hs:sc.headshotUrl||'',
       isHit:true, fp:fp,
