@@ -4389,22 +4389,69 @@ function drawFARatings() {
     return h;
   }
 
+  function normNameFA(n) {
+    return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+  }
+  function getFAMetrics(p, isBat) {
+    var k = normNameFA(p.name||'');
+    var fwAll = isBat ? FWAR.hitResults : FWAR.pitResults;
+    var fw = fwAll ? fwAll.find(function(x){ return normNameFA(x.name||'')===k; }) : null;
+    var fwarVal = fw ? fw.fWAR : null;
+    var fwarPct = isBat ? (window._fwarPctLookupHit||window._fwarPctLookup||{})[k] : (window._fwarPctLookupPit||window._fwarPctLookup||{})[k];
+    var posRat = (window._posRatingLookup||{})[k];
+    var lgRat  = (window._lgRatingLookup ||{})[k];
+    if ((posRat==null||lgRat==null) && window._ratingPools && window._calcRating) {
+      var pools = window._ratingPools;
+      var pCats = isBat ? BAT_CATS : PIT_CATS;
+      var fps   = playerFinePosAll(p.pos||'');
+      var best  = null;
+      fps.forEach(function(fp){ var r=window._calcRating(p.stats||{},pCats,pools.finePools[fp]||[],p.pos||''); if(r!=null&&(best==null||r>best)) best=r; });
+      posRat = best;
+      var lgPool = isBat ? pools.lgHitPool : (primaryPos(p.pos||'')==='SP' ? pools.lgSpPool : pools.lgRpPool);
+      lgRat = window._calcRating(p.stats||{}, pCats, lgPool, p.pos||'');
+    }
+    return { fwarVal:fwarVal, fwarPct:fwarPct, posRat:posRat, lgRat:lgRat };
+  }
+  function fwarSortVal(p, isBat) {
+    var m = getFAMetrics(p, isBat);
+    return m.fwarVal != null ? m.fwarVal : -999;
+  }
+  function metricCols(m) {
+    function rFmt(v){ return v==null?'—':Math.round(v>1?v:v*100); }
+    function rCol(v){ if(v==null)return'var(--muted)'; var p=v>1?v:v*100; return p>=65?'#1e6b3a':p>=50?'#4a9a68':p>=35?'#b7791f':'#c0392b'; }
+    var fwCol = m.fwarVal==null?'var(--text)':m.fwarVal>=3?'#1e6b3a':m.fwarVal>=1?'#4a9a68':m.fwarVal>=-1?'var(--text)':'#c0392b';
+    var purpleCol = m.fwarPct==null?'var(--muted)':'#7f77dd';
+    var h='';
+    h += '<td><strong style="color:'+fwCol+'">'+(m.fwarVal!=null?(m.fwarVal>=0?'+':'')+m.fwarVal.toFixed(2):'—')+'</strong></td>';
+    h += '<td><strong style="color:'+purpleCol+'">'+(m.fwarPct!=null?Math.round(m.fwarPct):'—')+'</strong></td>';
+    h += '<td><strong style="color:'+rCol(m.posRat)+'">'+rFmt(m.posRat)+'</strong></td>';
+    h += '<td><strong style="color:'+rCol(m.lgRat)+'">'+rFmt(m.lgRat)+'</strong></td>';
+    return h;
+  }
+  var metricHeaders = ''
+    + '<th style="color:#1e6b3a">fWAR</th>'
+    + '<th style="color:#7f77dd">fWAR%</th>'
+    + '<th style="color:#5b8db8">Pos Rtg</th>'
+    + '<th style="color:#4a9a68">Lg Rtg</th>';
+
   function buildTable(allPlayers, label, cats, headers, decArr, type, posList) {
+    var isBat = type === 'hit';
     var players = posFilter(allPlayers, window['_faRatingsPos_'+type]||'ALL');
     if (!players.length) return '<div class="card" style="margin-bottom:24px"><div class="card-header"><span class="card-title">'+label+'</span></div><div style="padding:16px;color:var(--muted)">No players match this filter.</div></div>';
     var h = '<div class="card" style="margin-bottom:24px">';
     h += '<div class="card-header"><span class="card-title">'+label+'</span>';
-    h += '<span style="font-size:12px;color:var(--muted)">'+players.length+' players · rated vs rostered players</span></div>';
+    h += '<span style="font-size:12px;color:var(--muted)">'+players.length+' players · sorted by fWAR</span></div>';
     h += '<div style="padding:8px 16px 0">'+pills(posList, type)+'</div>';
     h += '<div class="table-wrap"><table style="width:100%;font-size:13px"><thead><tr>';
     h += '<th class="left" style="min-width:180px">PLAYER</th>';
     h += '<th class="left">POS</th>';
     h += '<th class="left">MLB</th>';
     cats.forEach(function(c,i){ h += '<th>'+headers[i]+'</th>'; });
-    h += '<th style="color:var(--accent)">RATING</th>';
+    h += metricHeaders;
     h += '</tr></thead><tbody>';
     players.forEach(function(p, i) {
       var bg = i%2===1 ? 'background:var(--bg)' : '';
+      var m = getFAMetrics(p, isBat);
       h += '<tr style="border-bottom:1px solid var(--border);'+bg+'">';
       h += '<td class="left"><div class="team-cell">';
       if (p.hs) h += '<img class="player-hs" src="'+p.hs+'" alt="" onerror="this.style.display=\'none\'">';
@@ -4412,15 +4459,15 @@ function drawFARatings() {
       h += '<td class="left">'+posBadge(p.pos||'—')+'</td>';
       h += '<td class="left" style="color:var(--muted);font-size:12px">'+(p.mlb||'—')+'</td>';
       cats.forEach(function(c,i){ h += '<td>'+fmt(p.stats[c], decArr[i])+'</td>'; });
-      h += '<td>'+badge(p.overallRating)+'</td>';
+      h += metricCols(m);
       h += '</tr>';
     });
     h += '</tbody></table></div></div>';
     return h;
   }
 
-  var hitters  = fas.filter(function(p){ return p.type==='bat'; }).sort(function(a,b){ return (b.overallRating||0)-(a.overallRating||0); });
-  var pitchers = fas.filter(function(p){ return p.type==='pit'; }).sort(function(a,b){ return (b.overallRating||0)-(a.overallRating||0); });
+  var hitters  = fas.filter(function(p){ return p.type==='bat'; }).sort(function(a,b){ return fwarSortVal(b,true)-fwarSortVal(a,true); });
+  var pitchers = fas.filter(function(p){ return p.type==='pit'; }).sort(function(a,b){ return fwarSortVal(b,false)-fwarSortVal(a,false); });
 
   el.innerHTML = buildTable(hitters,  'Free Agent Hitters',  ['R','HR','RBI','SB','AVG'], ['R','HR','RBI','SB','AVG'], [0,0,0,0,3], 'hit', hitPos)
                + buildTable(pitchers, 'Free Agent Pitchers', ['K','W','SVH3','ERA','WHIP'],['K','W','SVH3','ERA','WHIP'],[0,0,0,2,2], 'pit', pitPos);
@@ -4787,9 +4834,16 @@ window.showFAFixer = function(teamId) {
   // FA recommendations per weak group
   sortedGroups.slice(0, 2).forEach(function(g) {
     var gr = groupRatings[g];
+    var isBat2 = (g !== 'SP' && g !== 'RP');
     var topFAs = (TA.faPlayers || [])
       .filter(function(p) { return p.bestGroup === g; })
-      .sort(function(a, b) { return b.overallRating - a.overallRating; })
+      .map(function(p) {
+        var k=(p.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+        var fwAll2=isBat2?FWAR.hitResults:FWAR.pitResults;
+        var fw2=fwAll2?fwAll2.find(function(x){return ((x.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim())===k;}):null;
+        p._sortFwar=fw2?fw2.fWAR:-999; return p;
+      })
+      .sort(function(a, b) { return b._sortFwar - a._sortFwar; })
       .slice(0, 8);
 
     if (!topFAs.length) return;
@@ -4800,14 +4854,13 @@ window.showFAFixer = function(teamId) {
     html += '<thead><tr><th class="left">Player</th><th class="left">Pos</th><th class="left">MLB</th>';
     var cats = g === 'SP' || g === 'RP' ? PIT_CATS : BAT_CATS;
     cats.forEach(function(c) { html += '<th>' + c + '</th>'; });
-    html += '<th style="color:#c8a96e">fWAR</th>';
-    html += '<th style="color:#c8a96e">fWAR%</th>';
+    html += '<th style="color:#1e6b3a">fWAR</th>';
+    html += '<th style="color:#7f77dd">fWAR%</th>';
     html += '<th style="color:#5b8db8">Pos Rtg</th>';
-    html += '<th style="color:#2d7a5a">Lg Rtg</th>';
-    html += '<th>Rating</th></tr></thead><tbody>';
+    html += '<th style="color:#4a9a68">Lg Rtg</th>';
+    html += '</tr></thead><tbody>';
 
     topFAs.forEach(function(p) {
-      var r = p.overallRating;
       var nameLow = (p.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
       var isBat   = (g !== 'SP' && g !== 'RP');
       var fwAll   = isBat ? FWAR.hitResults : FWAR.pitResults;
@@ -4847,10 +4900,9 @@ window.showFAFixer = function(teamId) {
       });
       var fwarCol = fwarVal==null?'var(--text)':fwarVal>=3?'#1e6b3a':fwarVal>=1?'#4a9a68':fwarVal>=-1?'var(--text)':'#c0392b';
       html += '<td><strong style="color:' + fwarCol + '">' + (fwarVal!=null?(fwarVal>=0?'+':'')+fwarVal.toFixed(2):'—') + '</strong></td>';
-      html += '<td><strong style="color:' + rCol(fwarPct!=null?fwarPct/100:null) + '">' + (fwarPct!=null?Math.round(fwarPct):'—') + '</strong></td>';
+      html += '<td><strong style="color:'+(fwarPct!=null?'#7f77dd':'var(--muted)')+'">'+(fwarPct!=null?Math.round(fwarPct):'—')+'</strong></td>';
       html += '<td><strong style="color:' + rCol(posRat) + '">' + rFmt(posRat) + '</strong></td>';
       html += '<td><strong style="color:' + rCol(lgRat) + '">' + rFmt(lgRat) + '</strong></td>';
-      html += '<td><strong style="color:' + ratingColor(r) + '">' + Math.round(r*100) + '</strong></td>';
       html += '</tr>';
     });
 
@@ -5938,7 +5990,6 @@ function assembleDashboard(teamId, el) {
     html += '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No free agents found for your weak positions</div>';
   } else {
     waiverTargets.forEach(function(p) {
-      var r = p.overallRating;
       var cats = p.type==='bat' ? BAT_CATS : PIT_CATS;
       var statStr = cats.slice(0,4).map(function(c){
         var v=p.stats[c]; if(v==null)return c+':—';
