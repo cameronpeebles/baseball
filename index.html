@@ -10528,6 +10528,11 @@ function drawTargetsTable() {
 
   html += '</tbody></table></div></div>';
   el.innerHTML = html;
+  // Restore search focus after DOM rebuild
+  if (TARGETS_STATE.playerSearch) {
+    var si = document.getElementById('targets-player-search');
+    if (si) { var len = si.value.length; si.focus(); si.setSelectionRange(len, len); }
+  }
   // Draw chart after DOM is set
   if (window._targetPlotData) redrawQuadrantChart();
 }
