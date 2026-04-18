@@ -582,9 +582,70 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div id="leaders-body"><div class="loading">Loading...</div></div>
   </div>
   <div class="page" id="page-sgp">
-    <div class="page-title">SGP — Roster Impact</div>
-    <div class="page-subtitle">How would adding a player change your team's standings position in each category?</div>
-    <div id="sgp-ros-body"><div class="loading">Loading...</div></div>
+    <div class="page-title">SGP</div>
+    <div class="page-subtitle">Roster impact simulator and standings gain points analysis.</div>
+    <div class="trade-tabs" id="sgp-tabs">
+      <button class="trade-tab active" onclick="showSGPTab('ros',this)">Roster Impact</button>
+      <button class="trade-tab" onclick="showSGPTab('hit',this)">Hitter SGP</button>
+      <button class="trade-tab" onclick="showSGPTab('pit',this)">Pitcher SGP</button>
+    </div>
+    <div class="trade-tab-content active" id="sgp-tab-ros">
+      <div id="sgp-ros-body"><div class="loading">Loading...</div></div>
+    </div>
+    <div class="trade-tab-content" id="sgp-tab-hit">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap">
+        <span style="font-size:13px;font-weight:500;color:var(--muted)">Your team:</span>
+        <select class="trade-team-select" style="max-width:260px" id="sgp-team-select" onchange="renderSGPTabs(this.value)">
+          <option value="">— Select your team —</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">
+          Min AB: <input type="number" id="sgp-min-ab" value="0" min="0" max="600" step="10" style="width:64px;border:1px solid var(--border);border-radius:var(--radius);padding:4px 8px;font-size:12px;background:var(--surface);color:var(--text)" oninput="drawSGPTable('hit')">
+        </label>
+        <span style="font-size:11px;color:var(--muted)">ΔSGP vs your best starter at that position</span>
+      </div>
+      <div class="card"><div class="card-header"><span class="card-title">ALL HITTERS</span>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="pill-group" id="sgp-hit-view-pills">
+            <button class="pill active" onclick="setSGPView('hit','position',this)">📍 By Position</button>
+            <button class="pill" onclick="setSGPView('hit','table',this)">📋 Full Table</button>
+          </div>
+          <div class="pill-group" id="sgp-hit-pills">
+            <button class="pill active" onclick="setSGPFilter('hit','ALL',this)">All</button>
+            <button class="pill" onclick="setSGPFilter('hit','FA',this)">Free Agents</button>
+            <button class="pill" onclick="setSGPFilter('hit','OWNED',this)">Rostered</button>
+          </div>
+        </div>
+      </div>
+      <div id="sgp-hit-table"><div class="loading">Select your team above</div></div>
+      </div>
+    </div>
+    <div class="trade-tab-content" id="sgp-tab-pit">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap">
+        <span style="font-size:13px;font-weight:500;color:var(--muted)">Your team:</span>
+        <select class="trade-team-select" style="max-width:260px" id="sgp-team-select-pit" onchange="renderSGPTabs(this.value)">
+          <option value="">— Select your team —</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">
+          Min IP: <input type="number" id="sgp-min-ip" value="0" min="0" max="300" step="5" style="width:64px;border:1px solid var(--border);border-radius:var(--radius);padding:4px 8px;font-size:12px;background:var(--surface);color:var(--text)" oninput="drawSGPTable('pit')">
+        </label>
+        <span style="font-size:11px;color:var(--muted)">ΔSGP vs your best starter at that position</span>
+      </div>
+      <div class="card"><div class="card-header"><span class="card-title">ALL PITCHERS</span>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="pill-group" id="sgp-pit-view-pills">
+            <button class="pill active" onclick="setSGPView('pit','position',this)">📍 By Position</button>
+            <button class="pill" onclick="setSGPView('pit','table',this)">📋 Full Table</button>
+          </div>
+          <div class="pill-group" id="sgp-pit-pills">
+            <button class="pill active" onclick="setSGPFilter('pit','ALL',this)">All</button>
+            <button class="pill" onclick="setSGPFilter('pit','FA',this)">Free Agents</button>
+            <button class="pill" onclick="setSGPFilter('pit','OWNED',this)">Rostered</button>
+          </div>
+        </div>
+      </div>
+      <div id="sgp-pit-table"><div class="loading">Select your team above</div></div>
+      </div>
+    </div>
   </div>
   <div class="page" id="page-targets">
     <div class="page-title">Trade Waiver Wire Targets</div>
@@ -1449,6 +1510,29 @@ function showPage(name, btn) {
     document.querySelector('main').style.maxWidth = 'none';
   }
 }
+
+window.showSGPTab = function(tab, btn) {
+  document.querySelectorAll('#sgp-tabs .trade-tab').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('#page-sgp .trade-tab-content').forEach(function(c){c.classList.remove('active');});
+  btn.classList.add('active');
+  document.getElementById('sgp-tab-' + tab).classList.add('active');
+  if (tab === 'hit' || tab === 'pit') {
+    // Populate team selects if needed
+    var selId = tab === 'hit' ? 'sgp-team-select' : 'sgp-team-select-pit';
+    var sel = document.getElementById(selId);
+    if (sel && sel.options.length <= 1) {
+      Object.keys(S.teamInfo).forEach(function(id) {
+        var t = S.teamInfo[id];
+        var opt = document.createElement('option');
+        opt.value = id; opt.textContent = t.name || t.shortName || id;
+        sel.appendChild(opt);
+      });
+    }
+    // Sync team selection
+    var val = SGP_STATE ? SGP_STATE.teamId || '' : '';
+    if (sel && val) sel.value = val;
+  }
+};
 
 window.showGuideTab = function(tab, btn) {
   document.querySelectorAll('#guide-tabs .trade-tab').forEach(function(b){b.classList.remove('active');});
@@ -4165,8 +4249,6 @@ function buildTradeAnalyzer() {
   html += '<button class="trade-tab" onclick="showTradeTab(\'suggestions\', this)">Trade Analyzer</button>';
   html += '<button class="trade-tab" onclick="showTradeTab(\'fa\', this)">Free Agent Recommendations</button>';
   html += '<button class="trade-tab" onclick="showTradeTab(\'fa-ratings\', this)">Free Agents</button>';
-  html += '<button class="trade-tab" onclick="showTradeTab(\'sgp-hit\', this)">Hitter SGP</button>';
-  html += '<button class="trade-tab" onclick="showTradeTab(\'sgp-pit\', this)">Pitcher SGP</button>';
   html += '</div>';
 
   // ── Trade Suggestions tab (first/default) ────────────────────────────────
@@ -4474,33 +4556,6 @@ function drawFARatings() {
 
   // Positional strength — all teams heatmap (same as main trade page card)
   var posHtml = '';
-  if (window.TA && TA.players && TA.players.length) {
-    var groups = ['Infield','Outfield','SP','RP'];
-    var lgAvg = {};
-    groups.forEach(function(g){ var gp=TA.players.filter(function(p){return p.bestGroup===g;}); lgAvg[g]=gp.length?gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length:0.5; });
-    var allTeamIds = Object.keys(S.teamInfo);
-    var teamData = allTeamIds.map(function(id){
-      var ti=S.teamInfo[id]; var name=ti.shortName||ti.name||id;
-      var gd={};
-      groups.forEach(function(g){ var gp=TA.players.filter(function(p){return p.ftId===id&&p.bestGroup===g;}); gd[g]={avg:gp.length?gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length:null,count:gp.length}; });
-      var vals=groups.map(function(g){return gd[g].avg;}).filter(function(v){return v!=null;});
-      return{id:id,name:name,gd:gd,ovr:vals.length?vals.reduce(function(s,v){return s+v;},0)/vals.length:0};
-    }).sort(function(a,b){return b.ovr-a.ovr;});
-    function hmc(v){ if(v==null)return{bg:'var(--bg)',fg:'var(--muted)',t:'—'}; var p=Math.round(v*100); return v>=0.65?{bg:'#1e6b3a',fg:'#fff',t:p}:v>=0.52?{bg:'#4a9a68',fg:'#fff',t:p}:v>=0.42?{bg:'#a8d5b5',fg:'#1a3d26',t:p}:v>=0.30?{bg:'#f5c4b3',fg:'#6b2a1a',t:p}:{bg:'#c0392b',fg:'#fff',t:p}; }
-    posHtml += '<div class="card" style="margin-bottom:20px"><div class="card-header"><span class="card-title">Positional strength — all teams</span><span style="font-size:12px;color:var(--muted)">Percentile vs all rostered players.</span></div>';
-    posHtml += '<div style="overflow-x:auto;padding:2px 0"><table style="border-collapse:separate;border-spacing:2px;width:100%;font-size:12px"><thead><tr>';
-    posHtml += '<th style="text-align:left;padding:5px 8px;color:var(--muted);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;min-width:130px">Team</th>';
-    groups.forEach(function(g){ posHtml += '<th style="padding:5px 8px;color:var(--muted);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap">'+g+'</th>'; });
-    posHtml += '<th style="padding:5px 8px;color:var(--muted);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.04em">OVR</th>';
-    posHtml += '</tr></thead><tbody>';
-    teamData.forEach(function(t){
-      posHtml += '<tr><td style="padding:5px 8px;font-size:12px;color:var(--text)">'+t.name+'</td>';
-      groups.forEach(function(g){ var c=hmc(t.gd[g].avg); posHtml += '<td style="padding:5px 10px;border-radius:4px;text-align:center;font-weight:500;font-size:12px;background:'+c.bg+';color:'+c.fg+';white-space:nowrap">'+c.t+'</td>'; });
-      var oc=hmc(t.ovr); posHtml += '<td style="padding:5px 10px;border-radius:4px;text-align:center;font-weight:600;font-size:12px;background:'+oc.bg+';color:'+oc.fg+'">'+oc.t+'</td>';
-      posHtml += '</tr>';
-    });
-    posHtml += '</tbody></table></div></div>';
-  }
 
   el.innerHTML = posHtml
                + buildTable(hitters,  'Free Agent Hitters',  ['R','HR','RBI','SB','AVG'], ['R','HR','RBI','SB','AVG'], [0,0,0,0,3], 'hit', hitPos)
