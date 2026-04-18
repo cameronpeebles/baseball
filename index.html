@@ -531,6 +531,13 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div class="page-title">Z-Scores</div>
     <div class="page-subtitle">Standardized performance across batting and pitching. Positive = above league average, negative = below.</div>
     <div class="card">
+      <div class="card-header"><span class="card-title">Total Z-Scores — Batting vs Pitching</span></div>
+      <div class="card-body">
+        <p class="zscore-note">X = total batting Z, Y = total pitching Z, bubble size = combined total. Top right = best overall.</p>
+        <div class="chart-wrap-lg"><canvas id="chart-scatter"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
       <div class="card-header"><span class="card-title">Batting Z-Scores by Team</span></div>
       <div class="card-body">
         <p class="zscore-note">Categories: R, HR, RBI, SB, AVG — higher points always better</p>
@@ -542,13 +549,6 @@ td.neg { color: #c0392b; font-weight: 500; }
       <div class="card-body">
         <p class="zscore-note">Categories: K, W, SVH3, ERA, WHIP — all shown as points where higher = better</p>
         <div class="chart-wrap"><canvas id="chart-pit-grouped"></canvas></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header"><span class="card-title">Total Z-Scores — Batting vs Pitching</span></div>
-      <div class="card-body">
-        <p class="zscore-note">X = total batting Z, Y = total pitching Z, bubble size = combined total. Top right = best overall.</p>
-        <div class="chart-wrap-lg"><canvas id="chart-scatter"></canvas></div>
       </div>
     </div>
     <div class="two-col">
@@ -2662,8 +2662,8 @@ function renderZScores() {
   drawZSummaryTable('z-pit-table', PIT_STATS, 'pitZ', 'totalPitZ');
 }
 
-var TEAM_COLORS = ['#2d5a3d','#c8a96e','#3a7a52','#c0392b','#4a9a68','#8e44ad','#2980b9','#e67e22','#1abc9c','#e74c3c'];
-var CAT_COLORS  = ['#2d5a3d','#3a7a52','#c8a96e','#c0392b','#2980b9'];
+var TEAM_COLORS = ['#a01040','#d04030','#e06030','#e88030','#f0a850','#e8d870','#c8dc70','#90c880','#50b090','#4080b8'];
+var CAT_COLORS  = ['#d04030','#e88030','#e8d870','#90c880','#4080b8'];
 
 function drawGroupedBar(canvasId, stats, zKey, yLabel) {
   var data = S.zData;
