@@ -452,42 +452,61 @@ td.neg { color: #c0392b; font-weight: 500; }
   <div class="page" id="page-models">
     <div class="page-title">Models</div>
     <div class="page-subtitle">fWAR model configuration — adjust replacement levels, category weights, and recalculate.</div>
-    <div class="two-col" style="margin-top:16px">
-      <div class="card">
-        <div class="card-header"><span class="card-title">Replacement rank by position</span></div>
-        <div class="card-body" style="padding:16px 20px">
-          <p style="font-size:12px;color:var(--muted);margin-bottom:14px">The Nth-ranked player at each position defines replacement level. Lower = harder to find, raises the bar.</p>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px" id="fwar-rep-inputs">
-            <!-- filled by JS -->
+
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) minmax(0,1.4fr);gap:12px;margin-top:16px;align-items:start">
+
+      <!-- Left column: Model Inputs + fWAR Calculation -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="card">
+          <div class="card-header"><span class="card-title" style="font-size:12px">Model inputs</span></div>
+          <div class="card-body" style="padding:12px 16px">
+            <div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:8px">Positional scarcity</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              <button id="fwar-preset-pitcher" class="pill" style="font-size:11px;padding:5px 10px" onclick="applyFWARPreset('pitcher')">⚾ Pitcher Heavy</button>
+              <button id="fwar-preset-hybrid"  class="pill" style="font-size:11px;padding:5px 10px" onclick="applyFWARPreset('hybrid')">⚖️ Hybrid</button>
+              <button id="fwar-preset-hitter"  class="pill" style="font-size:11px;padding:5px 10px" onclick="applyFWARPreset('hitter')">🏏 Hitter Heavy</button>
+              <button id="fwar-preset-optimal" class="pill" style="font-size:11px;padding:5px 10px" onclick="applyFWARPreset('optimal')">🎯 Optimal</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title" style="font-size:12px">fWAR calculation</span></div>
+          <div class="card-body" style="padding:12px 16px;display:flex;flex-direction:column;gap:7px">
+            <button class="pill active" style="padding:8px 14px;font-size:12px;text-align:center" onclick="recalculateFWAR()">Recalculate fWAR</button>
+            <button class="pill" style="padding:8px 14px;font-size:12px;background:var(--accent2);border-color:var(--accent2);color:white;text-align:center" onclick="autoWeightFromCorrelations()">Auto-weight from Correlation Page</button>
+            <button class="pill" style="padding:8px 14px;font-size:12px;text-align:center" onclick="resetFWARDefaults()">Reset defaults</button>
+            <span id="fwar-status" style="font-size:11px;color:var(--muted)"></span>
           </div>
         </div>
       </div>
+
+      <!-- Middle column: Replacement rank -->
       <div class="card">
-        <div class="card-header"><span class="card-title">Category weights</span></div>
-        <div class="card-body" style="padding:16px 20px">
-          <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Scale each category's contribution to fWAR from 0 (ignore) to 1 (full weight).</p>
-          <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent2);margin-bottom:8px">Hitting</div>
-          <div id="fwar-hit-weights" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-bottom:16px"></div>
-          <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent2);margin-bottom:8px">Pitching</div>
-          <div id="fwar-pit-weights" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px"></div>
+        <div class="card-header"><span class="card-title" style="font-size:12px">Replacement rank by position</span></div>
+        <div class="card-body" style="padding:12px 16px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px" id="fwar-rep-inputs"></div>
+        </div>
+      </div>
+
+      <!-- Right column: Category weights -->
+      <div class="card">
+        <div class="card-header"><span class="card-title" style="font-size:12px">Category weights</span></div>
+        <div class="card-body" style="padding:12px 16px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:6px">
+            <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent)">Hitting</div>
+            <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent2);padding-left:8px">Pitching</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+            <div id="fwar-hit-weights" style="display:flex;flex-direction:column;gap:5px"></div>
+            <div id="fwar-pit-weights" style="display:flex;flex-direction:column;gap:5px;padding-left:8px"></div>
+          </div>
         </div>
       </div>
     </div>
-    <div style="margin-top:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <span style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Positional Scarcity:</span>
-      <button id="fwar-preset-pitcher" class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('pitcher')">⚾ Pitcher Heavy</button>
-      <button id="fwar-preset-hybrid"  class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('hybrid')">⚖️ Hybrid</button>
-      <button id="fwar-preset-hitter"  class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('hitter')">🏏 Hitter Heavy</button>
-      <button id="fwar-preset-optimal" class="pill" style="padding:8px 16px;font-size:12px" onclick="applyFWARPreset('optimal')">🎯 Optimal</button>
-    </div>
-    <div style="margin-top:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-      <button class="pill active" style="padding:10px 28px;font-size:13px" onclick="recalculateFWAR()">Recalculate fWAR</button>
-      <button class="pill" style="padding:10px 20px;font-size:13px;background:var(--accent2);border-color:var(--accent2);color:white" onclick="autoWeightFromCorrelations()">Auto-weight from correlations</button>
-      <button class="pill" style="padding:10px 20px;font-size:13px" onclick="resetFWARDefaults()">Reset defaults</button>
-      <span id="fwar-status" style="font-size:12px;color:var(--muted)"></span>
-    </div>
-    <div id="fwar-weight-summary" style="margin-top:16px"></div>
-    <div id="fwar-model-summary" style="margin-top:20px"></div>
+
+    <!-- Bottom: weight summary + model summary full width -->
+    <div id="fwar-weight-summary" style="margin-top:12px"></div>
+    <div id="fwar-model-summary" style="margin-top:12px"></div>
   </div>
 
   <div class="page" id="page-rosters">
@@ -7694,30 +7713,30 @@ function buildFWARModelInputs() {
   if (!repEl) return;
   var positions = ['C','1B','2B','3B','SS','OF','SP','RP'];
   repEl.innerHTML = positions.map(function(pos) {
-    return '<div class="fwar-input-group">' +
-      '<label class="fwar-input-label">' + pos + '</label>' +
-      '<input class="fwar-input" type="number" min="1" max="500" id="fwar-rep-' + pos.replace(/\//g,'-') + '" value="' + (FWAR.repRanks[pos] || '') + '">' +
+    return '<div style="display:flex;align-items:center;gap:6px">' +
+      '<label style="font-size:11px;color:var(--muted);width:28px;flex-shrink:0;font-weight:500">' + pos + '</label>' +
+      '<input class="fwar-input" type="number" min="1" max="500" id="fwar-rep-' + pos.replace(/\//g,'-') + '" value="' + (FWAR.repRanks[pos] || '') + '" style="padding:4px 8px;font-size:12px">' +
       '</div>';
   }).join('');
 
-  // Hitting weight sliders
+  // Hitting weight inputs
   var hitEl = document.getElementById('fwar-hit-weights');
   if (hitEl) {
     hitEl.innerHTML = Object.keys(FWAR.hitWeights).map(function(cat) {
-      return '<div class="fwar-input-group">' +
-        '<label class="fwar-input-label">' + cat + '</label>' +
-        '<input class="fwar-input" type="number" min="0" max="1" step="0.1" id="fwar-hw-' + cat + '" value="' + FWAR.hitWeights[cat] + '">' +
+      return '<div style="display:flex;align-items:center;gap:6px">' +
+        '<label style="font-size:11px;color:var(--muted);width:34px;flex-shrink:0;font-weight:500">' + cat + '</label>' +
+        '<input class="fwar-input" type="number" min="0" max="1" step="0.1" id="fwar-hw-' + cat + '" value="' + FWAR.hitWeights[cat] + '" style="padding:4px 8px;font-size:12px">' +
         '</div>';
     }).join('');
   }
 
-  // Pitching weight sliders
+  // Pitching weight inputs
   var pitEl = document.getElementById('fwar-pit-weights');
   if (pitEl) {
     pitEl.innerHTML = Object.keys(FWAR.pitWeights).map(function(cat) {
-      return '<div class="fwar-input-group">' +
-        '<label class="fwar-input-label">' + cat + '</label>' +
-        '<input class="fwar-input" type="number" min="0" max="1" step="0.1" id="fwar-pw-' + cat + '" value="' + FWAR.pitWeights[cat] + '">' +
+      return '<div style="display:flex;align-items:center;gap:6px">' +
+        '<label style="font-size:11px;color:var(--muted);width:34px;flex-shrink:0;font-weight:500">' + cat + '</label>' +
+        '<input class="fwar-input" type="number" min="0" max="1" step="0.1" id="fwar-pw-' + cat + '" value="' + FWAR.pitWeights[cat] + '" style="padding:4px 8px;font-size:12px">' +
         '</div>';
     }).join('');
   }
@@ -8150,24 +8169,25 @@ window.recalculateFWAR = function() {
   // Model summary
   var sumEl = document.getElementById('fwar-model-summary');
   if (sumEl) {
-    var html = '<div class="card" style="margin-bottom:16px"><div class="card-header"><span class="card-title">Replacement level summary</span></div>';
-    html += '<div class="card-body" style="padding:14px 20px"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">';
+    var html = '<div class="card" style="margin-bottom:12px"><div class="card-header"><span class="card-title">Replacement level summary</span></div>';
+    html += '<div class="card-body" style="padding:12px 16px">';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">';
     var allSlots = ['C','1B','2B','3B','SS','OF','SP','RP'];
     allSlots.forEach(function(slot) {
       var rz = replZ[slot] != null ? replZ[slot].toFixed(2) : '—';
       var rank = FWAR.repRanks[slot];
-      html += '<div style="background:var(--bg);border-radius:var(--radius);padding:8px 12px">';
+      html += '<div style="background:var(--bg);border-radius:var(--radius);padding:6px 10px;min-width:80px">';
       html += '<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">' + slot + ' (rank ' + rank + ')</div>';
-      html += '<div style="font-size:16px;font-weight:600;margin-top:2px">' + rz + '</div>';
+      html += '<div style="font-size:14px;font-weight:600;margin-top:1px">' + rz + '</div>';
       html += '<div style="font-size:10px;color:var(--muted)">replacement z</div>';
       html += '</div>';
     });
     html += '</div>';
-    html += '<div style="margin-top:12px;font-size:12px;color:var(--muted)">League avgs (rostered): AVG ' + lgAVG.toFixed(3) + ' · ERA ' + lgERA.toFixed(2) + ' · WHIP ' + lgWHIP.toFixed(2) + ' · AB ' + Math.round(lgAB) + ' · SP IP ' + lgSpIP.toFixed(1) + ' · RP IP ' + lgRpIP.toFixed(1) + '</div>';
+    html += '<div style="font-size:11px;color:var(--muted)">League avgs (rostered): AVG ' + lgAVG.toFixed(3) + ' · ERA ' + lgERA.toFixed(2) + ' · WHIP ' + lgWHIP.toFixed(2) + ' · AB ' + Math.round(lgAB) + ' · SP IP ' + lgSpIP.toFixed(1) + ' · RP IP ' + lgRpIP.toFixed(1) + '</div>';
     html += '</div></div>';
 
     // Regression summary cards
-    html += '<div class="two-col" style="margin-bottom:16px">';
+    html += '<div class="two-col" style="margin-bottom:12px">';
 
     // Wins regression
     html += '<div class="card"><div class="card-header"><span class="card-title">fWAR → Matchup wins</span>';
