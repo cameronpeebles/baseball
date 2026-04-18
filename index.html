@@ -4796,10 +4796,24 @@ window.showFAFixer = function(teamId) {
     html += '<thead><tr><th class="left">Player</th><th class="left">Pos</th><th class="left">MLB</th>';
     var cats = g === 'SP' || g === 'RP' ? PIT_CATS : BAT_CATS;
     cats.forEach(function(c) { html += '<th>' + c + '</th>'; });
+    html += '<th style="color:#c8a96e">fWAR</th>';
+    html += '<th style="color:#c8a96e">fWAR%</th>';
+    html += '<th style="color:#5b8db8">Pos Rtg</th>';
+    html += '<th style="color:#2d7a5a">Lg Rtg</th>';
     html += '<th>Rating</th></tr></thead><tbody>';
 
     topFAs.forEach(function(p) {
       var r = p.overallRating;
+      var nameLow = (p.name||'').toLowerCase();
+      // fWAR
+      var fwAll = (p.type==='bat'||p.group==='Infield'||p.group==='Outfield') ? FWAR.hitResults : FWAR.pitResults;
+      var fw = fwAll ? fwAll.find(function(x){return (x.name||'').toLowerCase()===nameLow;}) : null;
+      var fwarVal = fw ? fw.fWAR : null;
+      var fwarPct = window._fwarPctLookup ? window._fwarPctLookup[nameLow] : null;
+      var posRat  = window._posRatingLookup ? window._posRatingLookup[nameLow] : null;
+      var lgRat   = window._lgRatingLookup  ? window._lgRatingLookup[nameLow]  : null;
+      var fwarCol = fwarVal==null?'var(--text)':fwarVal>=3?'#1e6b3a':fwarVal>=1?'#4a9a68':fwarVal>=-1?'var(--text)':'#c0392b';
+      function rCol(v){return v==null?'var(--muted)':v>=65?'#1e6b3a':v>=50?'#4a9a68':v>=35?'#b7791f':'#c0392b';}
       html += '<tr>';
       html += '<td class="left"><div class="team-cell">' + (p.hs ? '<img class="player-hs" src="' + p.hs + '" alt="" onerror="this.style.display=\'none\'">' : '') + '<span><strong>' + p.name + '</strong></span></div></td>';
       html += '<td class="left"><span class="pos-badge">' + primaryPos(p.pos) + '</span></td>';
@@ -4809,6 +4823,10 @@ window.showFAFixer = function(teamId) {
         var str = v == null ? '—' : (c === 'AVG' ? v.toFixed(3) : (c === 'ERA' || c === 'WHIP') ? v.toFixed(2) : Math.round(v));
         html += '<td>' + str + '</td>';
       });
+      html += '<td><strong style="color:' + fwarCol + '">' + (fwarVal!=null?(fwarVal>=0?'+':'')+fwarVal.toFixed(2):'—') + '</strong></td>';
+      html += '<td><strong style="color:' + rCol(fwarPct) + '">' + (fwarPct!=null?Math.round(fwarPct):'—') + '</strong></td>';
+      html += '<td><strong style="color:' + rCol(posRat) + '">' + (posRat!=null?Math.round(posRat):'—') + '</strong></td>';
+      html += '<td><strong style="color:' + rCol(lgRat) + '">' + (lgRat!=null?Math.round(lgRat):'—') + '</strong></td>';
       html += '<td><strong style="color:' + ratingColor(r) + '">' + Math.round(r*100) + '</strong></td>';
       html += '</tr>';
     });
