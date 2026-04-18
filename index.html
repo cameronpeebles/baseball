@@ -2265,6 +2265,7 @@ function showRoster(teamId) {
     html += '<th class="left">Player</th><th class="left">Pos</th><th class="left">MLB Team</th><th class="left">Status</th>';
     if (hasFWAR) {
       html += '<th style="color:var(--accent);font-weight:700;white-space:nowrap">fWAR</th>';
+      html += '<th style="color:#9b59b6;font-weight:700;white-space:nowrap;font-size:11px">fWAR%</th>';
     }
     html += '<th style="color:#5b8db8;font-weight:700;white-space:nowrap;font-size:11px">Pos Rating</th>';
     html += '<th style="color:#2d7a5a;font-weight:700;white-space:nowrap;font-size:11px">League Rating</th>';
@@ -2279,7 +2280,7 @@ function showRoster(teamId) {
 
     // League average row
     if (hasFG && fgLeague && Object.keys(fgLeague).length > 0) {
-      var blankCols = 4 + (hasFWAR ? 1 : 0) + 2 + statHeaders.length;
+      var blankCols = 4 + (hasFWAR ? 2 : 0) + 2 + statHeaders.length;
       html += '<tr style="background:#e8f4fd;border-bottom:2px solid #2980b9">';
       html += '<td class="left" colspan="' + blankCols + '" style="font-weight:600;font-size:11px;color:#2980b9;white-space:nowrap">MLB Avg (Savant)</td>';
       fgCols.forEach(function(c) {
@@ -2320,23 +2321,30 @@ function showRoster(teamId) {
       html += '<td class="left">' + mlb + '</td>';
       html += '<td class="left"><span class="status-badge status-' + statusId + '">' + (statusLabels[statusId] || '') + '</span></td>';
 
-      if (hasFWAR) {
-        if (fw) {
-          var fv = fw.fWAR;
-          var fc = fv >= 2 ? '#1e6b3a' : fv >= 0.5 ? '#4a9a68' : fv >= -0.5 ? '#b7791f' : '#c0392b';
-          html += '<td style="font-weight:700;color:' + fc + ';white-space:nowrap">' + (fv >= 0 ? '+' : '') + fv.toFixed(2) + '</td>';
-        } else {
-          html += '<td style="color:var(--muted)">—</td>';
-        }
-      }
-
-      // Pos Rating and League Rating from drawPlayers lookups
       function rosterRatingBadge(r) {
         if (r == null) return '<span style="color:var(--muted)">—</span>';
         var pct = Math.round(r * 100);
         var col = pct >= 65 ? '#1e6b3a' : pct >= 50 ? '#4a9a68' : pct >= 35 ? '#b7791f' : '#c0392b';
         return '<span style="display:inline-block;padding:2px 7px;border-radius:8px;font-size:11px;font-weight:700;background:'+col+'22;color:'+col+'">' + pct + '</span>';
       }
+
+      if (hasFWAR) {
+        if (fw) {
+          var fv = fw.fWAR;
+          var fc = fv >= 2 ? '#1e6b3a' : fv >= 0.5 ? '#4a9a68' : fv >= -0.5 ? '#b7791f' : '#c0392b';
+          html += '<td style="font-weight:700;color:' + fc + ';white-space:nowrap">' + (fv >= 0 ? '+' : '') + fv.toFixed(2) + '</td>';
+          // fWAR%
+          var normN2 = name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+          var fpct2 = isHitSection
+            ? (window._fwarPctLookupHit||window._fwarPctLookup||{})[normN2]||(window._fwarPctLookupHit||window._fwarPctLookup||{})[name.toLowerCase()]
+            : (window._fwarPctLookupPit||window._fwarPctLookup||{})[normN2]||(window._fwarPctLookupPit||window._fwarPctLookup||{})[name.toLowerCase()];
+          html += '<td>' + rosterRatingBadge(fpct2 != null ? fpct2 / 100 : null) + '</td>';
+        } else {
+          html += '<td style="color:var(--muted)">—</td><td style="color:var(--muted)">—</td>';
+        }
+      }
+
+      // Pos Rating and League Rating from drawPlayers lookups
       var nameLow = name.toLowerCase();
       var posR = window._posRatingLookup ? window._posRatingLookup[nameLow] : null;
       var lgR  = window._lgRatingLookup  ? window._lgRatingLookup[nameLow]  : null;
