@@ -4429,10 +4429,11 @@ function drawFARatings() {
     return h;
   }
   var metricHeaders = ''
-    + '<th style="color:#1e6b3a">fWAR</th>'
-    + '<th style="color:#7f77dd">fWAR%</th>'
-    + '<th style="color:#5b8db8">Pos Rtg</th>'
-    + '<th style="color:#4a9a68">Lg Rtg</th>';
+    + '<th style="color:#1e6b3a">FWAR</th>'
+    + '<th style="color:#7f77dd">FWAR %</th>'
+    + '<th style="color:#5b8db8">POS RATING</th>'
+    + '<th style="color:#4a9a68">LEAGUE RATING</th>'
+    + '<th style="color:#e67e22">ARCHETYPE</th>';
 
   function buildTable(allPlayers, label, cats, headers, decArr, type, posList) {
     var isBat = type === 'hit';
@@ -4854,10 +4855,11 @@ window.showFAFixer = function(teamId) {
     html += '<thead><tr><th class="left">Player</th><th class="left">Pos</th><th class="left">MLB</th>';
     var cats = g === 'SP' || g === 'RP' ? PIT_CATS : BAT_CATS;
     cats.forEach(function(c) { html += '<th>' + c + '</th>'; });
-    html += '<th style="color:#1e6b3a">fWAR</th>';
-    html += '<th style="color:#7f77dd">fWAR%</th>';
-    html += '<th style="color:#5b8db8">Pos Rtg</th>';
-    html += '<th style="color:#4a9a68">Lg Rtg</th>';
+    html += '<th style="color:#1e6b3a">FWAR</th>';
+    html += '<th style="color:#7f77dd">FWAR %</th>';
+    html += '<th style="color:#5b8db8">POS RATING</th>';
+    html += '<th style="color:#4a9a68">LEAGUE RATING</th>';
+    html += '<th style="color:#e67e22">ARCHETYPE</th>';
     html += '</tr></thead><tbody>';
 
     topFAs.forEach(function(p) {
@@ -4900,9 +4902,11 @@ window.showFAFixer = function(teamId) {
       });
       var fwarCol = fwarVal==null?'var(--text)':fwarVal>=3?'#1e6b3a':fwarVal>=1?'#4a9a68':fwarVal>=-1?'var(--text)':'#c0392b';
       html += '<td><strong style="color:' + fwarCol + '">' + (fwarVal!=null?(fwarVal>=0?'+':'')+fwarVal.toFixed(2):'—') + '</strong></td>';
-      html += '<td><strong style="color:'+(fwarPct!=null?'#7f77dd':'var(--muted)')+'">'+(fwarPct!=null?Math.round(fwarPct):'—')+'</strong></td>';
+      html += '<td><strong style="color:' + rCol(fwarPct!=null?fwarPct/100:null) + '">'+(fwarPct!=null?Math.round(fwarPct):'—')+'</strong></td>';
       html += '<td><strong style="color:' + rCol(posRat) + '">' + rFmt(posRat) + '</strong></td>';
       html += '<td><strong style="color:' + rCol(lgRat) + '">' + rFmt(lgRat) + '</strong></td>';
+      var arch1 = getArchetype(fwarPct!=null?fwarPct/100:null, posRat, lgRat);
+      html += arch1 ? '<td style="white-space:nowrap"><span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:'+arch1.color+'22;color:'+arch1.color+';border:1px solid '+arch1.color+'44">'+arch1.name+'</span></td>' : '<td style="color:var(--muted);font-size:11px">—</td>';
       html += '</tr>';
     });
 
