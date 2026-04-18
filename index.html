@@ -1793,6 +1793,10 @@ function drawPlayers(type) {
     return result;
   }
 
+  // Expose pools and rating function for use in FA table renderer
+  window._ratingPools = { finePools: finePools, lgHitPool: lgHitPool, lgSpPool: lgSpPool, lgRpPool: lgRpPool };
+  window._calcRating  = calcRating;
+
   // Ensure rating lookups exist (don't reset — hitters and pitchers both need to accumulate)
   window._lgRatingLookup  = window._lgRatingLookup  || {};
   window._posRatingLookup = window._posRatingLookup || {};
@@ -4810,8 +4814,23 @@ window.showFAFixer = function(teamId) {
       var fw      = fwAll ? fwAll.find(function(x){ return ((x.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim()) === nameLow; }) : null;
       var fwarVal = fw ? fw.fWAR : null;
       var fwarPct = isBat ? (window._fwarPctLookupHit||window._fwarPctLookup||{})[nameLow] : (window._fwarPctLookupPit||window._fwarPctLookup||{})[nameLow];
-      var posRat  = (window._posRatingLookup||{})[nameLow];
-      var lgRat   = (window._lgRatingLookup ||{})[nameLow];
+      // Try cached lookup first; compute on the fly if missing (FAs not in lookup)
+      var posRat = (window._posRatingLookup||{})[nameLow];
+      var lgRat  = (window._lgRatingLookup ||{})[nameLow];
+      if ((posRat == null || lgRat == null) && window._ratingPools && window._calcRating) {
+        var pools  = window._ratingPools;
+        var pCats  = isBat ? BAT_CATS : PIT_CATS;
+        var fps    = playerFinePosAll(p.pos||'');
+        var best   = null;
+        fps.forEach(function(fp){
+          var pool = pools.finePools[fp]||[];
+          var r = window._calcRating(p.stats||{}, pCats, pool, p.pos||'');
+          if(r!=null&&(best==null||r>best)) best=r;
+        });
+        posRat = best;
+        var lgPool = isBat ? pools.lgHitPool : (primaryPos(p.pos||'')==='SP' ? pools.lgSpPool : pools.lgRpPool);
+        lgRat  = window._calcRating(p.stats||{}, pCats, lgPool, p.pos||'');
+      }
       var fwarCol = fwarVal==null?'var(--text)':fwarVal>=3?'#1e6b3a':fwarVal>=1?'#4a9a68':fwarVal>=-1?'var(--text)':'#c0392b';
       function rCol(v){return v==null?'var(--muted)':v>=65?'#1e6b3a':v>=50?'#4a9a68':v>=35?'#b7791f':'#c0392b';}
       html += '<tr>';
