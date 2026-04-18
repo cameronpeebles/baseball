@@ -4472,7 +4472,38 @@ function drawFARatings() {
   var hitters  = fas.filter(function(p){ return p.type==='bat'; }).sort(function(a,b){ return fwarSortVal(b,true)-fwarSortVal(a,true); });
   var pitchers = fas.filter(function(p){ return p.type==='pit'; }).sort(function(a,b){ return fwarSortVal(b,false)-fwarSortVal(a,false); });
 
-  el.innerHTML = buildTable(hitters,  'Free Agent Hitters',  ['R','HR','RBI','SB','AVG'], ['R','HR','RBI','SB','AVG'], [0,0,0,0,3], 'hit', hitPos)
+  // Positional strength — all teams heatmap (same as main trade page card)
+  var posHtml = '';
+  if (window.TA && TA.players && TA.players.length) {
+    var groups = ['Infield','Outfield','SP','RP'];
+    var lgAvg = {};
+    groups.forEach(function(g){ var gp=TA.players.filter(function(p){return p.bestGroup===g;}); lgAvg[g]=gp.length?gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length:0.5; });
+    var allTeamIds = Object.keys(S.teamInfo);
+    var teamData = allTeamIds.map(function(id){
+      var ti=S.teamInfo[id]; var name=ti.shortName||ti.name||id;
+      var gd={};
+      groups.forEach(function(g){ var gp=TA.players.filter(function(p){return p.ftId===id&&p.bestGroup===g;}); gd[g]={avg:gp.length?gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length:null,count:gp.length}; });
+      var vals=groups.map(function(g){return gd[g].avg;}).filter(function(v){return v!=null;});
+      return{id:id,name:name,gd:gd,ovr:vals.length?vals.reduce(function(s,v){return s+v;},0)/vals.length:0};
+    }).sort(function(a,b){return b.ovr-a.ovr;});
+    function hmc(v){ if(v==null)return{bg:'var(--bg)',fg:'var(--muted)',t:'—'}; var p=Math.round(v*100); return v>=0.65?{bg:'#1e6b3a',fg:'#fff',t:p}:v>=0.52?{bg:'#4a9a68',fg:'#fff',t:p}:v>=0.42?{bg:'#a8d5b5',fg:'#1a3d26',t:p}:v>=0.30?{bg:'#f5c4b3',fg:'#6b2a1a',t:p}:{bg:'#c0392b',fg:'#fff',t:p}; }
+    posHtml += '<div class="card" style="margin-bottom:20px"><div class="card-header"><span class="card-title">Positional strength — all teams</span><span style="font-size:12px;color:var(--muted)">Percentile vs all rostered players.</span></div>';
+    posHtml += '<div style="overflow-x:auto;padding:2px 0"><table style="border-collapse:separate;border-spacing:2px;width:100%;font-size:12px"><thead><tr>';
+    posHtml += '<th style="text-align:left;padding:5px 8px;color:var(--muted);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;min-width:130px">Team</th>';
+    groups.forEach(function(g){ posHtml += '<th style="padding:5px 8px;color:var(--muted);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap">'+g+'</th>'; });
+    posHtml += '<th style="padding:5px 8px;color:var(--muted);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.04em">OVR</th>';
+    posHtml += '</tr></thead><tbody>';
+    teamData.forEach(function(t){
+      posHtml += '<tr><td style="padding:5px 8px;font-size:12px;color:var(--text)">'+t.name+'</td>';
+      groups.forEach(function(g){ var c=hmc(t.gd[g].avg); posHtml += '<td style="padding:5px 10px;border-radius:4px;text-align:center;font-weight:500;font-size:12px;background:'+c.bg+';color:'+c.fg+';white-space:nowrap">'+c.t+'</td>'; });
+      var oc=hmc(t.ovr); posHtml += '<td style="padding:5px 10px;border-radius:4px;text-align:center;font-weight:600;font-size:12px;background:'+oc.bg+';color:'+oc.fg+'">'+oc.t+'</td>';
+      posHtml += '</tr>';
+    });
+    posHtml += '</tbody></table></div></div>';
+  }
+
+  el.innerHTML = posHtml
+               + buildTable(hitters,  'Free Agent Hitters',  ['R','HR','RBI','SB','AVG'], ['R','HR','RBI','SB','AVG'], [0,0,0,0,3], 'hit', hitPos)
                + buildTable(pitchers, 'Free Agent Pitchers', ['K','W','SVH3','ERA','WHIP'],['K','W','SVH3','ERA','WHIP'],[0,0,0,2,2], 'pit', pitPos);
 }
 
@@ -4816,27 +4847,6 @@ window.showFAFixer = function(teamId) {
   });
 
   var html = '';
-
-  // Team strength/weakness overview — full-width table matching heatmap style
-  html += '<div class="card" style="margin-bottom:16px">';
-  html += '<div class="card-header"><span class="card-title">' + teamName + ' — position ratings</span></div>';
-  html += '<div style="overflow-x:auto;padding:2px 0">';
-  html += '<table style="border-collapse:separate;border-spacing:2px;width:100%;font-size:12px">';
-  html += '<thead><tr><th style="text-align:left;padding:5px 8px;color:var(--muted);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;min-width:130px">Group</th>';
-  ['Infield','Outfield','SP','RP'].forEach(function(g){
-    html += '<th style="padding:5px 8px;color:var(--muted);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap">'+g+'</th>';
-  });
-  html += '</tr></thead><tbody><tr>';
-  html += '<td style="padding:5px 8px;color:var(--text);font-size:12px">'+teamName+'</td>';
-  sortedGroups.forEach(function(g){
-    var gr = groupRatings[g];
-    var r  = gr.avg;
-    var p  = Math.round(r*100);
-    var col = r>=0.65?{bg:'#1e6b3a',fg:'#fff'}:r>=0.52?{bg:'#4a9a68',fg:'#fff'}:r>=0.42?{bg:'#a8d5b5',fg:'#1a3d26'}:r>=0.30?{bg:'#f5c4b3',fg:'#6b2a1a'}:{bg:'#c0392b',fg:'#fff'};
-    html += '<td style="padding:5px 10px;border-radius:4px;text-align:center;font-weight:500;font-size:12px;background:'+col.bg+';color:'+col.fg+';white-space:nowrap">';
-    html += p+'<div style="font-size:10px;opacity:0.75">'+gr.count+' rostered</div></td>';
-  });
-  html += '</tr></tbody></table></div></div>';
 
   // FA recommendations per weak group
   sortedGroups.slice(0, 2).forEach(function(g) {
