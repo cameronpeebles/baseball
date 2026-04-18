@@ -9821,7 +9821,8 @@ var TARGETS_STATE = {
   posFilter:  'ALL',   // ALL | C | 1B | 2B | 3B | SS | OF
   sigFilter:  'ALL',   // ALL | UNDERPERFORMING | OVERPERFORMING | GRADED
   sort:       'delta_xwoba',
-  sortDir:    -1
+  sortDir:    -1,
+  playerSearch: ''     // search string for player name
 };
 
 window.showTargetsTab = function(tab, btn) {
@@ -10290,6 +10291,7 @@ function drawTargetsTable() {
   var rf = TARGETS_STATE.rostFilter;
   var pf = TARGETS_STATE.posFilter;
   var sf = TARGETS_STATE.sigFilter;
+  var ps = (TARGETS_STATE.playerSearch||'').toLowerCase().trim();
 
   var filtered = enriched.filter(function(e) {
     if (rf === 'ROSTERED' && !e.ri)   return false;
@@ -10305,6 +10307,7 @@ function drawTargetsTable() {
     if (sf === 'UNDERPERFORMING' && e.t.signal !== 'Underperforming') return false;
     if (sf === 'OVERPERFORMING'  && e.t.signal !== 'Overperforming')  return false;
     if (sf === 'GRADED'          && e.t.grade  === '—')               return false;
+    if (ps && (e.t.name||'').toLowerCase().indexOf(ps) === -1)        return false;
     return true;
   });
 
@@ -10347,6 +10350,22 @@ function drawTargetsTable() {
 
   var html = '';
 
+  // ── Player search ─────────────────────────────────────────────────────────
+  var searchVal = TARGETS_STATE.playerSearch || '';
+  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">';
+  html += '<input id="targets-player-search" type="text" placeholder="Search player..." value="' + searchVal.replace(/"/g,'&quot;') + '" '
+        + 'style="flex:1;max-width:280px;padding:7px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px" '
+        + 'oninput="TARGETS_STATE.playerSearch=this.value;window._targetPlayerHighlight=null;drawTargetsTable()">';
+  if (searchVal) {
+    html += '<button onclick="TARGETS_STATE.playerSearch=\'\';window._targetPlayerHighlight=null;drawTargetsTable()" '
+          + 'style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--muted);font-size:12px;cursor:pointer">&#x2715; Clear</button>';
+  }
+  if (window._targetPlayerHighlight) {
+    html += '<span style="font-size:12px;color:var(--accent);font-weight:500">Chart: ' + window._targetPlayerHighlight + '</span>';
+    html += '<button onclick="window._targetPlayerHighlight=null;redrawQuadrantChart()" '
+          + 'style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--muted);font-size:12px;cursor:pointer">&#x2715; Show all</button>';
+  }
+  html += '</div>';
 
   // ── Quadrant scatterplot ──────────────────────────────────────────────────
   var plotData = enriched.filter(function(e) {
@@ -10447,7 +10466,9 @@ function drawTargetsTable() {
     // Player
     html += '<td class="left" style="white-space:nowrap"><div class="team-cell">';
     if (ri && ri.hs) html += '<img class="player-hs" src="' + ri.hs + '" alt="" onerror="this.style.display=\'none\'">';
-    html += '<div><div style="font-size:13px;font-weight:500">' + t.name + '</div>';
+    html += '<div><div style="font-size:13px;font-weight:500;color:var(--accent);cursor:pointer;text-decoration:underline" '
+          + 'onclick="window._targetPlayerHighlight=(window._targetPlayerHighlight===\'' + t.name.replace(/'/g,"\\'") + '\'?null:\'' + t.name.replace(/'/g,"\\'") + '\');redrawQuadrantChart();drawTargetsTable()">'
+          + t.name + '</div>';
     if (ri) html += '<div style="font-size:10px;color:var(--muted)">' + (ri.pos||'') + '</div>';
     html += '</div></div></td>';
 
@@ -10620,8 +10641,9 @@ window.redrawQuadrantChart = function() {
     var cx=px(e.t.delta_xwoba), cy=py(e.fw.fWAR);
     var isFA=!e.ri;
     var hl = window._hitQuadrantHighlight;
+    var playerHl = window._targetPlayerHighlight;
     var tname = e.ti ? (e.ti.shortName||e.ti.name||'FA') : 'FA';
-    var dimmed = hl && tname !== hl;
+    var dimmed = (playerHl && e.t.name !== playerHl) || (!playerHl && hl && tname !== hl);
     var col;
     if (colorBy === 'quadrant') {
       col = (e.t.delta_xwoba>=0&&e.fw.fWAR>=0)?'#2d5a3d'
