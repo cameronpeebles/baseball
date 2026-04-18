@@ -9713,6 +9713,9 @@ function buildSGPRos(el, fpHit, fpPit) {
   // Collect all players with FP projections
   var allPlayers = [];
   console.log('[sgp] fpHitLookup size:', Object.keys(fpHitLookup).length, '| sample keys:', Object.keys(fpHitLookup).slice(0,5));
+  // Show FP keys that might be catchers
+  var fpCatcherSample = Object.keys(fpHitLookup).filter(function(k){ return fpHit.find(function(p){ return normN(p.name||p.name_key||'')=== k && (p.name||'').match(/c\b/i); }); }).slice(0,5);
+  console.log('[sgp] fp raw sample names:', fpHit.slice(0,5).map(function(p){return p.name+'→'+normN(p.name||'');}));
   S.hitRows.forEach(function(row) {
     var sc=row.scorer||{}, ce=row.cells||[];
     var name=sc.name||''; if(!name) return;
