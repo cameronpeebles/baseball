@@ -10350,23 +10350,6 @@ function drawTargetsTable() {
 
   var html = '';
 
-  // ── Player search ─────────────────────────────────────────────────────────
-  var searchVal = TARGETS_STATE.playerSearch || '';
-  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">';
-  html += '<input id="targets-player-search" type="text" placeholder="Search player..." value="' + searchVal.replace(/"/g,'&quot;') + '" '
-        + 'style="flex:1;max-width:280px;padding:7px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px" '
-        + 'oninput="TARGETS_STATE.playerSearch=this.value;window._targetPlayerHighlight=null;drawTargetsTable()">';
-  if (searchVal) {
-    html += '<button onclick="TARGETS_STATE.playerSearch=\'\';window._targetPlayerHighlight=null;drawTargetsTable()" '
-          + 'style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--muted);font-size:12px;cursor:pointer">&#x2715; Clear</button>';
-  }
-  if (window._targetPlayerHighlight) {
-    html += '<span style="font-size:12px;color:var(--accent);font-weight:500">Chart: ' + window._targetPlayerHighlight + '</span>';
-    html += '<button onclick="window._targetPlayerHighlight=null;redrawQuadrantChart()" '
-          + 'style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--muted);font-size:12px;cursor:pointer">&#x2715; Show all</button>';
-  }
-  html += '</div>';
-
   // ── Quadrant scatterplot ──────────────────────────────────────────────────
   var plotData = enriched.filter(function(e) {
     return e.t.delta_xwoba != null && e.fw != null;
@@ -10737,7 +10720,7 @@ window.sortTargets = function(key) {
 // ── Pitcher Targets ───────────────────────────────────────────────────────────
 
 var pitTargetsData = null;
-var PIT_TARGETS_STATE = { rostFilter:'ALL', sigFilter:'ALL', posFilter:'ALL', sort:'delta_era', sortDir:-1 };
+var PIT_TARGETS_STATE = { rostFilter:'ALL', sigFilter:'ALL', posFilter:'ALL', sort:'delta_era', sortDir:-1, playerSearch:'' };
 
 function renderPitcherTargetsPage() {
   var el = document.getElementById('targets-pit-body');
@@ -10806,6 +10789,8 @@ function drawPitcherTargetsTable() {
       var pos = (e.ri ? e.ri.pos : e.t.pos || '') || '';
       if (pos.toUpperCase().indexOf(pf) === -1) return false;
     }
+    var ps2 = (PIT_TARGETS_STATE.playerSearch||'').toLowerCase().trim();
+    if (ps2 && (e.t.name||'').toLowerCase().indexOf(ps2) === -1) return false;
     return true;
   });
 
@@ -10866,6 +10851,18 @@ function drawPitcherTargetsTable() {
   } else {
     html += '<div class="card" style="margin-bottom:20px;padding:20px;text-align:center;color:var(--muted)">No pitcher xERA data available — run the GitHub Action to populate targets_pitching.json with xERA values.</div>';
   }
+
+  // ── Player search (below chart) ──────────────────────────────────────────
+  var pitSearchVal = PIT_TARGETS_STATE.playerSearch || '';
+  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">';
+  html += '<input id="pit-targets-player-search" type="text" placeholder="Search pitcher..." value="' + pitSearchVal.replace(/"/g,'&quot;') + '" '
+        + 'style="flex:1;max-width:280px;padding:7px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px" '
+        + 'oninput="PIT_TARGETS_STATE.playerSearch=this.value;window._targetPitHighlight=null;drawPitcherTargetsTable()">';
+  if (pitSearchVal) {
+    html += '<button onclick="PIT_TARGETS_STATE.playerSearch=\'\';window._targetPitHighlight=null;drawPitcherTargetsTable()" '
+          + 'style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--muted);font-size:12px;cursor:pointer">&#x2715; Clear</button>';
+  }
+  html += '</div>';
 
   // ── Filter controls ────────────────────────────────────────────────────────
   var sf = PIT_TARGETS_STATE.sigFilter;
@@ -10940,7 +10937,8 @@ function drawPitcherTargetsTable() {
     // Pitcher
     html += '<td class="left" style="white-space:nowrap"><div class="team-cell">';
     if (ri&&ri.hs) html += '<img class="player-hs" src="'+ri.hs+'" alt="" onerror="this.style.display=\'none\'">';
-    html += '<div><div style="font-size:13px;font-weight:500">'+t.name+'</div>';
+    html += '<div><div style="font-size:13px;font-weight:500;color:var(--accent);cursor:pointer;text-decoration:underline" '
+          + 'onclick="window._targetPitHighlight=(window._targetPitHighlight===\''+t.name.replace(/'/g,"\\'")+'\' ? null : \''+t.name.replace(/'/g,"\\'")+'\'  );redrawPitQuadrantChart();drawPitcherTargetsTable()">'+t.name+'</div>';
     if (ri) html += '<div style="font-size:10px;color:var(--muted)">'+(ri.pos||'')+'</div>';
     html += '</div></div></td>';
 
@@ -10998,6 +10996,10 @@ function drawPitcherTargetsTable() {
 
   html += '</tbody></table></div></div>';
   el.innerHTML = html;
+  if (PIT_TARGETS_STATE.playerSearch) {
+    var si2 = document.getElementById('pit-targets-player-search');
+    if (si2) { var len2 = si2.value.length; si2.focus(); si2.setSelectionRange(len2, len2); }
+  }
 }
 
 window.setPitTargetsFilter = function(type, val, btn) {
@@ -11108,10 +11110,11 @@ function buildPitQuadrantSVG(plotData, colorBy) {
 
   // Dots — top-left=Sell High(red), top-right=Stars(green), bot-right=Buy Low(blue), bot-left=Drop/Avoid(gray)
   var hl = window._pitQuadrantHighlight;
+  var playerHlPit = window._targetPitHighlight;
   plotData.forEach(function(e){
     var cx=px(e.t.delta_era), cy=py(e.fw.fWAR), isFA=!e.ri, col;
     var tname = e.ti?(e.ti.shortName||e.ti.name||'FA'):'FA';
-    var dimmed = hl && tname !== hl;
+    var dimmed = (playerHlPit && e.t.name !== playerHlPit) || (!playerHlPit && hl && tname !== hl);
     if(colorBy==='quadrant'){
       var posX = e.t.delta_era >= 0, posY = e.fw.fWAR >= 0;
       col = (posY && posX)  ? '#2d5a3d'
