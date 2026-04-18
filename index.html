@@ -9625,7 +9625,9 @@ function renderSGPRosPage() {
 function buildSGPRos(el, fpHit, fpPit) {
   // ── Helpers ──────────────────────────────────────────────────────────────
   function normN(n) {
-    return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+    n = (n||'').replace(/\([^)]*\)/g,'');   // strip (LAD - SP,DH) etc
+    n = n.replace(/\s*(IL\d*|DTD|FA|NA)\s*$/i,''); // strip IL/FA suffix
+    return n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
   }
 
   var HIT_CATS = ['R','HR','RBI','SB','AVG'];
@@ -9712,18 +9714,13 @@ function buildSGPRos(el, fpHit, fpPit) {
 
   // Collect all players with FP projections
   var allPlayers = [];
-  console.log('[sgp] fpHitLookup size:', Object.keys(fpHitLookup).length, '| sample keys:', Object.keys(fpHitLookup).slice(0,5));
-  // Show FP keys that might be catchers
-  var fpCatcherSample = Object.keys(fpHitLookup).filter(function(k){ return fpHit.find(function(p){ return normN(p.name||p.name_key||'')=== k && (p.name||'').match(/c\b/i); }); }).slice(0,5);
-  console.log('[sgp] fp raw sample names:', fpHit.slice(0,5).map(function(p){return p.name+'→'+normN(p.name||'');}));
   S.hitRows.forEach(function(row) {
     var sc=row.scorer||{}, ce=row.cells||[];
     var name=sc.name||''; if(!name) return;
     var key=normN(name);
     var fp=fpHitLookup[key];
-    var pos=sc.posShortNames||'';
-    if (pos.indexOf('C')!==-1) console.log('[sgp] C player:', name, '| key:', key, '| fp found:', !!fp);
     if(!fp) return;
+    var pos=sc.posShortNames||'';
     allPlayers.push({
       name:name, pos:pos, mlb:sc.teamShortName||'', hs:sc.headshotUrl||'',
       isHit:true, fp:fp,
