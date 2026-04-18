@@ -9684,18 +9684,19 @@ function buildSGPRos(el, fpHit, fpPit) {
     n = (n||'').replace(/\([^)]*\)/g,'').replace(/\s*(IL\d*|DTD|FA|NA)\s*$/i,'');
     return n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
   }
+  function ordSuffix(n){return n===1?'st':n===2?'nd':n===3?'rd':'th';}
+  function rc(r){return r>=0.65?'#2d5a3d':r>=0.5?'#4a9a68':r>=0.35?'#b7791f':'#c0392b';}
 
   var HIT_CATS = ['R','HR','RBI','SB','AVG'];
   var PIT_CATS = ['K','W','SVH3','ERA','WHIP'];
   var LOW_CATS = ['ERA','WHIP'];
-  var POS_GROUPS = ['C','1B','2B','3B','SS','OF','SP','RP'];
 
   // FP lookups
   var fpHitLookup = {}, fpPitLookup = {};
   (fpHit||[]).forEach(function(p){ var k=normN(p.name||p.name_key||''); if(k) fpHitLookup[k]=p; });
   (fpPit||[]).forEach(function(p){ var k=normN(p.name||p.name_key||''); if(k) fpPitLookup[k]=p; });
 
-  // Current team stats from seasonData
+  // Current team stats
   var tables = (S.seasonData&&S.seasonData.data&&S.seasonData.data.tableList)||[];
   var statTable = null;
   for(var i=0;i<tables.length;i++){
@@ -9707,10 +9708,10 @@ function buildSGPRos(el, fpHit, fpPit) {
 
   function buildIdx(tbl){
     var idx={};
-    ((tbl.header&&tbl.header.cells)||[]).forEach(function(h,i){
-      if(h.key) idx[h.key.toUpperCase()]=i;
-      if(h.shortName) idx[h.shortName.toUpperCase()]=i;
-      if(h.name) idx[h.name.toUpperCase()]=i;
+    ((tbl.header&&tbl.header.cells)||[]).forEach(function(h,j){
+      if(h.key) idx[h.key.toUpperCase()]=j;
+      if(h.shortName) idx[h.shortName.toUpperCase()]=j;
+      if(h.name) idx[h.name.toUpperCase()]=j;
     });
     return idx;
   }
@@ -9734,85 +9735,109 @@ function buildSGPRos(el, fpHit, fpPit) {
   var teamIds=Object.keys(teamStats);
   if(!teamIds.length){el.innerHTML='<div class="error-msg">No team stat data found.</div>';return;}
 
-  // Compute ranks
   function computeRanks(stats){
     var ranks={};
-    var cats=HIT_CATS.concat(PIT_CATS);
-    cats.forEach(function(cat){
+    HIT_CATS.concat(PIT_CATS).forEach(function(cat){
       var vals=teamIds.map(function(id){return{id:id,v:stats[id]?stats[id][cat]:null};}).filter(function(x){return x.v!=null;});
       var isLow=LOW_CATS.indexOf(cat)!==-1;
       vals.sort(function(a,b){return isLow?a.v-b.v:b.v-a.v;});
-      ranks[cat]={};
-      vals.forEach(function(x,i){ranks[cat][x.id]=i+1;});
+      ranks[cat]={};vals.forEach(function(x,i){ranks[cat][x.id]=i+1;});
     });
     return ranks;
   }
   var baseRanks=computeRanks(teamStats);
 
-  // All players with FP projections (rostered + FA)
-  var allPlayers=[];
-  function addHitter(sc,isRostered){
-    var name=sc.name||'';if(!name)return;
-    var fp=fpHitLookup[normN(name)];if(!fp)return;
-    allPlayers.push({name:name,pos:sc.posShortNames||'',mlb:sc.teamShortName||'',hs:sc.headshotUrl||'',
-      isHit:true,isRostered:isRostered,
-      ros:{R:fp.R||0,HR:fp.HR||0,RBI:fp.RBI||0,SB:fp.SB||0,AVG:fp.AVG,AB:fp.AB||0,K:0,W:0,SVH3:0,ERA:null,WHIP:null,IP:0}});
-  }
-  function addPitcher(sc,isRostered){
-    var name=sc.name||'';if(!name)return;
-    var fp=fpPitLookup[normN(name)];if(!fp)return;
-    allPlayers.push({name:name,pos:sc.posShortNames||'',mlb:sc.teamShortName||'',hs:sc.headshotUrl||'',
-      isHit:false,isRostered:isRostered,
-      ros:{R:0,HR:0,RBI:0,SB:0,AVG:null,AB:0,K:fp.K||0,W:fp.W||0,SVH3:fp.SV||0,ERA:fp.ERA,WHIP:fp.WHIP,IP:fp.IP||0}});
-  }
-  S.hitRows.forEach(function(row){addHitter(row.scorer||{},!!(row.cells&&row.cells[1]&&row.cells[1].teamId));});
-  S.pitRows.forEach(function(row){addPitcher(row.scorer||{},!!(row.cells&&row.cells[1]&&row.cells[1].teamId));});
-
-  // Simulate adding a player
-  function simulate(teamId,player){
+  // Simulate: subtract drop player's ROS, add add player's ROS
+  function simulate(teamId, dropPlayer, addPlayer){
     var ts=teamStats[teamId];if(!ts)return null;
     var newStats=JSON.parse(JSON.stringify(teamStats));
-    var t=newStats[teamId];var ros=player.ros;
-    if(player.isHit){
-      t.R+=(ros.R||0);t.HR+=(ros.HR||0);t.RBI+=(ros.RBI||0);t.SB+=(ros.SB||0);
-      if(ros.AVG!=null&&ros.AB){
-        var nAB=(ts.AB||0)+ros.AB;
-        t.AVG=nAB>0?((ts.AVG||0)*(ts.AB||0)+ros.AVG*ros.AB)/nAB:ts.AVG;t.AB=nAB;
+    var t=newStats[teamId];
+
+    function applyPlayer(p, sign){
+      var ros=p.ros;
+      if(p.isHit){
+        t.R+=(ros.R||0)*sign;
+        t.HR+=(ros.HR||0)*sign;
+        t.RBI+=(ros.RBI||0)*sign;
+        t.SB+=(ros.SB||0)*sign;
+        // Weighted AVG: keep running hits total
+        if(ros.AVG!=null&&ros.AB){
+          var curHits=(ts.AVG||0)*(t.AB||0);
+          var adjHits=ros.AVG*ros.AB*sign;
+          var newAB=(t.AB||0)+ros.AB*sign;
+          t.AB=Math.max(newAB,0);
+          t.AVG=t.AB>0?(curHits+adjHits)/t.AB:ts.AVG;
+        }
+      }else{
+        t.K+=(ros.K||0)*sign;
+        t.W+=(ros.W||0)*sign;
+        t.SVH3+=(ros.SVH3||0)*sign;
+        var curIP=t.IP||0,rosIP=(ros.IP||0);
+        var newIP=curIP+rosIP*sign;
+        if(ros.ERA!=null&&rosIP>0&&newIP>0){
+          var curER=(t.ERA||0)*curIP/9;
+          t.ERA=(curER+ros.ERA*rosIP/9*sign)*9/newIP;
+        }
+        if(ros.WHIP!=null&&rosIP>0&&newIP>0){
+          var curWH=(t.WHIP||0)*curIP;
+          t.WHIP=(curWH+ros.WHIP*rosIP*sign)/newIP;
+        }
+        t.IP=Math.max(newIP,0);
       }
-    }else{
-      t.K+=(ros.K||0);t.W+=(ros.W||0);t.SVH3+=(ros.SVH3||0);
-      var curIP=ts.IP||0,rosIP=ros.IP||0,newIP=curIP+rosIP;
-      if(ros.ERA!=null&&rosIP>0)t.ERA=newIP>0?((ts.ERA||0)*curIP/9+ros.ERA*rosIP/9)*9/newIP:ts.ERA;
-      if(ros.WHIP!=null&&rosIP>0)t.WHIP=newIP>0?((ts.WHIP||0)*curIP+ros.WHIP*rosIP)/newIP:ts.WHIP;
-      t.IP=newIP;
     }
+
+    if(dropPlayer) applyPlayer(dropPlayer,-1); // remove current player
+    applyPlayer(addPlayer,1);                  // add new player
     return computeRanks(newStats);
   }
 
-  // Build positional group ratings for a team using TA data
-  function getTeamGroupRatings(teamId){
-    if(!window.TA||!window.TA.rosterPlayers) return null;
-    var tp=(TA.rosterPlayers||[]).filter(function(p){return p.teamId===teamId;});
-    if(!tp.length) return null;
+  // Build player pool from hitRows/pitRows
+  var allPlayers=[];
+  S.hitRows.forEach(function(row){
+    var sc=row.scorer||{},ce=row.cells||[];
+    var name=sc.name||'';if(!name)return;
+    var fp=fpHitLookup[normN(name)];if(!fp)return;
+    var teamId=(ce[1]&&ce[1].teamId)||'';
+    allPlayers.push({name:name,pos:sc.posShortNames||'',mlb:sc.teamShortName||'',hs:sc.headshotUrl||'',
+      isHit:true,teamId:teamId,isRostered:!!teamId,
+      ros:{R:fp.R||0,HR:fp.HR||0,RBI:fp.RBI||0,SB:fp.SB||0,AVG:fp.AVG,AB:fp.AB||0,
+           K:0,W:0,SVH3:0,ERA:null,WHIP:null,IP:0}});
+  });
+  S.pitRows.forEach(function(row){
+    var sc=row.scorer||{},ce=row.cells||[];
+    var name=sc.name||'';if(!name)return;
+    var fp=fpPitLookup[normN(name)];if(!fp)return;
+    var teamId=(ce[1]&&ce[1].teamId)||'';
+    allPlayers.push({name:name,pos:sc.posShortNames||'',mlb:sc.teamShortName||'',hs:sc.headshotUrl||'',
+      isHit:false,teamId:teamId,isRostered:!!teamId,
+      ros:{R:0,HR:0,RBI:0,SB:0,AVG:null,AB:0,
+           K:fp.K||0,W:fp.W||0,SVH3:fp.SV||0,ERA:fp.ERA,WHIP:fp.WHIP,IP:fp.IP||0}});
+  });
+
+  // Positional group ratings — use TA.players if available, else compute from _posRatingLookup
+  function getGroupRatings(teamId){
+    var source = (window.TA&&TA.players&&TA.players.length) ? TA.players : null;
+    if(!source) return null;
     var groups={Infield:0,Outfield:0,SP:0,RP:0};
     var counts={Infield:0,Outfield:0,SP:0,RP:0};
-    tp.forEach(function(p){
+    source.filter(function(p){return p.teamId===teamId;}).forEach(function(p){
       var g=p.bestGroup;if(!groups.hasOwnProperty(g))return;
-      groups[g]+=p.overallRating||0;counts[g]++;
+      groups[g]+=(p.overallRating||0);counts[g]++;
     });
     var result={};
-    Object.keys(groups).forEach(function(g){result[g]=counts[g]>0?groups[g]/counts[g]:null;});
-    // League rank for each group
-    var allTeamIds=Object.keys(S.teamInfo);
-    Object.keys(result).forEach(function(g){
+    // Compute league rank per group
+    Object.keys(groups).forEach(function(g){
+      var myAvg=counts[g]>0?groups[g]/counts[g]:null;
+      result[g]=myAvg;
       var allVals=[];
-      allTeamIds.forEach(function(id){
-        var tp2=(TA.rosterPlayers||[]).filter(function(p){return p.teamId===id&&p.bestGroup===g;});
-        if(tp2.length) allVals.push({id:id,v:tp2.reduce(function(s,p){return s+p.overallRating;},0)/tp2.length});
+      Object.keys(S.teamInfo).forEach(function(tid){
+        var tp=source.filter(function(p){return p.teamId===tid&&p.bestGroup===g;});
+        if(tp.length) allVals.push({id:tid,v:tp.reduce(function(s,p){return s+p.overallRating;},0)/tp.length});
       });
       allVals.sort(function(a,b){return b.v-a.v;});
       var rank=allVals.findIndex(function(x){return x.id===teamId;})+1;
-      result[g+'_rank']=rank||null;result[g+'_total']=allVals.length;
+      result[g+'_rank']=rank||null;
+      result[g+'_total']=allVals.length;
     });
     return result;
   }
@@ -9824,24 +9849,54 @@ function buildSGPRos(el, fpHit, fpPit) {
   var selectedTeam=teamOptions[0].id;
   var selectedPlayer=null;
 
-  function rc(r){return r>=0.7?'#2d5a3d':r>=0.5?'#4a9a68':r>=0.35?'#b7791f':'#c0392b';}
+  function colHdrs(){
+    return '<div style="display:flex;gap:6px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">'
+      +'<div style="width:34px"></div>'
+      +'<div style="flex:1;font-size:10px;color:var(--muted);text-align:center">Current</div>'
+      +'<div style="width:20px"></div>'
+      +'<div style="flex:1;font-size:10px;color:var(--muted);text-align:center">New rank</div>'
+      +'<div style="width:38px;font-size:10px;color:var(--muted);text-align:center">6→4</div>'
+      +'<div style="width:28px;font-size:10px;color:var(--muted);text-align:center">Δ</div>'
+      +'</div>';
+  }
+
+  function barRows(cats,newRanks){
+    var out='';
+    cats.forEach(function(cat){
+      var before=baseRanks[cat]?baseRanks[cat][selectedTeam]:null;
+      var after=newRanks&&newRanks[cat]?newRanks[cat][selectedTeam]:null;
+      if(before==null||after==null)return;
+      var delta=before-after;
+      var improved=delta>0,same=delta===0;
+      var barCol=same?'#888780':improved?'#1e6b3a':'#c0392b';
+      var beforeW=Math.round((1-(before-1)/(teamIds.length-1||1))*100);
+      var afterW=Math.round((1-(after-1)/(teamIds.length-1||1))*100);
+      var deltaStr=same?'=':improved?'▲'+delta:'▼'+Math.abs(delta);
+      out+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">';
+      out+='<span style="font-size:11px;font-weight:600;width:34px;color:var(--text)">'+cat+'</span>';
+      out+='<div style="flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+beforeW+'%;background:#888780;opacity:0.4;border-radius:4px"></div></div>';
+      out+='<span style="font-size:10px;color:var(--muted);width:20px;text-align:center">→</span>';
+      out+='<div style="flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+afterW+'%;background:'+barCol+';opacity:0.85;border-radius:4px"></div></div>';
+      out+='<span style="font-size:10px;color:var(--muted);width:38px;text-align:center;white-space:nowrap">'+before+'→'+after+'</span>';
+      out+='<span style="font-size:11px;font-weight:700;width:28px;text-align:right;color:'+(same?'var(--muted)':barCol)+'">'+deltaStr+'</span>';
+      out+='</div>';
+    });
+    return out;
+  }
+
+  function playerAvatar(p,bgCol,txtCol){
+    if(p.hs) return '<img src="'+p.hs+'" style="width:34px;height:34px;border-radius:50%;object-fit:cover" onerror="this.style.display=\'none\'">';
+    var initials=(p.name||'??').split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+    return '<div style="width:34px;height:34px;border-radius:50%;background:'+bgCol+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:'+txtCol+'">'+initials+'</div>';
+  }
 
   function render(){
-    var cats=(selectedPlayer&&!selectedPlayer.isHit)?PIT_CATS:HIT_CATS;
-    var isPit=selectedPlayer&&!selectedPlayer.isHit;
-
-    // Get roster players for selected team
-    var rosterPlayers=allPlayers.filter(function(p){
-      var row=isPit?S.pitRows:S.hitRows;
-      var found=row.find(function(r){
-        return normN((r.scorer&&r.scorer.name)||'')===normN(p.name)&&r.cells&&r.cells[1]&&r.cells[1].teamId===selectedTeam;
-      });
-      return !!found;
-    });
-
     var html='';
 
-    // Controls row
+    // Controls
+    var rosterForTeam=allPlayers.filter(function(p){return p.teamId===selectedTeam;})
+      .sort(function(a,b){return a.name.localeCompare(b.name);});
+
     html+='<div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px">';
     html+='<div><div style="font-size:11px;color:var(--muted);margin-bottom:4px">Team</div>';
     html+='<select id="sgp-team-sel" style="font-size:13px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text)">';
@@ -9850,51 +9905,50 @@ function buildSGPRos(el, fpHit, fpPit) {
     html+='<div><div style="font-size:11px;color:var(--muted);margin-bottom:4px">Player to replace</div>';
     html+='<select id="sgp-player-sel" style="font-size:13px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text)">';
     html+='<option value="">— select player —</option>';
-    rosterPlayers.sort(function(a,b){return a.name.localeCompare(b.name);}).forEach(function(p,i){
+    rosterForTeam.forEach(function(p,i){
       html+='<option value="'+i+'"'+(selectedPlayer&&selectedPlayer.name===p.name?' selected':'')+'>'+p.name+' ('+p.pos+')</option>';
     });
     html+='</select></div></div>';
 
-    // Positional strength cards
-    var gr=getTeamGroupRatings(selectedTeam);
+    // Positional strength
+    var gr=getGroupRatings(selectedTeam);
     html+='<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Positional strength</div>';
     html+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">';
     [{g:'Infield',label:'IF'},{g:'Outfield',label:'OF'},{g:'SP',label:'SP'},{g:'RP',label:'RP'}].forEach(function(x){
       var val=gr?gr[x.g]:null;var rank=gr?gr[x.g+'_rank']:null;var total=gr?gr[x.g+'_total']:null;
-      var score=val!=null?Math.round(val*100):0;var col=rc(val||0);
+      var score=val!=null?Math.round(val*100):null;var col=rc(val!=null?val:0);
       html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-width:100px;flex:1">';
       html+='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">'+x.label+'</div>';
-      html+='<div style="font-size:22px;font-weight:700;color:var(--text);line-height:1">'+(val!=null?score:'—')+'</div>';
-      html+='<div style="font-size:11px;color:var(--muted);margin-top:2px">'+(rank?'Rank '+rank+' of '+total:'No data')+'</div>';
-      html+='<div style="margin-top:6px;height:4px;background:var(--bg);border-radius:2px;overflow:hidden"><div style="width:'+score+'%;height:100%;background:'+col+';border-radius:2px"></div></div>';
+      html+='<div style="font-size:22px;font-weight:700;color:var(--text);line-height:1">'+(score!=null?score:'—')+'</div>';
+      html+='<div style="font-size:11px;color:var(--muted);margin-top:2px">'+(rank?'Rank '+rank+' of '+total:'Visit Trade page first')+'</div>';
+      html+='<div style="margin-top:6px;height:4px;background:var(--bg);border-radius:2px;overflow:hidden"><div style="width:'+(score||0)+'%;height:100%;background:'+col+';border-radius:2px"></div></div>';
       html+='</div>';
     });
     html+='</div>';
 
     if(!selectedPlayer){
-      html+='<div style="color:var(--muted);font-size:13px;padding:20px 0">Select a player to replace to see comparison.</div>';
+      html+='<div style="color:var(--muted);font-size:13px;padding:20px 0">Select a player to replace to see the comparison.</div>';
       el.innerHTML=html;
       document.getElementById('sgp-team-sel').addEventListener('change',function(){selectedTeam=this.value;selectedPlayer=null;render();});
       document.getElementById('sgp-player-sel').addEventListener('change',function(){
-        var idx=parseInt(this.value);var sorted=rosterPlayers.slice().sort(function(a,b){return a.name.localeCompare(b.name);});
-        selectedPlayer=isNaN(idx)?null:sorted[idx];render();
+        var idx=parseInt(this.value);
+        selectedPlayer=(!isNaN(idx)&&this.value!=='')?rosterForTeam[idx]:null;render();
       });
       return;
     }
 
-    // Category needs cards
-    var curRanks=baseRanks;
+    var cats=selectedPlayer.isHit?HIT_CATS:PIT_CATS;
+
+    // Category needs
     html+='<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Category needs</div>';
     html+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px">';
     cats.forEach(function(cat){
-      var rank=curRanks[cat]?curRanks[cat][selectedTeam]:null;
+      var rank=baseRanks[cat]?baseRanks[cat][selectedTeam]:null;
       var total=teamIds.length;
-      var isLow=LOW_CATS.indexOf(cat)!==-1;
-      // Weight: rank 1=0.2x, rank 10=2.5x
       var weight=rank?+(0.2+((rank-1)/(total-1||1))*2.3).toFixed(1):null;
       var barW=rank?Math.round((1-(rank-1)/(total-1||1))*100):50;
-      var barCol=barW>=70?'#2d5a3d':barW>=50?'#4a9a68':barW>=35?'#b7791f':'#c0392b';
-      html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-width:80px;flex:1">';
+      var barCol=barW>=65?'#2d5a3d':barW>=50?'#4a9a68':barW>=35?'#b7791f':'#c0392b';
+      html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-width:70px;flex:1">';
       html+='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">'+cat+'</div>';
       html+='<div style="font-size:22px;font-weight:700;color:var(--text);line-height:1">'+(rank?rank+'<span style="font-size:12px;font-weight:400">'+ordSuffix(rank)+'</span>':'—')+'</div>';
       html+='<div style="font-size:11px;color:var(--muted);margin-top:2px">'+(weight?'Weight '+weight+'×':'—')+'</div>';
@@ -9903,64 +9957,24 @@ function buildSGPRos(el, fpHit, fpPit) {
     });
     html+='</div>';
 
-    // Column headers helper
-    function colHdrs(){
-      return '<div style="display:flex;gap:6px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">'
-        +'<div style="width:32px"></div>'
-        +'<div style="flex:1;font-size:10px;color:var(--muted);text-align:center">Current</div>'
-        +'<div style="width:20px"></div>'
-        +'<div style="flex:1;font-size:10px;color:var(--muted);text-align:center">New rank</div>'
-        +'<div style="width:36px;font-size:10px;color:var(--muted);text-align:center">6→4</div>'
-        +'<div style="width:28px;font-size:10px;color:var(--muted);text-align:center">Δ</div>'
-        +'</div>';
-    }
+    // Current player simulation (dropping current, keeping — no add)
+    var curNewRanks=simulate(selectedTeam,null,selectedPlayer);
 
-    // Bar rows helper
-    function barRows(player,newRanks){
-      var out='';
-      cats.forEach(function(cat){
-        var before=curRanks[cat]?curRanks[cat][selectedTeam]:null;
-        var after=newRanks&&newRanks[cat]?newRanks[cat][selectedTeam]:null;
-        if(before==null||after==null)return;
-        var delta=before-after;
-        var improved=delta>0,same=delta===0;
-        var barCol=same?'var(--muted)':improved?'#1e6b3a':'#c0392b';
-        var beforeW=Math.round((1-(before-1)/(teamIds.length-1||1))*100);
-        var afterW=Math.round((1-(after-1)/(teamIds.length-1||1))*100);
-        var deltaStr=same?'=':improved?'▲'+delta:'▼'+Math.abs(delta);
-        out+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">';
-        out+='<span style="font-size:11px;font-weight:600;width:32px;color:var(--text)">'+cat+'</span>';
-        out+='<div style="flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+beforeW+'%;background:#888780;opacity:0.5;border-radius:4px"></div></div>';
-        out+='<span style="font-size:10px;color:var(--muted);width:20px;text-align:center">→</span>';
-        out+='<div style="flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+afterW+'%;background:'+barCol+';opacity:0.85;border-radius:4px"></div></div>';
-        out+='<span style="font-size:10px;color:var(--muted);width:36px;text-align:center;white-space:nowrap">'+before+'→'+after+'</span>';
-        out+='<span style="font-size:11px;font-weight:700;width:28px;text-align:right;color:'+(same?'var(--muted)':barCol)+'">'+deltaStr+'</span>';
-        out+='</div>';
-      });
-      return out;
-    }
-
-    // Current player panel
-    var curNewRanks=simulate(selectedTeam,selectedPlayer);
-    var curInitials=(selectedPlayer.name||'??').split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
     html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">';
 
     // Left: current player
     html+='<div style="border-radius:12px;border:1px solid var(--border);overflow:hidden">';
     html+='<div style="background:#dbeafe;padding:12px 14px">';
     html+='<div style="font-size:10px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Current player SGP</div>';
-    html+='<div style="display:flex;align-items:center;gap:10px">';
-    if(selectedPlayer.hs) html+='<img src="'+selectedPlayer.hs+'" style="width:34px;height:34px;border-radius:50%;object-fit:cover" onerror="this.style.display=\'none\'">';
-    else html+='<div style="width:34px;height:34px;border-radius:50%;background:#93c5fd;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#1e40af">'+curInitials+'</div>';
+    html+='<div style="display:flex;align-items:center;gap:10px">'+playerAvatar(selectedPlayer,'#93c5fd','#1e40af');
     html+='<div><div style="font-size:13px;font-weight:700;color:#1e3a8a">'+selectedPlayer.name+'</div>';
     html+='<div style="font-size:11px;color:#1e40af">'+selectedPlayer.mlb+' · '+selectedPlayer.pos+'</div></div></div></div>';
-    html+='<div style="background:var(--surface);padding:10px 14px 8px">'+colHdrs()+barRows(selectedPlayer,curNewRanks)+'</div></div>';
+    html+='<div style="background:var(--surface);padding:10px 14px 8px">'+colHdrs()+barRows(cats,curNewRanks)+'</div></div>';
 
-    // Right: candidate pool
+    // Right: candidates
     html+='<div>';
     html+='<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">New player SGP — sorted by total gain</div>';
 
-    // Build candidates: all players at same position(s)
     var posParts=selectedPlayer.pos.split(',').map(function(x){return x.trim();});
     var candidates=allPlayers.filter(function(p){
       if(p.name===selectedPlayer.name) return false;
@@ -9968,63 +9982,50 @@ function buildSGPRos(el, fpHit, fpPit) {
       return posParts.some(function(pos){return pp.indexOf(pos)!==-1;});
     });
 
-    // Simulate and compute total delta for each candidate
     var candResults=candidates.map(function(p){
-      var nr=simulate(selectedTeam,p);
+      var nr=simulate(selectedTeam,selectedPlayer,p); // subtract current, add candidate
       var total=0;
       cats.forEach(function(cat){
-        var before=curRanks[cat]?curRanks[cat][selectedTeam]:null;
+        var before=baseRanks[cat]?baseRanks[cat][selectedTeam]:null;
         var after=nr&&nr[cat]?nr[cat][selectedTeam]:null;
         if(before!=null&&after!=null) total+=(before-after);
       });
       return{player:p,newRanks:nr,total:total};
-    });
-    candResults.sort(function(a,b){return b.total-a.total;});
+    }).sort(function(a,b){return b.total-a.total;});
 
     if(!candResults.length){
       html+='<div style="color:var(--muted);font-size:13px">No candidates with ROS projections found at this position.</div>';
-    } else {
+    }else{
       candResults.forEach(function(cr){
-        var p=cr.player;
-        var initials=(p.name||'??').split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
-        var totalDelta=cr.total;
-        var totalStr=totalDelta===0?'=':totalDelta>0?'▲'+totalDelta:'▼'+Math.abs(totalDelta);
-        var totalCol=totalDelta>0?'#1e6b3a':totalDelta<0?'#c0392b':'var(--muted)';
-        var headerBg=totalDelta>0?'#dcfce7':totalDelta<0?'#fee2e2':'var(--bg)';
-        var headerTitleCol=totalDelta>0?'#14532d':totalDelta<0?'#7f1d1d':'var(--text)';
-        var headerSubCol=totalDelta>0?'#166534':totalDelta<0?'#991b1b':'var(--muted)';
-        var avatarBg=totalDelta>0?'#bbf7d0':totalDelta<0?'#fecaca':'var(--border)';
-        var avatarCol=totalDelta>0?'#14532d':totalDelta<0?'#7f1d1d':'var(--text)';
-
+        var p=cr.player;var td=cr.total;
+        var totalStr=td===0?'=':td>0?'▲'+td:'▼'+Math.abs(td);
+        var hBg=td>0?'#dcfce7':td<0?'#fee2e2':'var(--bg)';
+        var hTxt=td>0?'#14532d':td<0?'#7f1d1d':'var(--text)';
+        var hSub=td>0?'#166534':td<0?'#991b1b':'var(--muted)';
+        var avBg=td>0?'#bbf7d0':td<0?'#fecaca':'var(--border)';
         html+='<div style="border-radius:12px;border:1px solid var(--border);overflow:hidden;margin-bottom:12px">';
-        html+='<div style="background:'+headerBg+';padding:12px 14px">';
-        html+='<div style="font-size:10px;font-weight:700;color:'+headerSubCol+';text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">New player SGP</div>';
+        html+='<div style="background:'+hBg+';padding:12px 14px">';
+        html+='<div style="font-size:10px;font-weight:700;color:'+hSub+';text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">New player SGP</div>';
         html+='<div style="display:flex;align-items:center;justify-content:space-between">';
-        html+='<div style="display:flex;align-items:center;gap:10px">';
-        if(p.hs) html+='<img src="'+p.hs+'" style="width:34px;height:34px;border-radius:50%;object-fit:cover" onerror="this.style.display=\'none\'">';
-        else html+='<div style="width:34px;height:34px;border-radius:50%;background:'+avatarBg+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:'+avatarCol+'">'+initials+'</div>';
-        html+='<div><div style="font-size:13px;font-weight:700;color:'+headerTitleCol+'">'+p.name+'</div>';
-        html+='<div style="display:flex;align-items:center;gap:6px">';
-        html+='<span style="font-size:11px;color:'+headerSubCol+'">'+p.mlb+' · '+p.pos+'</span>';
+        html+='<div style="display:flex;align-items:center;gap:10px">'+playerAvatar(p,avBg,hTxt);
+        html+='<div><div style="font-size:13px;font-weight:700;color:'+hTxt+'">'+p.name+'</div>';
+        html+='<div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;color:'+hSub+'">'+p.mlb+' · '+p.pos+'</span>';
         if(!p.isRostered) html+='<span style="font-size:10px;padding:1px 7px;background:#fef3c7;color:#92400e;border-radius:10px;font-weight:700">FA</span>';
         html+='</div></div></div>';
-        html+='<span style="font-size:13px;font-weight:700;color:'+headerTitleCol+';background:'+avatarBg+';padding:4px 10px;border-radius:20px">'+totalStr+'</span>';
+        html+='<span style="font-size:13px;font-weight:700;color:'+hTxt+';background:'+avBg+';padding:4px 10px;border-radius:20px">'+totalStr+'</span>';
         html+='</div></div>';
-        html+='<div style="background:var(--surface);padding:10px 14px 8px">'+colHdrs()+barRows(p,cr.newRanks)+'</div></div>';
+        html+='<div style="background:var(--surface);padding:10px 14px 8px">'+colHdrs()+barRows(cats,cr.newRanks)+'</div></div>';
       });
     }
-
     html+='</div></div>';
     el.innerHTML=html;
 
     document.getElementById('sgp-team-sel').addEventListener('change',function(){selectedTeam=this.value;selectedPlayer=null;render();});
     document.getElementById('sgp-player-sel').addEventListener('change',function(){
-      var sorted=rosterPlayers.slice().sort(function(a,b){return a.name.localeCompare(b.name);});
-      var idx=parseInt(this.value);selectedPlayer=isNaN(idx)||this.value===''?null:sorted[idx];render();
+      var idx=parseInt(this.value);
+      selectedPlayer=(!isNaN(idx)&&this.value!=='')?rosterForTeam[idx]:null;render();
     });
   }
-
-  function ordSuffix(n){return n===1?'st':n===2?'nd':n===3?'rd':'th';}
 
   render();
 }
