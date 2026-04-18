@@ -8193,21 +8193,27 @@ window.recalculateFWAR = function() {
   // ── WIN% from standings ───────────────────────────────────────────────────
   var winPctByTeamId = {};
   var stTbls = (S.standingsData && S.standingsData.data && S.standingsData.data.tableList) || [];
-  for (var si = 0; si < stTbls.length; si++) {
-    var stT = stTbls[si];
-    var stHdrs = (stT.header && stT.header.cells) || [];
-    var stIdx = {};
-    stHdrs.forEach(function(h, i){ stIdx[(h.id||h.key||'').toUpperCase()] = i; });
-    var wpIdx = stIdx['WIN_PCT'] != null ? stIdx['WIN_PCT'] : stIdx['WIN%'] != null ? stIdx['WIN%'] : stIdx['W%'] != null ? stIdx['W%'] : stIdx['PCT'];
-    if (wpIdx == null) continue;
-    (stT.rows || []).forEach(function(row) {
-      var cells = row.cells || [];
-      var scorer = row.scorer || {};
-      var teamId = scorer.teamId || (cells[0] && cells[0].teamId) || '';
-      var v = parseFloat(cells[wpIdx] && cells[wpIdx].content);
-      if (teamId && !isNaN(v)) winPctByTeamId[teamId] = v;
+  var winPctColIdx2 = null, winPctTable2 = null;
+  stTbls.forEach(function(t) {
+    if (winPctColIdx2 != null) return;
+    var idx = {};
+    ((t.header && t.header.cells) || []).forEach(function(h, i) {
+      if (h.key)       idx[h.key.toUpperCase()]       = i;
+      if (h.shortName) idx[h.shortName.toUpperCase()] = i;
+      if (h.name)      idx[h.name.toUpperCase()]      = i;
     });
-    if (Object.keys(winPctByTeamId).length > 0) break;
+    ['WIN_PCT','WIN%','W%','WPCT','PCT','WINPCT'].forEach(function(k) {
+      if (winPctColIdx2 == null && idx[k] != null) { winPctColIdx2 = idx[k]; winPctTable2 = t; }
+    });
+  });
+  if (winPctTable2 && winPctColIdx2 != null) {
+    (winPctTable2.rows || []).forEach(function(row) {
+      var fc = row.fixedCells || [], cells = row.cells || [];
+      var id = (fc[1] && fc[1].teamId) || '';
+      if (!id) return;
+      var v = parseFloat(cells[winPctColIdx2] && cells[winPctColIdx2].content);
+      if (!isNaN(v)) winPctByTeamId[id] = v > 1 ? v / 100 : v;
+    });
   }
 
   // Build win% pairs keyed by teamId
@@ -8225,7 +8231,7 @@ window.recalculateFWAR = function() {
 
   function miniScatter(pairs, yLabel, dotColor, trendColor) {
     if (!pairs.length) return '<div style="color:var(--muted);font-size:12px;padding:8px 0">No data available.</div>';
-    var W=320, H=150, PL=36, PR=12, PT=12, PB=28;
+    var W=320, H=75, PL=36, PR=12, PT=10, PB=22;
     var cW=W-PL-PR, cH=H-PT-PB;
     var xs=pairs.map(function(p){return p[0];}), ys=pairs.map(function(p){return p[1];});
     var xMin=Math.min.apply(null,xs), xMax=Math.max.apply(null,xs);
