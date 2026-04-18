@@ -4418,9 +4418,10 @@ window.showTradeTab = function(tab, btn) {
     if (b2 && b2.value !== val) b2.value = val;
     document.querySelector('main').style.maxWidth = 'none';
   } else if (tab === 'fa-ratings') {
-    document.querySelector('main').style.maxWidth = 'none';
+    document.querySelector('main').style.maxWidth = '';
     window._faRatingsPos_hit = 'ALL';
     window._faRatingsPos_pit = 'ALL';
+    window._faType = window._faType || 'hit';
     drawFARatings();
   } else {
     document.querySelector('main').style.maxWidth = '';
@@ -4433,7 +4434,8 @@ function drawFARatings() {
   var fas = TA.faPlayers || [];
   if (!fas.length) { el.innerHTML = '<div style="padding:20px;color:var(--muted)">No free agent data — visit this tab after page load.</div>'; return; }
 
-  window._faRatingsPos = window._faRatingsPos || 'ALL';
+  window._faType = window._faType || 'hit';
+  var activeType = window._faType;
 
   function badge(r) {
     var pct = Math.round((r||0)*100);
@@ -4554,12 +4556,15 @@ function drawFARatings() {
   var hitters  = fas.filter(function(p){ return p.type==='bat'; }).sort(function(a,b){ return fwarSortVal(b,true)-fwarSortVal(a,true); });
   var pitchers = fas.filter(function(p){ return p.type==='pit'; }).sort(function(a,b){ return fwarSortVal(b,false)-fwarSortVal(a,false); });
 
-  // Positional strength — all teams heatmap (same as main trade page card)
-  var posHtml = '';
+  // Hitter / Pitcher type pills
+  var typePills = '<div class="pill-group" style="margin-bottom:16px">'
+    + '<button class="pill'+(activeType==='hit'?' active':'')+'" onclick="window._faType=\'hit\';drawFARatings()">Hitters</button>'
+    + '<button class="pill'+(activeType==='pit'?' active':'')+'" onclick="window._faType=\'pit\';drawFARatings()">Pitchers</button>'
+    + '</div>';
 
-  el.innerHTML = posHtml
-               + buildTable(hitters,  'Free Agent Hitters',  ['R','HR','RBI','SB','AVG'], ['R','HR','RBI','SB','AVG'], [0,0,0,0,3], 'hit', hitPos)
-               + buildTable(pitchers, 'Free Agent Pitchers', ['K','W','SVH3','ERA','WHIP'],['K','W','SVH3','ERA','WHIP'],[0,0,0,2,2], 'pit', pitPos);
+  el.innerHTML = typePills + (activeType === 'hit'
+    ? buildTable(hitters,  'Free Agent Hitters',  ['R','HR','RBI','SB','AVG'], ['R','HR','RBI','SB','AVG'], [0,0,0,0,3], 'hit', hitPos)
+    : buildTable(pitchers, 'Free Agent Pitchers', ['K','W','SVH3','ERA','WHIP'],['K','W','SVH3','ERA','WHIP'],[0,0,0,2,2], 'pit', pitPos));
 }
 
 window.selectTradeTeam = function(side, teamId) {
