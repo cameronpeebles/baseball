@@ -1382,11 +1382,23 @@ def fetch_fantasypros(url, cols):
     rows = _re.findall(r'<tr[^>]*>(.*?)</tr>', table_html, _re.DOTALL | _re.IGNORECASE)
 
     def strip_tags(s):
-        return _re.sub(r'<[^>]+>', '', s).strip()
+        s = _re.sub(r'<[^>]+>', ' ', s)   # replace tags with space not empty
+        s = s.replace('&nbsp;', ' ').replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>').replace('&#160;', ' ')
+        return ' '.join(s.split()).strip()
 
     def norm_name(s):
-        s = _re.sub(r'\s*\([^)]+\)', '', s).strip()
-        return s.lower()
+        # Strip HTML entities and tags first
+        s = _re.sub(r'<[^>]+>', ' ', s)
+        s = s.replace('&nbsp;', ' ').replace('&amp;', '&')
+        s = ' '.join(s.split()).strip()
+        # Strip team/position suffix in parens: "(LAD - SP,DH)" or "(2B,3B,SS)"
+        s = _re.sub(r'\s*\([^)]*\)', '', s).strip()
+        # Strip IL/FA suffixes
+        s = _re.sub(r'\s*(IL\d*|DTD|FA|NA)\s*$', '', s, flags=_re.IGNORECASE).strip()
+        # Normalize accents and lowercase
+        import unicodedata
+        s = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+        return s.lower().strip()
 
     players = []
     for row in rows:
