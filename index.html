@@ -452,11 +452,11 @@ td.neg { color: #c0392b; font-weight: 500; }
   <div class="page" id="page-models">
     <div class="page-title">Models</div>
     <div class="page-subtitle">fWAR model configuration — adjust replacement levels, category weights, and recalculate.</div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:16px;align-items:start">
 
-    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) minmax(0,1.4fr);gap:12px;margin-top:16px;align-items:start">
-
-      <!-- Left column: Model Inputs + fWAR Calculation -->
+      <!-- LEFT: Model inputs → Replacement rank → Category weights → fWAR calc → Repl summary -->
       <div style="display:flex;flex-direction:column;gap:10px">
+
         <div class="card">
           <div class="card-header"><span class="card-title" style="font-size:12px">Model inputs</span></div>
           <div class="card-body" style="padding:12px 16px">
@@ -469,6 +469,28 @@ td.neg { color: #c0392b; font-weight: 500; }
             </div>
           </div>
         </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title" style="font-size:12px">Replacement rank by position</span></div>
+          <div class="card-body" style="padding:12px 16px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px" id="fwar-rep-inputs"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title" style="font-size:12px">Category weights</span></div>
+          <div class="card-body" style="padding:12px 16px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;margin-bottom:6px">
+              <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent)">Hitting</div>
+              <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent2);padding-left:8px">Pitching</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+              <div id="fwar-hit-weights" style="display:flex;flex-direction:column;gap:5px"></div>
+              <div id="fwar-pit-weights" style="display:flex;flex-direction:column;gap:5px;padding-left:8px"></div>
+            </div>
+          </div>
+        </div>
+
         <div class="card">
           <div class="card-header"><span class="card-title" style="font-size:12px">fWAR calculation</span></div>
           <div class="card-body" style="padding:12px 16px;display:flex;flex-direction:column;gap:7px">
@@ -478,35 +500,18 @@ td.neg { color: #c0392b; font-weight: 500; }
             <span id="fwar-status" style="font-size:11px;color:var(--muted)"></span>
           </div>
         </div>
+
+        <div id="fwar-weight-summary"></div>
+        <div id="fwar-repl-summary"></div>
+
       </div>
 
-      <!-- Middle column: Replacement rank -->
-      <div class="card">
-        <div class="card-header"><span class="card-title" style="font-size:12px">Replacement rank by position</span></div>
-        <div class="card-body" style="padding:12px 16px">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px" id="fwar-rep-inputs"></div>
-        </div>
+      <!-- RIGHT: fWAR results -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div id="fwar-model-summary"></div>
       </div>
 
-      <!-- Right column: Category weights -->
-      <div class="card">
-        <div class="card-header"><span class="card-title" style="font-size:12px">Category weights</span></div>
-        <div class="card-body" style="padding:12px 16px">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:6px">
-            <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent)">Hitting</div>
-            <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent2);padding-left:8px">Pitching</div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
-            <div id="fwar-hit-weights" style="display:flex;flex-direction:column;gap:5px"></div>
-            <div id="fwar-pit-weights" style="display:flex;flex-direction:column;gap:5px;padding-left:8px"></div>
-          </div>
-        </div>
-      </div>
     </div>
-
-    <!-- Bottom: weight summary + model summary full width -->
-    <div id="fwar-weight-summary" style="margin-top:12px"></div>
-    <div id="fwar-model-summary" style="margin-top:12px"></div>
   </div>
 
   <div class="page" id="page-rosters">
@@ -8166,143 +8171,176 @@ window.recalculateFWAR = function() {
   drawPlayers('hit');
   drawPlayers('pit');
 
-  // Model summary
-  var sumEl = document.getElementById('fwar-model-summary');
-  if (sumEl) {
-    var html = '<div class="card" style="margin-bottom:12px"><div class="card-header"><span class="card-title">Replacement level summary</span></div>';
-    html += '<div class="card-body" style="padding:12px 16px">';
-    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">';
-    var allSlots = ['C','1B','2B','3B','SS','OF','SP','RP'];
-    allSlots.forEach(function(slot) {
+  // ── Replacement level summary → left column ──────────────────────────────
+  var replSumEl = document.getElementById('fwar-repl-summary');
+  if (replSumEl) {
+    var rhtml = '<div class="card"><div class="card-header"><span class="card-title" style="font-size:12px">Replacement level summary</span></div>';
+    rhtml += '<div class="card-body" style="padding:12px 16px">';
+    rhtml += '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px">';
+    ['C','1B','2B','3B','SS','OF','SP','RP'].forEach(function(slot) {
       var rz = replZ[slot] != null ? replZ[slot].toFixed(2) : '—';
-      var rank = FWAR.repRanks[slot];
-      html += '<div style="background:var(--bg);border-radius:var(--radius);padding:6px 10px;min-width:80px">';
-      html += '<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">' + slot + ' (rank ' + rank + ')</div>';
-      html += '<div style="font-size:14px;font-weight:600;margin-top:1px">' + rz + '</div>';
-      html += '<div style="font-size:10px;color:var(--muted)">replacement z</div>';
-      html += '</div>';
+      rhtml += '<div style="background:var(--bg);border-radius:var(--radius);padding:5px 9px;min-width:74px">';
+      rhtml += '<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted)">' + slot + ' (rank ' + FWAR.repRanks[slot] + ')</div>';
+      rhtml += '<div style="font-size:13px;font-weight:600;margin-top:1px">' + rz + '</div>';
+      rhtml += '<div style="font-size:10px;color:var(--muted)">repl z</div></div>';
     });
-    html += '</div>';
-    html += '<div style="font-size:11px;color:var(--muted)">League avgs (rostered): AVG ' + lgAVG.toFixed(3) + ' · ERA ' + lgERA.toFixed(2) + ' · WHIP ' + lgWHIP.toFixed(2) + ' · AB ' + Math.round(lgAB) + ' · SP IP ' + lgSpIP.toFixed(1) + ' · RP IP ' + lgRpIP.toFixed(1) + '</div>';
-    html += '</div></div>';
-
-    // Regression summary cards
-    html += '<div class="two-col" style="margin-bottom:12px">';
-
-    // Wins regression
-    html += '<div class="card"><div class="card-header"><span class="card-title">fWAR → Matchup wins</span>';
-    if (regWins) {
-      var r2col = regWins.r2 >= 0.6 ? '#2d5a3d' : regWins.r2 >= 0.3 ? '#b7791f' : '#c0392b';
-      html += '<span style="font-size:12px;font-weight:600;color:' + r2col + '">R² = ' + regWins.r2.toFixed(3) + '</span>';
-    }
-    html += '</div><div class="card-body" style="padding:14px 20px">';
-    if (regWins) {
-      html += '<div style="font-size:13px;margin-bottom:8px">1 fWAR ≈ <strong>' + regWins.slope.toFixed(3) + ' wins</strong></div>';
-      html += '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">wins = ' + regWins.intercept.toFixed(2) + ' + ' + regWins.slope.toFixed(3) + ' × teamFWAR</div>';
-      // Mini scatter
-      var W=280, H=140, P=32;
-      var xVals=winPairs.map(function(p){return p[0];}), yVals=winPairs.map(function(p){return p[1];});
-      var xMin=Math.min.apply(null,xVals), xMax=Math.max.apply(null,xVals)||1;
-      var yMin=Math.min.apply(null,yVals)*0.9, yMax=Math.max.apply(null,yVals)*1.1||1;
-      var xR=xMax-xMin||1, yR=yMax-yMin||1;
-      html += '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto">';
-      for (var gi=0;gi<=3;gi++) {
-        var gy=P+(H-P*2)*(gi/3);
-        html += '<line x1="'+P+'" y1="'+gy+'" x2="'+(W-8)+'" y2="'+gy+'" stroke="var(--border)" stroke-width="0.5"/>';
-        html += '<text x="'+(P-3)+'" y="'+(gy+4)+'" text-anchor="end" font-size="8" fill="var(--muted)">'+(Math.round(yMax-(yR*(gi/3))))+'</text>';
-      }
-      // Trend line
-      var tx1=P+(xMin-xMin)/xR*(W-P-8), ty1=H-P-(regWins.slope*xMin+regWins.intercept-yMin)/yR*(H-P*2);
-      var tx2=P+(xMax-xMin)/xR*(W-P-8), ty2=H-P-(regWins.slope*xMax+regWins.intercept-yMin)/yR*(H-P*2);
-      html += '<line x1="'+tx1+'" y1="'+ty1+'" x2="'+tx2+'" y2="'+ty2+'" stroke="#4a9a68" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.8"/>';
-      winPairs.forEach(function(pair, i) {
-        var cx=P+(pair[0]-xMin)/xR*(W-P-8), cy=H-P-(pair[1]-yMin)/yR*(H-P*2);
-        var teamIds2 = Object.keys(S.teamInfo);
-        var dot = teamIds2[i] ? (S.teamInfo[teamIds2[i]].shortName||'?')[0] : '?';
-        html += '<circle cx="'+cx+'" cy="'+cy+'" r="5" fill="#2d5a3d" opacity="0.75"><title>fWAR='+pair[0].toFixed(1)+' W='+pair[1]+'</title></circle>';
-      });
-      html += '<text x="'+(W/2)+'" y="'+(H-4)+'" text-anchor="middle" font-size="9" fill="var(--muted)">Team fWAR total</text>';
-      html += '<text x="12" y="'+(H/2)+'" text-anchor="middle" font-size="9" fill="var(--muted)" transform="rotate(-90,12,'+(H/2)+')">Wins</text>';
-      html += '</svg>';
-      html += '<div style="font-size:11px;color:' + r2col + ';margin-top:6px">' + (regWins.r2>=0.6?'Strong fit — scaling is reliable':regWins.r2>=0.3?'Moderate fit — use with caution':'Weak fit — more weeks needed') + '</div>';
-    } else {
-      html += '<div style="color:var(--muted);font-size:13px">Need schedule data — visit JOE Factor page first.</div>';
-    }
-    html += '</div></div>';
-
-    // Points regression
-    html += '<div class="card"><div class="card-header"><span class="card-title">fWAR → Fantasy points</span>';
-    if (regPts) {
-      var r2colP = regPts.r2 >= 0.6 ? '#2d5a3d' : regPts.r2 >= 0.3 ? '#b7791f' : '#c0392b';
-      html += '<span style="font-size:12px;font-weight:600;color:' + r2colP + '">R² = ' + regPts.r2.toFixed(3) + '</span>';
-    }
-    html += '</div><div class="card-body" style="padding:14px 20px">';
-    if (regPts) {
-      html += '<div style="font-size:13px;margin-bottom:8px">1 fWAR ≈ <strong>' + regPts.slope.toFixed(2) + ' pts</strong></div>';
-      html += '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">pts = ' + regPts.intercept.toFixed(1) + ' + ' + regPts.slope.toFixed(2) + ' × teamFWAR</div>';
-      var W2=280, H2=140, P2=32;
-      var xVals2=ptsPairs.map(function(p){return p[0];}), yVals2=ptsPairs.map(function(p){return p[1];});
-      var xMin2=Math.min.apply(null,xVals2), xMax2=Math.max.apply(null,xVals2)||1;
-      var yMin2=Math.min.apply(null,yVals2)*0.9, yMax2=Math.max.apply(null,yVals2)*1.1||1;
-      var xR2=xMax2-xMin2||1, yR2=yMax2-yMin2||1;
-      html += '<svg viewBox="0 0 ' + W2 + ' ' + H2 + '" style="width:100%;height:auto">';
-      for (var gi2=0;gi2<=3;gi2++) {
-        var gy2=P2+(H2-P2*2)*(gi2/3);
-        html += '<line x1="'+P2+'" y1="'+gy2+'" x2="'+(W2-8)+'" y2="'+gy2+'" stroke="var(--border)" stroke-width="0.5"/>';
-        html += '<text x="'+(P2-3)+'" y="'+(gy2+4)+'" text-anchor="end" font-size="8" fill="var(--muted)">'+(Math.round(yMax2-(yR2*(gi2/3))))+'</text>';
-      }
-      var tpx1=P2, tpy1=H2-P2-(regPts.slope*xMin2+regPts.intercept-yMin2)/yR2*(H2-P2*2);
-      var tpx2=P2+(xMax2-xMin2)/xR2*(W2-P2-8), tpy2=H2-P2-(regPts.slope*xMax2+regPts.intercept-yMin2)/yR2*(H2-P2*2);
-      html += '<line x1="'+tpx1+'" y1="'+tpy1+'" x2="'+tpx2+'" y2="'+tpy2+'" stroke="#c8a96e" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.8"/>';
-      ptsPairs.forEach(function(pair) {
-        var cx2=P2+(pair[0]-xMin2)/xR2*(W2-P2-8), cy2=H2-P2-(pair[1]-yMin2)/yR2*(H2-P2*2);
-        html += '<circle cx="'+cx2+'" cy="'+cy2+'" r="5" fill="#c8a96e" opacity="0.8"><title>fWAR='+pair[0].toFixed(1)+' Pts='+pair[1]+'</title></circle>';
-      });
-      html += '<text x="'+(W2/2)+'" y="'+(H2-4)+'" text-anchor="middle" font-size="9" fill="var(--muted)">Team fWAR total</text>';
-      html += '<text x="12" y="'+(H2/2)+'" text-anchor="middle" font-size="9" fill="var(--muted)" transform="rotate(-90,12,'+(H2/2)+')">Pts</text>';
-      html += '</svg>';
-      html += '<div style="font-size:11px;color:' + r2colP + ';margin-top:6px">' + (regPts.r2>=0.6?'Strong fit — scaling is reliable':regPts.r2>=0.3?'Moderate fit — use with caution':'Weak fit — more weeks needed') + '</div>';
-    } else {
-      html += '<div style="color:var(--muted);font-size:13px">Standings points data not available.</div>';
-    }
-    html += '</div></div>';
-    html += '</div>'; // two-col
-
-    // Team fWAR totals table
-    html += '<div class="card"><div class="card-header"><span class="card-title">Team fWAR totals</span></div>';
-    html += '<div class="table-wrap"><table><thead><tr>';
-    html += '<th class="left">Team</th><th>fWAR total</th><th>Wins</th><th>Pred wins</th><th>Pts</th><th>Pred pts</th>';
-    html += '</tr></thead><tbody>';
-    var teamRows2 = Object.keys(S.teamInfo).map(function(id) {
-      var ti3 = S.teamInfo[id];
-      var tName = ti3.name || ti3.shortName || '';
-      var fw = teamFWARTotals[id] || 0;
-      var wins2 = teamWins[tName] != null ? teamWins[tName] : null;
-      var pts2  = teamFantasyPts[id] || null;
-      var predW = regWins ? parseFloat((regWins.slope*fw + regWins.intercept).toFixed(1)) : null;
-      var predP = regPts  ? parseFloat((regPts.slope*fw  + regPts.intercept).toFixed(1))  : null;
-      return { id:id, name:tName, logo:ti3.logoUrl512||'', fw:fw, wins:wins2, pts:pts2, predW:predW, predP:predP };
-    }).sort(function(a,b){return b.fw-a.fw;});
-
-    teamRows2.forEach(function(r, i) {
-      var fwCol = r.fw >= 0 ? '#2d5a3d' : '#c0392b';
-      html += '<tr' + (i===0?' class="hl"':'') + '>';
-      html += '<td class="left"><div class="team-cell">';
-      if (r.logo) html += '<img class="team-logo" src="'+r.logo+'" alt="" onerror="this.style.display=\'none\'">';
-      else html += '<div class="team-logo-ph">'+(r.name[0]||'?')+'</div>';
-      html += '<span>'+r.name+'</span></div></td>';
-      html += '<td style="font-weight:700;color:'+fwCol+'">'+(r.fw>=0?'+':'')+r.fw.toFixed(1)+'</td>';
-      html += '<td>'+(r.wins!=null?r.wins:'—')+'</td>';
-      html += '<td style="color:var(--muted)">'+(r.predW!=null?r.predW:'—')+'</td>';
-      html += '<td>'+(r.pts!=null?r.pts:'—')+'</td>';
-      html += '<td style="color:var(--muted)">'+(r.predP!=null?r.predP:'—')+'</td>';
-      html += '</tr>';
-    });
-    html += '</tbody></table></div></div>';
-
-    sumEl.innerHTML = html;
+    rhtml += '</div>';
+    rhtml += '<div style="font-size:11px;color:var(--muted)">League avgs (rostered): AVG ' + lgAVG.toFixed(3) + ' · ERA ' + lgERA.toFixed(2) + ' · WHIP ' + lgWHIP.toFixed(2) + ' · AB ' + Math.round(lgAB) + ' · SP IP ' + lgSpIP.toFixed(1) + ' · RP IP ' + lgRpIP.toFixed(1) + '</div>';
+    rhtml += '</div></div>';
+    replSumEl.innerHTML = rhtml;
   }
 
+  // ── WIN% from standings ───────────────────────────────────────────────────
+  var winPctByTeamId = {};
+  var stTbls = (S.standingsData && S.standingsData.data && S.standingsData.data.tableList) || [];
+  for (var si = 0; si < stTbls.length; si++) {
+    var stT = stTbls[si];
+    var stHdrs = (stT.header && stT.header.cells) || [];
+    var stIdx = {};
+    stHdrs.forEach(function(h, i){ stIdx[(h.id||h.key||'').toUpperCase()] = i; });
+    var wpIdx = stIdx['WIN_PCT'] != null ? stIdx['WIN_PCT'] : stIdx['WIN%'] != null ? stIdx['WIN%'] : stIdx['W%'] != null ? stIdx['W%'] : stIdx['PCT'];
+    if (wpIdx == null) continue;
+    (stT.rows || []).forEach(function(row) {
+      var cells = row.cells || [];
+      var scorer = row.scorer || {};
+      var teamId = scorer.teamId || (cells[0] && cells[0].teamId) || '';
+      var v = parseFloat(cells[wpIdx] && cells[wpIdx].content);
+      if (teamId && !isNaN(v)) winPctByTeamId[teamId] = v;
+    });
+    if (Object.keys(winPctByTeamId).length > 0) break;
+  }
+
+  // Build win% pairs keyed by teamId
+  var winPctPairs = [];
+  Object.keys(teamFWARTotals).forEach(function(id) {
+    var wp = winPctByTeamId[id];
+    if (wp != null) winPctPairs.push([teamFWARTotals[id], wp]);
+  });
+  var regWinPct = linReg(winPctPairs);
+  FWAR.regWinPct = regWinPct;
+
+  // ── Right column: three cards ─────────────────────────────────────────────
+  var sumEl = document.getElementById('fwar-model-summary');
+  if (!sumEl) return;
+
+  function miniScatter(pairs, yLabel, dotColor, trendColor) {
+    if (!pairs.length) return '<div style="color:var(--muted);font-size:12px;padding:8px 0">No data available.</div>';
+    var W=320, H=150, PL=36, PR=12, PT=12, PB=28;
+    var cW=W-PL-PR, cH=H-PT-PB;
+    var xs=pairs.map(function(p){return p[0];}), ys=pairs.map(function(p){return p[1];});
+    var xMin=Math.min.apply(null,xs), xMax=Math.max.apply(null,xs);
+    var yMin=Math.min.apply(null,ys), yMax=Math.max.apply(null,ys);
+    var xPad=(xMax-xMin)*0.1||1, yPad=(yMax-yMin)*0.12||0.05;
+    xMin-=xPad; xMax+=xPad; yMin-=yPad; yMax+=yPad;
+    var xR=xMax-xMin, yR=yMax-yMin;
+    function px(v){return PL+(v-xMin)/xR*cW;}
+    function py(v){return PT+(1-(v-yMin)/yR)*cH;}
+    var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">';
+    for (var g=0;g<=3;g++) {
+      var gy=PT+cH*(g/3), gv=yMax-yR*(g/3);
+      svg+='<line x1="'+PL+'" y1="'+gy+'" x2="'+(W-PR)+'" y2="'+gy+'" stroke="var(--border)" stroke-width="0.5"/>';
+      svg+='<text x="'+(PL-3)+'" y="'+(gy+4)+'" text-anchor="end" font-size="8" fill="var(--muted)">'+gv.toFixed(yLabel==='WIN%'?2:0)+'</text>';
+    }
+    var reg=linReg(pairs);
+    if (reg) {
+      svg+='<line x1="'+px(xMin+xPad*0.5)+'" y1="'+py(reg.slope*(xMin+xPad*0.5)+reg.intercept)+'" x2="'+px(xMax-xPad*0.5)+'" y2="'+py(reg.slope*(xMax-xPad*0.5)+reg.intercept)+'" stroke="'+trendColor+'" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>';
+    }
+    pairs.forEach(function(p) {
+      svg+='<circle cx="'+px(p[0])+'" cy="'+py(p[1])+'" r="5" fill="'+dotColor+'" opacity="0.8"><title>fWAR='+p[0].toFixed(1)+' '+yLabel+'='+p[1].toFixed(yLabel==='WIN%'?3:1)+'</title></circle>';
+    });
+    svg+='<text x="'+(PL+cW/2)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9" fill="var(--muted)">Team fWAR</text>';
+    svg+='<text x="11" y="'+(PT+cH/2)+'" text-anchor="middle" font-size="9" fill="var(--muted)" transform="rotate(-90,11,'+(PT+cH/2)+')">'+yLabel+'</text>';
+    svg+='</svg>';
+    return svg;
+  }
+
+  function r2Badge(r2) {
+    if (r2 == null) return '';
+    var col = r2 >= 0.6 ? '#2d5a3d' : r2 >= 0.3 ? '#b7791f' : '#c0392b';
+    return '<span style="font-size:12px;font-weight:600;color:'+col+'">R² = '+r2.toFixed(3)+'</span>';
+  }
+  function fitLabel(r2) {
+    if (r2 == null) return '';
+    var col = r2 >= 0.6 ? '#2d5a3d' : r2 >= 0.3 ? '#b7791f' : '#c0392b';
+    var txt = r2>=0.6?'Strong fit — scaling is reliable':r2>=0.3?'Moderate fit — use with caution':'Weak fit — more weeks needed';
+    return '<div style="font-size:11px;color:'+col+';margin-top:6px">'+txt+'</div>';
+  }
+
+  var mhtml = '';
+
+  // Card 1: fWAR → Fantasy points
+  mhtml += '<div class="card" style="margin-bottom:10px">';
+  mhtml += '<div class="card-header"><span class="card-title" style="font-size:12px">fWAR → fantasy points</span>' + (regPts ? r2Badge(regPts.r2) : '') + '</div>';
+  mhtml += '<div class="card-body" style="padding:12px 16px">';
+  if (regPts) {
+    mhtml += '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">';
+    mhtml += '<span style="font-size:12px;color:var(--muted)">1 fWAR ≈</span>';
+    mhtml += '<span style="font-size:20px;font-weight:600;color:#1e6b3a">'+regPts.slope.toFixed(2)+' pts</span></div>';
+    mhtml += '<div style="font-size:11px;color:var(--muted);font-family:monospace;margin-bottom:10px">pts = '+regPts.intercept.toFixed(1)+' + '+regPts.slope.toFixed(2)+' × teamFWAR</div>';
+    mhtml += miniScatter(ptsPairs, 'Pts', '#c8a96e', '#c8a96e');
+    mhtml += fitLabel(regPts.r2);
+  } else {
+    mhtml += '<div style="color:var(--muted);font-size:12px">Standings points data not available — visit Fantrax Data first.</div>';
+  }
+  mhtml += '</div></div>';
+
+  // Card 2: fWAR → WIN%
+  mhtml += '<div class="card" style="margin-bottom:10px">';
+  mhtml += '<div class="card-header"><span class="card-title" style="font-size:12px">fWAR → WIN% (standings)</span>' + (regWinPct ? r2Badge(regWinPct.r2) : '') + '</div>';
+  mhtml += '<div class="card-body" style="padding:12px 16px">';
+  if (regWinPct) {
+    mhtml += '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">';
+    mhtml += '<span style="font-size:12px;color:var(--muted)">1 fWAR ≈</span>';
+    mhtml += '<span style="font-size:20px;font-weight:600;color:#2d5a3d">+'+regWinPct.slope.toFixed(3)+' WIN%</span></div>';
+    mhtml += '<div style="font-size:11px;color:var(--muted);font-family:monospace;margin-bottom:4px">WIN% = '+regWinPct.intercept.toFixed(3)+' + '+regWinPct.slope.toFixed(4)+' × teamFWAR</div>';
+    mhtml += '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">Source: WIN% column from Fantrax standings</div>';
+    mhtml += miniScatter(winPctPairs, 'WIN%', '#2d5a3d', '#4a9a68');
+    mhtml += fitLabel(regWinPct.r2);
+  } else {
+    mhtml += '<div style="color:var(--muted);font-size:12px">WIN% data not available — visit Fantrax Data first to load standings.</div>';
+  }
+  mhtml += '</div></div>';
+
+  // Card 3: Team fWAR totals table
+  mhtml += '<div class="card">';
+  mhtml += '<div class="card-header"><span class="card-title" style="font-size:12px">Team fWAR totals</span></div>';
+  mhtml += '<div class="table-wrap"><table style="width:100%;font-size:12px"><thead><tr>';
+  mhtml += '<th class="left" style="min-width:120px">Team</th>';
+  mhtml += '<th style="text-align:right;white-space:nowrap">fWAR</th>';
+  mhtml += '<th style="text-align:right;white-space:nowrap;color:var(--muted)">WIN%</th>';
+  mhtml += '<th style="text-align:right;white-space:nowrap;color:var(--muted)">Pred WIN%</th>';
+  mhtml += '<th style="text-align:right;white-space:nowrap;color:var(--muted)">Pts</th>';
+  mhtml += '<th style="text-align:right;white-space:nowrap;color:var(--muted)">Pred Pts</th>';
+  mhtml += '</tr></thead><tbody>';
+
+  var teamRows2 = Object.keys(S.teamInfo).map(function(id) {
+    var ti3 = S.teamInfo[id];
+    var fw = teamFWARTotals[id] || 0;
+    var wp  = winPctByTeamId[id] != null ? winPctByTeamId[id] : null;
+    var pts2 = teamFantasyPts[id] || null;
+    var predWP = regWinPct ? parseFloat((regWinPct.slope*fw + regWinPct.intercept).toFixed(3)) : null;
+    var predP  = regPts    ? parseFloat((regPts.slope*fw    + regPts.intercept).toFixed(1))    : null;
+    return { id:id, name:ti3.name||ti3.shortName||'', logo:ti3.logoUrl512||'', fw:fw, wp:wp, pts:pts2, predWP:predWP, predP:predP };
+  }).sort(function(a,b){return b.fw-a.fw;});
+
+  teamRows2.forEach(function(r, i) {
+    var fwCol = r.fw >= 2 ? '#1e6b3a' : r.fw >= 0 ? '#4a9a68' : r.fw >= -2 ? '#b7791f' : '#c0392b';
+    var bg = i%2===1 ? 'background:var(--bg)' : '';
+    mhtml += '<tr style="border-bottom:1px solid var(--border);'+bg+'">';
+    mhtml += '<td class="left"><div class="team-cell">';
+    if (r.logo) mhtml += '<img class="team-logo" src="'+r.logo+'" alt="" onerror="this.style.display=\'none\'">';
+    else mhtml += '<div class="team-logo-ph">'+(r.name[0]||'?')+'</div>';
+    mhtml += '<span>'+r.name+'</span></div></td>';
+    mhtml += '<td style="text-align:right;font-weight:700;color:'+fwCol+'">'+(r.fw>=0?'+':'')+r.fw.toFixed(1)+'</td>';
+    mhtml += '<td style="text-align:right">'+(r.wp!=null?r.wp.toFixed(3):'—')+'</td>';
+    mhtml += '<td style="text-align:right;color:var(--muted)">'+(r.predWP!=null?r.predWP.toFixed(3):'—')+'</td>';
+    mhtml += '<td style="text-align:right">'+(r.pts!=null?r.pts:'—')+'</td>';
+    mhtml += '<td style="text-align:right;color:var(--muted)">'+(r.predP!=null?r.predP:'—')+'</td>';
+    mhtml += '</tr>';
+  });
+  mhtml += '</tbody></table></div></div>';
+
+  sumEl.innerHTML = mhtml;
   var n = allHitters.filter(function(p){return p.fWAR!=null;}).length;
   document.getElementById('fwar-status').textContent = 'Calculated fWAR for ' + n + ' hitters and ' + allPitchers.length + ' pitchers.';
 };
