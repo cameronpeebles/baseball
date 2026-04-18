@@ -1083,6 +1083,63 @@ td.neg { color: #c0392b; font-weight: 500; }
           <p style="font-size:12px;line-height:1.6">Shows your best current starter at each position vs the best available upgrade. <span style="background:#2980b9;color:#fff;padding:2px 8px;border-radius:8px;font-size:11px">🔥 UPGRADE</span> = delta SGP &gt; 0.7. <span style="background:#e8f0eb;color:#1e6b3a;padding:2px 8px;border-radius:8px;font-size:11px">↑ Consider</span> = delta &gt; 0.3.</p>
         </div>
       </div>
+
+      <div class="card" style="margin-top:16px;max-width:760px">
+        <div class="card-header"><span class="card-title">SGP — Roster Impact</span><span style="font-size:12px;color:var(--muted)">How would adding a player change your standings?</span></div>
+        <div class="card-body" style="padding:20px">
+          <p style="font-size:13px;line-height:1.7">The SGP page simulates adding any rostered player's rest-of-season projections to a selected team and shows exactly which categories improve — and by how many standings positions.</p>
+
+          <div style="font-weight:700;font-size:13px;margin:16px 0 10px">How it works</div>
+          <div style="display:flex;flex-direction:column;gap:0;margin-bottom:16px">
+            <div style="display:flex;align-items:stretch">
+              <div style="width:4px;background:var(--accent);border-radius:4px 4px 0 0;flex-shrink:0"></div>
+              <div style="padding:11px 16px;background:var(--bg);border-radius:0 8px 0 0;flex:1;font-size:12px;line-height:1.6;border-bottom:1px solid var(--border)">
+                <strong style="color:var(--accent)">Step 1 — Current standings</strong><br>
+                Each team's cumulative season stats are pulled from <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">standings_season.json</code>. All 10 teams are ranked 1–10 in each category. ERA and WHIP are ranked inversely (lower = better = rank 1).
+              </div>
+            </div>
+            <div style="display:flex;align-items:stretch">
+              <div style="width:4px;background:var(--accent);flex-shrink:0"></div>
+              <div style="padding:11px 16px;background:var(--bg);flex:1;font-size:12px;line-height:1.6;border-bottom:1px solid var(--border)">
+                <strong style="color:var(--accent)">Step 2 — ROS projections</strong><br>
+                FantasyPros consensus rest-of-season projections are loaded from <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">fantasypros_hitters.json</code> and <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">fantasypros_pitchers.json</code>. Only rostered players with a matching FP projection appear.
+              </div>
+            </div>
+            <div style="display:flex;align-items:stretch">
+              <div style="width:4px;background:var(--accent);flex-shrink:0"></div>
+              <div style="padding:11px 16px;background:var(--bg);flex:1;font-size:12px;line-height:1.6;border-bottom:1px solid var(--border)">
+                <strong style="color:var(--accent)">Step 3 — Simulate</strong><br>
+                The player's ROS projected stats are added to the selected team's current totals. Counting stats (R, HR, RBI, SB, K, W, SVH3) are added directly. Rate stats are volume-weighted:<br>
+                <div style="display:flex;flex-direction:column;gap:4px;margin-top:6px">
+                  <code style="background:var(--surface);padding:3px 8px;border-radius:4px;font-size:11px">AVG = (current_hits + ros_hits) / (current_AB + ros_AB)</code>
+                  <code style="background:var(--surface);padding:3px 8px;border-radius:4px;font-size:11px">ERA = (current_ER + ros_ER) / total_IP × 9</code>
+                  <code style="background:var(--surface);padding:3px 8px;border-radius:4px;font-size:11px">WHIP = (current_baserunners + ros_baserunners) / total_IP</code>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:stretch">
+              <div style="width:4px;background:var(--accent);border-radius:0 0 4px 4px;flex-shrink:0"></div>
+              <div style="padding:11px 16px;background:var(--accent-light);border-radius:0 0 8px 0;flex:1;font-size:12px;line-height:1.6;border:1px solid var(--accent)">
+                <strong style="color:var(--accent)">Step 4 — Rerank &amp; display</strong><br>
+                All 10 teams are re-ranked with the new totals. Each category shows a grey bar (current rank), a green/red bar (projected rank), the rank labels (e.g. <strong>6→1</strong>), and a delta badge (e.g. <strong style="color:#1e6b3a">▲5</strong>). A longer bar means a better rank. Green = improvement, red = decline, grey = no change.
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6">
+              <strong>Select a team</strong> — simulates adding players to that specific team's current stat totals. Changing teams re-runs all simulations instantly.
+            </div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6">
+              <strong>Select a position</strong> — filters the player pool to that position. Hitting positions (C, 1B, 2B, 3B, SS, OF) show the 5 hitting categories; pitching positions (SP, RP) show the 5 pitching categories.
+            </div>
+          </div>
+
+          <div style="padding:10px 14px;background:#fef3e2;border-radius:8px;border-left:4px solid #c8a96e;font-size:12px;line-height:1.7;color:#7a5c2e">
+            <strong style="color:#b7791f">Note on SV vs SVH3:</strong> FantasyPros projects saves (SV) but your league scores saves + holds (SVH3). SV is used as a proxy — RP projections will understate SVH3 value for high-hold relievers.
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Trade Targets -->
