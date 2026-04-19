@@ -2386,10 +2386,25 @@ function showRoster(teamId) {
         }
       }
 
-      // Pos Rating and League Rating from drawPlayers lookups
-      var nameLow = name.toLowerCase();
-      var posR = window._posRatingLookup ? window._posRatingLookup[nameLow] : null;
-      var lgR  = window._lgRatingLookup  ? window._lgRatingLookup[nameLow]  : null;
+      // Pos Rating and League Rating
+      var normN3 = name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+      var posR = (window._posRatingLookup||{})[normN3] != null ? window._posRatingLookup[normN3]
+               : (window._posRatingLookup||{})[name.toLowerCase()];
+      var lgR  = (window._lgRatingLookup||{})[normN3] != null ? window._lgRatingLookup[normN3]
+               : (window._lgRatingLookup||{})[name.toLowerCase()];
+      // Compute on the fly if still missing (Player Data not yet visited)
+      if ((posR == null || lgR == null) && window._ratingPools && window._calcRating) {
+        var pools2 = window._ratingPools;
+        var pCats2 = isHitSection ? BAT_CATS : PIT_CATS;
+        var fps2   = playerFinePosAll(pos||'');
+        var best2  = null;
+        fps2.forEach(function(fp){ var r2=window._calcRating({},pCats2,pools2.finePools[fp]||[],pos||''); if(r2!=null&&(best2==null||r2>best2)) best2=r2; });
+        if (posR == null) posR = best2;
+        if (lgR  == null) {
+          var lgPool2 = isHitSection ? pools2.lgHitPool : (primaryPos(pos||'')==='SP' ? pools2.lgSpPool : pools2.lgRpPool);
+          lgR = window._calcRating({}, pCats2, lgPool2, pos||'');
+        }
+      }
       html += '<td style="white-space:nowrap">' + rosterRatingBadge(posR != null ? posR : null) + '</td>';
       html += '<td style="white-space:nowrap">' + rosterRatingBadge(lgR  != null ? lgR  : null) + '</td>';
 
