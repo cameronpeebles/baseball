@@ -6487,8 +6487,9 @@ function renderWeeklyStats(el) {
 
   parseTablesIntoByWeek(S.standingsData);
   parseTablesIntoByWeek(S.combinedData);
-  var combTbls = (S.combinedData && S.combinedData.data && S.combinedData.data.tableList) || [];
-  console.log('[WeeklyStats] combinedData tables:', combTbls.length, combTbls.map(function(t){return JSON.stringify({cap:t.caption,type:t.tableType,rows:(t.rows||[]).length});}));
+  parseTablesIntoByWeek(S.seasonData);
+  var seasTbls = (S.seasonData && S.seasonData.data && S.seasonData.data.tableList) || [];
+  console.log('[WeeklyStats] seasonData tables:', seasTbls.length, seasTbls.map(function(t){return JSON.stringify({cap:t.caption,type:t.tableType,rows:(t.rows||[]).length});}));
   console.log('[WeeklyStats] byWeek keys after parse:', Object.keys(byWeek).sort());
 
   // Fall back to _joeByWeek if standingsData didn't yield anything
