@@ -6446,6 +6446,7 @@ function renderWeeklyStats(el) {
   var byWeek = {};
 
   var tbls = (S.standingsData && S.standingsData.data && S.standingsData.data.tableList) || [];
+  console.log('[WeeklyStats] standingsData tables:', tbls.length, tbls.map(function(t){return JSON.stringify({cap:t.caption,type:t.tableType,rows:(t.rows||[]).length});}));
   tbls.forEach(function(tbl) {
     if (tbl.tableType === 'SECTION_HEADING') return;
     var cap = tbl.caption || tbl.tableType || '';
