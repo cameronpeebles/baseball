@@ -3215,7 +3215,7 @@ function buildJOEPage(byWeek, schedule) {
   // Find completed weeks — at least 8 teams have stats
   var completedWeeks = Object.keys(byWeek)
     .map(Number)
-    .filter(function(w) { return Object.keys(byWeek[w]).length >= 8; })
+    .filter(function(w) { return Object.keys(byWeek[w]).length >= 1; })
     .sort(function(a,b){ return a-b; });
 
   // Build opponent lookup from schedule
