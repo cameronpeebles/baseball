@@ -2629,22 +2629,19 @@ function buildTeamRosterCharts(teamId) {
   var GC = ['#1a1f5e','#5b8db8','#7bc8a4','#e8d870'];
   var GROUPS = ['Infield','Outfield','SP','RP'];
 
-  // ── Gather data ─────────────────────────────────────────────────────────
-  // 1. fWAR by group
   var fwarByGroup = {Infield:0, Outfield:0, SP:0, RP:0};
   var allFW = FWAR.hitResults.concat(FWAR.pitResults);
   var fwMap = {};
   allFW.forEach(function(p){ fwMap[p.name] = p; });
+  function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
 
   (TA.players || []).filter(function(p){ return p.ftId === teamId; }).forEach(function(p) {
-    var fw = fwMap[p.name] || fwMap[(p.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z ]/g,'').trim()];
+    var fw = fwMap[p.name] || fwMap[normN(p.name)];
     var g = p.bestGroup || '';
     if (fw && fwarByGroup[g] != null) fwarByGroup[g] = parseFloat((fwarByGroup[g] + (fw.fWAR||0)).toFixed(2));
   });
 
-  // 2. Positional strength by group (avg overallRating × 100)
-  var ratingByGroup = {};
-  var countByGroup = {};
+  var ratingByGroup = {}, countByGroup = {};
   GROUPS.forEach(function(g){ ratingByGroup[g]=0; countByGroup[g]=0; });
   (TA.players||[]).filter(function(p){return p.ftId===teamId;}).forEach(function(p){
     var g = p.bestGroup||'';
@@ -2652,57 +2649,66 @@ function buildTeamRosterCharts(teamId) {
   });
   var posStrength = GROUPS.map(function(g){ return countByGroup[g]?Math.round(ratingByGroup[g]/countByGroup[g]*100):0; });
 
-  // 3. Batting z-scores for this team (convert z to 0-100 percentile approx, clamped)
   var teamZ = (S.zData||[]).find(function(d){ return d.teamId===teamId; });
   function zToPct(z){ return Math.min(99,Math.max(1,Math.round((z+3)/6*100))); }
   var hitPct = ['R','RBI','HR','SB','AVG'].map(function(k){ return teamZ ? zToPct(teamZ.batZ[k]||0) : 50; });
   var pitPct = ['ERA','WHIP','W','K','SVH3'].map(function(k){ return teamZ ? zToPct(teamZ.pitZ[k]||0) : 50; });
 
-  // 4. Scatter: player fWAR vs league rating
-  function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function getTeamFwarPctAvg(isHit) {
+    var lookup = isHit ? (window._fwarPctLookupHit||window._fwarPctLookup||{}) : (window._fwarPctLookupPit||window._fwarPctLookup||{});
+    var sum=0, cnt=0;
+    (TA.players||[]).filter(function(p){return p.ftId===teamId;}).forEach(function(p){
+      var v=lookup[normN(p.name)]; if(v!=null){sum+=v;cnt++;}
+    });
+    var avg = cnt ? Math.min(99,Math.max(1,Math.round(sum/cnt))) : 50;
+    return [avg,avg,avg,avg,avg];
+  }
+  var hitFwarPct = getTeamFwarPctAvg(true);
+  var pitFwarPct = getTeamFwarPctAvg(false);
+
   var scatterPlayers = (TA.players||[]).filter(function(p){ return p.ftId===teamId; }).map(function(p){
-    var k = normN(p.name);
-    var fw = fwMap[p.name] || fwMap[k];
-    var lgR = (window._lgRatingLookup||{})[k];
-    if (fw==null || lgR==null) return null;
-    return { x: parseFloat(fw.fWAR.toFixed(2)), y: parseFloat(lgR.toFixed(3)), name: p.name };
+    var k=normN(p.name);
+    var fw=fwMap[p.name]||fwMap[k];
+    var lgR=(window._lgRatingLookup||{})[k];
+    if(fw==null||lgR==null) return null;
+    return {x:parseFloat(fw.fWAR.toFixed(2)), y:Math.round(lgR*100), name:p.name};
   }).filter(Boolean);
 
-  function qColor(x,y){ return x>=0&&y>=0.5?'#1e6b3a':x<0&&y>=0.5?'#2980b9':x>=0&&y<0.5?'#e67e22':'#c0392b'; }
-
-  // ── Build HTML ────────────────────────────────────────────────────────────
-  var uid = 'tr' + Date.now();
+  var uid = 'tr'+Date.now();
   var h = '<div class="card" style="margin-bottom:16px">';
-  h += '<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;padding:14px 16px">';
-
-  // Panel headers + canvases
+  h += '<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;padding:16px">';
   var panels = [
-    {id:'d1_'+uid, title:'Team fWAR by group'},
-    {id:'d2_'+uid, title:'Positional strength'},
-    {id:'d3_'+uid, title:'Hitting by category'},
-    {id:'d4_'+uid, title:'Pitching by category'},
-    {id:'d5_'+uid, title:'fWAR vs league rating'}
+    {id:'d1_'+uid,title:'Team fWAR by group',donut:true,fwLeg:true},
+    {id:'d2_'+uid,title:'Positional strength',donut:true,fwLeg:false},
+    {id:'d3_'+uid,title:'Hitting by category',radar:true},
+    {id:'d4_'+uid,title:'Pitching by category',radar:true},
+    {id:'d5_'+uid,title:'fWAR vs league rating',scatter:true}
   ];
-  panels.forEach(function(p,i) {
+  panels.forEach(function(p) {
     h += '<div style="display:flex;flex-direction:column;gap:6px">';
-    h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted)">' + p.title + '</div>';
-    if (i < 4) {
-      h += '<div style="position:relative;height:120px"><canvas id="'+p.id+'"></canvas></div>';
+    h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted)">'+p.title+'</div>';
+    if(p.scatter){
+      h += '<div id="'+p.id+'" style="position:relative;height:240px"></div>';
     } else {
-      h += '<div style="position:relative;height:120px"><canvas id="'+p.id+'"></canvas></div>';
-      h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;margin-top:2px">';
-      h += '<div style="font-size:9px;color:#1e6b3a">Stars</div><div style="font-size:9px;color:#2980b9;text-align:right">Buy Low</div>';
-      h += '<div style="font-size:9px;color:#c0392b">Drop</div><div style="font-size:9px;color:#e67e22;text-align:right">Sell High</div>';
-      h += '</div>';
+      h += '<div style="position:relative;height:'+(p.donut?'160':'200')+'px"><canvas id="'+p.id+'"></canvas></div>';
     }
-    // Legend for donuts
-    if (i < 2) {
+    if(p.fwLeg){
       h += '<div style="display:flex;flex-wrap:wrap;gap:5px">';
       ['IF','OF','SP','RP'].forEach(function(g,gi){
-        var val = i===0 ? fwarByGroup[GROUPS[gi]].toFixed(1) : posStrength[gi];
-        h += '<span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)">';
-        h += '<span style="width:7px;height:7px;border-radius:1px;background:'+GC[gi]+';display:inline-block"></span>'+g+' '+(i===0?(val>=0?'+':'')+val:val)+'</span>';
+        var val=fwarByGroup[GROUPS[gi]];
+        h+='<span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)"><span style="width:7px;height:7px;border-radius:1px;background:'+GC[gi]+';display:inline-block"></span>'+g+' '+(val>=0?'+':'')+val.toFixed(1)+'</span>';
       });
+      h += '</div>';
+    } else if(p.donut){
+      h += '<div style="display:flex;flex-wrap:wrap;gap:5px">';
+      ['IF','OF','SP','RP'].forEach(function(g,gi){
+        h+='<span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)"><span style="width:7px;height:7px;border-radius:1px;background:'+GC[gi]+';display:inline-block"></span>'+g+' '+posStrength[gi]+'</span>';
+      });
+      h += '</div>';
+    } else if(p.radar){
+      h += '<div style="display:flex;gap:10px;justify-content:center">';
+      h += '<span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)"><span style="width:10px;height:2px;background:#1a1f5e;display:inline-block"></span>Pos Strength</span>';
+      h += '<span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><span style="width:10px;border-top:2px dashed #c0392b;display:inline-block"></span>fWAR%</span>';
       h += '</div>';
     }
     h += '</div>';
@@ -2710,42 +2716,71 @@ function buildTeamRosterCharts(teamId) {
   h += '</div></div>';
   el.innerHTML = h;
 
-  // ── Draw charts ──────────────────────────────────────────────────────────
-  var baseOpts = {responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+(typeof ctx.raw==='object'?'':ctx.formattedValue);}}}}};
+  var baseOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}};
+  var fwVals=GROUPS.map(function(g){return Math.max(0,fwarByGroup[g]);});
+  if(fwVals.every(function(v){return v===0;})) fwVals=[1,1,1,1];
+  new Chart(document.getElementById('d1_'+uid),{type:'doughnut',data:{labels:['IF','OF','SP','RP'],datasets:[{data:fwVals,backgroundColor:GC,borderWidth:2,borderColor:'var(--surface)'}]},options:Object.assign({},baseOpts,{cutout:'62%',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+(fwarByGroup[GROUPS[ctx.dataIndex]]>=0?'+':'')+fwarByGroup[GROUPS[ctx.dataIndex]].toFixed(1);}}}}})});
+  new Chart(document.getElementById('d2_'+uid),{type:'doughnut',data:{labels:['IF','OF','SP','RP'],datasets:[{data:posStrength.map(function(v){return v||1;}),backgroundColor:GC,borderWidth:2,borderColor:'var(--surface)'}]},options:Object.assign({},baseOpts,{cutout:'62%'})});
 
-  // Donut 1: fWAR by group
-  var fwVals = GROUPS.map(function(g){ return Math.max(0, fwarByGroup[g]); });
-  if (fwVals.every(function(v){return v===0;})) fwVals = [1,1,1,1];
-  new Chart(document.getElementById('d1_'+uid), {type:'doughnut', data:{labels:['IF','OF','SP','RP'],datasets:[{data:fwVals,backgroundColor:GC,borderWidth:2,borderColor:'var(--surface)'}]}, options:Object.assign({},baseOpts,{cutout:'62%',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.label+': +'+ fwarByGroup[GROUPS[ctx.dataIndex]].toFixed(1);}}}}})});
+  var radarOpts=Object.assign({},baseOpts,{scales:{r:{min:0,max:100,ticks:{display:false,stepSize:25},grid:{color:'rgba(128,128,128,0.12)'},pointLabels:{font:{size:10},color:'#8a8479'}}}});
+  new Chart(document.getElementById('d3_'+uid),{type:'radar',data:{labels:['R','RBI','HR','SB','AVG'],datasets:[
+    {data:hitPct,backgroundColor:'#1a1f5e18',borderColor:'#1a1f5e',borderWidth:1.5,pointRadius:3,pointBackgroundColor:'#1a1f5e'},
+    {data:hitFwarPct,backgroundColor:'#c0392b10',borderColor:'#c0392b',borderWidth:1.5,borderDash:[4,3],pointRadius:3,pointBackgroundColor:'#c0392b'}
+  ]},options:radarOpts});
+  new Chart(document.getElementById('d4_'+uid),{type:'radar',data:{labels:['ERA','WHIP','W','K','SVH3'],datasets:[
+    {data:pitPct,backgroundColor:'#7bc8a418',borderColor:'#5ab88a',borderWidth:1.5,pointRadius:3,pointBackgroundColor:'#5ab88a'},
+    {data:pitFwarPct,backgroundColor:'#c0392b10',borderColor:'#c0392b',borderWidth:1.5,borderDash:[4,3],pointRadius:3,pointBackgroundColor:'#c0392b'}
+  ]},options:radarOpts});
 
-  // Donut 2: Positional strength
-  var psVals = posStrength.map(function(v){return v||1;});
-  new Chart(document.getElementById('d2_'+uid), {type:'doughnut', data:{labels:['IF','OF','SP','RP'],datasets:[{data:psVals,backgroundColor:GC,borderWidth:2,borderColor:'var(--surface)'}]}, options:Object.assign({},baseOpts,{cutout:'62%'})});
-
-  var radarOpts = Object.assign({},baseOpts,{scales:{r:{min:0,max:100,ticks:{display:false,stepSize:25},grid:{color:'rgba(128,128,128,0.12)'},pointLabels:{font:{size:10},color:'#8a8479'}}}});
-
-  // Radar 3: Hitting
-  new Chart(document.getElementById('d3_'+uid), {type:'radar', data:{labels:['R','RBI','HR','SB','AVG'],datasets:[{data:hitPct,backgroundColor:'#1a1f5e18',borderColor:'#1a1f5e',borderWidth:1.5,pointRadius:3,pointBackgroundColor:'#1a1f5e'}]}, options:radarOpts});
-
-  // Radar 4: Pitching
-  new Chart(document.getElementById('d4_'+uid), {type:'radar', data:{labels:['ERA','WHIP','W','K','SVH3'],datasets:[{data:pitPct,backgroundColor:'#7bc8a418',borderColor:'#5ab88a',borderWidth:1.5,pointRadius:3,pointBackgroundColor:'#5ab88a'}]}, options:radarOpts});
-
-  // Scatter 5: fWAR vs league rating
-  if (scatterPlayers.length) {
-    new Chart(document.getElementById('d5_'+uid), {type:'scatter',
-      data:{datasets:[{data:scatterPlayers.map(function(p){return{x:p.x,y:p.y};}),backgroundColor:scatterPlayers.map(function(p){return qColor(p.x,p.y)+'cc';}),pointRadius:5,pointHoverRadius:7}]},
-      options:{responsive:true,maintainAspectRatio:false,layout:{padding:4},plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){var p=scatterPlayers[ctx.dataIndex];return p?p.name+' fWAR:'+(p.x>=0?'+':'')+p.x+' Lg:'+Math.round(p.y*100):'';},}},},
-        scales:{
-          x:{min:Math.min.apply(null,scatterPlayers.map(function(p){return p.x;}))-0.5,max:Math.max.apply(null,scatterPlayers.map(function(p){return p.x;}))+0.5,grid:{color:'rgba(128,128,128,0.1)'},ticks:{font:{size:9},color:'#8a8479'},title:{display:true,text:'fWAR',font:{size:9},color:'#8a8479'}},
-          y:{min:0,max:1.05,grid:{color:'rgba(128,128,128,0.1)'},ticks:{font:{size:9},color:'#8a8479',callback:function(v){return v.toFixed(1);}},title:{display:true,text:'Lg Rating',font:{size:9},color:'#8a8479'}}
-        }
-      }
-    });
+  var scEl=document.getElementById('d5_'+uid);
+  if(!scEl) return;
+  if(!scatterPlayers.length){
+    scEl.innerHTML='<div style="height:240px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted)">Visit Player Data first to load ratings</div>';
   } else {
-    document.getElementById('d5_'+uid).parentNode.innerHTML = '<div style="height:120px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted)">Visit Player Data first</div>';
+    var W=scEl.offsetWidth||280,H=240,PL=28,PR=12,PT=20,PB=28;
+    var cW=W-PL-PR,cH=H-PT-PB;
+    var xs=scatterPlayers.map(function(p){return p.x;}),ys=scatterPlayers.map(function(p){return p.y;});
+    var xMin=Math.min.apply(null,xs)-0.5,xMax=Math.max.apply(null,xs)+0.5;
+    var xRange=xMax-xMin;
+    function px2(v){return PL+(v-xMin)/xRange*cW;}
+    function py2(v){return PT+(1-v/100)*cH;}
+    var x0=px2(0),y0=py2(50);
+    var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:100%;display:block">';
+    svg+='<rect x="'+PL+'" y="'+PT+'" width="'+(x0-PL)+'" height="'+(y0-PT)+'" fill="#fce8e8" opacity="0.4"/>';
+    svg+='<rect x="'+x0+'" y="'+PT+'" width="'+(W-PR-x0)+'" height="'+(y0-PT)+'" fill="#e8f0eb" opacity="0.4"/>';
+    svg+='<rect x="'+PL+'" y="'+y0+'" width="'+(x0-PL)+'" height="'+(H-PB-y0)+'" fill="#f5f5f0" opacity="0.4"/>';
+    svg+='<rect x="'+x0+'" y="'+y0+'" width="'+(W-PR-x0)+'" height="'+(H-PB-y0)+'" fill="#e8f4fd" opacity="0.4"/>';
+    [-2,-1,0,1,2,3,4].forEach(function(xv){
+      if(xv<xMin||xv>xMax) return;
+      var xp=px2(xv);
+      svg+='<line x1="'+xp+'" y1="'+PT+'" x2="'+xp+'" y2="'+(H-PB)+'" stroke="var(--border)" stroke-width="0.5"/>';
+      svg+='<text x="'+xp+'" y="'+(H-PB+11)+'" text-anchor="middle" font-size="8" fill="var(--muted)">'+(xv>=0?'+':'')+xv+'</text>';
+    });
+    [0,25,50,75,100].forEach(function(yv){
+      var yp=py2(yv);
+      svg+='<line x1="'+PL+'" y1="'+yp+'" x2="'+(W-PR)+'" y2="'+yp+'" stroke="var(--border)" stroke-width="0.5"/>';
+      svg+='<text x="'+(PL-4)+'" y="'+(yp+4)+'" text-anchor="end" font-size="8" fill="var(--muted)">'+yv+'</text>';
+    });
+    svg+='<line x1="'+x0+'" y1="'+PT+'" x2="'+x0+'" y2="'+(H-PB)+'" stroke="var(--text)" stroke-width="1.5"/>';
+    svg+='<line x1="'+PL+'" y1="'+y0+'" x2="'+(W-PR)+'" y2="'+y0+'" stroke="var(--text)" stroke-width="1.5"/>';
+    [{x:PL+4,y:PT+12,t:'Sell High',c:'#c0392b',a:'start'},
+     {x:W-PR-4,y:PT+12,t:'Stars',c:'#1e6b3a',a:'end'},
+     {x:PL+4,y:H-PB-6,t:'Drop / Avoid',c:'#888',a:'start'},
+     {x:W-PR-4,y:H-PB-6,t:'Buy Low',c:'#2980b9',a:'end'}
+    ].forEach(function(q){
+      svg+='<text x="'+q.x+'" y="'+q.y+'" text-anchor="'+q.a+'" font-size="10" font-weight="700" fill="'+q.c+'" opacity="0.75">'+q.t+'</text>';
+    });
+    scatterPlayers.forEach(function(p){
+      var cx=px2(p.x),cy=py2(p.y);
+      var col=p.x>=0&&p.y>=50?'#2d5a3d':p.x<0&&p.y>=50?'#c0392b':p.x>=0&&p.y<50?'#2980b9':'#888';
+      svg+='<circle cx="'+cx+'" cy="'+cy+'" r="5" fill="'+col+'" opacity="0.85"><title>'+p.name+'\nfWAR: '+(p.x>=0?'+':'')+p.x+'\nLg Rating: '+p.y+'</title></circle>';
+    });
+    svg+='<text x="'+(PL+cW/2)+'" y="'+(H-1)+'" text-anchor="middle" font-size="9" fill="var(--muted)">fWAR</text>';
+    svg+='<text x="9" y="'+(PT+cH/2)+'" text-anchor="middle" font-size="9" fill="var(--muted)" transform="rotate(-90,9,'+(PT+cH/2)+')">Lg Rating</text>';
+    svg+="</svg>";
+    scEl.innerHTML=svg;
   }
 }
-
 var BAT_STATS = [
   {key:'R', label:'R', idx:6},
   {key:'HR', label:'HR', idx:7},
