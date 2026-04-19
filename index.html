@@ -6441,20 +6441,72 @@ window.showCombinedTab = function(tab, btn) {
 
 // ── Tab 1: Week-by-week stats ────────────────────────────────────────────────
 function renderWeeklyStats(el) {
-  ensureJOEData(function(err) {
-    if (err) { el.innerHTML='<div class="error-msg">'+err.message+'</div>'; return; }
-    var byWeek = window._joeByWeek || {};
-    var weeks = Object.keys(byWeek).map(Number).sort(function(a,b){return a-b;});
-    if (!weeks.length) { el.innerHTML='<div class="error-msg">No weekly data found.</div>'; return; }
-    var html = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px" id="weekly-pills">';
-    weeks.forEach(function(w,i){
-      html += '<button class="pill'+(i===0?' active':'')+'" onclick="showWeekStats('+w+',this)">Wk '+w+'</button>';
+  // Build byWeek from S.standingsData (same source as Fantrax Data standings tab)
+  // Falls back to _joeByWeek if standingsData not available
+  var byWeek = {};
+
+  var tbls = (S.standingsData && S.standingsData.data && S.standingsData.data.tableList) || [];
+  tbls.forEach(function(tbl) {
+    if (tbl.tableType === 'SECTION_HEADING') return;
+    var cap = tbl.caption || tbl.tableType || '';
+    // Match any of: "Scoring Period: 1", "Scoring Period 1", "Week 1", "Period 1"
+    var m = cap.match(/(?:scoring period|week|period)[:\s]+(\d+)/i);
+    if (!m) return;
+    var wk = parseInt(m[1]);
+    var vh = (tbl.header && tbl.header.cells) || [];
+    var hIdx = {};
+    vh.forEach(function(h,i){
+      if(h.key)       hIdx[h.key.toUpperCase()]       = i;
+      if(h.shortName) hIdx[h.shortName.toUpperCase()] = i;
+      if(h.name)      hIdx[h.name.toUpperCase()]       = i;
     });
-    html += '</div><div id="weekly-table"></div>';
-    el.innerHTML = html;
-    window._joeWeekStats = byWeek;
-    showWeekStats(weeks[0], document.querySelector('#weekly-pills .pill'));
+    function gv(cells,key){
+      var i=hIdx[key.toUpperCase()]; if(i==null)return null;
+      var v=parseFloat((cells[i]||{}).content); return isNaN(v)?null:v;
+    }
+    if (!byWeek[wk]) byWeek[wk] = {};
+    (tbl.rows||[]).forEach(function(row){
+      var fc=row.fixedCells||[], cells=row.cells||[];
+      var teamId='', teamName='';
+      fc.forEach(function(c){if(c.teamId)teamId=c.teamId;});
+      if(teamId&&S.teamInfo[teamId]) teamName=S.teamInfo[teamId].name||'';
+      if(!teamName) return;
+      byWeek[wk][teamName]={
+        R:    gv(cells,'R'),   HR:   gv(cells,'HR'),  RBI:  gv(cells,'RBI'),
+        SB:   gv(cells,'SB'),  AVG:  gv(cells,'AVG'), K:    gv(cells,'K'),
+        W:    gv(cells,'W'),   SVH3: gv(cells,'SVH3')||gv(cells,'SV')||gv(cells,'SVH'),
+        ERA:  gv(cells,'ERA'), WHIP: gv(cells,'WHIP')
+      };
+    });
   });
+
+  // Fall back to _joeByWeek if standingsData didn't yield anything
+  if (!Object.keys(byWeek).length) byWeek = window._joeByWeek || {};
+
+  var weeks = Object.keys(byWeek).map(Number).filter(function(w){ return Object.keys(byWeek[w]).length >= 1; }).sort(function(a,b){return a-b;});
+  if (!weeks.length) {
+    // Try loading via ensureJOEData as last resort
+    ensureJOEData(function(err) {
+      if (err) { el.innerHTML='<div class="error-msg">'+err.message+'</div>'; return; }
+      byWeek = window._joeByWeek || {};
+      weeks = Object.keys(byWeek).map(Number).sort(function(a,b){return a-b;});
+      if (!weeks.length) { el.innerHTML='<div class="error-msg">No weekly data found.</div>'; return; }
+      _renderWeekPills(el, weeks, byWeek);
+    });
+    return;
+  }
+  _renderWeekPills(el, weeks, byWeek);
+}
+
+function _renderWeekPills(el, weeks, byWeek) {
+  var html = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px" id="weekly-pills">';
+  weeks.forEach(function(w,i){
+    html += '<button class="pill'+(i===0?' active':'')+'" onclick="showWeekStats('+w+',this)">Wk '+w+'</button>';
+  });
+  html += '</div><div id="weekly-table"></div>';
+  el.innerHTML = html;
+  window._joeWeekStats = byWeek;
+  showWeekStats(weeks[0], document.querySelector('#weekly-pills .pill'));
 }
 
 window.showWeekStats = function(week, btn) {
