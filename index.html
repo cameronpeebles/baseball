@@ -6441,73 +6441,36 @@ window.showCombinedTab = function(tab, btn) {
 
 // ── Tab 1: Week-by-week stats ────────────────────────────────────────────────
 function renderWeeklyStats(el) {
-  // Build byWeek from S.standingsData (same source as Fantrax Data standings tab)
-  // Falls back to _joeByWeek if standingsData not available
   var byWeek = {};
 
-  var byWeek = {};
-
-  // Parse all tables from both standingsData and combinedData
-  function parseTablesIntoByWeek(data) {
-    var tbls = (data && data.data && data.data.tableList) || [];
-    tbls.forEach(function(tbl) {
-      if (tbl.tableType === 'SECTION_HEADING') return;
-      var cap = tbl.caption || tbl.tableType || '';
-      var m = cap.match(/(?:scoring period|week|period)\s*:\s*(\d+)/i)
-           || cap.match(/(?:scoring period|week|period)\s+(\d+)/i);
-      if (!m) return;
-      var wk = parseInt(m[1]);
-      var vh = (tbl.header && tbl.header.cells) || [];
-      var hIdx = {};
-      vh.forEach(function(h,i){
-        if(h.key)       hIdx[h.key.toUpperCase()]       = i;
-        if(h.shortName) hIdx[h.shortName.toUpperCase()] = i;
-        if(h.name)      hIdx[h.name.toUpperCase()]       = i;
-      });
-      function gv(cells,key){
-        var i=hIdx[key.toUpperCase()]; if(i==null)return null;
-        var v=parseFloat((cells[i]||{}).content); return isNaN(v)?null:v;
-      }
+  function mergeJoeStats(joeStats) {
+    (joeStats||[]).forEach(function(row) {
+      var wk = row.week || row.period;
+      var teamName = row.team;
+      if (!wk || !teamName) return;
       if (!byWeek[wk]) byWeek[wk] = {};
-      (tbl.rows||[]).forEach(function(row){
-        var fc=row.fixedCells||[], cells=row.cells||[];
-        var teamId='', teamName='';
-        fc.forEach(function(c){if(c.teamId)teamId=c.teamId;});
-        if(teamId&&S.teamInfo[teamId]) teamName=S.teamInfo[teamId].name||'';
-        if(!teamName) return;
-        byWeek[wk][teamName]={
-          R:    gv(cells,'R'),   HR:   gv(cells,'HR'),  RBI:  gv(cells,'RBI'),
-          SB:   gv(cells,'SB'),  AVG:  gv(cells,'AVG'), K:    gv(cells,'K'),
-          W:    gv(cells,'W'),   SVH3: gv(cells,'SVH3')||gv(cells,'SV')||gv(cells,'SVH'),
-          ERA:  gv(cells,'ERA'), WHIP: gv(cells,'WHIP')
-        };
-      });
+      if (byWeek[wk][teamName]) return;
+      byWeek[wk][teamName] = {
+        R: row.R||0, HR: row.HR||0, RBI: row.RBI||0, SB: row.SB||0, AVG: row.AVG||0,
+        K: row.K||0, W: row.W||0, SVH3: row.SVH3||row.SV||row.SVH||0,
+        ERA: row.ERA||0, WHIP: row.WHIP||0
+      };
     });
   }
 
-  parseTablesIntoByWeek(S.standingsData);
-  parseTablesIntoByWeek(S.combinedData);
-  parseTablesIntoByWeek(S.seasonData);
-  var seasTbls = (S.seasonData && S.seasonData.data && S.seasonData.data.tableList) || [];
-  console.log('[WeeklyStats] seasonData tables:', seasTbls.length, seasTbls.map(function(t){return JSON.stringify({cap:t.caption,type:t.tableType,rows:(t.rows||[]).length});}));
-  console.log('[WeeklyStats] byWeek keys after parse:', Object.keys(byWeek).sort());
-
-  // Fall back to _joeByWeek if standingsData didn't yield anything
-  if (!Object.keys(byWeek).length) byWeek = window._joeByWeek || {};
-
-  var weeks = Object.keys(byWeek).map(Number).filter(function(w){ return Object.keys(byWeek[w]).length >= 1; }).sort(function(a,b){return a-b;});
-  if (!weeks.length) {
-    // Try loading via ensureJOEData as last resort
-    ensureJOEData(function(err) {
-      if (err) { el.innerHTML='<div class="error-msg">'+err.message+'</div>'; return; }
-      byWeek = window._joeByWeek || {};
-      weeks = Object.keys(byWeek).map(Number).sort(function(a,b){return a-b;});
-      if (!weeks.length) { el.innerHTML='<div class="error-msg">No weekly data found.</div>'; return; }
-      _renderWeekPills(el, weeks, byWeek);
-    });
-    return;
-  }
-  _renderWeekPills(el, weeks, byWeek);
+  // Load joe_stats.json directly — it has every period including Period 1
+  loadJSON('joe_stats.json').then(function(joeStats) {
+    mergeJoeStats(joeStats);
+    var weeks = Object.keys(byWeek).map(Number).sort(function(a,b){return a-b;});
+    if (!weeks.length) { el.innerHTML='<div class="error-msg">No weekly data found.</div>'; return; }
+    _renderWeekPills(el, weeks, byWeek);
+  }).catch(function() {
+    // Fallback to already-loaded _joeByWeek
+    byWeek = window._joeByWeek || {};
+    var weeks = Object.keys(byWeek).map(Number).sort(function(a,b){return a-b;});
+    if (!weeks.length) { el.innerHTML='<div class="error-msg">No weekly data found.</div>'; return; }
+    _renderWeekPills(el, weeks, byWeek);
+  });
 }
 
 function _renderWeekPills(el, weeks, byWeek) {
