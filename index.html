@@ -6445,41 +6445,48 @@ function renderWeeklyStats(el) {
   // Falls back to _joeByWeek if standingsData not available
   var byWeek = {};
 
-  var tbls = (S.standingsData && S.standingsData.data && S.standingsData.data.tableList) || [];
-  console.log('[WeeklyStats] standingsData tables:', tbls.length, tbls.map(function(t){return JSON.stringify({cap:t.caption,type:t.tableType,rows:(t.rows||[]).length});}));
-  tbls.forEach(function(tbl) {
-    if (tbl.tableType === 'SECTION_HEADING') return;
-    var cap = tbl.caption || tbl.tableType || '';
-    // Match any of: "Scoring Period: 1", "Scoring Period 1", "Week 1", "Period 1"
-    var m = cap.match(/(?:scoring period|week|period)[:\s]+(\d+)/i);
-    if (!m) return;
-    var wk = parseInt(m[1]);
-    var vh = (tbl.header && tbl.header.cells) || [];
-    var hIdx = {};
-    vh.forEach(function(h,i){
-      if(h.key)       hIdx[h.key.toUpperCase()]       = i;
-      if(h.shortName) hIdx[h.shortName.toUpperCase()] = i;
-      if(h.name)      hIdx[h.name.toUpperCase()]       = i;
+  var byWeek = {};
+
+  // Parse all tables from both standingsData and combinedData
+  function parseTablesIntoByWeek(data) {
+    var tbls = (data && data.data && data.data.tableList) || [];
+    tbls.forEach(function(tbl) {
+      if (tbl.tableType === 'SECTION_HEADING') return;
+      var cap = tbl.caption || tbl.tableType || '';
+      var m = cap.match(/(?:scoring period|week|period)\s*:\s*(\d+)/i)
+           || cap.match(/(?:scoring period|week|period)\s+(\d+)/i);
+      if (!m) return;
+      var wk = parseInt(m[1]);
+      var vh = (tbl.header && tbl.header.cells) || [];
+      var hIdx = {};
+      vh.forEach(function(h,i){
+        if(h.key)       hIdx[h.key.toUpperCase()]       = i;
+        if(h.shortName) hIdx[h.shortName.toUpperCase()] = i;
+        if(h.name)      hIdx[h.name.toUpperCase()]       = i;
+      });
+      function gv(cells,key){
+        var i=hIdx[key.toUpperCase()]; if(i==null)return null;
+        var v=parseFloat((cells[i]||{}).content); return isNaN(v)?null:v;
+      }
+      if (!byWeek[wk]) byWeek[wk] = {};
+      (tbl.rows||[]).forEach(function(row){
+        var fc=row.fixedCells||[], cells=row.cells||[];
+        var teamId='', teamName='';
+        fc.forEach(function(c){if(c.teamId)teamId=c.teamId;});
+        if(teamId&&S.teamInfo[teamId]) teamName=S.teamInfo[teamId].name||'';
+        if(!teamName) return;
+        byWeek[wk][teamName]={
+          R:    gv(cells,'R'),   HR:   gv(cells,'HR'),  RBI:  gv(cells,'RBI'),
+          SB:   gv(cells,'SB'),  AVG:  gv(cells,'AVG'), K:    gv(cells,'K'),
+          W:    gv(cells,'W'),   SVH3: gv(cells,'SVH3')||gv(cells,'SV')||gv(cells,'SVH'),
+          ERA:  gv(cells,'ERA'), WHIP: gv(cells,'WHIP')
+        };
+      });
     });
-    function gv(cells,key){
-      var i=hIdx[key.toUpperCase()]; if(i==null)return null;
-      var v=parseFloat((cells[i]||{}).content); return isNaN(v)?null:v;
-    }
-    if (!byWeek[wk]) byWeek[wk] = {};
-    (tbl.rows||[]).forEach(function(row){
-      var fc=row.fixedCells||[], cells=row.cells||[];
-      var teamId='', teamName='';
-      fc.forEach(function(c){if(c.teamId)teamId=c.teamId;});
-      if(teamId&&S.teamInfo[teamId]) teamName=S.teamInfo[teamId].name||'';
-      if(!teamName) return;
-      byWeek[wk][teamName]={
-        R:    gv(cells,'R'),   HR:   gv(cells,'HR'),  RBI:  gv(cells,'RBI'),
-        SB:   gv(cells,'SB'),  AVG:  gv(cells,'AVG'), K:    gv(cells,'K'),
-        W:    gv(cells,'W'),   SVH3: gv(cells,'SVH3')||gv(cells,'SV')||gv(cells,'SVH'),
-        ERA:  gv(cells,'ERA'), WHIP: gv(cells,'WHIP')
-      };
-    });
-  });
+  }
+
+  parseTablesIntoByWeek(S.standingsData);
+  parseTablesIntoByWeek(S.combinedData);
 
   // Fall back to _joeByWeek if standingsData didn't yield anything
   if (!Object.keys(byWeek).length) byWeek = window._joeByWeek || {};
