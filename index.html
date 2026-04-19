@@ -91,6 +91,9 @@ td.neg { color: #c0392b; font-weight: 500; }
 #page-rosters { max-width: none; }
 #page-rosters .table-wrap { overflow-x: auto; }
 #page-rosters table { min-width: max-content; }
+#page-teamroster { max-width: none; }
+#page-teamroster .table-wrap { overflow-x: auto; }
+#page-teamroster table { min-width: max-content; }
 #fwar-tab-hitting .table-wrap,
 #fwar-tab-pitching .table-wrap { max-height: 75vh; overflow-y: auto; overflow-x: auto; }
 /* Single header row sticky at top */
@@ -251,6 +254,7 @@ td.neg { color: #c0392b; font-weight: 500; }
   <button onclick="showPage('zscores',this)">Z-Scores</button>
   <button onclick="showPage('joe',this)">JOE Factor</button>
   <button onclick="showPage('rosters',this)">Rosters</button>
+  <button onclick="showPage('teamroster',this)">Team Roster</button>
   <button onclick="showPage('trade',this)">Player Trade &amp; Market</button>
   <button onclick="showPage('fwar',this)">Player Data</button>
   <button onclick="showPage('targets',this)">Trade Waiver Wire Targets</button>
@@ -524,6 +528,16 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div class="card">
       <div class="team-selector" id="team-sel"></div>
       <div id="roster-body"><div class="loading">Select a team above</div></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-teamroster">
+    <div class="page-title">Team Roster</div>
+    <div class="page-subtitle">Players by team</div>
+    <div id="teamroster-charts" style="margin-bottom:20px"></div>
+    <div class="card">
+      <div class="team-selector" id="team-sel-tr"></div>
+      <div id="teamroster-body"><div class="loading">Select a team above</div></div>
     </div>
   </div>
 
@@ -1530,9 +1544,10 @@ function showPage(name, btn) {
   if (name === 'leaders') renderLeadersPage();
   if (name === 'targets') renderTargetsPage();
   if (name === 'sgp') renderSGPRosPage();
+  if (name === 'teamroster') buildTeamRosterSelector();
   if (name === 'guide') {} // static content, no render needed
   // Expand main to full width for wide-table pages
-  document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'models' || name === 'rosters' || name === 'historic' || name === 'targets' || name === 'sgp') ? 'none' : '';
+  document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'models' || name === 'rosters' || name === 'teamroster' || name === 'historic' || name === 'targets' || name === 'sgp') ? 'none' : '';
   if (name === 'trade' && (TA.activeTab === 'sgp-hit' || TA.activeTab === 'sgp-pit')) {
     document.querySelector('main').style.maxWidth = 'none';
   }
@@ -1683,7 +1698,7 @@ function init() {
     renderFWARPage();
   }).catch(function(e) {
     console.error(e);
-    ['standings-body','season-body','combined-body','hit-table','pit-table','roster-body'].forEach(function(id) {
+    ['standings-body','season-body','combined-body','hit-table','pit-table','roster-body','teamroster-body'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.innerHTML = '<div class="error-msg">Error: ' + e.message + '</div>';
     });
@@ -2564,6 +2579,58 @@ function buildRosterCharts(teamId) {
     +'<div style="flex:3;text-align:center;font-size:10px;font-weight:600;color:var(--accent);letter-spacing:0.05em">TEAM/PLAYER fWAR</div>'
     +'<div style="flex:3;text-align:center;font-size:10px;font-weight:600;color:var(--accent);letter-spacing:0.05em">TEAM/PLAYER POSITIONAL STRENGTH</div>'
     +'</div></div>';
+}
+
+// ── Team Roster page — duplicate of Rosters using separate DOM IDs ──────────
+function buildTeamRosterSelector() {
+  var sel = document.getElementById('team-sel-tr');
+  if (!sel || sel.children.length) return; // already built
+  var ids = Object.keys(S.teamInfo);
+  if (!ids.length) { document.getElementById('teamroster-body').innerHTML = '<div class="error-msg">No teams found</div>'; return; }
+  ids.forEach(function(id, i) {
+    var t = S.teamInfo[id];
+    var btn = document.createElement('button');
+    btn.className = 'team-btn' + (i === 0 ? ' active' : '');
+    btn.textContent = t.shortName || t.name;
+    btn.onclick = function() {
+      sel.querySelectorAll('.team-btn').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      showTeamRoster(id);
+      buildTeamRosterCharts(id);
+    };
+    sel.appendChild(btn);
+  });
+  showTeamRoster(ids[0]);
+  buildTeamRosterCharts(ids[0]);
+}
+
+function showTeamRoster(teamId) {
+  var rosterData = S.rosterRaw && S.rosterRaw.data && S.rosterRaw.data.rosters && S.rosterRaw.data.rosters[teamId];
+  var ti = S.teamInfo[teamId] || {};
+  if (!rosterData) { document.getElementById('teamroster-body').innerHTML = '<div class="loading">No roster data for <strong>' + (ti.name || teamId) + '</strong></div>'; return; }
+  // Reuse showRoster logic but write to teamroster-body
+  var origBody = document.getElementById('roster-body');
+  var trBody   = document.getElementById('teamroster-body');
+  var origSel  = document.getElementById('team-sel');
+  // Temporarily swap IDs, call showRoster, then restore
+  if (origBody) origBody.id = 'roster-body-bak';
+  if (origSel)  origSel.id  = 'team-sel-bak';
+  trBody.id = 'roster-body';
+  showRoster(teamId);
+  trBody.id = 'teamroster-body';
+  if (origBody) origBody.id = 'roster-body';
+  if (origSel)  origSel.id  = 'team-sel';
+}
+
+function buildTeamRosterCharts(teamId) {
+  var el = document.getElementById('teamroster-charts');
+  if (!el) return;
+  var origEl    = document.getElementById('roster-charts');
+  if (origEl) origEl.id = 'roster-charts-bak';
+  el.id = 'roster-charts';
+  buildRosterCharts(teamId);
+  el.id = 'teamroster-charts';
+  if (origEl) origEl.id = 'roster-charts';
 }
 
 var BAT_STATS = [
