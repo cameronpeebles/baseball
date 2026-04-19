@@ -6400,7 +6400,7 @@ function parseStandingsByWeek(standingsData) {
         ERA:gv(cells,'ERA'),WHIP:gv(cells,'WHIP')
       };
     });
-    if(Object.keys(bw[wk]).length<8) delete bw[wk];
+    if(Object.keys(bw[wk]).length < 2) delete bw[wk];
   });
   return bw;
 }
