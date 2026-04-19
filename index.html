@@ -2625,12 +2625,125 @@ function showTeamRoster(teamId) {
 function buildTeamRosterCharts(teamId) {
   var el = document.getElementById('teamroster-charts');
   if (!el) return;
-  var origEl    = document.getElementById('roster-charts');
-  if (origEl) origEl.id = 'roster-charts-bak';
-  el.id = 'roster-charts';
-  buildRosterCharts(teamId);
-  el.id = 'teamroster-charts';
-  if (origEl) origEl.id = 'roster-charts';
+
+  var GC = ['#1a1f5e','#5b8db8','#7bc8a4','#e8d870'];
+  var GROUPS = ['Infield','Outfield','SP','RP'];
+
+  // ── Gather data ─────────────────────────────────────────────────────────
+  // 1. fWAR by group
+  var fwarByGroup = {Infield:0, Outfield:0, SP:0, RP:0};
+  var allFW = FWAR.hitResults.concat(FWAR.pitResults);
+  var fwMap = {};
+  allFW.forEach(function(p){ fwMap[p.name] = p; });
+
+  (TA.players || []).filter(function(p){ return p.ftId === teamId; }).forEach(function(p) {
+    var fw = fwMap[p.name] || fwMap[(p.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z ]/g,'').trim()];
+    var g = p.bestGroup || '';
+    if (fw && fwarByGroup[g] != null) fwarByGroup[g] = parseFloat((fwarByGroup[g] + (fw.fWAR||0)).toFixed(2));
+  });
+
+  // 2. Positional strength by group (avg overallRating × 100)
+  var ratingByGroup = {};
+  var countByGroup = {};
+  GROUPS.forEach(function(g){ ratingByGroup[g]=0; countByGroup[g]=0; });
+  (TA.players||[]).filter(function(p){return p.ftId===teamId;}).forEach(function(p){
+    var g = p.bestGroup||'';
+    if (ratingByGroup[g]!=null) { ratingByGroup[g]+=p.overallRating||0; countByGroup[g]++; }
+  });
+  var posStrength = GROUPS.map(function(g){ return countByGroup[g]?Math.round(ratingByGroup[g]/countByGroup[g]*100):0; });
+
+  // 3. Batting z-scores for this team (convert z to 0-100 percentile approx, clamped)
+  var teamZ = (S.zData||[]).find(function(d){ return d.teamId===teamId; });
+  function zToPct(z){ return Math.min(99,Math.max(1,Math.round((z+3)/6*100))); }
+  var hitPct = ['R','RBI','HR','SB','AVG'].map(function(k){ return teamZ ? zToPct(teamZ.batZ[k]||0) : 50; });
+  var pitPct = ['ERA','WHIP','W','K','SVH3'].map(function(k){ return teamZ ? zToPct(teamZ.pitZ[k]||0) : 50; });
+
+  // 4. Scatter: player fWAR vs league rating
+  function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  var scatterPlayers = (TA.players||[]).filter(function(p){ return p.ftId===teamId; }).map(function(p){
+    var k = normN(p.name);
+    var fw = fwMap[p.name] || fwMap[k];
+    var lgR = (window._lgRatingLookup||{})[k];
+    if (fw==null || lgR==null) return null;
+    return { x: parseFloat(fw.fWAR.toFixed(2)), y: parseFloat(lgR.toFixed(3)), name: p.name };
+  }).filter(Boolean);
+
+  function qColor(x,y){ return x>=0&&y>=0.5?'#1e6b3a':x<0&&y>=0.5?'#2980b9':x>=0&&y<0.5?'#e67e22':'#c0392b'; }
+
+  // ── Build HTML ────────────────────────────────────────────────────────────
+  var uid = 'tr' + Date.now();
+  var h = '<div class="card" style="margin-bottom:16px">';
+  h += '<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;padding:14px 16px">';
+
+  // Panel headers + canvases
+  var panels = [
+    {id:'d1_'+uid, title:'Team fWAR by group'},
+    {id:'d2_'+uid, title:'Positional strength'},
+    {id:'d3_'+uid, title:'Hitting by category'},
+    {id:'d4_'+uid, title:'Pitching by category'},
+    {id:'d5_'+uid, title:'fWAR vs league rating'}
+  ];
+  panels.forEach(function(p,i) {
+    h += '<div style="display:flex;flex-direction:column;gap:6px">';
+    h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted)">' + p.title + '</div>';
+    if (i < 4) {
+      h += '<div style="position:relative;height:120px"><canvas id="'+p.id+'"></canvas></div>';
+    } else {
+      h += '<div style="position:relative;height:120px"><canvas id="'+p.id+'"></canvas></div>';
+      h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;margin-top:2px">';
+      h += '<div style="font-size:9px;color:#1e6b3a">Stars</div><div style="font-size:9px;color:#2980b9;text-align:right">Buy Low</div>';
+      h += '<div style="font-size:9px;color:#c0392b">Drop</div><div style="font-size:9px;color:#e67e22;text-align:right">Sell High</div>';
+      h += '</div>';
+    }
+    // Legend for donuts
+    if (i < 2) {
+      h += '<div style="display:flex;flex-wrap:wrap;gap:5px">';
+      ['IF','OF','SP','RP'].forEach(function(g,gi){
+        var val = i===0 ? fwarByGroup[GROUPS[gi]].toFixed(1) : posStrength[gi];
+        h += '<span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)">';
+        h += '<span style="width:7px;height:7px;border-radius:1px;background:'+GC[gi]+';display:inline-block"></span>'+g+' '+(i===0?(val>=0?'+':'')+val:val)+'</span>';
+      });
+      h += '</div>';
+    }
+    h += '</div>';
+  });
+  h += '</div></div>';
+  el.innerHTML = h;
+
+  // ── Draw charts ──────────────────────────────────────────────────────────
+  var baseOpts = {responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+(typeof ctx.raw==='object'?'':ctx.formattedValue);}}}}};
+
+  // Donut 1: fWAR by group
+  var fwVals = GROUPS.map(function(g){ return Math.max(0, fwarByGroup[g]); });
+  if (fwVals.every(function(v){return v===0;})) fwVals = [1,1,1,1];
+  new Chart(document.getElementById('d1_'+uid), {type:'doughnut', data:{labels:['IF','OF','SP','RP'],datasets:[{data:fwVals,backgroundColor:GC,borderWidth:2,borderColor:'var(--surface)'}]}, options:Object.assign({},baseOpts,{cutout:'62%',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.label+': +'+ fwarByGroup[GROUPS[ctx.dataIndex]].toFixed(1);}}}}})});
+
+  // Donut 2: Positional strength
+  var psVals = posStrength.map(function(v){return v||1;});
+  new Chart(document.getElementById('d2_'+uid), {type:'doughnut', data:{labels:['IF','OF','SP','RP'],datasets:[{data:psVals,backgroundColor:GC,borderWidth:2,borderColor:'var(--surface)'}]}, options:Object.assign({},baseOpts,{cutout:'62%'})});
+
+  var radarOpts = Object.assign({},baseOpts,{scales:{r:{min:0,max:100,ticks:{display:false,stepSize:25},grid:{color:'rgba(128,128,128,0.12)'},pointLabels:{font:{size:10},color:'#8a8479'}}}});
+
+  // Radar 3: Hitting
+  new Chart(document.getElementById('d3_'+uid), {type:'radar', data:{labels:['R','RBI','HR','SB','AVG'],datasets:[{data:hitPct,backgroundColor:'#1a1f5e18',borderColor:'#1a1f5e',borderWidth:1.5,pointRadius:3,pointBackgroundColor:'#1a1f5e'}]}, options:radarOpts});
+
+  // Radar 4: Pitching
+  new Chart(document.getElementById('d4_'+uid), {type:'radar', data:{labels:['ERA','WHIP','W','K','SVH3'],datasets:[{data:pitPct,backgroundColor:'#7bc8a418',borderColor:'#5ab88a',borderWidth:1.5,pointRadius:3,pointBackgroundColor:'#5ab88a'}]}, options:radarOpts});
+
+  // Scatter 5: fWAR vs league rating
+  if (scatterPlayers.length) {
+    new Chart(document.getElementById('d5_'+uid), {type:'scatter',
+      data:{datasets:[{data:scatterPlayers.map(function(p){return{x:p.x,y:p.y};}),backgroundColor:scatterPlayers.map(function(p){return qColor(p.x,p.y)+'cc';}),pointRadius:5,pointHoverRadius:7}]},
+      options:{responsive:true,maintainAspectRatio:false,layout:{padding:4},plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){var p=scatterPlayers[ctx.dataIndex];return p?p.name+' fWAR:'+(p.x>=0?'+':'')+p.x+' Lg:'+Math.round(p.y*100):'';},}},},
+        scales:{
+          x:{min:Math.min.apply(null,scatterPlayers.map(function(p){return p.x;}))-0.5,max:Math.max.apply(null,scatterPlayers.map(function(p){return p.x;}))+0.5,grid:{color:'rgba(128,128,128,0.1)'},ticks:{font:{size:9},color:'#8a8479'},title:{display:true,text:'fWAR',font:{size:9},color:'#8a8479'}},
+          y:{min:0,max:1.05,grid:{color:'rgba(128,128,128,0.1)'},ticks:{font:{size:9},color:'#8a8479',callback:function(v){return v.toFixed(1);}},title:{display:true,text:'Lg Rating',font:{size:9},color:'#8a8479'}}
+        }
+      }
+    });
+  } else {
+    document.getElementById('d5_'+uid).parentNode.innerHTML = '<div style="height:120px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted)">Visit Player Data first</div>';
+  }
 }
 
 var BAT_STATS = [
