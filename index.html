@@ -2668,10 +2668,12 @@ function buildTeamRosterCharts(teamId) {
 
   var scatterPlayers = (TA.players||[]).filter(function(p){ return p.ftId===teamId; }).map(function(p){
     var k=normN(p.name);
-    var fw=fwMap[p.name]||fwMap[k];
+    var isHit = p.bestGroup==='Infield'||p.bestGroup==='Outfield';
+    var fwarPctLookup = isHit ? (window._fwarPctLookupHit||window._fwarPctLookup||{}) : (window._fwarPctLookupPit||window._fwarPctLookup||{});
+    var fwPct = fwarPctLookup[k];
     var lgR=(window._lgRatingLookup||{})[k];
-    if(fw==null||lgR==null) return null;
-    return {x:parseFloat(fw.fWAR.toFixed(2)), y:Math.round(lgR*100), name:p.name};
+    if(fwPct==null||lgR==null) return null;
+    return {x:Math.round(fwPct), y:Math.round(lgR*100), name:p.name};
   }).filter(Boolean);
 
   var uid = 'tr'+Date.now();
@@ -2679,18 +2681,18 @@ function buildTeamRosterCharts(teamId) {
   h += '<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;padding:16px">';
   var panels = [
     {id:'d1_'+uid,title:'Team fWAR by group',donut:true,fwLeg:true},
-    {id:'d2_'+uid,title:'Positional strength',donut:true,fwLeg:false},
+    {id:'d2_'+uid,title:'Team positional strength by group',donut:true,fwLeg:false},
     {id:'d3_'+uid,title:'Hitting by category',radar:true},
     {id:'d4_'+uid,title:'Pitching by category',radar:true},
-    {id:'d5_'+uid,title:'fWAR vs league rating',scatter:true}
+    {id:'d5_'+uid,title:'fWAR% vs league rating',scatter:true}
   ];
   panels.forEach(function(p) {
     h += '<div style="display:flex;flex-direction:column;gap:6px">';
     h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted)">'+p.title+'</div>';
     if(p.scatter){
-      h += '<div id="'+p.id+'" style="position:relative;height:240px"></div>';
+      h += '<div id="'+p.id+'" style="position:relative;height:280px"></div>';
     } else {
-      h += '<div style="position:relative;height:'+(p.donut?'160':'200')+'px"><canvas id="'+p.id+'"></canvas></div>';
+      h += '<div style="position:relative;height:'+(p.donut?'200':'240')+'px"><canvas id="'+p.id+'"></canvas></div>';
     }
     if(p.fwLeg){
       h += '<div style="display:flex;flex-wrap:wrap;gap:5px">';
@@ -2707,7 +2709,8 @@ function buildTeamRosterCharts(teamId) {
       h += '</div>';
     } else if(p.radar){
       h += '<div style="display:flex;gap:10px;justify-content:center">';
-      h += '<span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)"><span style="width:10px;height:2px;background:#1a1f5e;display:inline-block"></span>Pos Strength</span>';
+      var radarLineCol = p.id.indexOf('d3_')===0 ? '#1a1f5e' : '#5ab88a';
+      h += '<span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)"><span style="width:10px;height:2px;background:'+radarLineCol+';display:inline-block"></span>Pos Strength</span>';
       h += '<span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><span style="width:10px;border-top:2px dashed #c0392b;display:inline-block"></span>fWAR%</span>';
       h += '</div>';
     }
@@ -2735,26 +2738,25 @@ function buildTeamRosterCharts(teamId) {
   var scEl=document.getElementById('d5_'+uid);
   if(!scEl) return;
   if(!scatterPlayers.length){
-    scEl.innerHTML='<div style="height:240px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted)">Visit Player Data first to load ratings</div>';
+    scEl.innerHTML='<div style="height:280px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted)">Visit Player Data first to load ratings</div>';
   } else {
-    var W=scEl.offsetWidth||280,H=240,PL=28,PR=12,PT=20,PB=28;
+    var W=scEl.offsetWidth||300,H=280,PL=32,PR=12,PT=20,PB=28;
     var cW=W-PL-PR,cH=H-PT-PB;
     var xs=scatterPlayers.map(function(p){return p.x;}),ys=scatterPlayers.map(function(p){return p.y;});
-    var xMin=Math.min.apply(null,xs)-0.5,xMax=Math.max.apply(null,xs)+0.5;
-    var xRange=xMax-xMin;
+    var xMin=0,xMax=100;
+    var xRange=100;
     function px2(v){return PL+(v-xMin)/xRange*cW;}
     function py2(v){return PT+(1-v/100)*cH;}
-    var x0=px2(0),y0=py2(50);
+    var x0=px2(50),y0=py2(50);
     var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:100%;display:block">';
     svg+='<rect x="'+PL+'" y="'+PT+'" width="'+(x0-PL)+'" height="'+(y0-PT)+'" fill="#fce8e8" opacity="0.4"/>';
     svg+='<rect x="'+x0+'" y="'+PT+'" width="'+(W-PR-x0)+'" height="'+(y0-PT)+'" fill="#e8f0eb" opacity="0.4"/>';
     svg+='<rect x="'+PL+'" y="'+y0+'" width="'+(x0-PL)+'" height="'+(H-PB-y0)+'" fill="#f5f5f0" opacity="0.4"/>';
     svg+='<rect x="'+x0+'" y="'+y0+'" width="'+(W-PR-x0)+'" height="'+(H-PB-y0)+'" fill="#e8f4fd" opacity="0.4"/>';
-    [-2,-1,0,1,2,3,4].forEach(function(xv){
-      if(xv<xMin||xv>xMax) return;
+    [0,25,50,75,100].forEach(function(xv){
       var xp=px2(xv);
       svg+='<line x1="'+xp+'" y1="'+PT+'" x2="'+xp+'" y2="'+(H-PB)+'" stroke="var(--border)" stroke-width="0.5"/>';
-      svg+='<text x="'+xp+'" y="'+(H-PB+11)+'" text-anchor="middle" font-size="8" fill="var(--muted)">'+(xv>=0?'+':'')+xv+'</text>';
+      svg+='<text x="'+xp+'" y="'+(H-PB+11)+'" text-anchor="middle" font-size="8" fill="var(--muted)">'+xv+'</text>';
     });
     [0,25,50,75,100].forEach(function(yv){
       var yp=py2(yv);
@@ -2772,10 +2774,10 @@ function buildTeamRosterCharts(teamId) {
     });
     scatterPlayers.forEach(function(p){
       var cx=px2(p.x),cy=py2(p.y);
-      var col=p.x>=0&&p.y>=50?'#2d5a3d':p.x<0&&p.y>=50?'#c0392b':p.x>=0&&p.y<50?'#2980b9':'#888';
-      svg+='<circle cx="'+cx+'" cy="'+cy+'" r="5" fill="'+col+'" opacity="0.85"><title>'+p.name+'\nfWAR: '+(p.x>=0?'+':'')+p.x+'\nLg Rating: '+p.y+'</title></circle>';
+      var col=p.x>=50&&p.y>=50?'#2d5a3d':p.x<50&&p.y>=50?'#c0392b':p.x>=50&&p.y<50?'#2980b9':'#888';
+      svg+='<circle cx="'+cx+'" cy="'+cy+'" r="5" fill="'+col+'" opacity="0.85"><title>'+p.name+'\nfWAR%: '+p.x+'\nLg Rating: '+p.y+'</title></circle>';
     });
-    svg+='<text x="'+(PL+cW/2)+'" y="'+(H-1)+'" text-anchor="middle" font-size="9" fill="var(--muted)">fWAR</text>';
+    svg+='<text x="'+(PL+cW/2)+'" y="'+(H-1)+'" text-anchor="middle" font-size="9" fill="var(--muted)">fWAR%</text>';
     svg+='<text x="9" y="'+(PT+cH/2)+'" text-anchor="middle" font-size="9" fill="var(--muted)" transform="rotate(-90,9,'+(PT+cH/2)+')">Lg Rating</text>';
     svg+="</svg>";
     scEl.innerHTML=svg;
