@@ -6220,7 +6220,6 @@ window.buildDashboard = function(teamId) {
     tryCount++;
     var hasPlayers = TA.players && TA.players.length > 0;
     var hasJOE     = window._joeByWeek && Object.keys(window._joeByWeek).length > 0;
-    console.log('[Dashboard] tryBuild #'+tryCount+' team='+teamId+' hasPlayers='+hasPlayers+' hasJOE='+hasJOE+' TAplayers='+(TA.players?TA.players.length:0));
 
     if (!hasPlayers) {
       if (!tradeRendered) { tradeRendered = true; buildTradeAnalyzer(); }
@@ -6822,7 +6821,7 @@ function assembleDashboard(teamId, el) {
       html += '<div style="font-size:13px;font-weight:500">' + p.name + '</div>';
       html += '<div style="font-size:11px;color:var(--muted)"><span class="pos-badge">' + primaryPos(p.pos) + '</span> ' + statStr + '</div>';
       html += '</div>';
-      html += '<div style="text-align:right;flex-shrink:0"><div style="font-size:14px;font-weight:600;color:' + ratingColor(r) + '">' + Math.round(r*100) + '</div><div style="font-size:10px;color:var(--muted)">pct</div></div>';
+      html += '<div style="text-align:right;flex-shrink:0"><div style="font-size:14px;font-weight:600;color:' + ratingColor(p.overallRating||0) + '">' + Math.round((p.overallRating||0)*100) + '</div><div style="font-size:10px;color:var(--muted)">pct</div></div>';
       html += '</div>';
     });
   }
