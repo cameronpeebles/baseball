@@ -278,7 +278,6 @@ td.neg { color: #c0392b; font-weight: 500; }
       <button class="trade-tab" onclick="showFantraxTab('season',this)">Season Stats</button>
       <button class="trade-tab" onclick="showFantraxTab('tables',this)">Tables</button>
       <button class="trade-tab" onclick="showFantraxTab('historic',this)">Historic League Data</button>
-      <button class="trade-tab" onclick="showFantraxTab('manual',this)">Manual Data Input</button>
     </div>
     <div id="fantrax-tab-standings" class="trade-tab-content active">
       <div id="standings-body"><div class="loading">Loading...</div></div>
@@ -287,7 +286,7 @@ td.neg { color: #c0392b; font-weight: 500; }
       <div id="season-body"><div class="loading">Loading...</div></div>
     </div>
     <div id="fantrax-tab-tables" class="trade-tab-content">
-      <div class="card" style="margin-top:12px">
+      <div class="card">
         <div class="card-header"><span class="card-title">Season Point Totals</span></div>
         <div class="card-body"><div class="chart-wrap"><canvas id="chart-points"></canvas></div></div>
       </div>
@@ -301,12 +300,6 @@ td.neg { color: #c0392b; font-weight: 500; }
           <div class="card-body"><div class="chart-wrap-sm"><canvas id="chart-pit-pts"></canvas></div></div>
         </div>
       </div>
-    </div>
-    <div id="fantrax-tab-historic" class="trade-tab-content">
-      <div id="historic-body"><div class="loading">Loading...</div></div>
-    </div>
-    <div id="fantrax-tab-manual" class="trade-tab-content">
-      <div id="manual-input-body"></div>
     </div>
     <div id="fantrax-tab-historic" class="trade-tab-content">
       <div id="historic-body"><div class="loading">Loading...</div></div>
@@ -1599,7 +1592,6 @@ window.showFantraxTab = function(tab, btn) {
   if (el) el.classList.add('active');
   if (tab === 'tables') renderAnalytics();
   if (tab === 'historic') renderHistoricPage();
-  if (tab === 'manual') renderManualInput();
 };
 
 function init() {
@@ -1696,8 +1688,6 @@ function init() {
 
     renderTableListPage(standings, 'standings-body');
     renderTableListPage(season, 'season-body');
-    applyManualPeriodsToStandings();
-    mergeManualPeriodsIntoJOE();
     loadPlayers(hitting, 'hit');
     loadPlayers(pitching, 'pit');
     S.rosterRaw = rosters;
@@ -3035,154 +3025,6 @@ function destroyChart(key) {
   if (chartInstances[key]) { chartInstances[key].destroy(); delete chartInstances[key]; }
 }
 
-// ── Manual Data Input ────────────────────────────────────────────────────────
-var MANUAL_STORAGE_KEY = 'bluebonnet_manual_periods';
-var MANUAL_CATS = ['W','L','T','Pts','R','HR','RBI','SB','AVG','W','K','ERA','WHIP','SVH3'];
-var MANUAL_CATS_DISPLAY = ['W','L','T','Pts','R','HR','RBI','SB','AVG','Wins','K','ERA','WHIP','SVH3'];
-var MANUAL_STAT_KEYS = ['W','L','T','Pts','R','HR','RBI','SB','AVG','PW','K','ERA','WHIP','SVH3'];
-
-function loadManualPeriods() {
-  try { return JSON.parse(localStorage.getItem(MANUAL_STORAGE_KEY) || '{}'); } catch(e) { return {}; }
-}
-function saveManualPeriods(data) {
-  try { localStorage.setItem(MANUAL_STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
-}
-
-// Pre-populate Period 1 from screenshot if not already saved
-(function() {
-  var existing = loadManualPeriods();
-  if (!existing['1']) {
-    existing['1'] = {
-      dateRange: 'Wed Mar 25, 2026 - Sun Apr 5, 2026',
-      teams: [
-        {name:'Not Just a MiLB Team', W:3,L:7,T:0,Pts:3,  R:57, HR:15,RBI:53,SB:12,AVG:.235,PW:3, K:53, ERA:2.44,WHIP:1.042,SVH3:1.0},
-        {name:'Little Elm Big Bats',  W:7,L:3,T:0,Pts:7,  R:71, HR:17,RBI:63,SB:10,AVG:.264,PW:7, K:124,ERA:4.07,WHIP:1.262,SVH3:4.0},
-        {name:'PowerCraig5000',       W:3,L:6,T:1,Pts:3.5,R:54, HR:15,RBI:42,SB:9, AVG:.209,PW:8, K:161,ERA:3.30,WHIP:1.080,SVH3:11.0},
-        {name:"Coover's Corner",      W:6,L:3,T:1,Pts:6.5,R:58, HR:17,RBI:67,SB:10,AVG:.265,PW:8, K:102,ERA:2.61,WHIP:1.096,SVH3:8.0},
-        {name:'William Street Wendy', W:4,L:5,T:1,Pts:4.5,R:63, HR:9, RBI:37,SB:8, AVG:.242,PW:10,K:134,ERA:3.18,WHIP:1.118,SVH3:10.5},
-        {name:'The Ronnie Woo-Woos',  W:5,L:4,T:1,Pts:5.5,R:68, HR:21,RBI:64,SB:8, AVG:.230,PW:11,K:156,ERA:4.20,WHIP:1.205,SVH3:6.5},
-        {name:'Chew-Bock-a',          W:2,L:7,T:1,Pts:2.5,R:68, HR:15,RBI:67,SB:4, AVG:.225,PW:4, K:85, ERA:5.42,WHIP:1.332,SVH3:4.0},
-        {name:'Team Fluck',           W:7,L:2,T:1,Pts:7.5,R:68, HR:19,RBI:59,SB:10,AVG:.222,PW:7, K:134,ERA:4.01,WHIP:1.277,SVH3:7.5},
-        {name:'REL REL',              W:7,L:3,T:0,Pts:7,  R:57, HR:17,RBI:63,SB:8, AVG:.230,PW:8, K:109,ERA:4.16,WHIP:1.326,SVH3:11.0},
-        {name:'Buffalo Blues',        W:3,L:7,T:0,Pts:3,  R:43, HR:5, RBI:32,SB:4, AVG:.192,PW:7, K:140,ERA:3.43,WHIP:1.216,SVH3:3.0}
-      ]
-    };
-    saveManualPeriods(existing);
-  }
-  // Expose for use by standings renderer
-  window._manualPeriods = existing;
-})();
-
-function renderManualInput() {
-  var el = document.getElementById('manual-input-body');
-  if (!el) return;
-  var data = loadManualPeriods();
-  window._manualPeriods = data;
-  var periods = Object.keys(data).map(Number).sort(function(a,b){return a-b;});
-
-  var html = '<div style="margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">';
-  html += '<strong style="font-size:13px">Manually entered scoring periods</strong>';
-  html += '<button class="pill active" onclick="addManualPeriod()">+ Add period</button>';
-  html += '<span style="font-size:12px;color:var(--muted)">Data is saved in your browser. Used to fill gaps not in Fantrax standings data.</span>';
-  html += '</div>';
-
-  if (!periods.length) {
-    html += '<div style="color:var(--muted);padding:20px">No manual periods saved yet.</div>';
-  }
-
-  periods.forEach(function(p) {
-    var pd = data[p];
-    html += '<div class="card" style="margin-bottom:16px">';
-    html += '<div class="card-header">';
-    html += '<span class="card-title">Scoring Period ' + p + '</span>';
-    if (pd.dateRange) html += '<span style="font-size:12px;color:var(--muted)">' + pd.dateRange + '</span>';
-    html += '<button onclick="deleteManualPeriod(' + p + ')" style="margin-left:auto;padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;color:var(--muted);background:none">Delete</button>';
-    html += '</div>';
-    html += '<div class="table-wrap"><table style="font-size:12px"><thead><tr>';
-    html += '<th class="left">Team</th><th>W</th><th>L</th><th>T</th><th>Pts</th><th>R</th><th>HR</th><th>RBI</th><th>SB</th><th>AVG</th><th>Wins</th><th>K</th><th>ERA</th><th>WHIP</th><th>SVH3</th>';
-    html += '</tr></thead><tbody>';
-    (pd.teams||[]).forEach(function(t) {
-      html += '<tr>';
-      html += '<td class="left" style="font-weight:500">' + t.name + '</td>';
-      ['W','L','T','Pts','R','HR','RBI','SB','AVG','PW','K','ERA','WHIP','SVH3'].forEach(function(k) {
-        var v = t[k];
-        var disp = v == null ? '—' : (k==='AVG'||k==='ERA'||k==='WHIP') ? Number(v).toFixed(k==='AVG'?3:2) : v;
-        html += '<td>' + disp + '</td>';
-      });
-      html += '</tr>';
-    });
-    html += '</tbody></table></div></div>';
-  });
-
-  el.innerHTML = html;
-}
-
-window.deleteManualPeriod = function(p) {
-  var data = loadManualPeriods();
-  delete data[p];
-  saveManualPeriods(data);
-  window._manualPeriods = data;
-  renderManualInput();
-  // Force standings re-render
-  document.getElementById('standings-body').innerHTML = '<div class="loading">Loading...</div>';
-  renderTableListPage(S.standingsData, 'standings-body');
-};
-
-window.addManualPeriod = function() {
-  var p = prompt('Enter scoring period number:');
-  if (!p || isNaN(parseInt(p))) return;
-  p = parseInt(p);
-  var data = loadManualPeriods();
-  if (data[p]) { alert('Period ' + p + ' already exists. Delete it first to re-enter.'); return; }
-  var dr = prompt('Date range (optional, e.g. "Apr 6 - Apr 19"):') || '';
-  var teamIds = Object.keys(S.teamInfo);
-  var teams = teamIds.map(function(id) {
-    var t = S.teamInfo[id];
-    return {name: t.name || t.shortName || id, W:0,L:0,T:0,Pts:0,R:0,HR:0,RBI:0,SB:0,AVG:0,PW:0,K:0,ERA:0,WHIP:0,SVH3:0};
-  });
-  data[p] = {dateRange: dr, teams: teams};
-  saveManualPeriods(data);
-  window._manualPeriods = data;
-  renderManualInput();
-};
-
-// Merge manual periods into standings rendering
-var _origRenderTableListPage = null;
-function applyManualPeriodsToStandings() {
-  var data = window._manualPeriods || loadManualPeriods();
-  window._manualPeriods = data;
-  var periods = Object.keys(data).map(Number).sort(function(a,b){return a-b;});
-  if (!periods.length) return;
-  var el = document.getElementById('standings-body');
-  if (!el) return;
-  periods.forEach(function(p) {
-    var pd = data[p];
-    if (!pd || !pd.teams || !pd.teams.length) return;
-    var existingId = 'manual-period-card-' + p;
-    if (document.getElementById(existingId)) return; // already injected
-    var html = '<div class="card" style="margin-top:12px" id="' + existingId + '">';
-    html += '<div class="card-header"><span class="card-title">Scoring Period:  ' + p + '</span>';
-    if (pd.dateRange) html += '<span style="font-size:12px;color:var(--muted)">(' + pd.dateRange + ')</span>';
-    html += '<span style="font-size:11px;color:var(--accent);margin-left:8px">Manual entry</span></div>';
-    html += '<div class="table-wrap"><table><thead><tr>';
-    html += '<th class="left">Team</th><th>W</th><th>L</th><th>T</th><th>Pts</th><th>R</th><th>HR</th><th>RBI</th><th>SB</th><th>AVG</th><th>Wins</th><th>K</th><th>ERA</th><th>WHIP</th><th>SVH3</th>';
-    html += '</tr></thead><tbody>';
-    pd.teams.forEach(function(t, i) {
-      var bg = i%2===1?'background:var(--bg)':'';
-      html += '<tr style="' + bg + '">';
-      html += '<td class="left" style="font-weight:500">' + t.name + '</td>';
-      ['W','L','T','Pts','R','HR','RBI','SB','AVG','PW','K','ERA','WHIP','SVH3'].forEach(function(k) {
-        var v = t[k];
-        var disp = v == null ? '—' : (k==='AVG'||k==='ERA'||k==='WHIP') ? Number(v).toFixed(k==='AVG'?3:2) : v;
-        html += '<td>' + disp + '</td>';
-      });
-      html += '</tr>';
-    });
-    html += '</tbody></table></div></div>';
-    el.insertAdjacentHTML('beforeend', html);
-  });
-}
-
 function renderAnalytics() {
   if (analyticsBuilt) return;
   if (!S.seasonData) return;
@@ -3373,7 +3215,7 @@ function buildJOEPage(byWeek, schedule) {
   // Find completed weeks — at least 8 teams have stats
   var completedWeeks = Object.keys(byWeek)
     .map(Number)
-    .filter(function(w) { return Object.keys(byWeek[w]).length >= 2; })
+    .filter(function(w) { return Object.keys(byWeek[w]).length >= 8; })
     .sort(function(a,b){ return a-b; });
 
   // Build opponent lookup from schedule
@@ -6558,77 +6400,21 @@ function parseStandingsByWeek(standingsData) {
         ERA:gv(cells,'ERA'),WHIP:gv(cells,'WHIP')
       };
     });
-    if(Object.keys(bw[wk]).length<2) delete bw[wk];
+    if(Object.keys(bw[wk]).length<8) delete bw[wk];
   });
   return bw;
 }
 
 // Shared loader: ensures _joeByWeek/_joeAllResults/_joeCompletedWeeks are populated
-function mergeManualPeriodsIntoJOE() {
-  // Merge manually entered periods into _joeByWeek and _joeWeekStats
-  var data = window._manualPeriods || loadManualPeriods();
-  window._manualPeriods = data;
-  Object.keys(data).forEach(function(p) {
-    var wk = parseInt(p);
-    var pd = data[p];
-    if (!pd || !pd.teams || !pd.teams.length) return;
-    // Build _joeByWeek entry: {teamName: {R,HR,RBI,SB,AVG,K,W,SVH3,ERA,WHIP}}
-    if (!window._joeByWeek) window._joeByWeek = {};
-    if (!window._joeByWeek[wk]) {
-      window._joeByWeek[wk] = {};
-      pd.teams.forEach(function(t) {
-        window._joeByWeek[wk][t.name] = {
-          R:t.R||0, HR:t.HR||0, RBI:t.RBI||0, SB:t.SB||0, AVG:t.AVG||0,
-          K:t.K||0, W:t.PW||t.W||0, SVH3:t.SVH3||0, ERA:t.ERA||0, WHIP:t.WHIP||0
-        };
-      });
-    }
-    // Also inject into _joeWeekStats (used by League Stats weekly tab)
-    if (!window._joeWeekStats) window._joeWeekStats = {};
-    if (!window._joeWeekStats[wk]) {
-      window._joeWeekStats[wk] = window._joeByWeek[wk];
-    }
-    // Inject into _joeAllResults for JOE Factor (no opponent data so JOE score = null)
-    if (!window._joeAllResults) window._joeAllResults = {};
-    if (!window._joeAllResults[wk]) {
-      window._joeAllResults[wk] = pd.teams.map(function(t) {
-        return {
-          team: t.name, week: wk,
-          actual: null, expected: null, luck: null, joe: null,
-          opponent: '—',
-          R:t.R||0, HR:t.HR||0, RBI:t.RBI||0, SB:t.SB||0, AVG:t.AVG||0,
-          K:t.K||0, W:t.PW||t.W||0, SVH3:t.SVH3||0, ERA:t.ERA||0, WHIP:t.WHIP||0
-        };
-      });
-    }
-    // Add to _joeCompletedWeeks if not already there
-    if (window._joeCompletedWeeks && window._joeCompletedWeeks.indexOf(wk) === -1) {
-      window._joeCompletedWeeks.push(wk);
-      window._joeCompletedWeeks.sort(function(a,b){return a-b;});
-    }
-  });
-}
-
 function ensureJOEData(callback) {
-  if (window._joeByWeek && window._joeAllResults) {
-    mergeManualPeriodsIntoJOE();
-    callback();
-    return;
-  }
+  if (window._joeByWeek && window._joeAllResults) { callback(); return; }
   Promise.all([loadJSON('standings.json'), loadJSON('full_schedule.json')])
     .then(function(res) {
       var bw = parseStandingsByWeek(res[0]);
       window._joeByWeek = bw;
       buildJOEPage(bw, res[1]);
-      if (!window._joeAllResults) window._joeAllResults = {};
-      mergeManualPeriodsIntoJOE();
       callback();
-    }).catch(function(e) {
-      if (!window._joeByWeek) window._joeByWeek = {};
-      if (!window._joeAllResults) window._joeAllResults = {};
-      mergeManualPeriodsIntoJOE();
-      callback(e);
-    });
+    }).catch(function(e) { callback(e); });
 }
 
 // ── League Stats (Combined) ───────────────────────────────────────────────────
@@ -6655,57 +6441,8 @@ window.showCombinedTab = function(tab, btn) {
 
 // ── Tab 1: Week-by-week stats ────────────────────────────────────────────────
 function renderWeeklyStats(el) {
-  loadJSON('joe_stats.json').then(function(joeStats) {
-    // Build byWeek from joe_stats flat array
-    var byWeek = {};
-    (joeStats||[]).forEach(function(row) {
-      var wk = row.week || row.period;
-      var team = row.team;
-      if (!wk || !team) return;
-      if (!byWeek[wk]) byWeek[wk] = {};
-      byWeek[wk][team] = {
-        R:row.R||0, HR:row.HR||0, RBI:row.RBI||0, SB:row.SB||0, AVG:row.AVG||0,
-        K:row.K||0, W:row.W||0, SVH3:row.SVH3||row.SV||0, ERA:row.ERA||0, WHIP:row.WHIP||0
-      };
-    });
-    // Merge in manual periods (e.g. Period 1 not in joe_stats.json)
-    var manualData = window._manualPeriods || loadManualPeriods();
-    Object.keys(manualData).forEach(function(p) {
-      var wk = parseInt(p);
-      var pd = manualData[p];
-      if (!pd || !pd.teams) return;
-      if (!byWeek[wk]) byWeek[wk] = {};
-      pd.teams.forEach(function(t) {
-        if (!byWeek[wk][t.name]) {
-          byWeek[wk][t.name] = {
-            R:t.R||0, HR:t.HR||0, RBI:t.RBI||0, SB:t.SB||0, AVG:t.AVG||0,
-            K:t.K||0, W:t.PW||0, SVH3:t.SVH3||0, ERA:t.ERA||0, WHIP:t.WHIP||0
-          };
-        }
-      });
-    });
-    // Filter out future weeks (all zeros)
-    Object.keys(byWeek).forEach(function(wk) {
-      var teams = Object.keys(byWeek[wk]);
-      var hasData = teams.some(function(t) {
-        var r = byWeek[wk][t];
-        return (r.R||0)+(r.HR||0)+(r.RBI||0)+(r.K||0) > 0;
-      });
-      if (!hasData) delete byWeek[wk];
-    });
-    var weeks = Object.keys(byWeek).map(Number).sort(function(a,b){return a-b;});
-    if (!weeks.length) { el.innerHTML='<div class="error-msg">No weekly data found.</div>'; return; }
-    var html = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px" id="weekly-pills">';
-    weeks.forEach(function(w,i){
-      html += '<button class="pill'+(i===0?' active':'')+'" onclick="showWeekStats('+w+',this)">Wk '+w+'</button>';
-    });
-    html += '</div><div id="weekly-table"></div>';
-    el.innerHTML = html;
-    window._joeWeekStats = byWeek;
-    showWeekStats(weeks[0], document.querySelector('#weekly-pills .pill'));
-  }).catch(function() {
-    // Fallback to _joeByWeek
-    mergeManualPeriodsIntoJOE();
+  ensureJOEData(function(err) {
+    if (err) { el.innerHTML='<div class="error-msg">'+err.message+'</div>'; return; }
     var byWeek = window._joeByWeek || {};
     var weeks = Object.keys(byWeek).map(Number).sort(function(a,b){return a-b;});
     if (!weeks.length) { el.innerHTML='<div class="error-msg">No weekly data found.</div>'; return; }
