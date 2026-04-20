@@ -2893,13 +2893,12 @@ function buildTeamRosterCharts(teamId) {
 
   var uid = 'tr'+Date.now();
   var h = '<div class="card" style="margin-bottom:16px">';
-  h += '<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;padding:16px">';
+  h += '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:16px">';
   var panels = [
     {id:'d1_'+uid,title:'Team fWAR by group',donut:true,fwLeg:true},
     {id:'d2_'+uid,title:'Team positional strength by group',donut:true,fwLeg:false},
     {id:'d3_'+uid,title:'Hitting by category',radar:true},
-    {id:'d4_'+uid,title:'Pitching by category',radar:true},
-    {id:'d5_'+uid,title:'fWAR% vs league rating',scatter:true}
+    {id:'d4_'+uid,title:'Pitching by category',radar:true}
   ];
   panels.forEach(function(p) {
     h += '<div style="display:flex;flex-direction:column;gap:6px">';
@@ -2950,53 +2949,62 @@ function buildTeamRosterCharts(teamId) {
     {data:pitFwarPct,backgroundColor:'#c0392b10',borderColor:'#c0392b',borderWidth:1.5,borderDash:[4,3],pointRadius:3,pointBackgroundColor:'#c0392b'}
   ]},options:radarOpts});
 
-  var scEl=document.getElementById('d5_'+uid);
-  if(!scEl) return;
+  // Scatter moved to full-width card below Top 5
+}
+function buildScatterCard(teamId, containerId) {
+  var scEl = document.getElementById(containerId);
+  if (!scEl) return;
+  function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  var teamPlayers = (TA.players||[]).filter(function(p){ return p.ftId===teamId; });
+  var scatterPlayers = teamPlayers.map(function(p){
+    var k=normN(p.name);
+    var isHit=p.bestGroup==='Infield'||p.bestGroup==='Outfield';
+    var fwPct=(isHit?(window._fwarPctLookupHit||window._fwarPctLookup||{}):(window._fwarPctLookupPit||window._fwarPctLookup||{}))[k];
+    var lgR=(window._lgRatingLookup||{})[k];
+    if(fwPct==null||lgR==null) return null;
+    return {x:Math.round(fwPct), y:Math.round(lgR*100), name:p.name, pos:p.pos||p.bestGroup||''};
+  }).filter(Boolean);
+
   if(!scatterPlayers.length){
-    scEl.innerHTML='<div style="height:280px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted)">Visit Player Data first to load ratings</div>';
-  } else {
-    var W=scEl.offsetWidth||300,H=280,PL=32,PR=12,PT=20,PB=28;
-    var cW=W-PL-PR,cH=H-PT-PB;
-    var xs=scatterPlayers.map(function(p){return p.x;}),ys=scatterPlayers.map(function(p){return p.y;});
-    var xMin=0,xMax=100;
-    var xRange=100;
-    function px2(v){return PL+(v-xMin)/xRange*cW;}
-    function py2(v){return PT+(1-v/100)*cH;}
-    var x0=px2(50),y0=py2(50);
-    var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:100%;display:block">';
-    svg+='<rect x="'+PL+'" y="'+PT+'" width="'+(x0-PL)+'" height="'+(y0-PT)+'" fill="#fce8e8" opacity="0.4"/>';
-    svg+='<rect x="'+x0+'" y="'+PT+'" width="'+(W-PR-x0)+'" height="'+(y0-PT)+'" fill="#e8f0eb" opacity="0.4"/>';
-    svg+='<rect x="'+PL+'" y="'+y0+'" width="'+(x0-PL)+'" height="'+(H-PB-y0)+'" fill="#f5f5f0" opacity="0.4"/>';
-    svg+='<rect x="'+x0+'" y="'+y0+'" width="'+(W-PR-x0)+'" height="'+(H-PB-y0)+'" fill="#e8f4fd" opacity="0.4"/>';
-    [0,25,50,75,100].forEach(function(xv){
-      var xp=px2(xv);
-      svg+='<line x1="'+xp+'" y1="'+PT+'" x2="'+xp+'" y2="'+(H-PB)+'" stroke="var(--border)" stroke-width="0.5"/>';
-      svg+='<text x="'+xp+'" y="'+(H-PB+11)+'" text-anchor="middle" font-size="8" fill="var(--muted)">'+xv+'</text>';
-    });
-    [0,25,50,75,100].forEach(function(yv){
-      var yp=py2(yv);
-      svg+='<line x1="'+PL+'" y1="'+yp+'" x2="'+(W-PR)+'" y2="'+yp+'" stroke="var(--border)" stroke-width="0.5"/>';
-      svg+='<text x="'+(PL-4)+'" y="'+(yp+4)+'" text-anchor="end" font-size="8" fill="var(--muted)">'+yv+'</text>';
-    });
-    svg+='<line x1="'+x0+'" y1="'+PT+'" x2="'+x0+'" y2="'+(H-PB)+'" stroke="var(--text)" stroke-width="1.5"/>';
-    svg+='<line x1="'+PL+'" y1="'+y0+'" x2="'+(W-PR)+'" y2="'+y0+'" stroke="var(--text)" stroke-width="1.5"/>';
-    [{x:PL+4,y:PT+12,t:'Sell High',c:'#c0392b',a:'start'},
-     {x:W-PR-4,y:PT+12,t:'Stars',c:'#1e6b3a',a:'end'},
-     {x:PL+4,y:H-PB-6,t:'Drop / Avoid',c:'#888',a:'start'},
-     {x:W-PR-4,y:H-PB-6,t:'Buy Low',c:'#2980b9',a:'end'}
-    ].forEach(function(q){
-      svg+='<text x="'+q.x+'" y="'+q.y+'" text-anchor="'+q.a+'" font-size="10" font-weight="700" fill="'+q.c+'" opacity="0.75">'+q.t+'</text>';
-    });
-    scatterPlayers.forEach(function(p){
-      var cx=px2(p.x),cy=py2(p.y);
-      var col=p.x>=50&&p.y>=50?'#2d5a3d':p.x<50&&p.y>=50?'#c0392b':p.x>=50&&p.y<50?'#2980b9':'#888';
-      svg+='<circle cx="'+cx+'" cy="'+cy+'" r="5" fill="'+col+'" opacity="0.85"><title>'+p.name+'\nfWAR%: '+p.x+'\nLg Rating: '+p.y+'</title></circle>';
-    });
-    svg+='<text x="'+(PL+cW/2)+'" y="'+(H-1)+'" text-anchor="middle" font-size="9" fill="var(--muted)">fWAR%</text>';
-    svg+='<text x="9" y="'+(PT+cH/2)+'" text-anchor="middle" font-size="9" fill="var(--muted)" transform="rotate(-90,9,'+(PT+cH/2)+')">Lg Rating</text>';
-    svg+="</svg>";
-    scEl.innerHTML=svg;
+    scEl.innerHTML='<div style="height:320px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted)">Visit Player Data first to load ratings</div>';
+    return;
   }
+  var W=scEl.offsetWidth||700,H=320,PL=32,PR=16,PT=24,PB=32;
+  var cW=W-PL-PR,cH=H-PT-PB;
+  function px2(v){return PL+v/100*cW;}
+  function py2(v){return PT+(1-v/100)*cH;}
+  var x0=px2(50),y0=py2(50);
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:100%;display:block">';
+  svg+='<rect x="'+PL+'" y="'+PT+'" width="'+(x0-PL)+'" height="'+(y0-PT)+'" fill="#fce8e8" opacity="0.4"/>';
+  svg+='<rect x="'+x0+'" y="'+PT+'" width="'+(W-PR-x0)+'" height="'+(y0-PT)+'" fill="#e8f0eb" opacity="0.4"/>';
+  svg+='<rect x="'+PL+'" y="'+y0+'" width="'+(x0-PL)+'" height="'+(H-PB-y0)+'" fill="#f5f5f0" opacity="0.4"/>';
+  svg+='<rect x="'+x0+'" y="'+y0+'" width="'+(W-PR-x0)+'" height="'+(H-PB-y0)+'" fill="#e8f4fd" opacity="0.4"/>';
+  [0,25,50,75,100].forEach(function(v){
+    var xp=px2(v), yp=py2(v);
+    svg+='<line x1="'+xp+'" y1="'+PT+'" x2="'+xp+'" y2="'+(H-PB)+'" stroke="var(--border)" stroke-width="0.5"/>';
+    svg+='<text x="'+xp+'" y="'+(H-PB+12)+'" text-anchor="middle" font-size="9" fill="var(--muted)">'+v+'</text>';
+    svg+='<line x1="'+PL+'" y1="'+yp+'" x2="'+(W-PR)+'" y2="'+yp+'" stroke="var(--border)" stroke-width="0.5"/>';
+    svg+='<text x="'+(PL-5)+'" y="'+(yp+4)+'" text-anchor="end" font-size="9" fill="var(--muted)">'+v+'</text>';
+  });
+  svg+='<line x1="'+x0+'" y1="'+PT+'" x2="'+x0+'" y2="'+(H-PB)+'" stroke="var(--text)" stroke-width="1.5"/>';
+  svg+='<line x1="'+PL+'" y1="'+y0+'" x2="'+(W-PR)+'" y2="'+y0+'" stroke="var(--text)" stroke-width="1.5"/>';
+  [{x:PL+6,y:PT+14,t:'Sell High',c:'#c0392b',a:'start'},
+   {x:W-PR-6,y:PT+14,t:'Stars',c:'#1e6b3a',a:'end'},
+   {x:PL+6,y:H-PB-8,t:'Drop / Avoid',c:'#888',a:'start'},
+   {x:W-PR-6,y:H-PB-8,t:'Buy Low',c:'#2980b9',a:'end'}
+  ].forEach(function(q){
+    svg+='<text x="'+q.x+'" y="'+q.y+'" text-anchor="'+q.a+'" font-size="11" font-weight="700" fill="'+q.c+'" opacity="0.75">'+q.t+'</text>';
+  });
+  scatterPlayers.forEach(function(p){
+    var cx=px2(p.x), cy=py2(p.y);
+    var col=p.x>=50&&p.y>=50?'#2d5a3d':p.x<50&&p.y>=50?'#c0392b':p.x>=50&&p.y<50?'#2980b9':'#888';
+    svg+='<circle cx="'+cx+'" cy="'+cy+'" r="6" fill="'+col+'" opacity="0.85"><title>'+p.name+' ('+p.pos+')\nfWAR%: '+p.x+'\nLg Rating: '+p.y+'</title></circle>';
+    svg+='<text x="'+(cx+8)+'" y="'+(cy+4)+'" font-size="9" fill="var(--muted)">'+p.name.split(' ').pop()+'</text>';
+  });
+  svg+='<text x="'+(PL+cW/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="10" fill="var(--muted)">fWAR%</text>';
+  svg+='<text x="10" y="'+(PT+cH/2)+'" text-anchor="middle" font-size="10" fill="var(--muted)" transform="rotate(-90,10,'+(PT+cH/2)+')">Lg Rating</text>';
+  svg+='</svg>';
+  scEl.innerHTML=svg;
 }
 var BAT_STATS = [
   {key:'R', label:'R', idx:6},
@@ -6973,6 +6981,14 @@ function assembleDashboard(teamId, el) {
     html += '</div></div>';
   }
 
+  // fWAR% vs League Rating full-width scatter card
+  html += '<div class="card" style="margin-bottom:20px">';
+  html += '<div class="card-header"><span class="card-title">fWAR% vs league rating</span></div>';
+  html += '<div class="card-body" style="padding:12px 16px">';
+  html += dashInfoBox('Each dot is a rostered player on your team. X = fWAR% (how they rank among all rostered players at their position). Y = League Rating (overall percentile vs entire league). Stars (top-right) are your best players. Drop/Avoid (bottom-left) are your weakest. Sell High = high league rating but low fWAR% — overrated. Buy Low = high fWAR% but low league rating — undervalued gem.');
+  html += '<div id="dash-player-scatter" style="position:relative;height:320px"></div>';
+  html += '</div></div>';
+
 
   html += '</div>'; // dash-two-col
 
@@ -7038,7 +7054,7 @@ function assembleDashboard(teamId, el) {
     var TCOLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#34495e','#e91e8c','#00bcd4'];
     var datasets = zData.map(function(d, i) {
       var r = minR + (Math.abs(d.totalZ) / maxTotal) * (maxR - minR);
-      var isMe = d.teamName === teamName;
+      var isMe = d.teamId === teamId;
       var col = TCOLORS[i % TCOLORS.length];
       return {
         label: d.teamName,
@@ -7069,6 +7085,9 @@ function assembleDashboard(teamId, el) {
       }
     });
   }
+
+  // Render fWAR% vs League Rating scatter
+  buildScatterCard(teamId, 'dash-player-scatter');
 
   // Render roster overview charts into the dashboard roster card
   var dashRosterEl = document.getElementById('dash-roster-charts');
