@@ -6655,12 +6655,58 @@ window.showCombinedTab = function(tab, btn) {
 
 // ── Tab 1: Week-by-week stats ────────────────────────────────────────────────
 function renderWeeklyStats(el) {
-  ensureJOEData(function(err) {
-    if (err) { el.innerHTML='<div class="error-msg">'+err.message+'</div>'; return; }
-    var byWeek = window._joeByWeek || {};
-    // Merge manual periods in (they may not be in _joeByWeek if it was just built)
+  loadJSON('joe_stats.json').then(function(joeStats) {
+    // Build byWeek from joe_stats flat array
+    var byWeek = {};
+    (joeStats||[]).forEach(function(row) {
+      var wk = row.week || row.period;
+      var team = row.team;
+      if (!wk || !team) return;
+      if (!byWeek[wk]) byWeek[wk] = {};
+      byWeek[wk][team] = {
+        R:row.R||0, HR:row.HR||0, RBI:row.RBI||0, SB:row.SB||0, AVG:row.AVG||0,
+        K:row.K||0, W:row.W||0, SVH3:row.SVH3||row.SV||0, ERA:row.ERA||0, WHIP:row.WHIP||0
+      };
+    });
+    // Merge in manual periods (e.g. Period 1 not in joe_stats.json)
+    var manualData = window._manualPeriods || loadManualPeriods();
+    Object.keys(manualData).forEach(function(p) {
+      var wk = parseInt(p);
+      var pd = manualData[p];
+      if (!pd || !pd.teams) return;
+      if (!byWeek[wk]) byWeek[wk] = {};
+      pd.teams.forEach(function(t) {
+        if (!byWeek[wk][t.name]) {
+          byWeek[wk][t.name] = {
+            R:t.R||0, HR:t.HR||0, RBI:t.RBI||0, SB:t.SB||0, AVG:t.AVG||0,
+            K:t.K||0, W:t.PW||0, SVH3:t.SVH3||0, ERA:t.ERA||0, WHIP:t.WHIP||0
+          };
+        }
+      });
+    });
+    // Filter out future weeks (all zeros)
+    Object.keys(byWeek).forEach(function(wk) {
+      var teams = Object.keys(byWeek[wk]);
+      var hasData = teams.some(function(t) {
+        var r = byWeek[wk][t];
+        return (r.R||0)+(r.HR||0)+(r.RBI||0)+(r.K||0) > 0;
+      });
+      if (!hasData) delete byWeek[wk];
+    });
+    var weeks = Object.keys(byWeek).map(Number).sort(function(a,b){return a-b;});
+    if (!weeks.length) { el.innerHTML='<div class="error-msg">No weekly data found.</div>'; return; }
+    var html = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px" id="weekly-pills">';
+    weeks.forEach(function(w,i){
+      html += '<button class="pill'+(i===0?' active':'')+'" onclick="showWeekStats('+w+',this)">Wk '+w+'</button>';
+    });
+    html += '</div><div id="weekly-table"></div>';
+    el.innerHTML = html;
+    window._joeWeekStats = byWeek;
+    showWeekStats(weeks[0], document.querySelector('#weekly-pills .pill'));
+  }).catch(function() {
+    // Fallback to _joeByWeek
     mergeManualPeriodsIntoJOE();
-    byWeek = window._joeByWeek || {};
+    var byWeek = window._joeByWeek || {};
     var weeks = Object.keys(byWeek).map(Number).sort(function(a,b){return a-b;});
     if (!weeks.length) { el.innerHTML='<div class="error-msg">No weekly data found.</div>'; return; }
     var html = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px" id="weekly-pills">';
