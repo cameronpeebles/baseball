@@ -6592,7 +6592,12 @@ function assembleDashboard(teamId, el) {
   html += '<div class="card" style="margin-bottom:20px" id="dash-roster-charts-card">';
   html += '<div class="card-header"><span class="card-title">Roster overview</span></div>';
   html += '<div class="card-body" style="padding:12px 16px">';
-  html += dashInfoBox('The two donuts show fWAR and positional rating split across IF/OF/SP/RP. Radars show category-level percentile rank vs the league - solid line is positional strength, dashed red is fWAR%. The scatter shows each player by fWAR% (x) vs League Rating (y): top-right are stars, bottom-left are drop candidates.');
+  html += dashInfoBox('The two donuts show fWAR and positional rating split across IF/OF/SP/RP. Radars show category-level percentile rank vs the league — solid line is positional strength, dashed red is fWAR%. The scatter shows each player by fWAR% (x) vs League Rating (y): top-right are stars, bottom-left are drop candidates.'
+    + '<div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border)">'
+    + '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">Key insights</div>'
+    + '<div style="margin-bottom:8px"><strong>Donuts:</strong> Compare the two together. If fWAR is hitter-heavy but positional strength is balanced, your pitchers are rated well but producing little fantasy value — they are underperforming. If fWAR is pitcher-heavy but positional strength shows weak pitching, a few elite arms are masking thin depth. If both donuts are lopsided the same way, your team is genuinely one-dimensional.</div>'
+    + '<div><strong>Radars:</strong> The gap between the two lines is the key signal. When dashed red fWAR% sits inside the solid positional strength line, players are underperforming their ratings — potential sell-high candidates. When fWAR% bulges outside, players are overachieving — enjoy it but do not trade from that group expecting it to last. Larger always means better, including ERA and WHIP.</div>'
+    + '</div>');
   html += '<div id="dash-roster-charts"></div>';
   html += '</div></div>';
 
