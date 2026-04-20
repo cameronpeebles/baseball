@@ -6490,13 +6490,20 @@ window.showWeekStats = function(week, btn) {
   var weekData = (window._joeWeekStats||{})[week] || {};
   var teams = Object.keys(weekData).sort();
   var CATS  = ['R','HR','RBI','SB','AVG','K','W','SVH3','ERA','WHIP'];
-  var catMax = {}, catMin = {};
+  var n = teams.length || 1;
+
+  // Rank each team per category (1=best)
+  var catRank = {}; // cat → {team → rank 1..n}
   CATS.forEach(function(c) {
-    var vals = teams.map(function(t){ return weekData[t][c]; }).filter(function(v){ return v != null; });
-    if (!vals.length) return;
-    catMax[c] = Math.max.apply(null,vals);
-    catMin[c] = Math.min.apply(null,vals);
+    var isLow = c==='ERA'||c==='WHIP';
+    var sorted = teams.slice().sort(function(a,b){
+      var va = weekData[a][c]||0, vb = weekData[b][c]||0;
+      return isLow ? va-vb : vb-va; // low ERA=rank1, high R=rank1
+    });
+    catRank[c] = {};
+    sorted.forEach(function(t,i){ catRank[c][t] = i+1; });
   });
+
   var html = '<div class="card"><div class="table-wrap"><table>';
   html += '<thead><tr><th class="left">Team</th>';
   CATS.forEach(function(c){ html += '<th>' + c + '</th>'; });
@@ -6507,11 +6514,10 @@ window.showWeekStats = function(week, btn) {
     CATS.forEach(function(c) {
       var v = row[c];
       if (v == null) { html += '<td style="color:var(--muted)">-</td>'; return; }
-      var isLow = c==='ERA'||c==='WHIP';
-      var range = (catMax[c]||1) - (catMin[c]||0);
-      var pct   = range > 0 ? (isLow ? (catMax[c]-v)/range : (v-catMin[c])/range) : 0.5;
-      var col   = pct>=0.7?'#2d5a3d':pct>=0.5?'#4a9a68':pct>=0.35?'#b7791f':'#c0392b';
-      var disp  = c==='AVG'?v.toFixed(3):(c==='ERA'||c==='WHIP')?v.toFixed(2):Math.round(v);
+      var rank = catRank[c][team] || n;
+      var pct  = 1 - (rank-1)/(n-1||1); // 1=best, 0=worst
+      var col  = pct>=0.7?'#2d5a3d':pct>=0.5?'#4a9a68':pct>=0.35?'#b7791f':'#c0392b';
+      var disp = c==='AVG'?v.toFixed(3):(c==='ERA'||c==='WHIP')?v.toFixed(2):Math.round(v);
       html += '<td style="font-weight:500;color:' + col + '">' + disp + '</td>';
     });
     html += '</tr>';
