@@ -276,6 +276,7 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div class="trade-tabs" id="fantrax-tabs">
       <button class="trade-tab active" onclick="showFantraxTab('standings',this)">Standings</button>
       <button class="trade-tab" onclick="showFantraxTab('season',this)">Season Stats</button>
+      <button class="trade-tab" onclick="showFantraxTab('byperiod',this)">By Period</button>
       <button class="trade-tab" onclick="showFantraxTab('tables',this)">Tables</button>
       <button class="trade-tab" onclick="showFantraxTab('historic',this)">Historic League Data</button>
     </div>
@@ -284,6 +285,9 @@ td.neg { color: #c0392b; font-weight: 500; }
     </div>
     <div id="fantrax-tab-season" class="trade-tab-content">
       <div id="season-body"><div class="loading">Loading...</div></div>
+    </div>
+    <div id="fantrax-tab-byperiod" class="trade-tab-content">
+      <div id="fantrax-byperiod-body"><div class="loading">Loading...</div></div>
     </div>
     <div id="fantrax-tab-tables" class="trade-tab-content">
       <div class="card">
@@ -1592,6 +1596,10 @@ window.showFantraxTab = function(tab, btn) {
   if (el) el.classList.add('active');
   if (tab === 'tables') renderAnalytics();
   if (tab === 'historic') renderHistoricPage();
+  if (tab === 'byperiod') {
+    var bpEl = document.getElementById('fantrax-byperiod-body');
+    if (bpEl && bpEl.querySelector('.loading')) renderWeeklyStats(bpEl);
+  }
 };
 
 function init() {
