@@ -5843,10 +5843,10 @@ window.buildNewDash = function(teamId) {
     if(fw&&fwarByGroup[g]!=null) fwarByGroup[g]=parseFloat((fwarByGroup[g]+(fw.fWAR||0)).toFixed(2));
   });
 
-  // Positional strength
+  // Positional strength — team only
   var ratingByGroup={},countByGroup={};
   GROUPS.forEach(function(g){ratingByGroup[g]=0;countByGroup[g]=0;});
-  (TA.players||[]).forEach(function(p){
+  teamPlayers.forEach(function(p){
     var g=p.bestGroup||'';
     if(ratingByGroup[g]!=null){ratingByGroup[g]+=p.overallRating||0;countByGroup[g]++;}
   });
