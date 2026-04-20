@@ -6658,6 +6658,9 @@ function renderWeeklyStats(el) {
   ensureJOEData(function(err) {
     if (err) { el.innerHTML='<div class="error-msg">'+err.message+'</div>'; return; }
     var byWeek = window._joeByWeek || {};
+    // Merge manual periods in (they may not be in _joeByWeek if it was just built)
+    mergeManualPeriodsIntoJOE();
+    byWeek = window._joeByWeek || {};
     var weeks = Object.keys(byWeek).map(Number).sort(function(a,b){return a-b;});
     if (!weeks.length) { el.innerHTML='<div class="error-msg">No weekly data found.</div>'; return; }
     var html = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px" id="weekly-pills">';
