@@ -290,24 +290,23 @@ for period in range(1, MAX_PERIODS + 1):
 
 joe_stats.sort(key=lambda x: (x["week"], x["team"]))
 schedule.sort(key=lambda x: (x["week"], x["away"]))
+print(f"Collected {len(period_tables)} raw period tables across all periods")
 
 # Inject per-period tables into standings.json so the Standings tab shows all periods
 if period_tables:
     standings_data = json.load(open("data/standings.json"))
-    existing_tables = (standings_data.get("data") or {}).get("tableList") or []
-    # Find captions already in standings to avoid duplicates
-    existing_caps = {(t.get("caption") or "").strip().lower() for t in existing_tables}
-    injected = 0
-    for t in sorted(period_tables, key=lambda x: x.get("caption",""), reverse=True):
-        cap = (t.get("caption") or "").strip().lower()
-        if cap not in existing_caps:
-            existing_tables.append(t)
-            existing_caps.add(cap)
-            injected += 1
-    if injected:
-        standings_data.setdefault("data", {})["tableList"] = existing_tables
-        save("standings.json", standings_data)
-        print(f"Injected {injected} period tables into standings.json")
+    tbl_list = (standings_data.get("data") or {}).get("tableList") or []
+    # Keep only non-scoring-period tables (e.g. overall standings)
+    kept = [t for t in tbl_list if not (t.get("caption") or "").lower().startswith("scoring period")]
+    # Add all per-period tables sorted by period number ascending
+    def period_num(t):
+        import re
+        m = re.search(r'(\d+)', t.get("caption") or "")
+        return int(m.group(1)) if m else 0
+    period_tables_sorted = sorted(period_tables, key=period_num)
+    standings_data.setdefault("data", {})["tableList"] = kept + period_tables_sorted
+    save("standings.json", standings_data)
+    print(f"Rebuilt standings.json with {len(period_tables_sorted)} period tables")
 
 save("joe_stats.json", joe_stats)
 save("schedule.json", schedule)
