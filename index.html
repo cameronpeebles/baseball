@@ -89,6 +89,7 @@ td.neg { color: #c0392b; font-weight: 500; }
 #page-models { max-width: none; }
 /* Rosters wide tables */
 #page-rosters { max-width: none; }
+#page-newdash { max-width: none; }
 #page-rosters .table-wrap { overflow-x: auto; }
 #page-rosters table { min-width: max-content; }
 #page-teamroster { max-width: none; }
@@ -245,6 +246,7 @@ td.neg { color: #c0392b; font-weight: 500; }
 
 <nav>
   <button class="active" onclick="showPage('dashboard',this)">Dashboard</button>
+  <button onclick="showPage('newdash',this)">New Dashboard</button>
   <button onclick="showPage('guide',this)">Site Guide</button>
   <button onclick="showPage('correlations',this)">Correlations</button>
   <button onclick="showPage('models',this)">Models</button>
@@ -268,6 +270,12 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div class="page-title">Dashboard</div>
     <div class="page-subtitle">Your team at a glance — select your team to get started.</div>
     <div id="dashboard-body"><div class="loading">Loading...</div></div>
+  </div>
+
+  <div class="page" id="page-newdash">
+    <div class="page-title">New Dashboard</div>
+    <div class="page-subtitle">Team health at a glance — roster strength, add targets, and drop candidates.</div>
+    <div id="newdash-body"><div class="loading">Select a team to get started.</div></div>
   </div>
 
   <div class="page" id="page-fantrax">
@@ -1531,6 +1539,7 @@ function showPage(name, btn) {
   document.getElementById('page-' + name).classList.add('active');
   btn.classList.add('active');
   if (name === 'dashboard') renderDashboard();
+  if (name === 'newdash') renderNewDash();
   if (name === 'fantrax') { if (!fantraxRendered) { fantraxRendered = true; } }
   if (name === 'combined') renderCombinedPage();
   if (name === 'zscores') renderZScores();
@@ -5718,6 +5727,300 @@ function buildH2H(schedule, joeStats, el) {
 // ── Dashboard ────────────────────────────────────────────────────────────────
 
 var DB = { teamId: null };
+
+// ── New Dashboard ─────────────────────────────────────────────────────────────
+function renderNewDash() {
+  var el = document.getElementById('newdash-body');
+  if (!el) return;
+  var teamIds = Object.keys(S.teamInfo);
+  if (!teamIds.length) { el.innerHTML = '<div class="loading">Loading team data...</div>'; return; }
+
+  var savedTeam = window._newDashTeamId || teamIds[0];
+  var html = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">';
+  html += '<select id="newdash-team-sel" onchange="buildNewDash(this.value)" style="padding:7px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px">';
+  teamIds.forEach(function(id) {
+    var t = S.teamInfo[id];
+    html += '<option value="' + id + '"' + (id === savedTeam ? ' selected' : '') + '>' + (t.name || t.shortName || id) + '</option>';
+  });
+  html += '</select></div>';
+  html += '<div id="newdash-content"></div>';
+  el.innerHTML = html;
+  buildNewDash(savedTeam);
+}
+
+function infoBox(text) {
+  var id = 'info_' + Math.random().toString(36).slice(2,8);
+  return '<div style="margin-bottom:10px">'
+    + '<button onclick="var d=document.getElementById(\''+id+'\');d.style.display=d.style.display===\'none\'?\'block\':\'none\'" '
+    + 'style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px;padding:0">'
+    + '<span style="display:inline-block;width:14px;height:14px;border-radius:50%;border:1px solid var(--muted);text-align:center;line-height:13px;font-size:10px">i</span>'
+    + 'How to read this</button>'
+    + '<div id="' + id + '" style="display:none;margin-top:6px;padding:10px 12px;background:var(--bg);border-radius:var(--radius);font-size:12px;color:var(--muted);line-height:1.6">'
+    + text + '</div></div>';
+}
+
+window.buildNewDash = function(teamId) {
+  window._newDashTeamId = teamId;
+  var el = document.getElementById('newdash-content');
+  if (!el || !teamId) return;
+  el.innerHTML = '<div class="loading">Building...</div>';
+
+  var ti = S.teamInfo[teamId] || {};
+  var teamName = ti.name || ti.shortName || '';
+
+  // ── Data gathering ──────────────────────────────────────────────────────
+  function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+
+  // fWAR totals by group
+  var GC = ['#1a1f5e','#5b8db8','#7bc8a4','#e8d870'];
+  var GROUPS = ['Infield','Outfield','SP','RP'];
+  var fwarByGroup = {Infield:0,Outfield:0,SP:0,RP:0};
+  var fwMap = {};
+  FWAR.hitResults.concat(FWAR.pitResults).forEach(function(p){ fwMap[p.name]=p; fwMap[normN(p.name)]=p; });
+  var teamPlayers = (TA.players||[]).filter(function(p){ return p.ftId===teamId; });
+  teamPlayers.forEach(function(p){
+    var fw=fwMap[p.name]||fwMap[normN(p.name)];
+    var g=p.bestGroup||'';
+    if(fw&&fwarByGroup[g]!=null) fwarByGroup[g]=parseFloat((fwarByGroup[g]+(fw.fWAR||0)).toFixed(2));
+  });
+
+  // Positional strength
+  var ratingByGroup={},countByGroup={};
+  GROUPS.forEach(function(g){ratingByGroup[g]=0;countByGroup[g]=0;});
+  (TA.players||[]).forEach(function(p){
+    var g=p.bestGroup||'';
+    if(ratingByGroup[g]!=null){ratingByGroup[g]+=p.overallRating||0;countByGroup[g]++;}
+  });
+  var lgAvgByGroup={};
+  GROUPS.forEach(function(g){
+    var gp=(TA.players||[]).filter(function(p){return p.bestGroup===g;});
+    lgAvgByGroup[g]=gp.length?gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length:0.5;
+  });
+  var posStrength=GROUPS.map(function(g){return countByGroup[g]?Math.round(ratingByGroup[g]/countByGroup[g]*100):0;});
+  var lgStrength=GROUPS.map(function(g){return Math.round(lgAvgByGroup[g]*100);});
+
+  // Z-scores for radars
+  var teamZ=(S.zData||[]).find(function(d){return d.teamId===teamId;});
+  function zToPct(z){return Math.min(99,Math.max(1,Math.round((z+3)/6*100)));}
+  var hitPct=['R','RBI','HR','SB','AVG'].map(function(k){return teamZ?zToPct(teamZ.batZ[k]||0):50;});
+  var pitPct=['ERA','WHIP','W','K','SVH3'].map(function(k){return teamZ?zToPct(teamZ.pitZ[k]||0):50;});
+  function getTeamFwarPctAvg(isHit){
+    var lk=isHit?(window._fwarPctLookupHit||window._fwarPctLookup||{}):(window._fwarPctLookupPit||window._fwarPctLookup||{});
+    var sum=0,cnt=0;
+    teamPlayers.forEach(function(p){var v=lk[normN(p.name)];if(v!=null){sum+=v;cnt++;}});
+    var avg=cnt?Math.min(99,Math.max(1,Math.round(sum/cnt))):50;
+    return [avg,avg,avg,avg,avg];
+  }
+  var hitFwarPct=getTeamFwarPctAvg(true),pitFwarPct=getTeamFwarPctAvg(false);
+
+  // Scatter: fWAR% vs Lg Rating
+  var scatterPlayers=teamPlayers.map(function(p){
+    var k=normN(p.name);
+    var isHit=p.bestGroup==='Infield'||p.bestGroup==='Outfield';
+    var fwPct=(isHit?(window._fwarPctLookupHit||window._fwarPctLookup||{}):(window._fwarPctLookupPit||window._fwarPctLookup||{}))[k];
+    var lgR=(window._lgRatingLookup||{})[k];
+    if(fwPct==null||lgR==null) return null;
+    return {x:Math.round(fwPct),y:Math.round(lgR*100),name:p.name};
+  }).filter(Boolean);
+
+  // Total team fWAR
+  var totalFWAR=0;
+  teamPlayers.forEach(function(p){var fw=fwMap[p.name]||fwMap[normN(p.name)];if(fw)totalFWAR+=fw.fWAR||0;});
+  totalFWAR=parseFloat(totalFWAR.toFixed(1));
+
+  // Weakest groups for add targets
+  var sortedGroups=GROUPS.slice().sort(function(a,b){
+    var ia=GROUPS.indexOf(a),ib=GROUPS.indexOf(b);
+    return posStrength[ia]-posStrength[ib];
+  });
+  var weakGroups=sortedGroups.slice(0,2);
+
+  // Drop candidates: bottom 20% fWAR% of rostered players
+  var allRostered=teamPlayers.map(function(p){
+    var k=normN(p.name);
+    var isHit=p.bestGroup==='Infield'||p.bestGroup==='Outfield';
+    var fwPct=(isHit?(window._fwarPctLookupHit||window._fwarPctLookup||{}):(window._fwarPctLookupPit||window._fwarPctLookup||{}))[k];
+    var lgR=(window._lgRatingLookup||{})[k];
+    return {name:p.name,pos:p.pos||p.bestGroup||'',fwPct:fwPct,lgR:lgR!=null?Math.round(lgR*100):null};
+  }).filter(function(p){return p.fwPct!=null;}).sort(function(a,b){return a.fwPct-b.fwPct;});
+  var cutoff=Math.ceil(allRostered.length*0.2);
+  var dropCandidates=allRostered.slice(0,cutoff);
+
+  // Add targets: top FAs per weak group
+  var faPlayers=(TA.faPlayers||[]);
+  function getFATargets(grp) {
+    var isBat=grp==='Infield'||grp==='Outfield';
+    var fwAll=isBat?FWAR.hitResults:FWAR.pitResults;
+    return faPlayers.filter(function(p){return p.bestGroup===grp;})
+      .map(function(p){
+        var k=normN(p.name);
+        var fw=fwAll?fwAll.find(function(x){return normN(x.name||'')===k;}):null;
+        var fwPct=(isBat?(window._fwarPctLookupHit||window._fwarPctLookup||{}):(window._fwarPctLookupPit||window._fwarPctLookup||{}))[k];
+        return {name:p.name,pos:p.pos||grp,fwarVal:fw?fw.fWAR:null,fwPct:fwPct,mlb:p.mlb||''};
+      })
+      .filter(function(p){return p.fwarVal!=null;})
+      .sort(function(a,b){return (b.fwarVal||0)-(a.fwarVal||0);})
+      .slice(0,3);
+  }
+
+  // ── Unique chart IDs ─────────────────────────────────────────────────────
+  var uid='nd'+Date.now();
+
+  // ── Build HTML ───────────────────────────────────────────────────────────
+  var html = '';
+
+  // Header
+  html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">';
+  if(ti.logoUrl512) html += '<img src="'+ti.logoUrl512+'" style="width:44px;height:44px;border-radius:50%" onerror="this.style.display=\'none\'">';
+  html += '<div>';
+  html += '<div style="font-size:18px;font-weight:600">'+teamName+'</div>';
+  html += '<div style="font-size:12px;color:var(--muted)">Season fWAR: '+(totalFWAR>=0?'+':'')+totalFWAR+' &nbsp;·&nbsp; Overall positional rating: '+Math.round((posStrength.reduce(function(s,v){return s+v;},0)/posStrength.length)||0)+'th pct</div>';
+  html += '</div></div>';
+
+  // ── Card 1: Roster overview ──────────────────────────────────────────────
+  html += '<div class="card" style="margin-bottom:14px">';
+  html += '<div class="card-header"><span class="card-title">Roster overview</span></div>';
+  html += '<div class="card-body" style="padding:12px 16px">';
+  html += infoBox('The two donuts show how your team\'s fWAR and positional rating are split across Infield, Outfield, SP, and RP. The radar charts show your category-level percentile rank vs the rest of the league (0=worst, 100=best) for hitting and pitching — solid line is positional strength, dashed red is your fWAR%. The scatter shows each player\'s fWAR% (x) vs League Rating (y) — top-right are stars, bottom-left are drop candidates.');
+  html += '<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px">';
+  // Panel labels + canvases
+  [{id:'nd1_'+uid,title:'fWAR by group',h:160,donut:true},
+   {id:'nd2_'+uid,title:'Positional strength',h:160,donut:true},
+   {id:'nd3_'+uid,title:'Hitting by category',h:190,radar:true},
+   {id:'nd4_'+uid,title:'Pitching by category',h:190,radar:true},
+   {id:'nd5_'+uid,title:'fWAR% vs league rating',h:240,scatter:true}
+  ].forEach(function(p){
+    html += '<div style="display:flex;flex-direction:column;gap:5px">';
+    html += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">'+p.title+'</div>';
+    if(p.scatter) html += '<div id="'+p.id+'" style="height:'+p.h+'px"></div>';
+    else html += '<div style="position:relative;height:'+p.h+'px"><canvas id="'+p.id+'"></canvas></div>';
+    html += '</div>';
+  });
+  html += '</div></div></div>';
+
+  // ── Bottom 3-col ─────────────────────────────────────────────────────────
+  html += '<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) minmax(0,1fr);gap:12px;align-items:start">';
+
+  // Drop candidates
+  html += '<div class="card"><div class="card-header"><span class="card-title">Drop candidates</span><span style="font-size:11px;color:#c0392b">bottom 20% roster</span></div>';
+  html += '<div class="card-body" style="padding:12px 16px">';
+  html += infoBox('Players in the bottom 20% of your roster by fWAR%. A low fWAR% means they rank poorly among all rostered players at their position. Consider dropping or trading to free up a roster spot for a higher-impact player.');
+  if(!dropCandidates.length) {
+    html += '<div style="color:var(--muted);font-size:12px">Visit Player Data page first to load ratings.</div>';
+  } else {
+    dropCandidates.forEach(function(p){
+      function rCol(v){return v==null?'var(--muted)':v>=65?'#1e6b3a':v>=50?'#4a9a68':v>=35?'#b7791f':'#c0392b';}
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--border)">';
+      html += '<div><div style="font-size:13px;font-weight:500">'+p.name+'</div><div style="font-size:10px;color:var(--muted)">'+p.pos+'</div></div>';
+      html += '<div style="text-align:right">';
+      html += '<div style="font-size:11px;font-weight:600;color:'+rCol(p.fwPct)+'">fWAR% '+Math.round(p.fwPct)+'</div>';
+      html += '<div style="font-size:11px;color:'+rCol(p.lgR)+'">Lg Rtg '+(p.lgR!=null?p.lgR:'—')+'</div>';
+      html += '</div></div>';
+    });
+  }
+  html += '</div></div>';
+
+  // Add targets
+  html += '<div class="card"><div class="card-header"><span class="card-title">Add targets</span><span style="font-size:11px;color:var(--muted)">your 2 weakest groups</span></div>';
+  html += '<div class="card-body" style="padding:12px 16px">';
+  html += infoBox('Free agents ranked by fWAR for your two weakest positional groups. Adding a high-fWAR FA at a position where you\'re below the league average gives the biggest standings improvement per roster move. fWAR% shows how they rank among all rostered players at that position.');
+  weakGroups.forEach(function(grp){
+    var gi=GROUPS.indexOf(grp);
+    var ps=posStrength[gi], lg=lgStrength[gi];
+    var col=ps<lg?'#c0392b':'#1e6b3a';
+    html += '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:'+col+';margin-bottom:6px;margin-top:10px">'+grp+' · '+ps+'th pct (lg avg '+lg+')</div>';
+    var targets=getFATargets(grp);
+    if(!targets.length){html+='<div style="color:var(--muted);font-size:12px;padding:4px 0">No FA data available.</div>';return;}
+    targets.forEach(function(p){
+      function rCol(v){return v==null?'var(--muted)':v>=65?'#1e6b3a':v>=50?'#4a9a68':v>=35?'#b7791f':'#c0392b';}
+      var fwCol=p.fwarVal==null?'var(--text)':p.fwarVal>=3?'#1e6b3a':p.fwarVal>=1?'#4a9a68':p.fwarVal>=-1?'var(--text)':'#c0392b';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--border)">';
+      html += '<div><div style="font-size:13px;font-weight:500">'+p.name+'</div><div style="font-size:10px;color:var(--muted)">'+p.pos+(p.mlb?' · '+p.mlb:'')+'</div></div>';
+      html += '<div style="text-align:right">';
+      html += '<div style="font-size:11px;font-weight:600;color:'+fwCol+'">fWAR '+(p.fwarVal!=null?(p.fwarVal>=0?'+':'')+p.fwarVal.toFixed(1):'—')+'</div>';
+      html += '<div style="font-size:11px;color:'+rCol(p.fwPct)+'">fWAR% '+(p.fwPct!=null?Math.round(p.fwPct):'—')+'</div>';
+      html += '</div></div>';
+    });
+  });
+  html += '</div></div>';
+
+  // Positional strength vs league
+  html += '<div class="card"><div class="card-header"><span class="card-title">Positional strength vs league</span></div>';
+  html += '<div class="card-body" style="padding:12px 16px">';
+  html += infoBox('Your average player rating per group vs the league average. Green bars are above league average — you can afford to trade from these groups. Red bars are below — priority areas to add free agents or target in trades.');
+  GROUPS.forEach(function(g,i){
+    var ps=posStrength[i], lg=lgStrength[i];
+    var col=ps>=lg?'#1e6b3a':ps>=(lg*0.8)?'#b7791f':'#c0392b';
+    var diff=ps-lg; var sign=diff>=0?'+':'';
+    html += '<div style="margin-bottom:10px">';
+    html += '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">';
+    html += '<span style="font-weight:500">'+g+'</span>';
+    html += '<span style="color:'+col+';font-weight:600">'+ps+'<span style="color:var(--muted);font-weight:400"> ('+sign+diff+' vs lg avg '+lg+')</span></span>';
+    html += '</div>';
+    html += '<div style="height:8px;background:var(--border);border-radius:4px;position:relative">';
+    html += '<div style="width:'+ps+'%;height:100%;background:'+col+';border-radius:4px"></div>';
+    html += '<div style="position:absolute;top:-2px;left:'+lg+'%;width:2px;height:12px;background:var(--text);opacity:0.4;border-radius:1px"></div>';
+    html += '</div></div>';
+  });
+  html += '</div></div>';
+  html += '</div>'; // end 3-col
+
+  document.getElementById('newdash-content').innerHTML = html;
+
+  // ── Draw charts ──────────────────────────────────────────────────────────
+  var baseOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}};
+  var fwVals=GROUPS.map(function(g){return Math.max(0,fwarByGroup[g]);});
+  if(fwVals.every(function(v){return v===0;})) fwVals=[1,1,1,1];
+
+  new Chart(document.getElementById('nd1_'+uid),{type:'doughnut',data:{labels:['IF','OF','SP','RP'],datasets:[{data:fwVals,backgroundColor:GC,borderWidth:2,borderColor:'var(--surface)'}]},options:Object.assign({},baseOpts,{cutout:'62%',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+(fwarByGroup[GROUPS[ctx.dataIndex]]>=0?'+':'')+fwarByGroup[GROUPS[ctx.dataIndex]].toFixed(1);}}}}})});
+  new Chart(document.getElementById('nd2_'+uid),{type:'doughnut',data:{labels:['IF','OF','SP','RP'],datasets:[{data:posStrength.map(function(v){return v||1;}),backgroundColor:GC,borderWidth:2,borderColor:'var(--surface)'}]},options:Object.assign({},baseOpts,{cutout:'62%'})});
+
+  var radarOpts=Object.assign({},baseOpts,{scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:'rgba(128,128,128,0.12)'},pointLabels:{font:{size:10},color:'#8a8479'}}}});
+  new Chart(document.getElementById('nd3_'+uid),{type:'radar',data:{labels:['R','RBI','HR','SB','AVG'],datasets:[
+    {data:hitPct,backgroundColor:'#1a1f5e18',borderColor:'#1a1f5e',borderWidth:1.5,pointRadius:3,pointBackgroundColor:'#1a1f5e'},
+    {data:hitFwarPct,backgroundColor:'#c0392b10',borderColor:'#c0392b',borderWidth:1.5,borderDash:[4,3],pointRadius:3,pointBackgroundColor:'#c0392b'}
+  ]},options:radarOpts});
+  new Chart(document.getElementById('nd4_'+uid),{type:'radar',data:{labels:['ERA','WHIP','W','K','SVH3'],datasets:[
+    {data:pitPct,backgroundColor:'#7bc8a418',borderColor:'#5ab88a',borderWidth:1.5,pointRadius:3,pointBackgroundColor:'#5ab88a'},
+    {data:pitFwarPct,backgroundColor:'#c0392b10',borderColor:'#c0392b',borderWidth:1.5,borderDash:[4,3],pointRadius:3,pointBackgroundColor:'#c0392b'}
+  ]},options:radarOpts});
+
+  // Scatter SVG
+  var scEl=document.getElementById('nd5_'+uid);
+  if(scEl){
+    if(!scatterPlayers.length){
+      scEl.innerHTML='<div style="height:240px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted)">Visit Player Data first</div>';
+    } else {
+      var W=scEl.offsetWidth||280,H=240,PL=28,PR=12,PT=20,PB=28,cW=W-PL-PR,cH=H-PT-PB;
+      function px2(v){return PL+v/100*cW;} function py2(v){return PT+(1-v/100)*cH;}
+      var x0=px2(50),y0=py2(50);
+      var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:100%;display:block">';
+      svg+='<rect x="'+PL+'" y="'+PT+'" width="'+(x0-PL)+'" height="'+(y0-PT)+'" fill="#fce8e8" opacity="0.4"/>';
+      svg+='<rect x="'+x0+'" y="'+PT+'" width="'+(W-PR-x0)+'" height="'+(y0-PT)+'" fill="#e8f0eb" opacity="0.4"/>';
+      svg+='<rect x="'+PL+'" y="'+y0+'" width="'+(x0-PL)+'" height="'+(H-PB-y0)+'" fill="#f5f5f0" opacity="0.4"/>';
+      svg+='<rect x="'+x0+'" y="'+y0+'" width="'+(W-PR-x0)+'" height="'+(H-PB-y0)+'" fill="#e8f4fd" opacity="0.4"/>';
+      [0,25,50,75,100].forEach(function(v){
+        svg+='<line x1="'+px2(v)+'" y1="'+PT+'" x2="'+px2(v)+'" y2="'+(H-PB)+'" stroke="var(--border)" stroke-width="0.5"/>';
+        svg+='<text x="'+px2(v)+'" y="'+(H-PB+11)+'" text-anchor="middle" font-size="8" fill="var(--muted)">'+v+'</text>';
+        svg+='<line x1="'+PL+'" y1="'+py2(v)+'" x2="'+(W-PR)+'" y2="'+py2(v)+'" stroke="var(--border)" stroke-width="0.5"/>';
+        svg+='<text x="'+(PL-4)+'" y="'+(py2(v)+4)+'" text-anchor="end" font-size="8" fill="var(--muted)">'+v+'</text>';
+      });
+      svg+='<line x1="'+x0+'" y1="'+PT+'" x2="'+x0+'" y2="'+(H-PB)+'" stroke="var(--text)" stroke-width="1.5"/>';
+      svg+='<line x1="'+PL+'" y1="'+y0+'" x2="'+(W-PR)+'" y2="'+y0+'" stroke="var(--text)" stroke-width="1.5"/>';
+      [{x:PL+4,y:PT+12,t:'Sell High',c:'#c0392b',a:'start'},{x:W-PR-4,y:PT+12,t:'Stars',c:'#1e6b3a',a:'end'},
+       {x:PL+4,y:H-PB-6,t:'Drop / Avoid',c:'#888',a:'start'},{x:W-PR-4,y:H-PB-6,t:'Buy Low',c:'#2980b9',a:'end'}
+      ].forEach(function(q){svg+='<text x="'+q.x+'" y="'+q.y+'" text-anchor="'+q.a+'" font-size="10" font-weight="700" fill="'+q.c+'" opacity="0.75">'+q.t+'</text>';});
+      scatterPlayers.forEach(function(p){
+        var col=p.x>=50&&p.y>=50?'#2d5a3d':p.x<50&&p.y>=50?'#c0392b':p.x>=50&&p.y<50?'#2980b9':'#888';
+        svg+='<circle cx="'+px2(p.x)+'" cy="'+py2(p.y)+'" r="5" fill="'+col+'" opacity="0.85"><title>'+p.name+'\nfWAR%: '+p.x+'\nLg Rating: '+p.y+'</title></circle>';
+      });
+      svg+='<text x="'+(PL+cW/2)+'" y="'+(H-1)+'" text-anchor="middle" font-size="9" fill="var(--muted)">fWAR%</text>';
+      svg+='<text x="9" y="'+(PT+cH/2)+'" text-anchor="middle" font-size="9" fill="var(--muted)" transform="rotate(-90,9,'+(PT+cH/2)+')">Lg Rating</text>';
+      svg+='</svg>';
+      scEl.innerHTML=svg;
+    }
+  }
+};
 
 function renderDashboard() {
   var el = document.getElementById('dashboard-body');
