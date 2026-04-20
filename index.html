@@ -246,7 +246,6 @@ td.neg { color: #c0392b; font-weight: 500; }
 
 <nav>
   <button class="active" onclick="showPage('dashboard',this)">Dashboard</button>
-  <button onclick="showPage('newdash',this)">New Dashboard</button>
   <button onclick="showPage('guide',this)">Site Guide</button>
   <button onclick="showPage('correlations',this)">Correlations</button>
   <button onclick="showPage('models',this)">Models</button>
@@ -255,7 +254,6 @@ td.neg { color: #c0392b; font-weight: 500; }
   <button onclick="showPage('leaders',this)">League Leaders</button>
   <button onclick="showPage('zscores',this)">Z-Scores</button>
   <button onclick="showPage('joe',this)">JOE Factor</button>
-  <button onclick="showPage('rosters',this)">Rosters</button>
   <button onclick="showPage('teamroster',this)">Team Roster</button>
   <button onclick="showPage('trade',this)">Player Trade &amp; Market</button>
   <button onclick="showPage('fwar',this)">Player Data</button>
@@ -272,7 +270,7 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div id="dashboard-body"><div class="loading">Loading...</div></div>
   </div>
 
-  <div class="page" id="page-newdash">
+  <div class="page" id="page-newdash" style="display:none">
     <div class="page-title">New Dashboard</div>
     <div class="page-subtitle">Team health at a glance - roster strength, add targets, and drop candidates.</div>
     <div id="newdash-body"><div class="loading">Select a team to get started.</div></div>
@@ -529,7 +527,7 @@ td.neg { color: #c0392b; font-weight: 500; }
     </div>
   </div>
 
-  <div class="page" id="page-rosters">
+  <div class="page" id="page-rosters" style="display:none">
     <div class="page-title">Rosters</div>
     <div class="page-subtitle">Players by team</div>
     <div id="roster-charts" style="margin-bottom:20px"></div>
@@ -5896,6 +5894,12 @@ window.refreshAllData = function() {
         buildTradeAnalyzer();
         setTimeout(cb, 600);
     }},
+    { label: 'Applying Hybrid + auto-weights...', fn: function(cb) {
+        // Apply Hybrid positional scarcity preset silently
+        applyFWARPreset('hybrid');
+        // Apply auto-weights from correlations silently (bypasses DOM status elements)
+        silentAutoWeightFromCorrelations(function() { cb(); });
+    }},
     { label: 'Calculating fWAR...', fn: function(cb) {
         recalculateFWAR();
         setTimeout(cb, 400);
@@ -6079,7 +6083,7 @@ window.buildNewDash = function(teamId) {
   html += '<div class="card" style="margin-bottom:14px">';
   html += '<div class="card-header"><span class="card-title">Roster overview</span></div>';
   html += '<div class="card-body" style="padding:12px 16px">';
-  html += infoBox('The two donuts show how your team\'s fWAR and positional rating are split across Infield, Outfield, SP, and RP. The radar charts show your category-level percentile rank vs the rest of the league (0=worst, 100=best) for hitting and pitching - solid line is positional strength, dashed red is your fWAR%. The scatter shows each player\'s fWAR% (x) vs League Rating (y) - top-right are stars, bottom-left are drop candidates.');
+  html += infoBox('The two donuts show how your team\'s fWAR and positional rating are split across Infield, Outfield, SP, and RP. The radar charts show your category-level percentile rank vs the rest of the league (0=worst, 100=best) for hitting and pitching - solid line is positional strength, dashed red is your fWAR%. The scatter shows each player\'s fWAR% (x) vs League Rating (y) - top-right are stars, bottom-left are drop candidates.<br><br><strong>Donut charts:</strong> Compare the two donuts. If fWAR is hitter-heavy but positional strength is balanced, your pitchers have good ratings but low fantasy output - they are underperforming. If fWAR is pitcher-heavy but positional strength shows weak pitching, a few elite arms are masking thin depth behind them.<br><br><strong>Radar charts:</strong> The gap between the two lines is the key signal. When fWAR% is inside positional strength, players are underperforming their ratings. When fWAR% bulges outside, players are overperforming.');
   var donutLegend = '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px">'
     + ['IF','OF','SP','RP'].map(function(g,i){ return '<span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)"><span style="width:7px;height:7px;border-radius:1px;background:'+GC[i]+';display:inline-block"></span>'+g+'</span>'; }).join('')
     + '</div>';
@@ -9177,6 +9181,95 @@ window.recalculateFWAR = function() {
   var n = allHitters.filter(function(p){return p.fWAR!=null;}).length;
   document.getElementById('fwar-status').textContent = 'Calculated fWAR for ' + n + ' hitters and ' + allPitchers.length + ' pitchers.';
 };
+
+// Silent version for use in Refresh All Data — no DOM updates needed
+function silentAutoWeightFromCorrelations(callback) {
+  if (!S.seasonData) { callback(); return; }
+  var tables = (S.seasonData.data && S.seasonData.data.tableList) || [];
+  var statTable = null, ptTable = null;
+  for (var i=0;i<tables.length;i++) {
+    var cap = (tables[i].caption||'').toLowerCase();
+    if (cap.indexOf('point total')!==-1) ptTable=tables[i];
+    if (!statTable && cap.indexOf('point')===-1 && tables[i].tableType!=='SECTION_HEADING' && (tables[i].rows||[]).length>0) statTable=tables[i];
+  }
+  var srcTable = statTable || ptTable;
+  if (!srcTable) { callback(); return; }
+
+  var hIdx = {};
+  ((srcTable.header && srcTable.header.cells)||[]).forEach(function(h,i){
+    if (h.key) hIdx[h.key.toUpperCase()]=i;
+    if (h.shortName) hIdx[h.shortName.toUpperCase()]=i;
+    if (h.name) hIdx[h.name.toUpperCase()]=i;
+  });
+
+  var teamPts = {};
+  if (ptTable) {
+    var phIdx={};
+    ((ptTable.header&&ptTable.header.cells)||[]).forEach(function(h,i){
+      if (h.key) phIdx[h.key.toUpperCase()]=i;
+      if (h.shortName) phIdx[h.shortName.toUpperCase()]=i;
+    });
+    var ptsCol=phIdx['PTS']!=null?phIdx['PTS']:phIdx['POINTS']!=null?phIdx['POINTS']:0;
+    (ptTable.rows||[]).forEach(function(row){
+      var fc=row.fixedCells||[],cells=row.cells||[];
+      var id=(fc[1]&&fc[1].teamId)||'';
+      if (id) teamPts[id]=parseFloat((cells[ptsCol]||{}).content)||0;
+    });
+  }
+
+  var CATS_ALL=['R','HR','RBI','SB','AVG','K','W','SVH3','ERA','WHIP'];
+  var teamStats={};
+  (srcTable.rows||[]).forEach(function(row){
+    var fc=row.fixedCells||[],cells=row.cells||[];
+    var id=(fc[1]&&fc[1].teamId)||'';
+    if (!id) return;
+    var sv={};
+    CATS_ALL.forEach(function(c){
+      var ci=hIdx[c]; if(ci==null) return;
+      var v=parseFloat((cells[ci]||{}).content);
+      if (!isNaN(v)) sv[c]=v;
+    });
+    teamStats[id]=sv;
+    if (!teamPts[id]) teamPts[id]=parseFloat((cells[hIdx['PTS']!=null?hIdx['PTS']:0]||{}).content)||0;
+  });
+
+  var dataset=Object.keys(S.teamInfo).map(function(id){
+    return {id:id,pts:teamPts[id]||0,stats:teamStats[id]||{}};
+  }).filter(function(d){return d.pts>0;});
+
+  if (dataset.length < 3) { callback(); return; }
+
+  function pearson(pairs){
+    var n=pairs.length; if(n<3) return null;
+    var sx=0,sy=0,sxy=0,sx2=0,sy2=0;
+    pairs.forEach(function(p){sx+=p[0];sy+=p[1];sxy+=p[0]*p[1];sx2+=p[0]*p[0];sy2+=p[1]*p[1];});
+    var num=n*sxy-sx*sy,den=Math.sqrt((n*sx2-sx*sx)*(n*sy2-sy*sy));
+    return den===0?0:num/den;
+  }
+
+  var LOW=['ERA','WHIP'];
+  var catR={};
+  CATS_ALL.forEach(function(cat){
+    var pairs=dataset.filter(function(d){return d.stats[cat]!=null;}).map(function(d){return [d.stats[cat],d.pts];});
+    var r=pearson(pairs);
+    if (r!=null && LOW.indexOf(cat)!==-1) r=-r;
+    catR[cat]=r;
+  });
+
+  var maxAbs=0;
+  CATS_ALL.forEach(function(c){if(catR[c]!=null) maxAbs=Math.max(maxAbs,Math.abs(catR[c]));});
+  if (maxAbs===0) { callback(); return; }
+
+  var HIT=['R','HR','RBI','SB','AVG'], PIT=['W','SVH3','K','ERA','WHIP'];
+  HIT.forEach(function(c){ FWAR.hitWeights[c]=catR[c]!=null?parseFloat((Math.abs(catR[c])/maxAbs).toFixed(2)):0; });
+  PIT.forEach(function(c){ FWAR.pitWeights[c]=catR[c]!=null?parseFloat((Math.abs(catR[c])/maxAbs).toFixed(2)):0; });
+
+  // Also update DOM inputs if they exist
+  HIT.forEach(function(c){ var el=document.getElementById('fwar-hw-'+c); if(el) el.value=FWAR.hitWeights[c].toFixed(2); });
+  PIT.forEach(function(c){ var el=document.getElementById('fwar-pw-'+c); if(el) el.value=FWAR.pitWeights[c].toFixed(2); });
+
+  callback();
+}
 
 window.autoWeightFromCorrelations = function() {
   var statusEl = document.getElementById('fwar-status');
