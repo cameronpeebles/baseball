@@ -5766,6 +5766,16 @@ window.refreshAllData = function() {
   var btn = document.getElementById('newdash-refresh-btn');
   var status = document.getElementById('newdash-refresh-status');
   if (btn) btn.disabled = true;
+  var dashBtn2 = document.getElementById('dash-refresh-btn');
+  var dashStatus2 = document.getElementById('dash-refresh-status');
+  if (dashBtn2) dashBtn2.disabled = true;
+  // Mirror status to dash button too
+  var origStatus = status;
+  status = { textContent: '' };
+  Object.defineProperty(status, 'textContent', { set: function(v) {
+    if (origStatus) origStatus.textContent = v;
+    if (dashStatus2) dashStatus2.textContent = v;
+  }, get: function(){ return origStatus ? origStatus.textContent : ''; }});
   var steps = [
     { label: 'Computing Z-scores...', fn: function(cb) {
         computeZScores();
@@ -5793,6 +5803,14 @@ window.refreshAllData = function() {
         // Rebuild new dashboard content
         var teamSel = document.getElementById('newdash-team-sel');
         if (teamSel && teamSel.value) buildNewDash(teamSel.value);
+        // Also rebuild old dashboard if visible
+        var dashSel = document.getElementById('dash-team-sel');
+        if (dashSel && dashSel.value) buildDashboard(dashSel.value);
+        // Update status on both buttons
+        var dashStatus = document.getElementById('dash-refresh-status');
+        if (dashStatus) dashStatus.textContent = 'Done!';
+        var dashBtn = document.getElementById('dash-refresh-btn');
+        if (dashBtn) dashBtn.disabled = false;
         cb();
     }}
   ];
@@ -5806,6 +5824,17 @@ window.refreshAllData = function() {
   }
   runNext();
 };
+
+function dashInfoBox(text) {
+  var id = 'dib_' + Math.random().toString(36).slice(2,8);
+  return '<div style="margin:6px 0 10px">'
+    + '<button onclick="var d=document.getElementById(\''+id+'\');d.style.display=d.style.display===\'none\'?\'block\':\'none\'" '
+    + 'style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px;padding:0">'
+    + '<span style="display:inline-block;width:14px;height:14px;border-radius:50%;border:1px solid var(--muted);text-align:center;line-height:13px;font-size:10px">i</span>'
+    + 'How to read this</button>'
+    + '<div id="' + id + '" style="display:none;margin-top:6px;padding:10px 12px;background:var(--bg);border-radius:var(--radius);font-size:12px;color:var(--muted);line-height:1.6">'
+    + text + '</div></div>';
+}
 
 function infoBox(text) {
   var id = 'info_' + Math.random().toString(36).slice(2,8);
@@ -6150,8 +6179,17 @@ function renderDashboard() {
     return;
   }
 
+  // Refresh all data card
+  var html = '<div class="card" style="margin-bottom:14px;padding:14px 16px">';
+  html += '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">';
+  html += '<div><div style="font-size:13px;font-weight:600;margin-bottom:2px">Refresh all data</div>';
+  html += '<div style="font-size:12px;color:var(--muted)">Runs all pipelines so every page populates correctly.</div></div>';
+  html += '<button id="dash-refresh-btn" onclick="refreshAllData()" class="pill active" style="padding:8px 18px;font-size:13px;white-space:nowrap;flex-shrink:0">Refresh all data</button>';
+  html += '<span id="dash-refresh-status" style="font-size:12px;color:var(--muted)"></span>';
+  html += '</div></div>';
+
   // Build team selector
-  var html = '<div class="dash-team-select">';
+  html += '<div class="dash-team-select">';
   html += '<span style="font-size:13px;font-weight:500;color:var(--muted)">Select your team:</span>';
   html += '<select class="dash-select" id="dash-team-sel" onchange="buildDashboard(this.value)">';
   html += '<option value="">- Choose your team -</option>';
@@ -6422,6 +6460,7 @@ function assembleDashboard(teamId, el) {
   // Positional strength cards
   html += '<div class="card" style="margin-bottom:20px">';
   html += '<div class="card-header"><span class="card-title">Positional strength</span></div>';
+  html += '<div class="card-body" style="padding:10px 16px 0">' + dashInfoBox('Each tile shows your average player rating for that positional group as a percentile (0-100). The number below shows how you compare to the league average. Dark green = well above average, red = below average. Use this to identify where to add via trade or waiver wire.') + '</div>';
   html += '<div class="dash-pos-grid">';
   groups.forEach(function(g) {
     var d = posData[g];
@@ -6435,6 +6474,14 @@ function assembleDashboard(teamId, el) {
     html += '<div class="pos-count">' + d.count + ' rostered</div>';
     html += '</div>';
   });
+  html += '</div></div>';
+
+  // ── Roster Overview card ──────────────────────────────────────────────────
+  html += '<div class="card" style="margin-bottom:20px" id="dash-roster-charts-card">';
+  html += '<div class="card-header"><span class="card-title">Roster overview</span></div>';
+  html += '<div class="card-body" style="padding:12px 16px">';
+  html += dashInfoBox('The two donuts show fWAR and positional rating split across IF/OF/SP/RP. Radars show category-level percentile rank vs the league - solid line is positional strength, dashed red is fWAR%. The scatter shows each player by fWAR% (x) vs League Rating (y): top-right are stars, bottom-left are drop candidates.');
+  html += '<div id="dash-roster-charts"></div>';
   html += '</div></div>';
 
   // ── Current matchup card ──────────────────────────────────────────────────
@@ -6525,6 +6572,7 @@ function assembleDashboard(teamId, el) {
     if (myStats && oppStats) html += '<span style="font-size:12px;padding:4px 12px;border-radius:12px;font-weight:600;background:' + headerBg + ';color:' + headerCol + '">' + headerLbl + ' ' + myW + '–' + oppW + '</span>';
     html += '</div></div>';
     html += '<div class="card-body" style="padding:16px 20px">';
+    html += dashInfoBox('Shows your current or most recent scoring period matchup. Green/red header = winning/losing. The table shows each category with colour-coded results - green means you are winning that category, red means losing. Category wins/losses are tallied into the W-L score shown in the header.');
 
     if (!myStats || !oppStats) {
       html += '<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px">Stats not yet available - data updates after each period completes.</div>';
@@ -6576,7 +6624,7 @@ function assembleDashboard(teamId, el) {
   html += '<div class="dash-two-col">';
 
   // Category breakdown
-  html += '<div class="card"><div class="card-header"><span class="card-title">Category breakdown vs league avg</span></div><div class="card-body" style="padding:12px 20px">';
+  html += '<div class="card"><div class="card-header"><span class="card-title">Category breakdown vs league avg</span></div><div class="card-body" style="padding:12px 20px">' + dashInfoBox('Bars show your season-to-date stat total vs the league average for each category. Green bars mean you are above average (winning that category), red means below. Width represents how far above or below the average you are. ERA and WHIP are reversed - lower is better.');
   var maxCatVal = {};
   CAT_DISPLAY.forEach(function(c) {
     var vals = allTeamRows.map(function(r){return r.catVals[c.k];}).filter(function(v){return v!=null;});
@@ -6603,6 +6651,7 @@ function assembleDashboard(teamId, el) {
 
   // Upcoming schedule
   html += '<div class="card"><div class="card-header"><span class="card-title">Upcoming schedule</span></div>';
+  html += '<div style="padding:0 16px">' + dashInfoBox('Your next several matchups with win probability estimates. Win probability is based on your fWAR and category ratings vs your opponent. Use this to plan roster moves - a tough stretch ahead means prioritise adds now.') + '</div>';
   if (!upcomingMatches.length) {
     html += '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No upcoming matches found</div>';
   } else {
@@ -6715,6 +6764,7 @@ function assembleDashboard(teamId, el) {
     html += '<div class="card" style="margin-bottom:20px">';
     html += '<div class="card-header"><span class="card-title">Top 5 by fWAR</span>';
     html += '<span style="font-size:11px;color:var(--muted)">Based on current fWAR model settings</span></div>';
+    html += '<div style="padding:0 16px">' + dashInfoBox('Your top 5 hitters and pitchers by fWAR (Fantasy Wins Above Replacement). fWAR measures how much a player contributes above a replacement-level player. Green = above average, red = below. Pts shows the translated fantasy points value.') + '</div>';
     html += '<div style="display:flex;gap:0;flex-wrap:wrap">';
     html += fwarTable(myHittersFWAR, 'Hitters', hitCats);
     html += '<div style="width:1px;background:var(--border);flex-shrink:0"></div>';
@@ -6733,6 +6783,7 @@ function assembleDashboard(teamId, el) {
 
   // Trade suggestions
   html += '<div class="card"><div class="card-header"><span class="card-title">Top trade suggestions</span></div>';
+  html += '<div style="padding:0 16px">' + dashInfoBox('Suggested trades that improve your weakest positional groups. The number on the right shows your net rating gain from the trade. Mutual = the other team also benefits. Focus on trades where you get a player in a position where you are below the league average.') + '</div>';
   if (!tradeSuggestions.length) {
     html += '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No trade opportunities found</div>';
   } else {
@@ -6754,6 +6805,7 @@ function assembleDashboard(teamId, el) {
 
   // Waiver wire targets
   html += '<div class="card"><div class="card-header"><span class="card-title">Top waiver targets</span><span style="font-size:12px;color:var(--muted)">For your weak positions</span></div>';
+  html += '<div style="padding:0 16px">' + dashInfoBox('Top free agents for your two weakest positional groups, ranked by overall rating percentile. Adding a high-rated FA at a weak position gives the biggest improvement to your roster. Stats shown are season-to-date averages.') + '</div>';
   if (!waiverTargets.length) {
     html += '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No free agents found for your weak positions</div>';
   } else {
@@ -6778,6 +6830,17 @@ function assembleDashboard(teamId, el) {
   html += '</div>';
 
   el.innerHTML = html;
+
+  // Render roster overview charts into the dashboard roster card
+  var dashRosterEl = document.getElementById('dash-roster-charts');
+  if (dashRosterEl) {
+    var origRosterEl = document.getElementById('teamroster-charts');
+    if (origRosterEl) origRosterEl.id = 'teamroster-charts-bak';
+    dashRosterEl.id = 'teamroster-charts';
+    buildTeamRosterCharts(teamId);
+    dashRosterEl.id = 'dash-roster-charts';
+    if (origRosterEl) origRosterEl.id = 'teamroster-charts';
+  }
 }
 
 function posHeatColorDash(pct) {
