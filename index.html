@@ -6642,30 +6642,22 @@ function assembleDashboard(teamId, el) {
 
   var currentPeriodMatch = myMatchCurrent;
 
+  // Build matchup HTML into variable for placement in right column
+  var matchupHtml = '';
   if (currentPeriodMatch) {
-    var cm     = currentPeriodMatch;
+    var cm = currentPeriodMatch;
     var isAway = cm.away === teamName;
-    var opp    = isAway ? cm.home : cm.away;
-    var period = cm.period;
+    var opp = isAway ? cm.home : cm.away;
     var isLive = currentPeriod > (window._maxPeriod || 0);
-
-    // Show stats from the current period if we have them, else last completed
     var statPeriod = completedWks[currentPeriod] ? currentPeriod : lastWk;
     var periodStats = completedWks[statPeriod] || {};
     var myStats  = periodStats[teamName] || null;
-    var oppStats = periodStats[opp]      || null;
-
-    // Note what period stats we're showing
-    var showingPeriod = statPeriod;
-
+    var oppStats = periodStats[opp] || null;
     var oppTi = {};
     Object.keys(S.teamInfo).forEach(function(id){ if ((S.teamInfo[id].name||'') === opp) oppTi = S.teamInfo[id]; });
     var oppLogo = oppTi.logoUrl512 || '';
-
-    var MATCH_CATS  = ['R','HR','RBI','SB','AVG','K','W','SVH3','ERA','WHIP'];
-    var LOW_CATS_M  = ['ERA','WHIP'];
-
-    // Compute category wins from real stats
+    var MATCH_CATS = ['R','HR','RBI','SB','AVG','K','W','SVH3','ERA','WHIP'];
+    var LOW_CATS_M = ['ERA','WHIP'];
     var myW = 0, oppW = 0;
     if (myStats && oppStats) {
       MATCH_CATS.forEach(function(cat) {
@@ -6677,70 +6669,65 @@ function assembleDashboard(teamId, el) {
       });
     }
     var winResult = myW > oppW ? 'W' : myW < oppW ? 'L' : 'T';
-    var headerCol = winResult === 'W' ? '#1e6b3a' : winResult === 'L' ? '#c0392b' : '#b7791f';
-    var headerBg  = winResult === 'W' ? '#e8f0eb'  : winResult === 'L' ? '#fce8e8'  : '#fef3e2';
-    var headerLbl = winResult === 'W' ? (isLive ? 'Leading' : 'Won') : winResult === 'L' ? (isLive ? 'Trailing' : 'Lost') : (isLive ? 'Tied' : 'Tied');
-
-    html += '<div class="card" style="margin-bottom:20px">';
-    html += '<div class="card-header">';
-    html += '<span class="card-title">' + (isLive ? 'Current matchup' : 'Period ' + currentPeriod + ' results') + ' - Period ' + currentPeriod + '</span>';
-    html += '<div style="display:flex;align-items:center;gap:8px">';
-    if (isLive) html += '<span style="font-size:11px;background:#e8f0eb;color:#2d5a3d;padding:3px 8px;border-radius:10px;font-weight:600">LIVE</span>';
-    if (myStats && oppStats) html += '<span style="font-size:12px;padding:4px 12px;border-radius:12px;font-weight:600;background:' + headerBg + ';color:' + headerCol + '">' + headerLbl + ' ' + myW + '–' + oppW + '</span>';
-    html += '</div></div>';
-    html += '<div class="card-body" style="padding:16px 20px">';
-    html += dashInfoBox('Shows your current or most recent scoring period matchup. Green/red header = winning/losing. The table shows each category with colour-coded results - green means you are winning that category, red means losing. Category wins/losses are tallied into the W-L score shown in the header.');
-
+    var headerCol = winResult==='W'?'#1e6b3a':winResult==='L'?'#c0392b':'#b7791f';
+    var headerBg  = winResult==='W'?'#e8f0eb':winResult==='L'?'#fce8e8':'#fef3e2';
+    var headerLbl = winResult==='W'?(isLive?'Leading':'Won'):winResult==='L'?(isLive?'Trailing':'Lost'):(isLive?'Tied':'Tied');
+    matchupHtml += '<div class="card">';
+    matchupHtml += '<div class="card-header"><span class="card-title">'+(isLive?'Current matchup':'Period '+currentPeriod+' results')+'</span>';
+    matchupHtml += '<div style="display:flex;align-items:center;gap:8px">';
+    if (isLive) matchupHtml += '<span style="font-size:11px;background:#e8f0eb;color:#2d5a3d;padding:3px 8px;border-radius:10px;font-weight:600">LIVE</span>';
+    if (myStats && oppStats) matchupHtml += '<span style="font-size:12px;padding:4px 12px;border-radius:12px;font-weight:600;background:'+headerBg+';color:'+headerCol+'">'+headerLbl+' '+myW+'–'+oppW+'</span>';
+    matchupHtml += '</div></div>';
+    matchupHtml += '<div class="card-body" style="padding:14px 16px">';
+    matchupHtml += dashInfoBox('Shows your current or most recent scoring period matchup. Green/red header = winning/losing. Each category is colour-coded: green = winning, red = losing.');
     if (!myStats || !oppStats) {
-      html += '<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px">Stats not yet available - data updates after each period completes.</div>';
+      matchupHtml += '<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px">Stats not yet available.</div>';
     } else {
-      // Score header
-      html += '<div style="display:flex;align-items:center;gap:20px;margin-bottom:20px;flex-wrap:wrap">';
-      html += '<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:160px">';
-      if (logo) html += '<img src="' + logo + '" style="width:40px;height:40px;border-radius:50%;border:1px solid var(--border)" alt="">';
-      html += '<div><div style="font-weight:600;font-size:14px">' + teamName + '</div>';
-      html += '<div style="font-size:32px;font-weight:700;color:' + headerCol + '">' + myW + '</div></div></div>';
-      html += '<div style="font-size:13px;font-weight:500;color:var(--muted);text-align:center">cat wins</div>';
-      var oppCol = myW < oppW ? '#1e6b3a' : myW > oppW ? '#c0392b' : '#b7791f';
-      html += '<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:160px;justify-content:flex-end">';
-      html += '<div style="text-align:right"><div style="font-weight:600;font-size:14px">' + opp + '</div>';
-      html += '<div style="font-size:32px;font-weight:700;color:' + oppCol + '">' + oppW + '</div></div>';
-      if (oppLogo) html += '<img src="' + oppLogo + '" style="width:40px;height:40px;border-radius:50%;border:1px solid var(--border)" alt="" onerror="this.style.display=\'none\'">';
-      html += '</div></div>';
-
-      // Category grid
-      html += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">';
+      matchupHtml += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">';
+      matchupHtml += '<div style="display:flex;align-items:center;gap:8px;flex:1">';
+      if (logo) matchupHtml += '<img src="'+logo+'" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--border)" alt="">';
+      matchupHtml += '<div><div style="font-weight:600;font-size:13px">'+teamName+'</div><div style="font-size:26px;font-weight:700;color:'+headerCol+'">'+myW+'</div></div></div>';
+      matchupHtml += '<div style="font-size:11px;color:var(--muted)">cat wins</div>';
+      var oppCol2 = myW<oppW?'#1e6b3a':myW>oppW?'#c0392b':'#b7791f';
+      matchupHtml += '<div style="display:flex;align-items:center;gap:8px;flex:1;justify-content:flex-end">';
+      matchupHtml += '<div style="text-align:right"><div style="font-weight:600;font-size:13px">'+opp+'</div><div style="font-size:26px;font-weight:700;color:'+oppCol2+'">'+oppW+'</div></div>';
+      if (oppLogo) matchupHtml += '<img src="'+oppLogo+'" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--border)" alt="" onerror="this.style.display=\'none\'">';
+      matchupHtml += '</div></div>';
+      matchupHtml += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px">';
       MATCH_CATS.forEach(function(cat) {
-        var myVal  = myStats[cat];
-        var oppVal = oppStats[cat];
+        var myVal = myStats[cat], oppVal = oppStats[cat];
         if (myVal == null || oppVal == null) return;
-        var isLow  = LOW_CATS_M.indexOf(cat) !== -1;
-        var myWin  = isLow ? myVal < oppVal : myVal > oppVal;
+        var isLow = LOW_CATS_M.indexOf(cat) !== -1;
+        var myWin = isLow ? myVal < oppVal : myVal > oppVal;
         var oppWin = isLow ? oppVal < myVal : oppVal > myVal;
-        var bg     = myWin ? '#e8f0eb' : oppWin ? '#fce8e8' : '#fef3e2';
-        var valCol = myWin ? '#1e6b3a' : oppWin ? '#c0392b' : '#b7791f';
-        var valFmt = function(v, c) {
-          if (c === 'AVG') return v.toFixed(3);
-          if (c === 'ERA' || c === 'WHIP') return v.toFixed(2);
-          return Math.round(v);
-        };
-        html += '<div style="background:' + bg + ';border-radius:var(--radius);padding:8px;text-align:center">';
-        html += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px">' + cat + '</div>';
-        html += '<div style="font-size:14px;font-weight:700;color:' + valCol + '">' + valFmt(myVal, cat) + '</div>';
-        html += '<div style="font-size:11px;color:var(--muted)">' + valFmt(oppVal, cat) + '</div>';
-        html += '<div style="font-size:9px;margin-top:2px;font-weight:600;color:' + valCol + '">' + (myWin ? 'W' : oppWin ? 'L' : 'T') + '</div>';
-        html += '</div>';
+        var bg = myWin?'#e8f0eb':oppWin?'#fce8e8':'#fef3e2';
+        var vc = myWin?'#1e6b3a':oppWin?'#c0392b':'#b7791f';
+        var fmt = function(v,c){return c==='AVG'?v.toFixed(3):(c==='ERA'||c==='WHIP')?v.toFixed(2):Math.round(v);};
+        matchupHtml += '<div style="background:'+bg+';border-radius:var(--radius);padding:6px;text-align:center">';
+        matchupHtml += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;color:var(--muted);margin-bottom:2px">'+cat+'</div>';
+        matchupHtml += '<div style="font-size:13px;font-weight:700;color:'+vc+'">'+fmt(myVal,cat)+'</div>';
+        matchupHtml += '<div style="font-size:10px;color:var(--muted)">'+fmt(oppVal,cat)+'</div>';
+        matchupHtml += '<div style="font-size:9px;font-weight:600;color:'+vc+'">'+(myWin?'W':oppWin?'L':'T')+'</div>';
+        matchupHtml += '</div>';
       });
-      html += '</div>';
-
-      if (statPeriod < currentPeriod) html += '<div style="margin-top:10px;font-size:11px;color:var(--muted)">Showing Period ' + statPeriod + ' stats (most recent completed period). Updates after each period closes.</div>';
+      matchupHtml += '</div>';
+      if (statPeriod < currentPeriod) matchupHtml += '<div style="margin-top:8px;font-size:11px;color:var(--muted)">Showing Period '+statPeriod+' stats.</div>';
     }
-    html += '</div></div>';
+    matchupHtml += '</div></div>';
   }
 
-  html += '<div class="dash-two-col">';
+  // ── 2-col: Left = Z-scatter + Category breakdown | Right = Matchup + Upcoming ──
+  html += '<div class="dash-two-col" style="align-items:start">';
 
-  // Category breakdown
+  // LEFT COLUMN
+  html += '<div style="display:flex;flex-direction:column;gap:16px">';
+  html += '<div class="card">';
+  html += '<div class="card-header"><span class="card-title">Batting vs pitching Z-score</span></div>';
+  html += '<div class="card-body" style="padding:12px 16px">';
+  html += dashInfoBox('Each bubble is a team. X = total batting Z-score, Y = total pitching Z-score. Bubble size = total Z. Your team is highlighted. Top-right = strong everywhere. Bottom-left = weak everywhere. Above the diagonal = pitching-heavy; below = hitting-heavy.');
+  html += '<div style="position:relative;height:220px"><canvas id="dash-zscatter" role="img" aria-label="Batting vs pitching Z-score scatter">Z-score scatter.</canvas></div>';
+  html += '</div></div>';
+
   html += '<div class="card"><div class="card-header"><span class="card-title">Category breakdown vs league avg</span></div><div class="card-body" style="padding:12px 20px">' + dashInfoBox('Bars show your season-to-date stat total vs the league average for each category. Green bars mean you are above average (winning that category), red means below. Width represents how far above or below the average you are. ERA and WHIP are reversed - lower is better.');
   var maxCatVal = {};
   CAT_DISPLAY.forEach(function(c) {
@@ -6765,8 +6752,11 @@ function assembleDashboard(teamId, el) {
     html += '</div>';
   });
   html += '</div></div>';
+  html += '</div>'; // end left column
 
-  // Upcoming schedule
+  // RIGHT COLUMN
+  html += '<div style="display:flex;flex-direction:column;gap:16px">';
+  html += matchupHtml;
   html += '<div class="card"><div class="card-header"><span class="card-title">Upcoming schedule</span></div>';
   html += '<div style="padding:0 16px">' + dashInfoBox('Your next several matchups with win probability estimates. Win probability is based on your fWAR and category ratings vs your opponent. Use this to plan roster moves - a tough stretch ahead means prioritise adds now.') + '</div>';
   if (!upcomingMatches.length) {
@@ -6791,6 +6781,8 @@ function assembleDashboard(teamId, el) {
     });
   }
   html += '</div>';
+  html += '</div>'; // end right column
+  html += '</div>'; // end dash-two-col
 
   // ── 8. Top 5 hitters and pitchers by fWAR ───────────────────────────────
   var hasFWAR = FWAR.hitResults && FWAR.hitResults.length > 0;
@@ -6952,6 +6944,46 @@ function assembleDashboard(teamId, el) {
   html += '</div>';
 
   el.innerHTML = html;
+
+  // Render Z-scatter chart
+  var zScatterEl = document.getElementById('dash-zscatter');
+  if (zScatterEl && S.zData && S.zData.length) {
+    var zData = S.zData;
+    var allTotals = zData.map(function(d){ return Math.abs(d.totalZ); });
+    var maxTotal = Math.max.apply(null, allTotals) || 1;
+    var minR = 6, maxR = 22;
+    var TCOLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#34495e','#e91e8c','#00bcd4'];
+    var datasets = zData.map(function(d, i) {
+      var r = minR + (Math.abs(d.totalZ) / maxTotal) * (maxR - minR);
+      var isMe = d.teamName === teamName;
+      var col = TCOLORS[i % TCOLORS.length];
+      return {
+        label: d.teamName,
+        data: [{x: d.totalBatZ, y: d.totalPitZ, r: r}],
+        backgroundColor: isMe ? col : col + '88',
+        borderColor: col,
+        borderWidth: isMe ? 2.5 : 1
+      };
+    });
+    new Chart(zScatterEl, {
+      type: 'bubble',
+      data: {datasets: datasets},
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: {display: false},
+          tooltip: {callbacks: {label: function(ctx) {
+            var d = zData.find(function(t){return t.teamName===ctx.dataset.label;});
+            return d ? [d.teamName, 'Bat: '+d.totalBatZ, 'Pit: '+d.totalPitZ] : [];
+          }}}
+        },
+        scales: {
+          x: {grid:{color:'rgba(128,128,128,0.1)'}, title:{display:true,text:'Batting Z',font:{size:11}}, ticks:{font:{size:10}}},
+          y: {grid:{color:'rgba(128,128,128,0.1)'}, title:{display:true,text:'Pitching Z',font:{size:11}}, ticks:{font:{size:10}}}
+        }
+      }
+    });
+  }
 
   // Render roster overview charts into the dashboard roster card
   var dashRosterEl = document.getElementById('dash-roster-charts');
