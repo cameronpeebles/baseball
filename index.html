@@ -851,6 +851,16 @@ td.neg { color: #c0392b; font-weight: 500; }
         </div>
 
         <div class="card">
+          <div class="card-header"><span class="card-title">Team archetypes — what to expect from your Z-scores</span></div>
+          <div class="card-body" style="padding:16px 20px">
+            <p style="font-size:13px;line-height:1.7;margin-bottom:16px">The donuts and Z-scores tell a story together. Here are the most common team archetypes — use them to diagnose your roster and identify what to do next.</p>
+            <div id="guide-archetypes-body">
+              <div style="font-size:12px;color:var(--muted);padding:8px 0">Loading archetype charts...</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
           <div class="card-header"><span class="card-title">Other dashboard cards</span></div>
           <div class="card-body" style="padding:16px 20px">
             <div style="display:flex;flex-direction:column;gap:10px">
@@ -1682,23 +1692,96 @@ function renderGuideDashboardCharts() {
   var base = {responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}};
   var radarOpts = Object.assign({}, base, {scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:'rgba(128,128,128,0.15)'},pointLabels:{font:{size:10},color:'#8a8479'}}}});
 
-  // Donut 1: hitter-heavy fWAR
   new Chart(document.getElementById('gd1'), {type:'doughnut', data:{labels:['IF','OF','SP','RP'],datasets:[{data:[38,31,5,4],backgroundColor:GC,borderWidth:2,borderColor:'#fff'}]}, options:Object.assign({},base,{cutout:'62%'})});
-
-  // Donut 2: balanced positional strength
   new Chart(document.getElementById('gd2'), {type:'doughnut', data:{labels:['IF','OF','SP','RP'],datasets:[{data:[52,54,49,47],backgroundColor:GC,borderWidth:2,borderColor:'#fff'}]}, options:Object.assign({},base,{cutout:'62%'})});
-
-  // Radar 3: underperforming (fWAR% inside pos strength)
   new Chart(document.getElementById('gd3'), {type:'radar', data:{labels:['ERA','WHIP','W','SVH3','K'],datasets:[
     {data:[78,75,72,68,80],backgroundColor:'rgba(90,184,138,0.12)',borderColor:'#5ab88a',borderWidth:1.5,pointRadius:3,pointBackgroundColor:'#5ab88a'},
     {data:[42,38,44,35,40],backgroundColor:'rgba(192,57,43,0.07)',borderColor:'#c0392b',borderWidth:1.5,borderDash:[4,3],pointRadius:3,pointBackgroundColor:'#c0392b'}
   ]}, options:radarOpts});
-
-  // Radar 4: overperforming (fWAR% outside pos strength)
   new Chart(document.getElementById('gd4'), {type:'radar', data:{labels:['ERA','WHIP','W','SVH3','K'],datasets:[
     {data:[44,42,46,50,45],backgroundColor:'rgba(90,184,138,0.12)',borderColor:'#5ab88a',borderWidth:1.5,pointRadius:3,pointBackgroundColor:'#5ab88a'},
     {data:[72,68,64,55,74],backgroundColor:'rgba(192,57,43,0.07)',borderColor:'#c0392b',borderWidth:1.5,borderDash:[4,3],pointRadius:3,pointBackgroundColor:'#c0392b'}
   ]}, options:radarOpts});
+
+  // ── Archetype charts ────────────────────────────────────────────────────
+  var archetypes = [
+    { id:'a1', title:'Balanced powerhouse',
+      sub:'Strong everywhere — fWAR and positional strength spread evenly across all groups.',
+      da:[35,28,30,12], db:[62,65,60,58], batZ:5.2, pitZ:4.8, batCol:'#1e6b3a', pitCol:'#1e6b3a',
+      insight:'Both Z-scores high and similar — sits top-right on the scatter. No obvious weak point. A genuinely complete roster.' },
+    { id:'a2', title:'Hitting-dominated, weak pitching',
+      sub:'IF/OF fWAR heavy, SP/RP both low in fWAR and positional strength.',
+      da:[42,38,5,3], db:[68,70,28,32], batZ:6.1, pitZ:-3.2, batCol:'#1e6b3a', pitCol:'#c0392b',
+      insight:'High batting Z, negative pitching Z. Far right and low on the scatter. Competes in R/HR/RBI/SB/AVG, struggles in ERA/WHIP/K/W/SVH3. Needs pitching badly.' },
+    { id:'a3', title:'Elite aces masking thin depth',
+      sub:'High SP fWAR but below-average SP positional strength — 2-3 stars carrying weak depth behind them.',
+      da:[22,18,48,4], db:[50,55,34,40], batZ:1.8, pitZ:3.1, batCol:'#b7791f', pitCol:'#4a9a68',
+      insight:'Pitching Z is positive but modest despite huge SP fWAR — elite aces produce great ERA/WHIP/K but weak depth drags W and SVH3 down. The real team example above.' },
+    { id:'a4', title:'Rebuilding — weak everywhere',
+      sub:'Low fWAR and below-average positional strength across all four groups.',
+      da:[8,6,5,2], db:[32,30,28,35], batZ:-4.8, pitZ:-4.1, batCol:'#c0392b', pitCol:'#c0392b',
+      insight:'Both Z-scores negative — sits bottom-left on the scatter. No quick fix. Prioritise high-fWAR free agents at every position and target trades aggressively.' },
+    { id:'a5', title:'Strong depth, no stars',
+      sub:'Positional strength above average everywhere (55–65) but fWAR flat — wins through consistency, not elite players.',
+      da:[25,22,24,18], db:[62,60,58,63], batZ:2.1, pitZ:1.8, batCol:'#4a9a68', pitCol:'#4a9a68',
+      insight:'Modest but stable Z-scores. Hard to blow out any given week but rarely dominates. Reliable floor, low ceiling. Could improve by trading depth for one star.' },
+    { id:'a6', title:'Overachieving — lucky team',
+      sub:'Modest positional strength but Z-scores higher than the donuts suggest. JOE Factor likely negative.',
+      da:[28,25,22,14], db:[46,48,44,42], batZ:4.2, pitZ:3.6, batCol:'#1e6b3a', pitCol:'#4a9a68',
+      insight:'Stats look better than roster quality. JOE Factor will be negative (lucky schedule). Classic sell-high window — trade overperforming players before regression hits.' },
+    { id:'a7', title:'Underachieving — unlucky team',
+      sub:'Good positional strength and fWAR but Z-scores lower than expected. JOE Factor likely positive.',
+      da:[32,30,28,16], db:[62,65,58,55], batZ:1.4, pitZ:0.8, batCol:'#b7791f', pitCol:'#b7791f',
+      insight:'Roster quality says this team should be doing better. JOE Factor will be positive (tough schedule or cold streaks). Buy-low opportunity — the underlying talent is there.' },
+    { id:'a8', title:'Saves/holds specialist',
+      sub:'RP fWAR and positional strength high, SVH3 dominant but ERA/WHIP may suffer from heavy bullpen use.',
+      da:[20,18,15,38], db:[45,42,40,72], batZ:0.5, pitZ:2.8, batCol:'#b7791f', pitCol:'#4a9a68',
+      insight:'Pitching Z driven almost entirely by saves. Fragile — one bad closer week tanks the pitching Z. Hitting is weak. Consider trading RP surplus for hitting depth.' },
+    { id:'a9', title:'Speed and average, no power',
+      sub:'High SB and AVG but low HR and RBI — winning 2 categories strongly, losing 3 others.',
+      da:[30,35,18,8], db:[55,58,44,40], batZ:1.2, pitZ:0.6, batCol:'#b7791f', pitCol:'#b7791f',
+      insight:'Batting Z is misleadingly modest — dominant in SB/AVG but last or near-last in HR/RBI. Net batting Z stays low. Needs power bats urgently to round out the hitting categories.' }
+  ];
+
+  var archHtml = '';
+  archetypes.forEach(function(arc) {
+    archHtml += '<div style="background:var(--bg);border-radius:8px;padding:14px;margin-bottom:12px">';
+    archHtml += '<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">' + arc.title + '</div>';
+    archHtml += '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">' + arc.sub + '</div>';
+    archHtml += '<div style="display:grid;grid-template-columns:130px 130px 1fr;gap:12px;align-items:start">';
+    // Donut A
+    archHtml += '<div><div style="font-size:10px;color:var(--muted);margin-bottom:4px">fWAR by group</div>';
+    archHtml += '<div style="position:relative;height:110px"><canvas id="'+arc.id+'a" role="img" aria-label="fWAR donut for '+arc.title+'">fWAR distribution.</canvas></div>';
+    archHtml += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">';
+    ['IF','OF','SP','RP'].forEach(function(g,i){archHtml += '<span style="display:flex;align-items:center;gap:2px;font-size:9px;color:var(--muted)"><span style="width:6px;height:6px;border-radius:1px;background:'+GC[i]+';display:inline-block"></span>'+g+' '+arc.da[i]+'</span>';});
+    archHtml += '</div></div>';
+    // Donut B
+    archHtml += '<div><div style="font-size:10px;color:var(--muted);margin-bottom:4px">Positional strength</div>';
+    archHtml += '<div style="position:relative;height:110px"><canvas id="'+arc.id+'b" role="img" aria-label="Positional strength donut for '+arc.title+'">Positional strength distribution.</canvas></div>';
+    archHtml += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">';
+    ['IF','OF','SP','RP'].forEach(function(g,i){archHtml += '<span style="display:flex;align-items:center;gap:2px;font-size:9px;color:var(--muted)"><span style="width:6px;height:6px;border-radius:1px;background:'+GC[i]+';display:inline-block"></span>'+g+' '+arc.db[i]+'</span>';});
+    archHtml += '</div></div>';
+    // Z-scores + insight
+    archHtml += '<div>';
+    archHtml += '<div style="font-size:10px;color:var(--muted);margin-bottom:8px">Expected Z-scores</div>';
+    var batW = Math.min(95, Math.max(5, Math.round((arc.batZ + 8) / 16 * 100)));
+    var pitW = Math.min(95, Math.max(5, Math.round((arc.pitZ + 8) / 16 * 100)));
+    archHtml += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:11px;color:var(--muted);width:44px;flex-shrink:0">Batting</span><div style="height:8px;border-radius:4px;background:var(--border);flex:1;position:relative;overflow:hidden"><div style="height:100%;border-radius:4px;background:'+arc.batCol+';width:'+batW+'%;position:absolute"></div></div><span style="font-size:12px;font-weight:500;color:'+arc.batCol+';width:34px;text-align:right">'+(arc.batZ>=0?'+':'')+arc.batZ.toFixed(1)+'</span></div>';
+    archHtml += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="font-size:11px;color:var(--muted);width:44px;flex-shrink:0">Pitching</span><div style="height:8px;border-radius:4px;background:var(--border);flex:1;position:relative;overflow:hidden"><div style="height:100%;border-radius:4px;background:'+arc.pitCol+';width:'+pitW+'%;position:absolute"></div></div><span style="font-size:12px;font-weight:500;color:'+arc.pitCol+';width:34px;text-align:right">'+(arc.pitZ>=0?'+':'')+arc.pitZ.toFixed(1)+'</span></div>';
+    archHtml += '<div style="font-size:11px;color:var(--muted);line-height:1.6;border-top:0.5px solid var(--border);padding-top:8px">' + arc.insight + '</div>';
+    archHtml += '</div>';
+    archHtml += '</div></div>';
+  });
+
+  var archEl = document.getElementById('guide-archetypes-body');
+  if (archEl) archEl.innerHTML = archHtml;
+
+  // Draw archetype donuts
+  var donutOpts = Object.assign({}, base, {cutout:'62%'});
+  archetypes.forEach(function(arc) {
+    new Chart(document.getElementById(arc.id+'a'), {type:'doughnut', data:{labels:['IF','OF','SP','RP'],datasets:[{data:arc.da,backgroundColor:GC,borderWidth:2,borderColor:'#fff'}]}, options:donutOpts});
+    new Chart(document.getElementById(arc.id+'b'), {type:'doughnut', data:{labels:['IF','OF','SP','RP'],datasets:[{data:arc.db,backgroundColor:GC,borderWidth:2,borderColor:'#fff'}]}, options:donutOpts});
+  });
 }
 
 window.showFantraxTab = function(tab, btn) {
