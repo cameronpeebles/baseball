@@ -6210,13 +6210,16 @@ window.buildDashboard = function(teamId) {
   if (!el || !teamId) return;
   el.innerHTML = '<div class="loading">Building dashboard...</div>';
 
-  // Wait for all data sources to be ready - with a timeout fallback
+  // Kick off match predictions in background but don't wait
+  if (!matchupRendered) renderMatchPredictions();
+
   var tryCount = 0;
   function tryBuild() {
+    // Bail out if team has changed since we started
+    if (DB.teamId !== teamId) return;
     tryCount++;
     var hasPlayers = TA.players && TA.players.length > 0;
     var hasJOE     = window._joeByWeek && Object.keys(window._joeByWeek).length > 0;
-    var hasMatch   = window._mpPredictions && window._mpPredictions.length > 0;
 
     if (!hasPlayers) {
       if (!tradeRendered) { tradeRendered = true; buildTradeAnalyzer(); }
@@ -6226,11 +6229,6 @@ window.buildDashboard = function(teamId) {
     if (!hasJOE) {
       ensureJOEData(function(){ tryBuild(); });
       return;
-    }
-    // Match predictions optional - load but don't block on it
-    if (!hasMatch && tryCount < 10) {
-      if (!matchupRendered) renderMatchPredictions();
-      setTimeout(tryBuild, 400); return;
     }
     assembleDashboard(teamId, el);
   }
