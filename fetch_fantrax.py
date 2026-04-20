@@ -184,6 +184,7 @@ team_info = (standings_data.get("data") or {}).get("fantasyTeamInfo") or {}
 # we stop as soon as a period returns no rows)
 joe_stats = []    # one entry per team per week: {team, week, R, HR, ...}
 schedule  = []    # one entry per matchup: {week, away, home}
+period_tables = []  # raw Fantrax tables for each period, to inject into standings.json
 
 MAX_PERIODS = 20
 
@@ -209,6 +210,13 @@ for period in range(1, MAX_PERIODS + 1):
     if not stat_tables:
         print(f"  Period {period}: no data, stopping.")
         break
+
+    # Collect raw tables for injection into standings.json
+    for t in stat_tables:
+        t_copy = dict(t)
+        if not t_copy.get("caption"):
+            t_copy["caption"] = f"Scoring Period:  {period}"
+        period_tables.append(t_copy)
 
     var_headers = (stat_tables[0].get("header") or {}).get("cells") or []
     all_rows = []
@@ -282,6 +290,24 @@ for period in range(1, MAX_PERIODS + 1):
 
 joe_stats.sort(key=lambda x: (x["week"], x["team"]))
 schedule.sort(key=lambda x: (x["week"], x["away"]))
+
+# Inject per-period tables into standings.json so the Standings tab shows all periods
+if period_tables:
+    standings_data = json.load(open("data/standings.json"))
+    existing_tables = (standings_data.get("data") or {}).get("tableList") or []
+    # Find captions already in standings to avoid duplicates
+    existing_caps = {(t.get("caption") or "").strip().lower() for t in existing_tables}
+    injected = 0
+    for t in sorted(period_tables, key=lambda x: x.get("caption",""), reverse=True):
+        cap = (t.get("caption") or "").strip().lower()
+        if cap not in existing_caps:
+            existing_tables.append(t)
+            existing_caps.add(cap)
+            injected += 1
+    if injected:
+        standings_data.setdefault("data", {})["tableList"] = existing_tables
+        save("standings.json", standings_data)
+        print(f"Injected {injected} period tables into standings.json")
 
 save("joe_stats.json", joe_stats)
 save("schedule.json", schedule)
