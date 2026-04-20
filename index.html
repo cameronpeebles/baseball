@@ -5736,7 +5736,21 @@ function renderNewDash() {
   if (!teamIds.length) { el.innerHTML = '<div class="loading">Loading team data...</div>'; return; }
 
   var savedTeam = window._newDashTeamId || teamIds[0];
-  var html = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">';
+
+  // ── Refresh All button ──────────────────────────────────────────────────
+  var html = '<div class="card" style="margin-bottom:14px;padding:14px 16px">';
+  html += '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">';
+  html += '<div>';
+  html += '<div style="font-size:13px;font-weight:600;margin-bottom:2px">Refresh all data</div>';
+  html += '<div style="font-size:12px;color:var(--muted)">Runs all data pipelines so every page populates correctly — ratings, fWAR, JOE, trade analyzer.</div>';
+  html += '</div>';
+  html += '<button id="newdash-refresh-btn" onclick="refreshAllData()" class="pill active" style="padding:10px 22px;font-size:13px;white-space:nowrap;flex-shrink:0">Refresh all data</button>';
+  html += '<span id="newdash-refresh-status" style="font-size:12px;color:var(--muted)"></span>';
+  html += '</div></div>';
+
+  // ── Team selector ────────────────────────────────────────────────────────
+  html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">';
+  html += '<span style="font-size:13px;font-weight:500;color:var(--muted)">Select team:</span>';
   html += '<select id="newdash-team-sel" onchange="buildNewDash(this.value)" style="padding:7px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px">';
   teamIds.forEach(function(id) {
     var t = S.teamInfo[id];
@@ -5747,6 +5761,51 @@ function renderNewDash() {
   el.innerHTML = html;
   buildNewDash(savedTeam);
 }
+
+window.refreshAllData = function() {
+  var btn = document.getElementById('newdash-refresh-btn');
+  var status = document.getElementById('newdash-refresh-status');
+  if (btn) btn.disabled = true;
+  var steps = [
+    { label: 'Computing Z-scores...', fn: function(cb) {
+        computeZScores();
+        cb();
+    }},
+    { label: 'Building trade analyzer...', fn: function(cb) {
+        tradeRendered = true;
+        buildTradeAnalyzer();
+        setTimeout(cb, 600);
+    }},
+    { label: 'Calculating fWAR...', fn: function(cb) {
+        recalculateFWAR();
+        setTimeout(cb, 400);
+    }},
+    { label: 'Loading player ratings...', fn: function(cb) {
+        drawPlayers('hit');
+        drawPlayers('pit');
+        setTimeout(cb, 400);
+    }},
+    { label: 'Loading JOE data...', fn: function(cb) {
+        ensureJOEData(function() { cb(); });
+    }},
+    { label: 'Done!', fn: function(cb) {
+        if (btn) btn.disabled = false;
+        // Rebuild new dashboard content
+        var teamSel = document.getElementById('newdash-team-sel');
+        if (teamSel && teamSel.value) buildNewDash(teamSel.value);
+        cb();
+    }}
+  ];
+
+  var i = 0;
+  function runNext() {
+    if (i >= steps.length) return;
+    var step = steps[i++];
+    if (status) status.textContent = step.label;
+    step.fn(runNext);
+  }
+  runNext();
+};
 
 function infoBox(text) {
   var id = 'info_' + Math.random().toString(36).slice(2,8);
