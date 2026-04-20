@@ -3215,7 +3215,7 @@ function buildJOEPage(byWeek, schedule) {
   // Find completed weeks — at least 8 teams have stats
   var completedWeeks = Object.keys(byWeek)
     .map(Number)
-    .filter(function(w) { return Object.keys(byWeek[w]).length >= 8; })
+    .filter(function(w) { return Object.keys(byWeek[w]).length >= 2; })
     .sort(function(a,b){ return a-b; });
 
   // Build opponent lookup from schedule
@@ -6400,7 +6400,7 @@ function parseStandingsByWeek(standingsData) {
         ERA:gv(cells,'ERA'),WHIP:gv(cells,'WHIP')
       };
     });
-    if(Object.keys(bw[wk]).length<8) delete bw[wk];
+    if(Object.keys(bw[wk]).length<2) delete bw[wk];
   });
   return bw;
 }
@@ -6413,8 +6413,14 @@ function ensureJOEData(callback) {
       var bw = parseStandingsByWeek(res[0]);
       window._joeByWeek = bw;
       buildJOEPage(bw, res[1]);
+      // Guarantee _joeAllResults is set even if no completed weeks
+      if (!window._joeAllResults) window._joeAllResults = {};
       callback();
-    }).catch(function(e) { callback(e); });
+    }).catch(function(e) {
+      if (!window._joeByWeek) window._joeByWeek = {};
+      if (!window._joeAllResults) window._joeAllResults = {};
+      callback(e);
+    });
 }
 
 // ── League Stats (Combined) ───────────────────────────────────────────────────
