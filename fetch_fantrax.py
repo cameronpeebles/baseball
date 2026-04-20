@@ -212,10 +212,10 @@ for period in range(1, MAX_PERIODS + 1):
         break
 
     # Collect raw tables for injection into standings.json
-    for t in stat_tables:
-        t_copy = dict(t)
-        if not t_copy.get("caption"):
-            t_copy["caption"] = f"Scoring Period:  {period}"
+    # Only keep the first stat table per period (avoid duplicates from matchup groups)
+    if stat_tables:
+        t_copy = dict(stat_tables[0])
+        t_copy["caption"] = f"Scoring Period:  {period}"
         period_tables.append(t_copy)
 
     var_headers = (stat_tables[0].get("header") or {}).get("cells") or []
@@ -296,17 +296,30 @@ print(f"Collected {len(period_tables)} raw period tables across all periods")
 if period_tables:
     standings_data = json.load(open("data/standings.json"))
     tbl_list = (standings_data.get("data") or {}).get("tableList") or []
-    # Keep only non-scoring-period tables (e.g. overall standings)
-    kept = [t for t in tbl_list if not (t.get("caption") or "").lower().startswith("scoring period")]
-    # Add all per-period tables sorted by period number ascending
-    def period_num(t):
-        import re
-        m = re.search(r'(\d+)', t.get("caption") or "")
-        return int(m.group(1)) if m else 0
-    period_tables_sorted = sorted(period_tables, key=period_num)
-    standings_data.setdefault("data", {})["tableList"] = kept + period_tables_sorted
-    save("standings.json", standings_data)
-    print(f"Rebuilt standings.json with {len(period_tables_sorted)} period tables")
+    # Build set of period numbers already in standings
+    import re as _re
+    def _period_num(cap):
+        m = _re.search(r'scoring period\s*:?\s*(\d+)', (cap or "").lower())
+        return int(m.group(1)) if m else None
+    existing_periods = set()
+    for t in tbl_list:
+        p = _period_num(t.get("caption"))
+        if p is not None:
+            existing_periods.add(p)
+    # Append only periods not already present
+    added = 0
+    for t in sorted(period_tables, key=lambda x: _period_num(x.get("caption")) or 0):
+        p = _period_num(t.get("caption"))
+        if p is not None and p not in existing_periods:
+            tbl_list.append(t)
+            existing_periods.add(p)
+            added += 1
+    if added:
+        standings_data.setdefault("data", {})["tableList"] = tbl_list
+        save("standings.json", standings_data)
+        print(f"Added {added} missing period tables to standings.json")
+    else:
+        print("standings.json already has all periods")
 
 save("joe_stats.json", joe_stats)
 save("schedule.json", schedule)
