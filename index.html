@@ -6220,6 +6220,7 @@ window.buildDashboard = function(teamId) {
     tryCount++;
     var hasPlayers = TA.players && TA.players.length > 0;
     var hasJOE     = window._joeByWeek && Object.keys(window._joeByWeek).length > 0;
+    console.log('[Dashboard] tryBuild #'+tryCount+' team='+teamId+' hasPlayers='+hasPlayers+' hasJOE='+hasJOE+' TAplayers='+(TA.players?TA.players.length:0));
 
     if (!hasPlayers) {
       if (!tradeRendered) { tradeRendered = true; buildTradeAnalyzer(); }
