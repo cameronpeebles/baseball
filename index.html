@@ -775,18 +775,98 @@ td.neg { color: #c0392b; font-weight: 500; }
 
     <!-- Dashboard -->
     <div id="guide-tab-dashboard" class="trade-tab-content">
-      <div class="card" style="margin-top:16px;max-width:760px">
-        <div class="card-header"><span class="card-title">Dashboard</span></div>
-        <div class="card-body" style="padding:20px">
-          <p style="font-size:13px;line-height:1.7">Select your team from the dropdown - the dashboard pulls live data from across the site and assembles your personal view.</p>
-          <div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">
-            <div style="padding:12px 16px;background:var(--bg);border-radius:8px"><div style="font-weight:700;font-size:12px;color:var(--accent);margin-bottom:4px">TOP 5 BY fWAR</div><div style="font-size:12px;line-height:1.6">Your top 5 hitters and top 5 pitchers by Fantasy WAR. Requires clicking Recalculate on the fWAR page first. Columns: fWAR · fWAR-Pts (estimated pts contribution) · Z-score · key stats.</div></div>
-            <div style="padding:12px 16px;background:var(--bg);border-radius:8px"><div style="font-weight:700;font-size:12px;color:var(--accent);margin-bottom:4px">CURRENT MATCHUP</div><div style="font-size:12px;line-height:1.6">Shows your live period matchup with category-by-category W/L/T breakdown. Stats pulled from the most recent completed Scoring Period in standings.json. Win probability is blended from category H2H (60%) and season points standings (40%).</div></div>
-            <div style="padding:12px 16px;background:var(--bg);border-radius:8px"><div style="font-weight:700;font-size:12px;color:var(--accent);margin-bottom:4px">JOE FACTOR LUCK</div><div style="font-size:12px;line-height:1.6">Your normalized season-average JOE score (-1 to +1). Positive = you've been winning more than your stats deserve. Negative = you've been unlucky. Pulled from the Season Avg tab on the JOE Factor page.</div></div>
-            <div style="padding:12px 16px;background:var(--bg);border-radius:8px"><div style="font-weight:700;font-size:12px;color:var(--accent);margin-bottom:4px">POSITIONAL STRENGTH</div><div style="font-size:12px;line-height:1.6">Your team rated by position group (Infield / Outfield / SP / RP) using percentile ratings vs all other rostered players at that position.</div></div>
-            <div style="padding:12px 16px;background:var(--bg);border-radius:8px"><div style="font-weight:700;font-size:12px;color:var(--accent);margin-bottom:4px">TRADE SUGGESTIONS & WAIVER TARGETS</div><div style="font-size:12px;line-height:1.6">Top 4 mutual-benefit trade suggestions and best available free agents for your weakest position slots.</div></div>
+      <div style="max-width:800px;margin-top:16px;display:flex;flex-direction:column;gap:16px">
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">Dashboard overview</span></div>
+          <div class="card-body" style="padding:16px 20px;font-size:13px;line-height:1.7">
+            There are two dashboards. The <strong>Dashboard</strong> tab shows your team's live stats, matchup, JOE factor luck, positional strength, top fWAR players, trade suggestions, and waiver targets. The <strong>New Dashboard</strong> tab shows a roster health view with drop candidates, add targets, and positional strength vs the league. Both update when you change team from the dropdown. Use <strong>Refresh All Data</strong> at the top of either dashboard to run all data pipelines at once — this ensures every chart and table is populated before you navigate to other pages.
           </div>
         </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">Roster overview — how to read the charts</span></div>
+          <div class="card-body" style="padding:16px 20px">
+            <p style="font-size:13px;line-height:1.7;margin-bottom:14px">The Roster Overview card appears on both dashboards. It contains five panels: two donuts, two radars, and a scatter plot.</p>
+
+            <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:10px">The two donut charts</div>
+            <p style="font-size:13px;line-height:1.7;margin-bottom:6px">The left donut shows <strong>fWAR by group</strong> — how your total fantasy value is distributed across Infield, Outfield, SP, and RP. A large IF+OF slice means you are a hitting-driven team. A large SP slice means your pitchers are carrying the team.</p>
+            <p style="font-size:13px;line-height:1.7;margin-bottom:14px">The right donut shows <strong>positional strength by group</strong> — the average player rating of your rostered players in each group as a percentile. This reflects depth and quality, not just total output. A balanced donut means even depth across all four groups.</p>
+            <p style="font-size:13px;line-height:1.7;margin-bottom:14px"><strong>Key insight:</strong> compare the two donuts. If fWAR is hitter-heavy but positional strength is balanced, your pitchers have good ratings but low fantasy output — they are underperforming. If fWAR is pitcher-heavy but positional strength shows weak pitching, a few elite arms are masking thin depth behind them.</p>
+
+            <div style="background:var(--bg);border-radius:8px;padding:14px;margin-bottom:16px">
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:10px">Example: hitter-heavy fWAR, balanced positional strength</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                <div>
+                  <div style="font-size:10px;color:var(--muted);margin-bottom:6px">fWAR by group</div>
+                  <div style="position:relative;height:150px"><canvas id="gd1" role="img" aria-label="fWAR donut heavily weighted to IF and OF">IF +38, OF +31, SP +5, RP +4</canvas></div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+                    <span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)"><span style="width:7px;height:7px;border-radius:1px;background:#1a1f5e;display:inline-block"></span>IF +38</span>
+                    <span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)"><span style="width:7px;height:7px;border-radius:1px;background:#5b8db8;display:inline-block"></span>OF +31</span>
+                    <span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)"><span style="width:7px;height:7px;border-radius:1px;background:#7bc8a4;display:inline-block"></span>SP +5</span>
+                    <span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)"><span style="width:7px;height:7px;border-radius:1px;background:#e8d870;display:inline-block"></span>RP +4</span>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-size:10px;color:var(--muted);margin-bottom:6px">Positional strength by group</div>
+                  <div style="position:relative;height:150px"><canvas id="gd2" role="img" aria-label="Positional strength donut showing equal quarters">IF 52, OF 54, SP 49, RP 47</canvas></div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+                    <span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)"><span style="width:7px;height:7px;border-radius:1px;background:#1a1f5e;display:inline-block"></span>IF 52</span>
+                    <span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)"><span style="width:7px;height:7px;border-radius:1px;background:#5b8db8;display:inline-block"></span>OF 54</span>
+                    <span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)"><span style="width:7px;height:7px;border-radius:1px;background:#7bc8a4;display:inline-block"></span>SP 49</span>
+                    <span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)"><span style="width:7px;height:7px;border-radius:1px;background:#e8d870;display:inline-block"></span>RP 47</span>
+                  </div>
+                </div>
+              </div>
+              <p style="font-size:12px;line-height:1.6;color:var(--muted);margin-top:10px;margin-bottom:0">The fWAR donut is dominated by IF+OF (88% of value from hitters) while the positional strength donut is nearly equal quarters. Pitchers have decent ratings but very low fantasy output. Expect to compete in hitting categories and struggle in ERA, WHIP, K, W, SVH3.</p>
+            </div>
+
+            <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:10px">The radar charts</div>
+            <p style="font-size:13px;line-height:1.7;margin-bottom:6px">Each radar has two lines. The <strong>solid line</strong> (navy for hitting, green for pitching) shows positional strength — your average player rating percentile in each category. The <strong>dashed red line</strong> shows fWAR% — how your players are actually performing relative to all rostered players at their position.</p>
+            <p style="font-size:13px;line-height:1.7;margin-bottom:6px"><strong>Larger always means better</strong> — including for ERA and WHIP. A high ERA percentile means your ERA is low (good), because the z-score conversion inverts these stats before plotting.</p>
+            <p style="font-size:13px;line-height:1.7;margin-bottom:14px"><strong>The gap between the two lines is the key signal.</strong> When fWAR% is inside positional strength, players are underperforming their ratings. When fWAR% bulges outside, players are overperforming.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+
+              <div style="background:var(--bg);border-radius:8px;padding:14px">
+                <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Example: underperforming (fWAR% inside)</div>
+                <div style="position:relative;height:180px"><canvas id="gd3" role="img" aria-label="Pitching radar with large green positional strength pentagon and small red fWAR% line inside it">Pos strength large, fWAR% small inside — pitchers underperforming ratings.</canvas></div>
+                <div style="display:flex;gap:10px;margin-top:8px">
+                  <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><span style="width:10px;height:2px;background:#5ab88a;display:inline-block"></span>Pos Strength</span>
+                  <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><span style="width:10px;border-top:2px dashed #c0392b;display:inline-block"></span>fWAR%</span>
+                </div>
+                <p style="font-size:11px;line-height:1.5;color:var(--muted);margin-top:8px;margin-bottom:0">Well-rated pitchers not delivering. Sell high on reputation — regression risk or injury candidates.</p>
+              </div>
+
+              <div style="background:var(--bg);border-radius:8px;padding:14px">
+                <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Example: overperforming (fWAR% outside)</div>
+                <div style="position:relative;height:180px"><canvas id="gd4" role="img" aria-label="Pitching radar with fWAR% dashed line bulging outside the positional strength pentagon">fWAR% bulging outside pos strength — pitchers overperforming their ratings.</canvas></div>
+                <div style="display:flex;gap:10px;margin-top:8px">
+                  <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><span style="width:10px;height:2px;background:#5ab88a;display:inline-block"></span>Pos Strength</span>
+                  <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><span style="width:10px;border-top:2px dashed #c0392b;display:inline-block"></span>fWAR%</span>
+                </div>
+                <p style="font-size:11px;line-height:1.5;color:var(--muted);margin-top:8px;margin-bottom:0">Lower-rated pitchers outperforming expectations. Could be a breakout or luck-driven — cross-check with JOE Factor before trading.</p>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">Other dashboard cards</span></div>
+          <div class="card-body" style="padding:16px 20px">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="padding:12px 16px;background:var(--bg);border-radius:8px"><div style="font-weight:600;font-size:12px;color:var(--accent);margin-bottom:4px">Current matchup</div><div style="font-size:12px;line-height:1.6">Shows your live or most recent scoring period matchup. Green/red header = winning/losing. Each category is coloured — green means you are winning that category, red means losing. Win/loss tally shown in the header badge.</div></div>
+              <div style="padding:12px 16px;background:var(--bg);border-radius:8px"><div style="font-weight:600;font-size:12px;color:var(--accent);margin-bottom:4px">Category breakdown vs league avg</div><div style="font-size:12px;line-height:1.6">Bars show your season-to-date stat total vs the league average. Green = above average. Red = below. ERA and WHIP are inverted — a green bar means your ERA is lower than average (good).</div></div>
+              <div style="padding:12px 16px;background:var(--bg);border-radius:8px"><div style="font-weight:600;font-size:12px;color:var(--accent);margin-bottom:4px">JOE Factor luck</div><div style="font-size:12px;line-height:1.6">Your normalized season-average JOE score (−1 to +1). Positive = unlucky — you would have more wins with an average schedule. Negative = lucky — your record is flattered by a weak schedule. See the JOE Factor tab for the full breakdown.</div></div>
+              <div style="padding:12px 16px;background:var(--bg);border-radius:8px"><div style="font-weight:600;font-size:12px;color:var(--accent);margin-bottom:4px">Top 5 by fWAR</div><div style="font-size:12px;line-height:1.6">Your top 5 hitters and pitchers by Fantasy WAR. Requires the fWAR pipeline to have run — use Refresh All Data if empty. Columns: fWAR · fWAR-Pts (estimated fantasy pts contribution) · Z-score · key stats.</div></div>
+              <div style="padding:12px 16px;background:var(--bg);border-radius:8px"><div style="font-weight:600;font-size:12px;color:var(--accent);margin-bottom:4px">Trade suggestions &amp; waiver targets</div><div style="font-size:12px;line-height:1.6">Top mutual-benefit trade suggestions targeting your weakest positional groups, and best available free agents for those same positions. The number on the right of each trade shows your net rating gain.</div></div>
+              <div style="padding:12px 16px;background:var(--bg);border-radius:8px"><div style="font-weight:600;font-size:12px;color:var(--accent);margin-bottom:4px">Drop candidates (New Dashboard)</div><div style="font-size:12px;line-height:1.6">Players in the bottom 20% of your roster by fWAR%. Sorted worst first. A player here has both a low fWAR% (poor output vs peers) and low league rating. Consider dropping or trading before their value falls further.</div></div>
+              <div style="padding:12px 16px;background:var(--bg);border-radius:8px"><div style="font-weight:600;font-size:12px;color:var(--accent);margin-bottom:4px">Add targets (New Dashboard)</div><div style="font-size:12px;line-height:1.6">Top free agents for your two weakest positional groups, ranked by fWAR. Adding a high-fWAR FA at a position where you are below the league average gives the biggest improvement per roster move.</div></div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -1591,7 +1671,37 @@ window.showGuideTab = function(tab, btn) {
   if (btn) btn.classList.add('active');
   var el = document.getElementById('guide-tab-' + tab);
   if (el) el.classList.add('active');
+  if (tab === 'dashboard') renderGuideDashboardCharts();
 };
+
+var _guideDashChartsBuilt = false;
+function renderGuideDashboardCharts() {
+  if (_guideDashChartsBuilt) return;
+  if (!document.getElementById('gd1')) return;
+  _guideDashChartsBuilt = true;
+
+  var GC = ['#1a1f5e','#5b8db8','#7bc8a4','#e8d870'];
+  var base = {responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}};
+  var radarOpts = Object.assign({}, base, {scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:'rgba(128,128,128,0.15)'},pointLabels:{font:{size:10},color:'#8a8479'}}}});
+
+  // Donut 1: hitter-heavy fWAR
+  new Chart(document.getElementById('gd1'), {type:'doughnut', data:{labels:['IF','OF','SP','RP'],datasets:[{data:[38,31,5,4],backgroundColor:GC,borderWidth:2,borderColor:'#fff'}]}, options:Object.assign({},base,{cutout:'62%'})});
+
+  // Donut 2: balanced positional strength
+  new Chart(document.getElementById('gd2'), {type:'doughnut', data:{labels:['IF','OF','SP','RP'],datasets:[{data:[52,54,49,47],backgroundColor:GC,borderWidth:2,borderColor:'#fff'}]}, options:Object.assign({},base,{cutout:'62%'})});
+
+  // Radar 3: underperforming (fWAR% inside pos strength)
+  new Chart(document.getElementById('gd3'), {type:'radar', data:{labels:['ERA','WHIP','W','SVH3','K'],datasets:[
+    {data:[78,75,72,68,80],backgroundColor:'rgba(90,184,138,0.12)',borderColor:'#5ab88a',borderWidth:1.5,pointRadius:3,pointBackgroundColor:'#5ab88a'},
+    {data:[42,38,44,35,40],backgroundColor:'rgba(192,57,43,0.07)',borderColor:'#c0392b',borderWidth:1.5,borderDash:[4,3],pointRadius:3,pointBackgroundColor:'#c0392b'}
+  ]}, options:radarOpts});
+
+  // Radar 4: overperforming (fWAR% outside pos strength)
+  new Chart(document.getElementById('gd4'), {type:'radar', data:{labels:['ERA','WHIP','W','SVH3','K'],datasets:[
+    {data:[44,42,46,50,45],backgroundColor:'rgba(90,184,138,0.12)',borderColor:'#5ab88a',borderWidth:1.5,pointRadius:3,pointBackgroundColor:'#5ab88a'},
+    {data:[72,68,64,55,74],backgroundColor:'rgba(192,57,43,0.07)',borderColor:'#c0392b',borderWidth:1.5,borderDash:[4,3],pointRadius:3,pointBackgroundColor:'#c0392b'}
+  ]}, options:radarOpts});
+}
 
 window.showFantraxTab = function(tab, btn) {
   document.querySelectorAll('#fantrax-tabs .trade-tab').forEach(function(b){b.classList.remove('active');});
