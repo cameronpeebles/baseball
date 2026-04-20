@@ -276,7 +276,6 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div class="trade-tabs" id="fantrax-tabs">
       <button class="trade-tab active" onclick="showFantraxTab('standings',this)">Standings</button>
       <button class="trade-tab" onclick="showFantraxTab('season',this)">Season Stats</button>
-      <button class="trade-tab" onclick="showFantraxTab('byperiod',this)">By Period</button>
       <button class="trade-tab" onclick="showFantraxTab('tables',this)">Tables</button>
       <button class="trade-tab" onclick="showFantraxTab('historic',this)">Historic League Data</button>
     </div>
@@ -285,9 +284,6 @@ td.neg { color: #c0392b; font-weight: 500; }
     </div>
     <div id="fantrax-tab-season" class="trade-tab-content">
       <div id="season-body"><div class="loading">Loading...</div></div>
-    </div>
-    <div id="fantrax-tab-byperiod" class="trade-tab-content">
-      <div id="fantrax-byperiod-body"><div class="loading">Loading...</div></div>
     </div>
     <div id="fantrax-tab-tables" class="trade-tab-content">
       <div class="card">
@@ -1596,10 +1592,6 @@ window.showFantraxTab = function(tab, btn) {
   if (el) el.classList.add('active');
   if (tab === 'tables') renderAnalytics();
   if (tab === 'historic') renderHistoricPage();
-  if (tab === 'byperiod') {
-    var bpEl = document.getElementById('fantrax-byperiod-body');
-    if (bpEl && bpEl.querySelector('.loading')) renderWeeklyStats(bpEl);
-  }
 };
 
 function init() {
@@ -3223,7 +3215,7 @@ function buildJOEPage(byWeek, schedule) {
   // Find completed weeks — at least 8 teams have stats
   var completedWeeks = Object.keys(byWeek)
     .map(Number)
-    .filter(function(w) { return Object.keys(byWeek[w]).length >= 1; })
+    .filter(function(w) { return Object.keys(byWeek[w]).length >= 8; })
     .sort(function(a,b){ return a-b; });
 
   // Build opponent lookup from schedule
@@ -6408,7 +6400,7 @@ function parseStandingsByWeek(standingsData) {
         ERA:gv(cells,'ERA'),WHIP:gv(cells,'WHIP')
       };
     });
-    if(Object.keys(bw[wk]).length < 2) delete bw[wk];
+    if(Object.keys(bw[wk]).length<8) delete bw[wk];
   });
   return bw;
 }
@@ -6449,47 +6441,20 @@ window.showCombinedTab = function(tab, btn) {
 
 // ── Tab 1: Week-by-week stats ────────────────────────────────────────────────
 function renderWeeklyStats(el) {
-  var byWeek = {};
-
-  function mergeJoeStats(joeStats) {
-    (joeStats||[]).forEach(function(row) {
-      var wk = row.week || row.period;
-      var teamName = row.team;
-      if (!wk || !teamName) return;
-      if (!byWeek[wk]) byWeek[wk] = {};
-      if (byWeek[wk][teamName]) return;
-      byWeek[wk][teamName] = {
-        R: row.R||0, HR: row.HR||0, RBI: row.RBI||0, SB: row.SB||0, AVG: row.AVG||0,
-        K: row.K||0, W: row.W||0, SVH3: row.SVH3||row.SV||row.SVH||0,
-        ERA: row.ERA||0, WHIP: row.WHIP||0
-      };
+  ensureJOEData(function(err) {
+    if (err) { el.innerHTML='<div class="error-msg">'+err.message+'</div>'; return; }
+    var byWeek = window._joeByWeek || {};
+    var weeks = Object.keys(byWeek).map(Number).sort(function(a,b){return a-b;});
+    if (!weeks.length) { el.innerHTML='<div class="error-msg">No weekly data found.</div>'; return; }
+    var html = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px" id="weekly-pills">';
+    weeks.forEach(function(w,i){
+      html += '<button class="pill'+(i===0?' active':'')+'" onclick="showWeekStats('+w+',this)">Wk '+w+'</button>';
     });
-  }
-
-  // Load joe_stats.json directly — it has every period including Period 1
-  loadJSON('joe_stats.json').then(function(joeStats) {
-    mergeJoeStats(joeStats);
-    var weeks = Object.keys(byWeek).map(Number).sort(function(a,b){return a-b;});
-    if (!weeks.length) { el.innerHTML='<div class="error-msg">No weekly data found.</div>'; return; }
-    _renderWeekPills(el, weeks, byWeek);
-  }).catch(function() {
-    // Fallback to already-loaded _joeByWeek
-    byWeek = window._joeByWeek || {};
-    var weeks = Object.keys(byWeek).map(Number).sort(function(a,b){return a-b;});
-    if (!weeks.length) { el.innerHTML='<div class="error-msg">No weekly data found.</div>'; return; }
-    _renderWeekPills(el, weeks, byWeek);
+    html += '</div><div id="weekly-table"></div>';
+    el.innerHTML = html;
+    window._joeWeekStats = byWeek;
+    showWeekStats(weeks[0], document.querySelector('#weekly-pills .pill'));
   });
-}
-
-function _renderWeekPills(el, weeks, byWeek) {
-  var html = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px" id="weekly-pills">';
-  weeks.forEach(function(w,i){
-    html += '<button class="pill'+(i===0?' active':'')+'" onclick="showWeekStats('+w+',this)">Wk '+w+'</button>';
-  });
-  html += '</div><div id="weekly-table"></div>';
-  el.innerHTML = html;
-  window._joeWeekStats = byWeek;
-  showWeekStats(weeks[0], document.querySelector('#weekly-pills .pill'));
 }
 
 window.showWeekStats = function(week, btn) {
@@ -6498,20 +6463,13 @@ window.showWeekStats = function(week, btn) {
   var weekData = (window._joeWeekStats||{})[week] || {};
   var teams = Object.keys(weekData).sort();
   var CATS  = ['R','HR','RBI','SB','AVG','K','W','SVH3','ERA','WHIP'];
-  var n = teams.length || 1;
-
-  // Rank each team per category (1=best)
-  var catRank = {}; // cat → {team → rank 1..n}
+  var catMax = {}, catMin = {};
   CATS.forEach(function(c) {
-    var isLow = c==='ERA'||c==='WHIP';
-    var sorted = teams.slice().sort(function(a,b){
-      var va = weekData[a][c]||0, vb = weekData[b][c]||0;
-      return isLow ? va-vb : vb-va; // low ERA=rank1, high R=rank1
-    });
-    catRank[c] = {};
-    sorted.forEach(function(t,i){ catRank[c][t] = i+1; });
+    var vals = teams.map(function(t){ return weekData[t][c]; }).filter(function(v){ return v != null; });
+    if (!vals.length) return;
+    catMax[c] = Math.max.apply(null,vals);
+    catMin[c] = Math.min.apply(null,vals);
   });
-
   var html = '<div class="card"><div class="table-wrap"><table>';
   html += '<thead><tr><th class="left">Team</th>';
   CATS.forEach(function(c){ html += '<th>' + c + '</th>'; });
@@ -6522,10 +6480,11 @@ window.showWeekStats = function(week, btn) {
     CATS.forEach(function(c) {
       var v = row[c];
       if (v == null) { html += '<td style="color:var(--muted)">-</td>'; return; }
-      var rank = catRank[c][team] || n;
-      var pct  = 1 - (rank-1)/(n-1||1); // 1=best, 0=worst
-      var col  = pct>=0.7?'#2d5a3d':pct>=0.5?'#4a9a68':pct>=0.35?'#b7791f':'#c0392b';
-      var disp = c==='AVG'?v.toFixed(3):(c==='ERA'||c==='WHIP')?v.toFixed(2):Math.round(v);
+      var isLow = c==='ERA'||c==='WHIP';
+      var range = (catMax[c]||1) - (catMin[c]||0);
+      var pct   = range > 0 ? (isLow ? (catMax[c]-v)/range : (v-catMin[c])/range) : 0.5;
+      var col   = pct>=0.7?'#2d5a3d':pct>=0.5?'#4a9a68':pct>=0.35?'#b7791f':'#c0392b';
+      var disp  = c==='AVG'?v.toFixed(3):(c==='ERA'||c==='WHIP')?v.toFixed(2):Math.round(v);
       html += '<td style="font-weight:500;color:' + col + '">' + disp + '</td>';
     });
     html += '</tr>';
