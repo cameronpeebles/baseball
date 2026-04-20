@@ -184,7 +184,6 @@ team_info = (standings_data.get("data") or {}).get("fantasyTeamInfo") or {}
 # we stop as soon as a period returns no rows)
 joe_stats = []    # one entry per team per week: {team, week, R, HR, ...}
 schedule  = []    # one entry per matchup: {week, away, home}
-period_tables = []  # raw Fantrax tables for each period, to inject into standings.json
 
 MAX_PERIODS = 20
 
@@ -257,24 +256,15 @@ for period in range(1, MAX_PERIODS + 1):
             continue
         seen_teams.add(team_name)
 
-        r_val   = get_stat(cells, "R")
-        hr_val  = get_stat(cells, "HR")
-        rbi_val = get_stat(cells, "RBI")
-        k_val   = get_stat(cells, "K")
-
-        # Stop if this looks like a future period (all key counting stats are zero)
-        if r_val == 0 and hr_val == 0 and rbi_val == 0 and k_val == 0:
-            continue
-
         entry = {
             "team": team_name,
             "week": period,
-            "R":    r_val,
-            "HR":   hr_val,
-            "RBI":  rbi_val,
+            "R":    get_stat(cells, "R"),
+            "HR":   get_stat(cells, "HR"),
+            "RBI":  get_stat(cells, "RBI"),
             "SB":   get_stat(cells, "SB"),
             "AVG":  get_stat(cells, "AVG"),
-            "K":    k_val,
+            "K":    get_stat(cells, "K"),
             "W":    get_stat(cells, "W"),
             "SV":   get_stat(cells, "SV") or get_stat(cells, "SVH3") or get_stat(cells, "SVH"),
             "ERA":  get_stat(cells, "ERA"),
@@ -288,61 +278,10 @@ for period in range(1, MAX_PERIODS + 1):
         t = get_stat(cells, "T")
         period_teams.append({"team": team_name, "W": w, "L": l, "T": t})
 
-    # If no teams had real stats, this is a future period — stop
-    if not period_teams:
-        print(f"  Period {period}: no real stats (future period), stopping.")
-        break
-
     print(f"  Period {period}: {len(period_teams)} teams across {len(stat_tables)} table(s), {len(period_teams)//2} matchups")
-
-    # Build a single merged table for injection into standings.json
-    # Merge all rows from all stat_tables into the first table
-    merged = dict(stat_tables[0])
-    merged["caption"] = f"Scoring Period:  {period}"
-    merged_rows = []
-    seen_for_merge = set()
-    for t in stat_tables:
-        for row in (t.get("rows") or []):
-            fc = row.get("fixedCells") or []
-            tid = next((c.get("teamId") for c in fc if c.get("teamId")), None)
-            if tid and tid not in seen_for_merge:
-                seen_for_merge.add(tid)
-                merged_rows.append(row)
-    merged["rows"] = merged_rows
-    period_tables.append(merged)
 
 joe_stats.sort(key=lambda x: (x["week"], x["team"]))
 schedule.sort(key=lambda x: (x["week"], x["away"]))
-print(f"Collected {len(period_tables)} raw period tables across all periods")
-
-# Inject per-period tables into standings.json so the Standings tab shows all periods
-if period_tables:
-    standings_data = json.load(open("data/standings.json"))
-    tbl_list = (standings_data.get("data") or {}).get("tableList") or []
-    # Build set of period numbers already in standings
-    import re as _re
-    def _period_num(cap):
-        m = _re.search(r'scoring period\s*:?\s*(\d+)', (cap or "").lower())
-        return int(m.group(1)) if m else None
-    existing_periods = set()
-    for t in tbl_list:
-        p = _period_num(t.get("caption"))
-        if p is not None:
-            existing_periods.add(p)
-    # Append only periods not already present
-    added = 0
-    for t in sorted(period_tables, key=lambda x: _period_num(x.get("caption")) or 0):
-        p = _period_num(t.get("caption"))
-        if p is not None and p not in existing_periods:
-            tbl_list.append(t)
-            existing_periods.add(p)
-            added += 1
-    if added:
-        standings_data.setdefault("data", {})["tableList"] = tbl_list
-        save("standings.json", standings_data)
-        print(f"Added {added} missing period tables to standings.json")
-    else:
-        print("standings.json already has all periods")
 
 save("joe_stats.json", joe_stats)
 save("schedule.json", schedule)
@@ -1443,23 +1382,11 @@ def fetch_fantasypros(url, cols):
     rows = _re.findall(r'<tr[^>]*>(.*?)</tr>', table_html, _re.DOTALL | _re.IGNORECASE)
 
     def strip_tags(s):
-        s = _re.sub(r'<[^>]+>', ' ', s)   # replace tags with space not empty
-        s = s.replace('&nbsp;', ' ').replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>').replace('&#160;', ' ')
-        return ' '.join(s.split()).strip()
+        return _re.sub(r'<[^>]+>', '', s).strip()
 
     def norm_name(s):
-        # Strip HTML entities and tags first
-        s = _re.sub(r'<[^>]+>', ' ', s)
-        s = s.replace('&nbsp;', ' ').replace('&amp;', '&')
-        s = ' '.join(s.split()).strip()
-        # Strip team/position suffix in parens: "(LAD - SP,DH)" or "(2B,3B,SS)"
-        s = _re.sub(r'\s*\([^)]*\)', '', s).strip()
-        # Strip IL/FA suffixes
-        s = _re.sub(r'\s*(IL\d*|DTD|FA|NA)\s*$', '', s, flags=_re.IGNORECASE).strip()
-        # Normalize accents and lowercase
-        import unicodedata
-        s = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
-        return s.lower().strip()
+        s = _re.sub(r'\s*\([^)]+\)', '', s).strip()
+        return s.lower()
 
     players = []
     for row in rows:
