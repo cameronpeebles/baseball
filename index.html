@@ -2869,17 +2869,20 @@ function buildTeamRosterCharts(teamId) {
   var hitPct = ['R','RBI','HR','SB','AVG'].map(function(k){ return teamZ ? zToPct(teamZ.batZ[k]||0) : 50; });
   var pitPct = ['ERA','WHIP','W','K','SVH3'].map(function(k){ return teamZ ? zToPct(teamZ.pitZ[k]||0) : 50; });
 
-  function getTeamFwarPctAvg(isHit) {
-    var lookup = isHit ? (window._fwarPctLookupHit||window._fwarPctLookup||{}) : (window._fwarPctLookupPit||window._fwarPctLookup||{});
-    var sum=0, cnt=0;
-    (TA.players||[]).filter(function(p){return p.ftId===teamId;}).forEach(function(p){
-      var v=lookup[normN(p.name)]; if(v!=null){sum+=v;cnt++;}
-    });
-    var avg = cnt ? Math.min(99,Math.max(1,Math.round(sum/cnt))) : 50;
-    return [avg,avg,avg,avg,avg];
-  }
-  var hitFwarPct = getTeamFwarPctAvg(true);
-  var pitFwarPct = getTeamFwarPctAvg(false);
+  // fWAR% per category: use fWAR-weighted Z-scores converted to percentile
+  // This gives a per-category line that varies across the radar
+  var hitFwarPct = ['R','RBI','HR','SB','AVG'].map(function(k){
+    if (!teamZ) return 50;
+    var w = (FWAR.hitWeights && FWAR.hitWeights[k] != null) ? FWAR.hitWeights[k] : 1;
+    var z = (teamZ.batZ[k]||0) * w;
+    return zToPct(z);
+  });
+  var pitFwarPct = ['ERA','WHIP','W','K','SVH3'].map(function(k){
+    if (!teamZ) return 50;
+    var w = (FWAR.pitWeights && FWAR.pitWeights[k] != null) ? FWAR.pitWeights[k] : 1;
+    var z = (teamZ.pitZ[k]||0) * w;
+    return zToPct(z);
+  });
 
   var scatterPlayers = (TA.players||[]).filter(function(p){ return p.ftId===teamId; }).map(function(p){
     var k=normN(p.name);
@@ -6097,14 +6100,16 @@ window.buildNewDash = function(teamId) {
   function zToPct(z){return Math.min(99,Math.max(1,Math.round((z+3)/6*100)));}
   var hitPct=['R','RBI','HR','SB','AVG'].map(function(k){return teamZ?zToPct(teamZ.batZ[k]||0):50;});
   var pitPct=['ERA','WHIP','W','K','SVH3'].map(function(k){return teamZ?zToPct(teamZ.pitZ[k]||0):50;});
-  function getTeamFwarPctAvg(isHit){
-    var lk=isHit?(window._fwarPctLookupHit||window._fwarPctLookup||{}):(window._fwarPctLookupPit||window._fwarPctLookup||{});
-    var sum=0,cnt=0;
-    teamPlayers.forEach(function(p){var v=lk[normN(p.name)];if(v!=null){sum+=v;cnt++;}});
-    var avg=cnt?Math.min(99,Math.max(1,Math.round(sum/cnt))):50;
-    return [avg,avg,avg,avg,avg];
-  }
-  var hitFwarPct=getTeamFwarPctAvg(true),pitFwarPct=getTeamFwarPctAvg(false);
+  var hitFwarPct=['R','RBI','HR','SB','AVG'].map(function(k){
+    if(!teamZ) return 50;
+    var w=(FWAR.hitWeights&&FWAR.hitWeights[k]!=null)?FWAR.hitWeights[k]:1;
+    return zToPct((teamZ.batZ[k]||0)*w);
+  });
+  var pitFwarPct=['ERA','WHIP','W','K','SVH3'].map(function(k){
+    if(!teamZ) return 50;
+    var w=(FWAR.pitWeights&&FWAR.pitWeights[k]!=null)?FWAR.pitWeights[k]:1;
+    return zToPct((teamZ.pitZ[k]||0)*w);
+  });
 
   // Scatter: fWAR% vs Lg Rating
   var scatterPlayers=teamPlayers.map(function(p){
