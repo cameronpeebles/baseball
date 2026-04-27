@@ -10075,11 +10075,12 @@ function silentAutoWeightFromCorrelations(callback) {
   HIT.forEach(function(c){ FWAR.hitWeights[c]=catR[c]!=null?parseFloat((Math.abs(catR[c])/maxAbs).toFixed(4)):0; });
   PIT.forEach(function(c){ FWAR.pitWeights[c]=catR[c]!=null?parseFloat((Math.abs(catR[c])/maxAbs).toFixed(4)):0; });
 
-  // Normalise each group to sum to 0.5 so hitting and pitching are equally weighted
+  // Normalise so hitting and pitching have equal sums while preserving total magnitude
   var hitSum = HIT.reduce(function(s,c){return s+(FWAR.hitWeights[c]||0);},0);
   var pitSum = PIT.reduce(function(s,c){return s+(FWAR.pitWeights[c]||0);},0);
-  if (hitSum > 0) HIT.forEach(function(c){ FWAR.hitWeights[c]=parseFloat((FWAR.hitWeights[c]/hitSum*0.5).toFixed(3)); });
-  if (pitSum > 0) PIT.forEach(function(c){ FWAR.pitWeights[c]=parseFloat((FWAR.pitWeights[c]/pitSum*0.5).toFixed(3)); });
+  var target = (hitSum + pitSum) / 2;
+  if (hitSum > 0) HIT.forEach(function(c){ FWAR.hitWeights[c]=parseFloat((FWAR.hitWeights[c]/hitSum*target).toFixed(3)); });
+  if (pitSum > 0) PIT.forEach(function(c){ FWAR.pitWeights[c]=parseFloat((FWAR.pitWeights[c]/pitSum*target).toFixed(3)); });
 
   // Also update DOM inputs if they exist
   HIT.forEach(function(c){ var el=document.getElementById('fwar-hw-'+c); if(el) el.value=FWAR.hitWeights[c].toFixed(2); });
@@ -10208,11 +10209,12 @@ window.autoWeightFromCorrelations = function() {
       newPitW[c]=catR[c]!=null?parseFloat((Math.abs(catR[c])/maxAbs).toFixed(4)):0;
     });
 
-    // Normalise each group to sum to 0.5 so hitting and pitching are equally weighted
+    // Normalise so hitting and pitching have equal sums while preserving total magnitude
     var hitSum=HIT_CATS.reduce(function(s,c){return s+(newHitW[c]||0);},0);
     var pitSum=PIT_CATS_C.reduce(function(s,c){return s+(newPitW[c]||0);},0);
-    if (hitSum>0) HIT_CATS.forEach(function(c){newHitW[c]=parseFloat((newHitW[c]/hitSum*0.5).toFixed(3));});
-    if (pitSum>0) PIT_CATS_C.forEach(function(c){newPitW[c]=parseFloat((newPitW[c]/pitSum*0.5).toFixed(3));});
+    var target=(hitSum+pitSum)/2;
+    if (hitSum>0) HIT_CATS.forEach(function(c){newHitW[c]=parseFloat((newHitW[c]/hitSum*target).toFixed(3));});
+    if (pitSum>0) PIT_CATS_C.forEach(function(c){newPitW[c]=parseFloat((newPitW[c]/pitSum*target).toFixed(3));});
 
     // Build change summary
     var allCats=[
