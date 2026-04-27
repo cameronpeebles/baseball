@@ -3696,12 +3696,9 @@ function buildJOEPage(byWeek, schedule) {
              avgWorst:avgWorst, rawZ:rawZ, weeks:d.joes.length };
   });
 
-  // Normalize rawZ to [-1,+1]
-  var zVals = seasonRows.map(function(r){return r.rawZ;});
-  var minZ = Math.min.apply(null,zVals), maxZ = Math.max.apply(null,zVals);
-  var zRange = maxZ - minZ || 1;
+  // Normalise rawZ to [-1,+1] using fixed scale (divide by 3) so neutral teams stay near 0
   seasonRows.forEach(function(r) {
-    r.joe = parseFloat((2*(r.rawZ-minZ)/zRange - 1).toFixed(3));
+    r.joe = parseFloat(Math.max(-1, Math.min(1, r.rawZ / 3)).toFixed(3));
   });
   seasonRows.sort(function(a,b){ return b.joe - a.joe; });
   // Store for dashboard - same shape expected: {team, luck (normalized joe)}
