@@ -5156,16 +5156,14 @@ function renderPositionalRankings(side, teamId) {
     var avg = gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length;
     var diff = avg - leagueAvg[g];
     var pct  = Math.round(avg * 100);
-    var col  = ratingColor(avg);
+    var c10  = posColor10(avg);
     var sign = diff >= 0 ? '+' : '';
     var diffRounded = Math.round(diff * 100);
 
-    html += '<div style="display:flex;flex-direction:column;align-items:center;min-width:52px">';
-    html += '<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:2px">' + g + '</div>';
-    html += '<div style="font-size:14px;font-weight:600;color:' + col + '">' + pct + '</div>';
-    html += '<div style="font-size:10px;color:' + (diff>=0?'var(--accent)':'var(--danger)') + '">' + sign + diffRounded + '</div>';
-    html += '<div style="width:44px;height:3px;background:var(--border);border-radius:2px;margin-top:2px">';
-    html += '<div style="width:' + pct + '%;height:100%;border-radius:2px;background:' + col + '"></div></div>';
+    html += '<div style="display:flex;flex-direction:column;align-items:center;min-width:60px;background:'+c10.bg+';border-radius:8px;padding:6px 8px">';
+    html += '<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:'+c10.fg+';opacity:0.8;margin-bottom:2px">' + g + '</div>';
+    html += '<div style="font-size:16px;font-weight:600;color:'+c10.fg+'">' + pct + '</div>';
+    html += '<div style="font-size:10px;color:'+c10.fg+';opacity:0.85">' + sign + diffRounded + '</div>';
     html += '</div>';
   });
 
@@ -7731,12 +7729,23 @@ function assembleDashboard(teamId, el) {
   }
 }
 
+// 10-color scale: input is 0-1 (will be multiplied by 100 internally)
+function posColor10(v) {
+  var p = v <= 1 ? Math.round(v * 100) : Math.round(v); // accept 0-1 or 0-100
+  if (p <= 30) return { bg: '#7B1212', fg: '#ffffff' };         // super red
+  if (p <= 34) return { bg: '#c0392b', fg: '#ffffff' };         // deep red
+  if (p <= 38) return { bg: '#d9534f', fg: '#ffffff' };         // red
+  if (p <= 42) return { bg: '#e8846a', fg: '#ffffff' };         // light red
+  if (p <= 46) return { bg: '#f5c4b3', fg: '#6b2a1a' };        // red-amber
+  if (p <= 50) return { bg: '#f5e6c8', fg: '#5a3e0a' };        // amber-yellow
+  if (p <= 54) return { bg: '#d8ecbb', fg: '#2a4a12' };        // yellow-green
+  if (p <= 58) return { bg: '#a8d5b5', fg: '#1a3d26' };        // light green
+  if (p <= 62) return { bg: '#4a9a68', fg: '#ffffff' };         // green
+  return              { bg: '#1e6b3a', fg: '#ffffff' };          // super green
+}
+
 function posHeatColorDash(pct) {
-  if (pct >= 0.65) return { bg: '#1e6b3a', fg: '#ffffff' };
-  if (pct >= 0.52) return { bg: '#4a9a68', fg: '#ffffff' };
-  if (pct >= 0.42) return { bg: '#a8d5b5', fg: '#1a3d26' };
-  if (pct >= 0.30) return { bg: '#f5c4b3', fg: '#6b2a1a' };
-  return               { bg: '#c0392b',  fg: '#ffffff' };
+  return posColor10(pct);
 }
 
 // ── Shared helper: parse standings.json into {week → {team → stats}} ─────────
