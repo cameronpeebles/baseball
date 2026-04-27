@@ -6080,7 +6080,7 @@ window.refreshAllData = function() {
     { label: 'Loading player ratings...', fn: function(cb) {
         drawPlayers('hit');
         drawPlayers('pit');
-        setTimeout(cb, 400);
+        setTimeout(function(){ rescalePosRatings(); cb(); }, 400);
     }},
     { label: 'Loading JOE data...', fn: function(cb) {
         ensureJOEData(function() { cb(); });
@@ -9340,6 +9340,40 @@ window.applyFWARPreset = function(preset) {
   });
 };
 
+// Rescale _posRatingLookup so each positional group's average = 0.50
+// Groups: Infield (C,1B,2B,3B,SS), Outfield (OF), SP, RP
+function rescalePosRatings() {
+  var lookup = window._posRatingLookup;
+  if (!lookup || !TA.players || !TA.players.length) return;
+
+  function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+
+  // Map each player to their bestGroup
+  var groups = { Infield:[], Outfield:[], SP:[], RP:[] };
+  (TA.players||[]).forEach(function(p) {
+    var g = p.bestGroup;
+    if (!groups[g]) return;
+    var k = normN(p.name);
+    var v = lookup[k] != null ? lookup[k] : lookup[(p.name||'').toLowerCase()];
+    if (v != null) groups[g].push({ k:k, v:v, name:(p.name||'').toLowerCase() });
+  });
+
+  // Rescale each group so mean = 0.5
+  Object.keys(groups).forEach(function(g) {
+    var arr = groups[g];
+    if (!arr.length) return;
+    var mean = arr.reduce(function(s,x){return s+x.v;},0) / arr.length;
+    if (mean === 0) return;
+    var scale = 0.5 / mean;
+    arr.forEach(function(item) {
+      var scaled = Math.max(0, Math.min(1, item.v * scale));
+      if (lookup[item.k] != null)    lookup[item.k]    = scaled;
+      if (lookup[item.name] != null) lookup[item.name] = scaled;
+    });
+  });
+  window._posRatingLookup = lookup;
+}
+
 window.recalculateFWAR = function() {
   // Clear rating lookups so hitters and pitchers both repopulate fresh
   window._lgRatingLookup  = {};
@@ -9915,6 +9949,7 @@ window.recalculateFWAR = function() {
   sumEl.innerHTML = mhtml;
   var n = allHitters.filter(function(p){return p.fWAR!=null;}).length;
   document.getElementById('fwar-status').textContent = 'Calculated fWAR for ' + n + ' hitters and ' + allPitchers.length + ' pitchers.';
+  rescalePosRatings();
 };
 
 // Silent version for use in Refresh All Data — no DOM updates needed
