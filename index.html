@@ -246,6 +246,7 @@ td.neg { color: #c0392b; font-weight: 500; }
 
 <nav>
   <button class="active" onclick="showPage('dashboard',this)">Dashboard</button>
+  <button onclick="showPage('archetype',this)">Team Archetype</button>
   <button onclick="showPage('guide',this)">Site Guide</button>
   <button onclick="showPage('correlations',this)">Correlations</button>
   <button onclick="showPage('models',this)">Models</button>
@@ -268,6 +269,12 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div class="page-title">Dashboard</div>
     <div class="page-subtitle">Your team at a glance - select your team to get started.</div>
     <div id="dashboard-body"><div class="loading">Loading...</div></div>
+  </div>
+
+  <div class="page" id="page-archetype">
+    <div class="page-title">Team Archetype</div>
+    <div class="page-subtitle">Diagnostic ranking of all teams based on fWAR%, League Rating%, and JOE Factor.</div>
+    <div id="archetype-body"><div class="loading">Loading...</div></div>
   </div>
 
   <div class="page" id="page-newdash" style="display:none">
@@ -1628,6 +1635,7 @@ function showPage(name, btn) {
   btn.classList.add('active');
   if (name === 'dashboard') renderDashboard();
   if (name === 'newdash') renderNewDash();
+  if (name === 'archetype') renderArchetypePage();
   if (name === 'fantrax') { if (!fantraxRendered) { fantraxRendered = true; } }
   if (name === 'combined') renderCombinedPage();
   if (name === 'zscores') renderZScores();
@@ -6378,6 +6386,239 @@ window.buildNewDash = function(teamId) {
     }
   }
 };
+
+// ── Team Archetype Page ───────────────────────────────────────────────────────
+
+var ARCHETYPE_MAP = {
+  'High-High-Unlucky':  {arch:'Underperforming Contender',      dir:'Up',       action:'Hold / Buy'},
+  'High-High-Neutral':  {arch:'True Contender',                  dir:'Stable',   action:'Push In'},
+  'High-High-Lucky':    {arch:'Strong but Inflated Contender',   dir:'Slight Down', action:'Hold / Trim Depth'},
+  'High-Mid-Unlucky':   {arch:'Real Contender',                  dir:'Up',       action:'Hold / Buy'},
+  'High-Mid-Neutral':   {arch:'Good Contender',                  dir:'Stable',   action:'Optimize'},
+  'High-Mid-Lucky':     {arch:'Overperforming Contender',        dir:'Down',     action:'Rebalance'},
+  'High-Low-Unlucky':   {arch:'Format-Favored Team',             dir:'Slight Up', action:'Patch Weaknesses'},
+  'High-Low-Neutral':   {arch:'Format Mismatch Winner',          dir:'Flat',     action:'Monitor'},
+  'High-Low-Lucky':     {arch:'Fragile Contender',               dir:'Down',     action:'Sell High / Rebalance'},
+  'Mid-High-Unlucky':   {arch:'Hidden Sleeper',                  dir:'Up',       action:'Buy / Stay Patient'},
+  'Mid-High-Neutral':   {arch:'Underperforming Good Team',       dir:'Up',       action:'Rebalance'},
+  'Mid-High-Lucky':     {arch:'Talent-Rich but Uneven',          dir:'Flat',     action:'Improve Fit'},
+  'Mid-Mid-Unlucky':    {arch:'Stable Team with Upside',         dir:'Up',       action:'Hold / Small Adds'},
+  'Mid-Mid-Neutral':    {arch:'True Middle Team',                dir:'Flat',     action:'Choose Direction'},
+  'Mid-Mid-Lucky':      {arch:'Soft Middle Team',                dir:'Down',     action:'Sell High / Rebalance'},
+  'Mid-Low-Unlucky':    {arch:'Scrappy Team',                    dir:'Slight Up', action:'Short-Term Adds'},
+  'Mid-Low-Neutral':    {arch:'Limited Ceiling Team',            dir:'Flat',     action:'Rebalance'},
+  'Mid-Low-Lucky':      {arch:'Pretender',                       dir:'Down',     action:'Sell High'},
+  'Low-High-Unlucky':   {arch:'Hidden Sleeper',                  dir:'Up',       action:'Be Patient / Buy'},
+  'Low-High-Neutral':   {arch:'Misbuilt Good Team',              dir:'Flat',     action:'Fix Category Fit'},
+  'Low-High-Lucky':     {arch:'Good Talent, Bad Fit',            dir:'Down',     action:'Rebuild Structure'},
+  'Low-Mid-Unlucky':    {arch:'Weak Team with Bad Luck',         dir:'Slight Up', action:'Incremental Fixes'},
+  'Low-Mid-Neutral':    {arch:'Weak-Middle Team',                dir:'Flat',     action:'Rebuild or Churn'},
+  'Low-Mid-Lucky':      {arch:'False Middle Team',               dir:'Down',     action:'Sell Hot Pieces'},
+  'Low-Low-Unlucky':    {arch:'Rebuild Candidate',               dir:'Slight Up', action:'Rebuild'},
+  'Low-Low-Neutral':    {arch:'Weak Team',                       dir:'Flat',     action:'Rebuild'},
+  'Low-Low-Lucky':      {arch:'False Hope Team',                 dir:'Down',     action:'Sell / Rebuild'}
+};
+
+function renderArchetypePage() {
+  var el = document.getElementById('archetype-body');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Computing archetypes...</div>';
+
+  // Ensure data is ready
+  var teamIds = Object.keys(S.teamInfo);
+  if (!teamIds.length || !TA.players || !TA.players.length) {
+    el.innerHTML = '<div class="error-msg">Click <strong>Refresh All Data</strong> on the Dashboard first to load player ratings.</div>';
+    return;
+  }
+
+  var GROUPS = ['Infield','Outfield','SP','RP'];
+
+  function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+
+  // ── Compute raw scores per team ───────────────────────────────────────────
+  var teamScores = teamIds.map(function(teamId) {
+    var ti = S.teamInfo[teamId] || {};
+    var teamName = ti.name || ti.shortName || teamId;
+    var teamPlayers = (TA.players||[]).filter(function(p){ return p.ftId === teamId; });
+
+    // fWAR%: avg per group then sum
+    var fwarPctTotal = 0;
+    GROUPS.forEach(function(g) {
+      var isHit = g==='Infield'||g==='Outfield';
+      var lk = isHit ? (window._fwarPctLookupHit||window._fwarPctLookup||{}) : (window._fwarPctLookupPit||window._fwarPctLookup||{});
+      var gPlayers = teamPlayers.filter(function(p){ return p.bestGroup===g; });
+      var sum=0, cnt=0;
+      gPlayers.forEach(function(p){ var v=lk[normN(p.name)]; if(v!=null){sum+=v;cnt++;} });
+      fwarPctTotal += cnt ? sum/cnt : 0;
+    });
+
+    // League Rating%: avg per group then sum
+    var lgRatingTotal = 0;
+    GROUPS.forEach(function(g) {
+      var gPlayers = teamPlayers.filter(function(p){ return p.bestGroup===g; });
+      var sum=0, cnt=0;
+      gPlayers.forEach(function(p){ var v=(window._lgRatingLookup||{})[normN(p.name)]; if(v!=null){sum+=v*100;cnt++;} });
+      lgRatingTotal += cnt ? sum/cnt : 0;
+    });
+
+    // JOE: season average
+    var joeRow = (window._joeSeasonData||[]).find(function(r){ return r.team===teamName; });
+    var joeVal = joeRow ? (joeRow.joe != null ? joeRow.joe : null) : null;
+
+    return { teamId:teamId, teamName:teamName, fwarRaw:fwarPctTotal, lgRaw:lgRatingTotal, joe:joeVal };
+  });
+
+  // ── Rank fWAR% and LgRating% 0-100 across teams ──────────────────────────
+  function rankTo100(teams, key) {
+    var sorted = teams.slice().sort(function(a,b){ return a[key]-b[key]; });
+    sorted.forEach(function(t,i){ t[key+'Pct'] = Math.round(i/(sorted.length-1||1)*100); });
+  }
+  rankTo100(teamScores, 'fwarRaw');
+  rankTo100(teamScores, 'lgRaw');
+
+  // ── Bucket functions ──────────────────────────────────────────────────────
+  function fwarBucket(v){ return v>=65?'High':v>=45?'Mid':'Low'; }
+  function lgBucket(v){   return v>=65?'High':v>=45?'Mid':'Low'; }
+  function joeBucket(v){
+    if (v==null) return 'Neutral';
+    return v>=0.35?'Lucky':v<=-0.35?'Unlucky':'Neutral';
+  }
+  function joeColor(v){
+    if (v==null) return 'var(--muted)';
+    return v>=0.35?'#c0392b':v<=-0.35?'#2980b9':'var(--text)';
+  }
+  function bucketColor(b){ return b==='High'?'#1e6b3a':b==='Mid'?'#b7791f':'#c0392b'; }
+  function dirArrow(d){
+    if (!d) return '';
+    if (d.indexOf('Up')!==-1)   return '<span style="color:#1e6b3a">\u2191 '+d+'</span>';
+    if (d.indexOf('Down')!==-1) return '<span style="color:#c0392b">\u2193 '+d+'</span>';
+    return '<span style="color:var(--muted)">\u2192 '+d+'</span>';
+  }
+  function interpColor(s){
+    return s>=70?'#1e6b3a':s>=55?'#4a9a68':s>=45?'#b7791f':'#c0392b';
+  }
+  function interpLabel(s){
+    return s>=70?'True Contender':s>=55?'Playoff Caliber':s>=45?'Middling':'Weak Team';
+  }
+  function archBadgeStyle(key){
+    if (!key) return 'background:var(--bg);color:var(--muted)';
+    var f=key.split('-')[0];
+    return f==='High'?'background:#e8f0eb;color:#1e6b3a':f==='Mid'?'background:#fef3e2;color:#b7791f':'background:#fce8e8;color:#c0392b';
+  }
+
+  // ── Expected score + rank ─────────────────────────────────────────────────
+  teamScores.forEach(function(t) {
+    var joe = t.joe != null ? t.joe : 0;
+    t.fwarPct  = t.fwarRawPct;
+    t.lgPct    = t.lgRawPct;
+    t.expScore = parseFloat((0.55*t.fwarPct + 0.30*t.lgPct - 10*joe).toFixed(1));
+    t.fwarBkt  = fwarBucket(t.fwarPct);
+    t.lgBkt    = lgBucket(t.lgPct);
+    t.joeBkt   = joeBucket(t.joe);
+    t.arcKey   = t.fwarBkt+'-'+t.lgBkt+'-'+t.joeBkt;
+    var entry  = ARCHETYPE_MAP[t.arcKey] || {arch:'Unknown',dir:'Flat',action:'—'};
+    t.archetype = entry.arch;
+    t.direction = entry.dir;
+    t.action    = entry.action;
+  });
+
+  // Sort by expected score descending
+  teamScores.sort(function(a,b){ return b.expScore-a.expScore; });
+  teamScores.forEach(function(t,i){ t.rank = i+1; });
+
+  // ── Confidence bands ──────────────────────────────────────────────────────
+  var BAND_THRESHOLD = 8; // scores within 8 pts = overlapping bands
+  teamScores.forEach(function(t,i) {
+    var lo = t.rank, hi = t.rank;
+    // expand lo
+    for (var j=i-1; j>=0; j--) {
+      if (Math.abs(teamScores[j].expScore - t.expScore) <= BAND_THRESHOLD) lo = teamScores[j].rank;
+      else break;
+    }
+    // expand hi
+    for (var k=i+1; k<teamScores.length; k++) {
+      if (Math.abs(teamScores[k].expScore - t.expScore) <= BAND_THRESHOLD) hi = teamScores[k].rank;
+      else break;
+    }
+    function ordinal(n){ return n+(n===1?'st':n===2?'nd':n===3?'rd':'th'); }
+    t.band = lo===hi ? ordinal(lo) : ordinal(lo)+' \u2013 '+ordinal(hi);
+  });
+
+  // ── Build HTML table ──────────────────────────────────────────────────────
+  var thStyle = 'padding:8px 10px;text-align:left;font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;background:var(--bg)';
+  var tdStyle = 'padding:8px 10px;border-bottom:0.5px solid var(--border);vertical-align:middle';
+
+  var html = '<div class="card" style="margin-bottom:16px">';
+  html += '<div style="padding:10px 16px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">';
+  html += '<span style="font-size:13px;font-weight:500">Team archetype diagnostic</span>';
+  html += '<span style="font-size:11px;color:var(--muted)">Expected Score = 0.55 \xd7 fWAR% + 0.30 \xd7 Lg Rating% \u2212 10 \xd7 JOE Factor</span>';
+  html += '</div>';
+  html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
+  html += '<thead><tr>';
+  ['Team','fWAR%','Lg Rating%','JOE Factor','Expected Score','Interpretation','Expected Rank','Confidence Band','Archetype','Direction','Action'].forEach(function(h){
+    html += '<th style="'+thStyle+'">'+h+'</th>';
+  });
+  html += '</tr></thead><tbody>';
+
+  teamScores.forEach(function(t, i) {
+    var odd = i%2===1;
+    var rowBg = odd ? 'background:var(--bg)' : '';
+    html += '<tr style="'+rowBg+'">';
+
+    // Team
+    var logo = (S.teamInfo[t.teamId]||{}).logoUrl512||'';
+    html += '<td style="'+tdStyle+';font-weight:500;white-space:nowrap">';
+    if (logo) html += '<img src="'+logo+'" style="width:20px;height:20px;border-radius:50%;margin-right:6px;vertical-align:middle" onerror="this.style.display=\'none\'">';
+    html += t.teamName+'</td>';
+
+    // fWAR%
+    var fc = bucketColor(t.fwarBkt);
+    html += '<td style="'+tdStyle+'"><span style="font-weight:500;color:'+fc+'">'+t.fwarPct+'</span> <span style="font-size:10px;color:var(--muted)">('+t.fwarBkt+')</span></td>';
+
+    // Lg Rating%
+    var lc = bucketColor(t.lgBkt);
+    html += '<td style="'+tdStyle+'"><span style="font-weight:500;color:'+lc+'">'+t.lgPct+'</span> <span style="font-size:10px;color:var(--muted)">('+t.lgBkt+')</span></td>';
+
+    // JOE Factor
+    var jc = joeColor(t.joe);
+    var jLabel = t.joeBkt;
+    html += '<td style="'+tdStyle+'">';
+    html += '<span style="font-weight:500;color:'+jc+'">'+(t.joe!=null?(t.joe>=0?'+':'')+t.joe.toFixed(2):'—')+'</span>';
+    html += ' <span style="font-size:10px;color:'+jc+';">('+jLabel+')</span></td>';
+
+    // Expected Score
+    var ic = interpColor(t.expScore);
+    html += '<td style="'+tdStyle+'"><span style="font-size:14px;font-weight:500;color:'+ic+'">'+t.expScore+'</span></td>';
+
+    // Interpretation
+    html += '<td style="'+tdStyle+'"><span style="font-size:11px;font-weight:500;color:'+ic+'">'+interpLabel(t.expScore)+'</span></td>';
+
+    // Expected Rank
+    function ordinal(n){ return n+(n===1?'st':n===2?'nd':n===3?'rd':'th'); }
+    html += '<td style="'+tdStyle+';font-size:12px;color:var(--muted)">'+ordinal(t.rank)+'</td>';
+
+    // Confidence Band
+    html += '<td style="'+tdStyle+';font-size:11px;color:var(--muted)">'+t.band+'</td>';
+
+    // Archetype badge
+    html += '<td style="'+tdStyle+'"><span style="display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;'+archBadgeStyle(t.arcKey)+'">'+t.archetype+'</span></td>';
+
+    // Direction
+    html += '<td style="'+tdStyle+'">'+dirArrow(t.direction)+'</td>';
+
+    // Action
+    html += '<td style="'+tdStyle+';font-size:11px;white-space:nowrap">'+t.action+'</td>';
+
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  html += '<div style="padding:8px 16px;border-top:0.5px solid var(--border);font-size:11px;color:var(--muted)">';
+  html += 'Confidence band: teams with scores within 8 points are considered statistically similar and share overlapping bands.';
+  html += '</div></div>';
+
+  el.innerHTML = html;
+}
 
 function renderDashboard() {
   var el = document.getElementById('dashboard-body');
