@@ -882,10 +882,84 @@ td.neg { color: #c0392b; font-weight: 500; }
           </div>
         </div>
 
+        <div class="card">
+          <div class="card-header"><span class="card-title">Team diagnostic — formulas and calculations</span></div>
+          <div class="card-body" style="padding:16px 20px;display:flex;flex-direction:column;gap:16px">
+
+            <p style="font-size:13px;line-height:1.7">The Team Diagnostic card appears at the top of the Dashboard and classifies your team using three inputs, then derives an archetype, expected direction, trust score, and recommended actions — all deterministically from the rules below.</p>
+
+            <div>
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">The three inputs</div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="padding:12px 16px;background:var(--bg);border-radius:8px">
+                  <div style="font-weight:500;font-size:12px;margin-bottom:4px">Team fWAR% (0–100)</div>
+                  <div style="font-size:12px;line-height:1.6;color:var(--muted)">For each positional group (IF, OF, SP, RP), average the fWAR% of all rostered players. Sum the four group averages. Rank all 10 teams by that total and convert to a 0–100 percentile. Buckets: High ≥ 65 · Mid 45–64 · Low &lt; 45</div>
+                </div>
+                <div style="padding:12px 16px;background:var(--bg);border-radius:8px">
+                  <div style="font-weight:500;font-size:12px;margin-bottom:4px">League Rating% (0–100)</div>
+                  <div style="font-size:12px;line-height:1.6;color:var(--muted)">Same approach as fWAR% — average league rating per positional group (IF, OF, SP, RP), sum the four averages, rank all 10 teams 0–100. Measures roster quality rather than current production. Buckets: High ≥ 65 · Mid 45–64 · Low &lt; 45</div>
+                </div>
+                <div style="padding:12px 16px;background:var(--bg);border-radius:8px">
+                  <div style="font-weight:500;font-size:12px;margin-bottom:4px">JOE Factor (−1 to +1)</div>
+                  <div style="font-size:12px;line-height:1.6;color:var(--muted)">Season average JOE score from the JOE Factor page. Negative = unlucky (schedule hurt results), Positive = lucky (schedule helped results). Buckets: Lucky ≥ +0.35 · Neutral −0.34 to +0.34 · Unlucky ≤ −0.35</div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Derived scores</div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="padding:12px 16px;background:var(--bg);border-radius:8px">
+                  <div style="font-weight:500;font-size:12px;margin-bottom:4px">Should-Be Score (Expected Score)</div>
+                  <div style="font-size:12px;font-family:var(--font-mono);background:var(--surface);padding:6px 10px;border-radius:6px;margin:6px 0">Score = 0.55 × fWAR% + 0.30 × LeagueRating% − 10 × JOE Factor</div>
+                  <div style="font-size:12px;line-height:1.6;color:var(--muted)">Higher = stronger team. Interpretation: 70+ True Contender · 55–69 Playoff Caliber · 45–54 Middling · &lt;45 Weak Team</div>
+                </div>
+                <div style="padding:12px 16px;background:var(--bg);border-radius:8px">
+                  <div style="font-weight:500;font-size:12px;margin-bottom:4px">Trust Score (0–100)</div>
+                  <div style="font-size:12px;font-family:var(--font-mono);background:var(--surface);padding:6px 10px;border-radius:6px;margin:6px 0">Trust = 100 − (0.8 × |fWAR% − Rating%|) − (35 × |JOE Factor|)</div>
+                  <div style="font-size:12px;line-height:1.6;color:var(--muted)">Measures how much to believe the current results. Penalised by both a large production/talent gap and extreme luck. Tiers: 80–100 Very High · 65–79 High · 50–64 Medium · 35–49 Low · &lt;35 Very Low</div>
+                </div>
+                <div style="padding:12px 16px;background:var(--bg);border-radius:8px">
+                  <div style="font-weight:500;font-size:12px;margin-bottom:4px">Performance Gap</div>
+                  <div style="font-size:12px;font-family:var(--font-mono);background:var(--surface);padding:6px 10px;border-radius:6px;margin:6px 0">Gap = fWAR% − LeagueRating%</div>
+                  <div style="font-size:12px;line-height:1.6;color:var(--muted)">Positive gap = producing more than talent suggests (overachieving or hot streak). Negative gap = talent exceeds production (underachieving or cold streak). Used in Trend Outlook and Recommended Action logic.</div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Trend outlook — calculation steps</div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 1</strong> — Trend Strength Score = |Gap| + (10 × |JOE Factor|)</div>
+                <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 2</strong> — Classify strength: Strong ≥ 20 · Moderate ≥ 10 · Weak &lt; 10</div>
+                <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 3</strong> — Base direction from archetype (Up / Slight Up / Flat / Slight Down / Down)</div>
+                <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 4</strong> — Combine: Strong Positive → "Strong positive outlook" · Moderate Positive → "Positive outlook" · Slight Positive → "Mild positive outlook" · Flat → "Stable outlook" · and mirrored negatives</div>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Recommended action — logic</div>
+              <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+                <div style="padding:12px 14px;background:var(--bg);border-radius:8px">
+                  <div style="font-size:11px;font-weight:500;color:#1e6b3a;margin-bottom:6px">Primary move</div>
+                  <div style="font-size:11px;line-height:1.6;color:var(--muted)">Contender + Up/Slight Up → Hold / Buy<br>Contender + Flat → Optimize<br>Any + Down/Slight Down → Sell High / Rebalance<br>Middle archetype → Choose Direction<br>Weak/Rebuild archetype → Rebuild</div>
+                </div>
+                <div style="padding:12px 14px;background:var(--bg);border-radius:8px">
+                  <div style="font-size:11px;font-weight:500;color:#c0392b;margin-bottom:6px">Do not do</div>
+                  <div style="font-size:11px;line-height:1.6;color:var(--muted)">JOE &lt; −0.4 → Do not sell core pieces<br>JOE &gt; +0.4 → Do not chase current production<br>|Gap| &gt; 15 → Do not ignore category imbalance<br>Otherwise → Avoid unnecessary roster churn</div>
+                </div>
+                <div style="padding:12px 14px;background:var(--bg);border-radius:8px">
+                  <div style="font-size:11px;font-weight:500;color:#185fa5;margin-bottom:6px">Best upgrade type</div>
+                  <div style="font-size:11px;line-height:1.6;color:var(--muted)">Rating% &gt; fWAR% → High-impact upgrade<br>Pitching weaker than hitting → Bullpen help or ratio SP<br>Hitting weaker than pitching → Power bat or SB specialist<br>Pitching weakness = avg SP+RP rating &lt; avg IF+OF rating</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
       </div>
     </div>
-
-    <!-- JOE Factor -->
     <div id="guide-tab-joe" class="trade-tab-content">
       <div class="card" style="margin-top:16px;max-width:760px">
         <div class="card-header"><span class="card-title">JOE Factor - Scheduling Luck</span></div>
