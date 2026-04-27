@@ -6817,6 +6817,8 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   // ── Trust Score ───────────────────────────────────────────────────────
   var gap     = fwarPct - lgPct;
   var trustRaw = 100 - (0.8*Math.abs(gap)) - (35*Math.abs(joe));
+  // Cap trust at 80 for weak teams (both production and talent below average)
+  if (fwarPct < 50 && lgPct < 50) trustRaw = Math.min(trustRaw, 80);
   var trust   = Math.max(0, Math.min(100, Math.round(trustRaw)));
   function trustTier(v){ return v>=80?'Very High':v>=65?'High':v>=50?'Medium':v>=35?'Low':'Very Low'; }
   function trustIcon(v){ return v>=80?'🔒':v>=65?'✅':v>=50?'⚖️':v>=35?'⚠️':'🚨'; }
@@ -10070,8 +10072,14 @@ function silentAutoWeightFromCorrelations(callback) {
   if (maxAbs===0) { callback(); return; }
 
   var HIT=['R','HR','RBI','SB','AVG'], PIT=['W','SVH3','K','ERA','WHIP'];
-  HIT.forEach(function(c){ FWAR.hitWeights[c]=catR[c]!=null?parseFloat((Math.abs(catR[c])/maxAbs).toFixed(2)):0; });
-  PIT.forEach(function(c){ FWAR.pitWeights[c]=catR[c]!=null?parseFloat((Math.abs(catR[c])/maxAbs).toFixed(2)):0; });
+  HIT.forEach(function(c){ FWAR.hitWeights[c]=catR[c]!=null?parseFloat((Math.abs(catR[c])/maxAbs).toFixed(4)):0; });
+  PIT.forEach(function(c){ FWAR.pitWeights[c]=catR[c]!=null?parseFloat((Math.abs(catR[c])/maxAbs).toFixed(4)):0; });
+
+  // Normalise each group to sum to 0.5 so hitting and pitching are equally weighted
+  var hitSum = HIT.reduce(function(s,c){return s+(FWAR.hitWeights[c]||0);},0);
+  var pitSum = PIT.reduce(function(s,c){return s+(FWAR.pitWeights[c]||0);},0);
+  if (hitSum > 0) HIT.forEach(function(c){ FWAR.hitWeights[c]=parseFloat((FWAR.hitWeights[c]/hitSum*0.5).toFixed(3)); });
+  if (pitSum > 0) PIT.forEach(function(c){ FWAR.pitWeights[c]=parseFloat((FWAR.pitWeights[c]/pitSum*0.5).toFixed(3)); });
 
   // Also update DOM inputs if they exist
   HIT.forEach(function(c){ var el=document.getElementById('fwar-hw-'+c); if(el) el.value=FWAR.hitWeights[c].toFixed(2); });
@@ -10194,11 +10202,17 @@ window.autoWeightFromCorrelations = function() {
     var HIT_CATS=['R','HR','RBI','SB','AVG'];
     var PIT_CATS_C=['W','SVH3','K','ERA','WHIP'];
     HIT_CATS.forEach(function(c){
-      newHitW[c]=catR[c]!=null?parseFloat((Math.abs(catR[c])/maxAbs).toFixed(2)):0;
+      newHitW[c]=catR[c]!=null?parseFloat((Math.abs(catR[c])/maxAbs).toFixed(4)):0;
     });
     PIT_CATS_C.forEach(function(c){
-      newPitW[c]=catR[c]!=null?parseFloat((Math.abs(catR[c])/maxAbs).toFixed(2)):0;
+      newPitW[c]=catR[c]!=null?parseFloat((Math.abs(catR[c])/maxAbs).toFixed(4)):0;
     });
+
+    // Normalise each group to sum to 0.5 so hitting and pitching are equally weighted
+    var hitSum=HIT_CATS.reduce(function(s,c){return s+(newHitW[c]||0);},0);
+    var pitSum=PIT_CATS_C.reduce(function(s,c){return s+(newPitW[c]||0);},0);
+    if (hitSum>0) HIT_CATS.forEach(function(c){newHitW[c]=parseFloat((newHitW[c]/hitSum*0.5).toFixed(3));});
+    if (pitSum>0) PIT_CATS_C.forEach(function(c){newPitW[c]=parseFloat((newPitW[c]/pitSum*0.5).toFixed(3));});
 
     // Build change summary
     var allCats=[
