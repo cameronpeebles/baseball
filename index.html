@@ -6793,6 +6793,17 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   var lgPct   = rankPct(lgTotals,   teamId);
   var joe     = joeVal != null ? joeVal : 0;
 
+  // fWAR by group for positional breakdown
+  var fwarByGroup = {Infield:null,Outfield:null,SP:null,RP:null};
+  var fwMapD = {};
+  (FWAR.hitResults||[]).concat(FWAR.pitResults||[]).forEach(function(p){ fwMapD[normN(p.name)]=p; fwMapD[(p.name||'').toLowerCase()]=p; });
+  (TA.players||[]).filter(function(p){return p.ftId===teamId;}).forEach(function(p){
+    var fw=fwMapD[normN(p.name)]||fwMapD[(p.name||'').toLowerCase()];
+    var g=p.bestGroup||'';
+    if(fw&&fwarByGroup[g]!=null) fwarByGroup[g]=parseFloat(((fwarByGroup[g]||0)+(fw.fWAR||0)).toFixed(2));
+    else if(fw&&fwarByGroup.hasOwnProperty(g)&&fwarByGroup[g]===null) fwarByGroup[g]=parseFloat((fw.fWAR||0).toFixed(2));
+  });
+
   // ── Bucket functions ──────────────────────────────────────────────────
   function fBkt(v){ return v>=65?'High':v>=45?'Mid':'Low'; }
   function jBkt(v){ return v>=0.35?'Lucky':v<=-0.35?'Unlucky':'Neutral'; }
@@ -6945,7 +6956,7 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   h += '<div style="display:flex;align-items:baseline;gap:6px;margin:6px 0 3px"><span style="font-size:22px;font-weight:500;color:'+jc+'">'+(joe>=0?'+':'')+joe.toFixed(2)+'</span>'+pill(jBucket,jbg,jc)+'</div>';
   h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Negative = unlucky, Positive = lucky</div>';
   h += '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:2px"><span>-1.0</span><span>0</span><span>+1.0</span></div>';
-  h += '<div style="height:7px;border-radius:3px;background:linear-gradient(to right,#378ADD,#D3D1C7,#E24B4A);position:relative">';
+  h += '<div style="height:7px;border-radius:3px;background:linear-gradient(to right,#E24B4A,#EF9F27,#639922);position:relative">';
   h += '<div style="position:absolute;top:-3px;left:'+joeMarkerPct+'%;width:2px;height:13px;background:'+jc+';border-radius:1px"></div></div></div>';
   h += '</div></div>';
 
@@ -6962,7 +6973,35 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   h += '</div>';
   // Explanation paragraph
   var expText = buildDiagExplanation(fBucket, lBucket, jBucket, gap, dir);
-  h += '<div style="background:'+trendBg+';border-radius:var(--radius);padding:10px 12px;font-size:12px;color:'+trendCol+';line-height:1.6">'+expText+'</div></div>';
+  h += '<div style="background:'+trendBg+';border-radius:var(--radius);padding:10px 12px;font-size:12px;color:'+trendCol+';line-height:1.6;margin-bottom:12px">'+expText+'</div>';
+
+  // Positional group breakdown
+  h += '<div style="'+lb+';margin-bottom:8px">Positional group breakdown</div>';
+  h += '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">';
+  var DIAG_GROUPS = ['Infield','Outfield','SP','RP'];
+  var DIAG_LABELS = ['Infield','Outfield','Starting P','Relief P'];
+  DIAG_GROUPS.forEach(function(g,gi) {
+    var ps = posData[g] ? Math.round((posData[g].avg||0)*100) : 0;
+    var fw = fwarByGroup[g] != null ? fwarByGroup[g] : null;
+    var psCol = ps>=65?'#1e6b3a':ps>=50?'#4a9a68':ps>=35?'#b7791f':'#c0392b';
+    var fwCol = fw==null?'var(--muted)':fw>=5?'#1e6b3a':fw>=2?'#4a9a68':fw>=-1?'#b7791f':'#c0392b';
+    var barW = Math.min(100,Math.max(0,ps));
+    h += '<div style="'+mc+'">';
+    h += '<div style="'+lb+';margin-bottom:5px">'+DIAG_LABELS[gi]+'</div>';
+    h += '<div style="display:flex;align-items:baseline;gap:4px;margin-bottom:1px">';
+    h += '<span style="font-size:17px;font-weight:500;color:'+psCol+'">'+ps+'</span>';
+    h += '<span style="font-size:10px;color:var(--muted)">pos str</span></div>';
+    h += '<div style="display:flex;align-items:baseline;gap:4px;margin-bottom:6px">';
+    h += '<span style="font-size:13px;font-weight:500;color:'+fwCol+'">'+(fw!=null?(fw>=0?'+':'')+fw.toFixed(1):'—')+'</span>';
+    h += '<span style="font-size:10px;color:var(--muted)">fWAR</span></div>';
+    h += '<div style="height:5px;border-radius:2px;background:var(--border);position:relative">';
+    h += '<div style="width:'+barW+'%;height:100%;border-radius:2px;background:'+psCol+'"></div>';
+    h += '<div style="position:absolute;top:-3px;left:50%;width:1.5px;height:11px;background:var(--muted);opacity:0.35;border-radius:1px"></div></div>';
+    h += '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:2px"><span>0</span><span>avg</span><span>100</span></div>';
+    h += '</div>';
+  });
+  h += '</div>';
+  h += '</div>';
 
   // Right column: Should-Be Score, Current vs Expected, Trend
   h += '<div style="display:flex;flex-direction:column;gap:10px">';
