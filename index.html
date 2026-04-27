@@ -6686,6 +6686,275 @@ window.buildDashboard = function(teamId) {
   tryBuild();
 };
 
+// ── Team Diagnostic Card ─────────────────────────────────────────────────────
+function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posData, joeVal) {
+  var GROUPS = ['Infield','Outfield','SP','RP'];
+  function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+
+  // ── Compute team fWAR% percentile ─────────────────────────────────────
+  var teamIds = Object.keys(S.teamInfo);
+  function teamFwarTotal(tid) {
+    var total=0;
+    GROUPS.forEach(function(g){
+      var isHit=g==='Infield'||g==='Outfield';
+      var lk=isHit?(window._fwarPctLookupHit||window._fwarPctLookup||{}):(window._fwarPctLookupPit||window._fwarPctLookup||{});
+      var gp=(TA.players||[]).filter(function(p){return p.ftId===tid&&p.bestGroup===g;});
+      var s=0,c=0; gp.forEach(function(p){var v=lk[normN(p.name)];if(v!=null){s+=v;c++;}});
+      total+=c?s/c:0;
+    });
+    return total;
+  }
+  function teamLgTotal(tid) {
+    var total=0;
+    GROUPS.forEach(function(g){
+      var gp=(TA.players||[]).filter(function(p){return p.ftId===tid&&p.bestGroup===g;});
+      var s=0,c=0; gp.forEach(function(p){var v=(window._lgRatingLookup||{})[normN(p.name)];if(v!=null){s+=v*100;c++;}});
+      total+=c?s/c:0;
+    });
+    return total;
+  }
+
+  var fwarTotals = teamIds.map(function(tid){return {tid:tid,v:teamFwarTotal(tid)};}).sort(function(a,b){return a.v-b.v;});
+  var lgTotals   = teamIds.map(function(tid){return {tid:tid,v:teamLgTotal(tid)};}).sort(function(a,b){return a.v-b.v;});
+  function rankPct(sorted, tid){ var i=sorted.findIndex(function(x){return x.tid===tid;}); return Math.round(i/(sorted.length-1||1)*100); }
+
+  var fwarPct = rankPct(fwarTotals, teamId);
+  var lgPct   = rankPct(lgTotals,   teamId);
+  var joe     = joeVal != null ? joeVal : 0;
+
+  // ── Bucket functions ──────────────────────────────────────────────────
+  function fBkt(v){ return v>=65?'High':v>=45?'Mid':'Low'; }
+  function jBkt(v){ return v>=0.35?'Lucky':v<=-0.35?'Unlucky':'Neutral'; }
+
+  var fBucket = fBkt(fwarPct);
+  var lBucket = fBkt(lgPct);
+  var jBucket = jBkt(joe);
+  var arcKey  = fBucket+'-'+lBucket+'-'+jBucket;
+  var arcEntry = (typeof ARCHETYPE_MAP !== 'undefined' && ARCHETYPE_MAP[arcKey]) || {arch:'—',dir:'Flat',action:'—'};
+
+  // ── Trust Score ───────────────────────────────────────────────────────
+  var gap     = fwarPct - lgPct;
+  var trustRaw = 100 - (0.8*Math.abs(gap)) - (35*Math.abs(joe));
+  var trust   = Math.max(0, Math.min(100, Math.round(trustRaw)));
+  function trustTier(v){ return v>=80?'Very High':v>=65?'High':v>=50?'Medium':v>=35?'Low':'Very Low'; }
+  function trustIcon(v){ return v>=80?'🔒':v>=65?'✅':v>=50?'⚖️':v>=35?'⚠️':'🚨'; }
+
+  // ── Expected Score ────────────────────────────────────────────────────
+  var expScore = parseFloat((0.55*fwarPct + 0.30*lgPct - 10*joe).toFixed(1));
+  function interpLabel(s){ return s>=70?'True Contender':s>=55?'Playoff Caliber':s>=45?'Middling':'Weak Team'; }
+  function interpColor(s){ return s>=70?'#1e6b3a':s>=55?'#4a9a68':s>=45?'#b7791f':'#c0392b'; }
+  function interpBg(s){    return s>=70?'#e8f0eb':s>=55?'#f0f7ec':s>=45?'#fef3e2':'#fce8e8'; }
+
+  // ── Current vs Expected rank ──────────────────────────────────────────
+  var curRank = standingsRow ? standingsRow.rank : null;
+  // Get expected band from archetype table
+  var arcRowInTable = null;
+  if (typeof renderArchetypePage !== 'undefined') {
+    // Recompute expected rank from full table
+    var allScores = teamIds.map(function(tid){
+      var fp=rankPct(fwarTotals,tid), lp=rankPct(lgTotals,tid);
+      var jr=(window._joeSeasonData||[]).find(function(r){return r.team===((S.teamInfo[tid]||{}).name||(S.teamInfo[tid]||{}).shortName||'');});
+      var jv=jr?(jr.joe!=null?jr.joe:0):0;
+      return {tid:tid, score: parseFloat((0.55*fp+0.30*lp-10*jv).toFixed(1))};
+    }).sort(function(a,b){return b.score-a.score;});
+    var myExpRank = allScores.findIndex(function(x){return x.tid===teamId;})+1;
+    // Confidence band
+    var myScore = allScores.find(function(x){return x.tid===teamId;});
+    var bandLo=myExpRank, bandHi=myExpRank, THRESH=8;
+    for(var bi=allScores.findIndex(function(x){return x.tid===teamId;})-1;bi>=0;bi--){if(Math.abs(allScores[bi].score-(myScore?myScore.score:0))<=THRESH)bandLo=bi+1;else break;}
+    for(var bj=allScores.findIndex(function(x){return x.tid===teamId;})+1;bj<allScores.length;bj++){if(Math.abs(allScores[bj].score-(myScore?myScore.score:0))<=THRESH)bandHi=bj+1;else break;}
+    function ord(n){return n+(n===1?'st':n===2?'nd':n===3?'rd':'th');}
+    arcRowInTable = {expRank:myExpRank, bandStr:bandLo===bandHi?ord(bandLo):ord(bandLo)+' \u2013 '+ord(bandHi)};
+  }
+  var rankDiff = (curRank && arcRowInTable) ? arcRowInTable.expRank - curRank : null;
+
+  // ── Trend Outlook ─────────────────────────────────────────────────────
+  var trendStrength = Math.abs(gap) + 10*Math.abs(joe);
+  var strength = trendStrength>=20?'Strong':trendStrength>=10?'Moderate':'Weak';
+  var dir = arcEntry.dir || 'Flat';
+  var isPos = dir==='Up'||dir==='Slight Up';
+  var isNeg = dir==='Down'||dir==='Slight Down';
+  var isSlight = dir.indexOf('Slight')!==-1;
+  var trendLabel, trendDesc, trendBg, trendCol;
+  if(isPos&&!isSlight&&strength==='Strong'){trendLabel='Strong positive outlook';trendDesc='Strong upward momentum expected due to underlying performance and luck correction.';}
+  else if(isPos&&!isSlight){trendLabel='Positive outlook';trendDesc='Expected to gain ground over the next 2-4 weeks if trends hold.';}
+  else if(isPos&&isSlight){trendLabel='Mild positive outlook';trendDesc='Minor upward movement expected based on current trends.';}
+  else if(isNeg&&!isSlight&&strength==='Strong'){trendLabel='Strong negative outlook';trendDesc='Significant regression expected as current results exceed underlying strength.';}
+  else if(isNeg&&!isSlight){trendLabel='Negative outlook';trendDesc='Performance likely to regress as current results exceed underlying strength.';}
+  else if(isNeg&&isSlight){trendLabel='Mild negative outlook';trendDesc='Minor downward movement expected based on current trends.';}
+  else{trendLabel='Stable outlook';trendDesc='Team performance is aligned with results. Expect stability.';}
+  trendCol = isPos?'#1e6b3a':isNeg?'#c0392b':'#5f5e5a';
+  trendBg  = isPos?'#e8f0eb':isNeg?'#fce8e8':'#f1efe8';
+
+  // ── Recommended Action ────────────────────────────────────────────────
+  var primaryMove, primaryReason;
+  if((arcEntry.arch||'').indexOf('Contender')!==-1&&(dir==='Up'||dir==='Slight Up')){primaryMove='Hold / Buy';primaryReason='This team is underperforming relative to its underlying strength.';}
+  else if((arcEntry.arch||'').indexOf('Contender')!==-1&&dir==='Flat'){primaryMove='Optimize';primaryReason='Maintain current core. Look for marginal upgrades.';}
+  else if(dir==='Down'||dir==='Slight Down'){primaryMove='Sell High / Rebalance';primaryReason='Current results may not last. Move overperformers while value is high.';}
+  else if((arcEntry.arch||'').indexOf('Middle')!==-1){primaryMove='Choose Direction';primaryReason='Team is in the middle — decide whether to push for contention or rebuild.';}
+  else if((arcEntry.arch||'').indexOf('Weak')!==-1||(arcEntry.arch||'').indexOf('Rebuild')!==-1){primaryMove='Rebuild';primaryReason='Focus on acquiring young talent and high-upside players.';}
+  else{primaryMove=arcEntry.action||'Hold';primaryReason='Follow archetype guidance.';}
+
+  var doNotDo, doNotReason;
+  if(joe<-0.4){doNotDo='Do not sell core pieces';doNotReason='Selling risks missing upside from luck correction.';}
+  else if(joe>0.4){doNotDo='Do not chase current production';doNotReason='Results are inflated by favorable schedule outcomes.';}
+  else if(Math.abs(gap)>15){doNotDo='Do not ignore category imbalance';doNotReason='Team performance is not aligned with underlying strengths.';}
+  else{doNotDo='Avoid unnecessary roster churn';doNotReason='Team is reasonably aligned. Stay patient.';}
+
+  // Determine if pitching or hitting is weaker
+  var hitStr = ((posData['Infield']&&posData['Infield'].avg||0)+(posData['Outfield']&&posData['Outfield'].avg||0))/2;
+  var pitStr = ((posData['SP']&&posData['SP'].avg||0)+(posData['RP']&&posData['RP'].avg||0))/2;
+  var upgradeType, upgradeReason;
+  if(lgPct>fwarPct){upgradeType='High-impact upgrade';upgradeReason='Add players with high upside to match talent with production.';}
+  else if(pitStr<hitStr){upgradeType='Bullpen help or ratio SP';upgradeReason='Improves pitching stability and maximises category efficiency.';}
+  else{upgradeType='Power bat or SB specialist';upgradeReason='Hitting categories are the path to standings improvement.';}
+
+  // ── Colour helpers ────────────────────────────────────────────────────
+  function bktCol(b){return b==='High'?'#1e6b3a':b==='Mid'?'#b7791f':'#c0392b';}
+  function bktBg(b){ return b==='High'?'#e8f0eb':b==='Mid'?'#fef3e2':'#fce8e8';}
+  function joeCol(v){return v>=0.35?'#c0392b':v<=-0.35?'#2980b9':'#5f5e5a';}
+  function joeBg(v){ return v>=0.35?'#fce8e8':v<=-0.35?'#e8f4fd':'#f1efe8';}
+  var mc = 'background:var(--bg);border-radius:var(--radius);padding:12px 14px';
+  var lb = 'font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted)';
+  var pill = function(txt,bg,col){return '<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:500;background:'+bg+';color:'+col+'">'+txt+'</span>';};
+
+  // ── Build HTML ────────────────────────────────────────────────────────
+  var h = '<div class="card" style="margin-bottom:20px">';
+  h += '<div class="card-header"><span class="card-title">Team diagnostic</span>';
+  h += pill(arcEntry.arch||'—', bktBg(fBucket), bktCol(fBucket));
+  h += '</div><div class="card-body" style="padding:14px 16px;display:flex;flex-direction:column;gap:14px">';
+
+  // Row 1: 4 summary tiles
+  h += '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">';
+  // Archetype
+  h += '<div style="'+mc+'"><div style="'+lb+'">Archetype</div>';
+  h += '<div style="font-size:15px;font-weight:500;color:'+bktCol(fBucket)+';margin:5px 0 3px">'+(arcEntry.arch||'—')+'</div>';
+  h += '<div style="font-size:11px;color:var(--muted)">'+arcKey+'</div></div>';
+  // Direction
+  var dirCol = isPos?'#1e6b3a':isNeg?'#c0392b':'#5f5e5a';
+  h += '<div style="'+mc+'"><div style="'+lb+'">Should-be direction</div>';
+  h += '<div style="font-size:15px;font-weight:500;color:'+dirCol+';margin:5px 0 3px">'+(dir||'—')+'</div>';
+  h += '<div style="font-size:11px;color:var(--muted)">'+trendLabel+'</div></div>';
+  // Action
+  h += '<div style="'+mc+'"><div style="'+lb+'">Action</div>';
+  h += '<div style="font-size:15px;font-weight:500;color:#185fa5;margin:5px 0 3px">'+primaryMove+'</div>';
+  h += '<div style="font-size:11px;color:var(--muted)">'+primaryReason+'</div></div>';
+  // Trust Score
+  var tc = trust>=65?'#1e6b3a':trust>=50?'#b7791f':'#c0392b';
+  h += '<div style="'+mc+'"><div style="'+lb+'">Trust score</div>';
+  h += '<div style="display:flex;align-items:center;gap:8px;margin:5px 0 3px">';
+  h += '<span style="font-size:22px;font-weight:500;color:'+tc+'">'+trust+'</span>';
+  h += pill(trustTier(trust), trust>=65?'#e8f0eb':trust>=50?'#fef3e2':'#fce8e8', tc);
+  h += '</div><div style="font-size:11px;color:var(--muted)">'+(trust>=65?'Model alignment is strong':trust>=50?'Moderate confidence':'Low confidence — high noise')+'</div></div>';
+  h += '</div>';
+
+  // Row 2: Model inputs
+  h += '<div><div style="'+lb+';margin-bottom:10px">Model inputs</div>';
+  h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">';
+  // fWAR%
+  function gradBar(pct, low, high, markerCol){
+    var bh='<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:2px"><span>0</span><span>50</span><span>100</span></div>';
+    bh+='<div style="height:7px;border-radius:3px;background:linear-gradient(to right,#E24B4A,#EF9F27,#639922);position:relative">';
+    bh+='<div style="position:absolute;top:-3px;left:'+pct+'%;width:2px;height:13px;background:'+markerCol+';border-radius:1px"></div></div>';
+    return bh;
+  }
+  h += '<div style="'+mc+'"><div style="'+lb+'">Team production (fWAR%)</div>';
+  h += '<div style="display:flex;align-items:baseline;gap:6px;margin:6px 0 3px"><span style="font-size:22px;font-weight:500">'+fwarPct+'</span><span style="font-size:11px;color:var(--muted)">th pct</span>'+pill(fBucket,bktBg(fBucket),bktCol(fBucket))+'</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Actual fantasy output vs league</div>';
+  h += gradBar(fwarPct,'#E24B4A','#639922',bktCol(fBucket))+'</div>';
+  // Lg Rating%
+  h += '<div style="'+mc+'"><div style="'+lb+'">Underlying talent (Rating%)</div>';
+  h += '<div style="display:flex;align-items:baseline;gap:6px;margin:6px 0 3px"><span style="font-size:22px;font-weight:500">'+lgPct+'</span><span style="font-size:11px;color:var(--muted)">th pct</span>'+pill(lBucket,bktBg(lBucket),bktCol(lBucket))+'</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Roster quality across all positions</div>';
+  h += gradBar(lgPct,'#E24B4A','#639922',bktCol(lBucket))+'</div>';
+  // JOE
+  var jc=joeCol(joe), jbg=joeBg(joe);
+  var joeMarkerPct = Math.round((joe+1)/2*100);
+  h += '<div style="'+mc+'"><div style="'+lb+'">Luck / schedule (JOE factor)</div>';
+  h += '<div style="display:flex;align-items:baseline;gap:6px;margin:6px 0 3px"><span style="font-size:22px;font-weight:500;color:'+jc+'">'+(joe>=0?'+':'')+joe.toFixed(2)+'</span>'+pill(jBucket,jbg,jc)+'</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Negative = unlucky, Positive = lucky</div>';
+  h += '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:2px"><span>-1.0</span><span>0</span><span>+1.0</span></div>';
+  h += '<div style="height:7px;border-radius:3px;background:linear-gradient(to right,#378ADD,#D3D1C7,#E24B4A);position:relative">';
+  h += '<div style="position:absolute;top:-3px;left:'+joeMarkerPct+'%;width:2px;height:13px;background:'+jc+';border-radius:1px"></div></div></div>';
+  h += '</div></div>';
+
+  // Row 3: Why + right column
+  h += '<div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:12px">';
+  // Why section
+  h += '<div><div style="'+lb+';margin-bottom:10px">Why this team is labeled this way</div>';
+  h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px">';
+  var gapStr = (gap>=0?'+':'')+Math.round(gap);
+  var gapCol = gap>0?'#1e6b3a':gap<0?'#c0392b':'#5f5e5a';
+  h += '<div style="'+mc+';text-align:center"><div style="'+lb+'">Performance gap</div><div style="font-size:20px;font-weight:500;color:'+gapCol+';margin:5px 0 2px">'+gapStr+'</div><div style="font-size:10px;color:var(--muted)">fWAR% minus Rating%</div></div>';
+  h += '<div style="'+mc+';text-align:center"><div style="'+lb+'">Combined key</div><div style="font-size:12px;font-weight:500;color:'+jc+';margin:5px 0 2px">'+arcKey+'</div><div style="font-size:10px;color:var(--muted)">Production / Talent / Luck</div></div>';
+  h += '<div style="'+mc+';text-align:center"><div style="'+lb+'">Luck tier</div><div style="font-size:14px;font-weight:500;color:'+jc+';margin:5px 0 2px">'+jBucket+'</div><div style="font-size:10px;color:var(--muted)">'+(jBucket==='Unlucky'?'Schedule hurting results':jBucket==='Lucky'?'Results may be inflated':'Schedule is neutral')+'</div></div>';
+  h += '</div>';
+  // Explanation paragraph
+  var expText = buildDiagExplanation(fBucket, lBucket, jBucket, gap, dir);
+  h += '<div style="background:'+trendBg+';border-radius:var(--radius);padding:10px 12px;font-size:12px;color:'+trendCol+';line-height:1.6">'+expText+'</div></div>';
+
+  // Right column: Should-Be Score, Current vs Expected, Trend
+  h += '<div style="display:flex;flex-direction:column;gap:10px">';
+  // Should-Be Score
+  var ic=interpColor(expScore), ibg=interpBg(expScore);
+  h += '<div style="'+mc+'"><div style="'+lb+';margin-bottom:6px">Should-be score</div>';
+  h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span style="font-size:26px;font-weight:500;color:'+ic+'">'+expScore+'</span>'+pill(interpLabel(expScore),ibg,ic)+'</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Calculated score (higher is better)</div>';
+  h += '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:2px"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>';
+  h += '<div style="height:6px;border-radius:3px;background:var(--border);position:relative"><div style="height:100%;width:'+Math.min(100,Math.max(0,expScore))+'%;background:'+ic+';border-radius:3px"></div></div></div>';
+  // Current vs Expected
+  if (arcRowInTable && curRank) {
+    h += '<div style="'+mc+'"><div style="'+lb+';margin-bottom:8px">Current vs expected</div>';
+    h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;text-align:center">';
+    function ord2(n){return n+(n===1?'st':n===2?'nd':n===3?'rd':'th');}
+    h += '<div><div style="'+lb+'">Current rank</div><div style="font-size:20px;font-weight:500;margin-top:4px">'+ord2(curRank)+'</div></div>';
+    h += '<div><div style="'+lb+'">Expected band</div><div style="font-size:13px;font-weight:500;color:'+ic+';margin-top:6px">'+arcRowInTable.bandStr+'</div></div>';
+    var rdiff = arcRowInTable.expRank - curRank;
+    var dcol = rdiff>0?'#1e6b3a':rdiff<0?'#c0392b':'#5f5e5a';
+    h += '<div><div style="'+lb+'">Difference</div><div style="font-size:20px;font-weight:500;color:'+dcol+';margin-top:4px">'+(rdiff>0?'+':'')+rdiff+'</div></div>';
+    h += '</div></div>';
+  }
+  // Trend Outlook
+  h += '<div style="'+mc+'"><div style="'+lb+';margin-bottom:6px">Trend outlook</div>';
+  h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'+pill(trendLabel,trendBg,trendCol);
+  h += '<span style="font-size:11px;color:var(--muted)">'+strength+' strength</span></div>';
+  h += '<div style="font-size:12px;color:var(--muted);line-height:1.6">'+trendDesc+'</div></div>';
+  h += '</div></div>';
+
+  // Row 4: Recommended Action
+  h += '<div><div style="'+lb+';margin-bottom:10px">Recommended action</div>';
+  h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">';
+  h += '<div style="'+mc+'"><div style="'+lb+';color:#1e6b3a">Primary move</div><div style="font-size:15px;font-weight:500;margin:5px 0 4px">'+primaryMove+'</div><div style="font-size:11px;color:var(--muted)">'+primaryReason+'</div></div>';
+  h += '<div style="'+mc+'"><div style="'+lb+';color:#c0392b">Do not do</div><div style="font-size:15px;font-weight:500;margin:5px 0 4px">'+doNotDo+'</div><div style="font-size:11px;color:var(--muted)">'+doNotReason+'</div></div>';
+  h += '<div style="'+mc+'"><div style="'+lb+';color:#185fa5">Best upgrade type</div><div style="font-size:15px;font-weight:500;margin:5px 0 4px">'+upgradeType+'</div><div style="font-size:11px;color:var(--muted)">'+upgradeReason+'</div></div>';
+  h += '</div></div>';
+
+  h += '</div></div>';
+  return h;
+}
+
+function buildDiagExplanation(fBkt, lBkt, jBkt, gap, dir) {
+  var parts = [];
+  if (fBkt==='High' && lBkt==='High') parts.push('This team has elite production and elite underlying talent.');
+  else if (fBkt==='High' && lBkt==='Mid') parts.push('This team is producing at a high level with solid underlying talent.');
+  else if (fBkt==='High' && lBkt==='Low') parts.push('This team is producing well despite below-average underlying talent — a format or hot-streak effect.');
+  else if (fBkt==='Mid' && lBkt==='High') parts.push('This team has strong underlying talent that is not yet showing up in production.');
+  else if (fBkt==='Mid' && lBkt==='Mid') parts.push('This team is performing in line with a true middle-of-the-pack roster.');
+  else if (fBkt==='Low' && lBkt==='High') parts.push('This team has good underlying talent but production is lagging significantly.');
+  else if (fBkt==='Low' && lBkt==='Low') parts.push('Both production and underlying talent are weak — this team needs significant roster changes.');
+  else parts.push('This team shows a mixed production and talent profile.');
+
+  if (jBkt==='Unlucky') parts.push('Schedule luck has hurt results — expect improvement as luck normalises.');
+  else if (jBkt==='Lucky') parts.push('Results have been flattered by favorable scheduling — expect some regression.');
+  else parts.push('Schedule luck is neutral.');
+
+  if (dir==='Up'||dir==='Slight Up') parts.push('Standings position should improve.');
+  else if (dir==='Down'||dir==='Slight Down') parts.push('Current standings position may not hold.');
+  else parts.push('Standings position should remain stable.');
+
+  return parts.join(' ');
+}
+
 function assembleDashboard(teamId, el) {
   var ti        = S.teamInfo[teamId] || {};
   var teamName  = ti.name || ti.shortName || 'Your Team';
@@ -6905,6 +7174,9 @@ function assembleDashboard(teamId, el) {
   var overallAvg = overallPos.length ? overallPos.reduce(function(s,v){return s+v;})/overallPos.length : 0;
   html += '<div class="dash-metric"><div class="dash-metric-label">Overall roster</div><div class="dash-metric-value" style="color:' + ratingColor(overallAvg) + ';font-size:20px">' + Math.round(overallAvg*100) + 'th pct</div><div class="dash-metric-sub">Across all positions</div></div>';
   html += '</div>';
+
+  // ── Team Diagnostic Card ────────────────────────────────────────────────
+  html += buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posData, avgLuck);
 
   // Positional strength cards
   html += '<div class="card" style="margin-bottom:20px">';
