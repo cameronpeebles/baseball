@@ -9413,6 +9413,14 @@ function rescalePosRatings() {
     });
   });
   window._posRatingLookup = lookup;
+
+  // Also update overallRating on TA.players so positional strength tiles reflect rescaled values
+  function normN2(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  (TA.players||[]).forEach(function(p) {
+    var k = normN2(p.name);
+    var v = lookup[k] != null ? lookup[k] : lookup[(p.name||'').toLowerCase()];
+    if (v != null) p.overallRating = v;
+  });
 }
 
 window.recalculateFWAR = function() {
