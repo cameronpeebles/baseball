@@ -644,7 +644,7 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 26, 9:10 AM: Kwan (neck) is leading off and starting...",
+                        "tooltip": "Apr 27, 7:07 AM: Kwan started in center field and went...",
                         "typeId": "14"
                       },
                       {
@@ -1126,8 +1126,8 @@
                         "typeId": "9"
                       },
                       {
-                        "tooltip": "Switch Hitter",
-                        "typeId": "18"
+                        "tooltip": "Bats Right",
+                        "typeId": "17"
                       }
                     ],
                     "rookie": false,
@@ -1241,7 +1241,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 26, 8:45 AM: Gimenez isn't in the starting lineup...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -3813,8 +3813,8 @@
                         "typeId": "2"
                       },
                       {
-                        "tooltip": "Apr 22, 10:38 AM: Strider (oblique) struck out eight and...",
-                        "typeId": "9"
+                        "tooltip": "Apr 27, 7:51 AM: Strider (oblique) struck out seven and...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -6496,7 +6496,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 26, 9:14 AM: DeLauter is not in Cleveland's starting...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -8510,7 +8510,7 @@
                       },
                       {
                         "tooltip": "Apr 20, 9:48 AM: Doyle struck out five across four...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -11805,7 +11805,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 26, 9:33 AM: Altuve is out of the starting lineup...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -12706,7 +12706,7 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 26, 10:26 AM: Anthony (back) is starting at DH and...",
+                        "tooltip": "Apr 27, 7:36 AM: Anthony batted third and went 0-for-3...",
                         "typeId": "14"
                       },
                       {
@@ -12809,8 +12809,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 22, 12:58 PM: The Mets reinstated Soto (calf) from...",
-                        "typeId": "9"
+                        "tooltip": "Apr 27, 9:31 AM: Soto went 1-for-5 with three walks...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -14753,8 +14753,8 @@
                         "typeId": "2"
                       },
                       {
-                        "tooltip": "Apr 23, 9:11 AM: Priester (wrist) yielded four runs on...",
-                        "typeId": "9"
+                        "tooltip": "Apr 27, 8:16 AM: Priester (wrist) struck out two and...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -16684,7 +16684,7 @@
                 "id": "1"
               },
               {
-                "total": 10,
+                "total": 11,
                 "max": 12,
                 "name": "Reserve",
                 "id": "2"
@@ -16710,7 +16710,7 @@
                   "name": "Claims Remaining (Week)",
                   "hasMore": true,
                   "description": "Number of Claims Remaining in week",
-                  "value": 5
+                  "value": 4
                 }
               ]
             },
@@ -16749,7 +16749,7 @@
                   "id": "1"
                 },
                 {
-                  "total": 2,
+                  "total": 3,
                   "name": "Reserve",
                   "id": "2"
                 },
@@ -17488,8 +17488,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 21, 10:57 PM: Guerrero went 1-for-3 with a walk and...",
-                        "typeId": "9"
+                        "tooltip": "Apr 27, 9:09 AM: Guerrero went 3-for-4 with a double, a...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -17895,6 +17895,114 @@
                 },
                 {
                   "scorer": {
+                    "teamName": "Cleveland Guardians",
+                    "urlName": "angel-martinez",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04ydd_96_3.png",
+                    "scorerId": "04ydd",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "003",
+                      "012"
+                    ],
+                    "defaultPosId": "010",
+                    "posShortNames": "2B,OF",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Apr 26, 7:32 AM: Martinez hit atop the order and went...",
+                        "typeId": "9"
+                      },
+                      {
+                        "tooltip": "Switch Hitter",
+                        "typeId": "18"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "003",
+                      "007",
+                      "012",
+                      "014"
+                    ],
+                    "teamId": "10070",
+                    "name": "Angel Martinez",
+                    "teamShortName": "CLE",
+                    "shortName": "A. Martinez"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "012",
+                  "cells": [
+                    {
+                      "content": "24"
+                    },
+                    {
+                      "content": "TB<br/>Mon 4:10PM",
+                      "eventId": "06jdg",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "steven-matz",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02h8d_96_15.png",
+                          "scorerId": "02h8d",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "LHP",
+                              "typeId": "16"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "Steven Matz",
+                          "shortName": "S. Matz"
+                        },
+                        "header": "Probable Starter for Tampa Bay:",
+                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 1 &nbsp;<b>IP</b> 24.1 &nbsp;<b>K</b> 25 &nbsp;<b>ERA</b> 4.81 &nbsp;<b>WHIP</b> 1.233 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "83"
+                    },
+                    {
+                      "content": "12"
+                    },
+                    {
+                      "content": "24"
+                    },
+                    {
+                      "content": "5"
+                    },
+                    {
+                      "content": "15"
+                    },
+                    {
+                      "content": "5"
+                    },
+                    {
+                      "content": ".289"
+                    },
+                    {
+                      "content": "26"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "012",
+                    "003",
+                    "014",
+                    "007"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
                     "teamName": "Philadelphia Phillies",
                     "urlName": "justin-crawford",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05y30_96_2.png",
@@ -18046,7 +18154,7 @@
                       "content": "26"
                     }
                   ],
-                  "statusId": "1",
+                  "statusId": "2",
                   "eligiblePosIds": [
                     "012",
                     "014"
@@ -19351,7 +19459,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 26, 8:32 AM: The Orioles reinstated Helsley...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -25778,7 +25886,7 @@
                       },
                       {
                         "tooltip": "Apr 26, 8:08 AM: Miller (oblique) struck out six and...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -29434,7 +29542,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 26, 7:15 AM: Grisham went 1-for-3 with a solo home...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -34988,7 +35096,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 20, 7:13 AM: Rafaela is out of the lineup for...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -35274,8 +35382,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 12, 10:43 AM: Caissie is out of the lineup for...",
-                        "typeId": "8"
+                        "tooltip": "Apr 27, 9:19 AM: Caissie went 0-for-3 with a strikeout...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -39715,7 +39823,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 26, 7:09 AM: Adell went 1-for-4 with a solo home run...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -41264,8 +41372,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 25, 12:34 AM: Stowers went 3-for-5 with two doubles...",
-                        "typeId": "9"
+                        "tooltip": "Apr 27, 9:15 AM: Stowers got the start at first base...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -45876,8 +45984,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 24, 10:32 PM: Acuna went 1-for-3 with a two-run home...",
-                        "typeId": "9"
+                        "tooltip": "Apr 27, 8:55 AM: Acuna went 2-for-3 with a walk, two...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -46503,8 +46611,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 25, 2:08 PM: Harris (quadriceps) is batting fifth as...",
-                        "typeId": "9"
+                        "tooltip": "Apr 27, 9:02 AM: Harris went 0-for-3 with a walk and two...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -46780,7 +46888,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 26, 8:05 AM: Jung went 1-for-4 with a two-run home...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -46884,8 +46992,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Apr 23, 7:13 AM: Duran went 3-for-4 with two doubles and...",
-                        "typeId": "9"
+                        "tooltip": "Apr 27, 7:39 AM: Duran batted leadoff and went 0-for-4...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -46988,7 +47096,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 26, 9:06 AM: Alvarez is out of the lineup for the...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -51207,7 +51315,7 @@
                 "id": "2"
               },
               {
-                "total": 7,
+                "total": 6,
                 "max": 7,
                 "name": "Inj Res",
                 "id": "3"
@@ -51270,7 +51378,7 @@
                   "id": "2"
                 },
                 {
-                  "total": 4,
+                  "total": 3,
                   "name": "Inj Res",
                   "id": "3"
                 }
@@ -51565,7 +51673,7 @@
                       "content": "28"
                     }
                   ],
-                  "statusId": "2",
+                  "statusId": "1",
                   "eligiblePosIds": [
                     "002",
                     "014",
@@ -52754,121 +52862,6 @@
                 },
                 {
                   "scorer": {
-                    "teamName": "Seattle Mariners",
-                    "urlName": "luke-raley",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs041ts_96_10.png",
-                    "scorerId": "041ts",
-                    "posIdsNoFlex": [
-                      "002",
-                      "012"
-                    ],
-                    "defaultPosId": "011",
-                    "posShortNames": "1B,OF",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Apr 19, 1:55 PM: Raley is out of the lineup for Sunday's...",
-                        "typeId": "8"
-                      },
-                      {
-                        "tooltip": "Bats Left",
-                        "typeId": "16"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "002",
-                      "006",
-                      "012",
-                      "014"
-                    ],
-                    "teamId": "10130",
-                    "name": "Luke Raley",
-                    "teamShortName": "SEA",
-                    "shortName": "L. Raley"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "002",
-                  "cells": [
-                    {
-                      "content": "31"
-                    },
-                    {
-                      "content": "@MIN<br/>Mon 5:40PM",
-                      "eventId": "06jyc",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "connor-prielipp",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05joq_96_1.png",
-                          "scorerId": "05joq",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "Apr 26, 4:12 PM: Prielipp is slated to start Monday's...",
-                              "typeId": "14"
-                            },
-                            {
-                              "tooltip": "LHP",
-                              "typeId": "16"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Connor Prielipp",
-                          "shortName": "C. Prielipp"
-                        },
-                        "header": "Probable Starter for Minnesota:",
-                        "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 4 &nbsp;<b>K</b> 6 &nbsp;<b>ERA</b> 4.50 &nbsp;<b>WHIP</b> 1.000 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "78"
-                    },
-                    {
-                      "content": "11"
-                    },
-                    {
-                      "content": "21"
-                    },
-                    {
-                      "content": "5"
-                    },
-                    {
-                      "content": "13"
-                    },
-                    {
-                      "content": "0"
-                    },
-                    {
-                      "content": ".269"
-                    },
-                    {
-                      "content": "27"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "012",
-                    "002",
-                    "014",
-                    "006"
-                  ],
-                  "actions": [
-                    {
-                      "teamId": "7owlmroxmiytz3cs",
-                      "typeId": "3"
-                    },
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
                     "teamName": "Athletics",
                     "urlName": "brent-rooker",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04e2u_96_10.png",
@@ -52883,7 +52876,7 @@
                     "icons": [
                       {
                         "tooltip": "Apr 26, 9:19 AM: The Athletics activated Rooker...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -52903,8 +52896,7 @@
                   },
                   "eligibleStatusIds": [
                     "1",
-                    "2",
-                    "3"
+                    "2"
                   ],
                   "posId": "012",
                   "cells": [
@@ -52939,7 +52931,7 @@
                       "content": "13"
                     }
                   ],
-                  "statusId": "3",
+                  "statusId": "2",
                   "eligiblePosIds": [
                     "012",
                     "014"
@@ -53766,7 +53758,7 @@
                       "content": "3"
                     }
                   ],
-                  "statusId": "1",
+                  "statusId": "2",
                   "eligiblePosIds": [
                     "017"
                   ],
@@ -54111,7 +54103,7 @@
                       "content": "6"
                     }
                   ],
-                  "statusId": "2",
+                  "statusId": "1",
                   "eligiblePosIds": [
                     "017"
                   ],
@@ -54238,7 +54230,7 @@
                       "content": "5"
                     }
                   ],
-                  "statusId": "2",
+                  "statusId": "1",
                   "eligiblePosIds": [
                     "017"
                   ],
@@ -55831,7 +55823,7 @@
                       "content": "13"
                     }
                   ],
-                  "statusId": "1",
+                  "statusId": "2",
                   "eligiblePosIds": [
                     "017"
                   ],
