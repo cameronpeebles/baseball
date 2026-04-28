@@ -7305,39 +7305,41 @@ function assembleDashboard(teamId, el) {
   if (standingsRow) html += '<div style="color:var(--muted);font-size:13px">#' + standingsRow.rank + ' in league · ' + standingsRow.pts + ' pts</div>';
   html += '</div></div>';
 
-  // Key metrics row — extract W/L/T from ptTable
+  // Key metrics row — extract W/L/T from standingsData (main standings table)
   var myW = 0, myL = 0, myT = 0;
-  if (ptTable) {
+  var stTables = (S.standingsData && S.standingsData.data && S.standingsData.data.tableList) || [];
+  var stMainTable = stTables.find(function(t){ return (t.rows||[]).length > 0 && t.tableType !== 'SECTION_HEADING'; });
+  if (stMainTable) {
     var wltHIdx = {};
-    ((ptTable.header && ptTable.header.cells)||[]).forEach(function(h,i){
+    ((stMainTable.header && stMainTable.header.cells)||[]).forEach(function(h,i){
       if(h.key) wltHIdx[h.key.toUpperCase()]=i;
       if(h.shortName) wltHIdx[h.shortName.toUpperCase()]=i;
+      if(h.name) wltHIdx[h.name.toUpperCase()]=i;
     });
-    (ptTable.rows||[]).forEach(function(row){
+    (stMainTable.rows||[]).forEach(function(row){
       var fc=row.fixedCells||[], cells=row.cells||[];
-      var id=(fc[1]&&fc[1].teamId)||'';
+      var id=''; fc.forEach(function(c){if(c.teamId)id=c.teamId;});
       if(id!==teamId) return;
       var wi=wltHIdx['W'], li=wltHIdx['L'], ti=wltHIdx['T'];
-      if(wi!=null) myW=parseFloat(cells[wi]&&cells[wi].content)||0;
-      if(li!=null) myL=parseFloat(cells[li]&&cells[li].content)||0;
-      if(ti!=null) myT=parseFloat(cells[ti]&&cells[ti].content)||0;
+      if(wi!=null) myW=parseFloat((cells[wi]||{}).content)||0;
+      if(li!=null) myL=parseFloat((cells[li]||{}).content)||0;
+      if(ti!=null) myT=parseFloat((cells[ti]||{}).content)||0;
     });
   }
   var totalGames = myW+myL+myT;
   var winPct = totalGames>0 ? (myW/totalGames*100).toFixed(1)+'%' : '-';
 
-  // H2H rank: rank teams by W descending, then pts
-  var h2hRanked = (ptTable ? (ptTable.rows||[]).map(function(row,ri){
+  // H2H rank: rank all teams by W descending from same table
+  var h2hRows = stMainTable ? (stMainTable.rows||[]).map(function(row){
     var fc=row.fixedCells||[], cells=row.cells||[];
-    var id=(fc[1]&&fc[1].teamId)||'';
+    var id=''; fc.forEach(function(c){if(c.teamId)id=c.teamId;});
     var wltHI = {};
-    ((ptTable.header&&ptTable.header.cells)||[]).forEach(function(h,i){if(h.key)wltHI[h.key.toUpperCase()]=i;if(h.shortName)wltHI[h.shortName.toUpperCase()]=i;});
-    var w=parseFloat(cells[wltHI['W']]&&cells[wltHI['W']].content)||0;
-    var ptsI=wltHI['PTS']!=null?wltHI['PTS']:0;
-    var pts=parseFloat(cells[ptsI]&&cells[ptsI].content)||0;
+    ((stMainTable.header&&stMainTable.header.cells)||[]).forEach(function(h,i){if(h.key)wltHI[h.key.toUpperCase()]=i;if(h.shortName)wltHI[h.shortName.toUpperCase()]=i;});
+    var w=parseFloat((cells[wltHI['W']]||{}).content)||0;
+    var pts=parseFloat((cells[wltHI['PTS']]!=null?(cells[wltHI['PTS']]||{}):{}).content)||0;
     return {id:id, w:w, pts:pts};
-  }) : []).sort(function(a,b){return b.w-a.w||b.pts-a.pts;});
-  var h2hRank = h2hRanked.findIndex(function(x){return x.id===teamId;})+1 || null;
+  }).sort(function(a,b){return b.w-a.w||b.pts-a.pts;}) : [];
+  var h2hRank = h2hRows.findIndex(function(x){return x.id===teamId;})+1 || null;
   var ptsRank = standingsRow ? standingsRow.rank : null;
   var rankDiffPtsH2h = (ptsRank && h2hRank) ? h2hRank - ptsRank : null;
 
