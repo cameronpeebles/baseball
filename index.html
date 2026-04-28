@@ -6792,12 +6792,10 @@ window.buildDashboard = function(teamId) {
 
 // ── Team Diagnostic Card ─────────────────────────────────────────────────────
 function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posData, joeVal) {
-  var GROUPS = ['Infield','Outfield','SP','RP'];
   function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
-
-  // ── Compute team fWAR% percentile ─────────────────────────────────────
+  var GROUPS = ['Infield','Outfield','SP','RP'];
   var teamIds = Object.keys(S.teamInfo);
-  function teamFwarTotal(tid) {
+  function teamFwarTotal(tid){
     var total=0;
     GROUPS.forEach(function(g){
       var isHit=g==='Infield'||g==='Outfield';
@@ -6808,7 +6806,7 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
     });
     return total;
   }
-  function teamLgTotal(tid) {
+  function teamLgTotal(tid){
     var total=0;
     GROUPS.forEach(function(g){
       var gp=(TA.players||[]).filter(function(p){return p.ftId===tid&&p.bestGroup===g;});
@@ -6817,266 +6815,201 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
     });
     return total;
   }
-
-  var fwarTotals = teamIds.map(function(tid){return {tid:tid,v:teamFwarTotal(tid)};}).sort(function(a,b){return a.v-b.v;});
-  var lgTotals   = teamIds.map(function(tid){return {tid:tid,v:teamLgTotal(tid)};}).sort(function(a,b){return a.v-b.v;});
-  function rankPct(sorted, tid){ var i=sorted.findIndex(function(x){return x.tid===tid;}); return Math.round(i/(sorted.length-1||1)*100); }
-
-  var fwarPct = rankPct(fwarTotals, teamId);
-  var lgPct   = rankPct(lgTotals,   teamId);
-  var joe     = joeVal != null ? joeVal : 0;
-
-  // fWAR by group for positional breakdown
-  var fwarByGroup = {Infield:null,Outfield:null,SP:null,RP:null};
-  var fwMapD = {};
-  (FWAR.hitResults||[]).concat(FWAR.pitResults||[]).forEach(function(p){ fwMapD[normN(p.name)]=p; fwMapD[(p.name||'').toLowerCase()]=p; });
-  (TA.players||[]).filter(function(p){return p.ftId===teamId;}).forEach(function(p){
-    var fw=fwMapD[normN(p.name)]||fwMapD[(p.name||'').toLowerCase()];
-    var g=p.bestGroup||'';
-    if(fw&&fwarByGroup[g]!=null) fwarByGroup[g]=parseFloat(((fwarByGroup[g]||0)+(fw.fWAR||0)).toFixed(2));
-    else if(fw&&fwarByGroup.hasOwnProperty(g)&&fwarByGroup[g]===null) fwarByGroup[g]=parseFloat((fw.fWAR||0).toFixed(2));
+  var fwarTotals=teamIds.map(function(tid){return{tid:tid,v:teamFwarTotal(tid)};}).sort(function(a,b){return a.v-b.v;});
+  var lgTotals=teamIds.map(function(tid){return{tid:tid,v:teamLgTotal(tid)};}).sort(function(a,b){return a.v-b.v;});
+  function rankPct(sorted,tid){var i=sorted.findIndex(function(x){return x.tid===tid;});return Math.round(i/(sorted.length-1||1)*100);}
+  var fwarPct=rankPct(fwarTotals,teamId);
+  var lgPct=rankPct(lgTotals,teamId);
+  var joe=joeVal!=null?joeVal:0;
+  var zData=S.zData||[];
+  var myZ=zData.find(function(d){return d.teamId===teamId;})||null;
+  var allCatsDef=[
+    {key:'R',   label:'R',    zKey:'batZ'},{key:'HR',  label:'HR',   zKey:'batZ'},
+    {key:'RBI', label:'RBI',  zKey:'batZ'},{key:'SB',  label:'SB',   zKey:'batZ'},
+    {key:'AVG', label:'AVG',  zKey:'batZ'},{key:'ERA', label:'ERA',  zKey:'pitZ'},
+    {key:'WHIP',label:'WHIP', zKey:'pitZ'},{key:'W',   label:'W',    zKey:'pitZ'},
+    {key:'K',   label:'K',    zKey:'pitZ'},{key:'SVH3',label:'SVH3', zKey:'pitZ'},
+  ];
+  function catLeagueRank(cat,zKey){
+    var vals=zData.map(function(d){return{id:d.teamId,v:d[zKey]&&d[zKey][cat]!=null?d[zKey][cat]:null};})
+      .filter(function(x){return x.v!=null;}).sort(function(a,b){return b.v-a.v;});
+    var idx=vals.findIndex(function(x){return x.id===teamId;});
+    return idx>=0?idx+1:null;
+  }
+  var leagueAvg={};
+  GROUPS.forEach(function(g){
+    var gp=(TA.players||[]).filter(function(p){return p.bestGroup===g;});
+    leagueAvg[g]=gp.length?gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length:0.5;
   });
-
-  // ── Bucket functions ──────────────────────────────────────────────────
-  function fBkt(v){ return v>=65?'High':v>=45?'Mid':'Low'; }
-  function jBkt(v){ return v>=0.12?'Lucky':v<=-0.12?'Unlucky':'Neutral'; }
-
-  var fBucket = fBkt(fwarPct);
-  var lBucket = fBkt(lgPct);
-  var jBucket = jBkt(joe);
-  var arcKey  = fBucket+'-'+lBucket+'-'+jBucket;
-  var arcEntry = (typeof ARCHETYPE_MAP !== 'undefined' && ARCHETYPE_MAP[arcKey]) || {arch:'—',dir:'Flat',action:'—'};
-
-  // ── Trust Score ───────────────────────────────────────────────────────
-  var gap     = fwarPct - lgPct;
-  var trustRaw = 100 - (0.8*Math.abs(gap)) - (35*Math.abs(joe));
-  // Cap trust at 80 for weak teams (both production and talent below average)
-  if (fwarPct < 50 && lgPct < 50) trustRaw = Math.min(trustRaw, 80);
-  var trust   = Math.max(0, Math.min(100, Math.round(trustRaw)));
-  function trustTier(v){ return v>=80?'Very High':v>=65?'High':v>=50?'Medium':v>=35?'Low':'Very Low'; }
-  function trustIcon(v){ return v>=80?'🔒':v>=65?'✅':v>=50?'⚖️':v>=35?'⚠️':'🚨'; }
-
-  // ── Expected Score ────────────────────────────────────────────────────
-  var expScore = parseFloat((0.55*fwarPct + 0.30*lgPct - 10*joe).toFixed(1));
-  function interpLabel(s){ return s>=70?'True Contender':s>=55?'Playoff Caliber':s>=45?'Middling':'Weak Team'; }
-  function interpColor(s){ return s>=70?'#1e6b3a':s>=55?'#4a9a68':s>=45?'#b7791f':'#c0392b'; }
-  function interpBg(s){    return s>=70?'#e8f0eb':s>=55?'#f0f7ec':s>=45?'#fef3e2':'#fce8e8'; }
-
-  // ── Current vs Expected rank ──────────────────────────────────────────
-  var curRank = standingsRow ? standingsRow.rank : null;
-  // Get expected band from archetype table
-  var arcRowInTable = null;
-  if (typeof renderArchetypePage !== 'undefined') {
-    // Recompute expected rank from full table
-    var allScores = teamIds.map(function(tid){
-      var fp=rankPct(fwarTotals,tid), lp=rankPct(lgTotals,tid);
-      var jr=(window._joeSeasonData||[]).find(function(r){return r.team===((S.teamInfo[tid]||{}).name||(S.teamInfo[tid]||{}).shortName||'');});
-      var jv=jr?(jr.joe!=null?jr.joe:0):0;
-      return {tid:tid, score: parseFloat((0.55*fp+0.30*lp-10*jv).toFixed(1))};
-    }).sort(function(a,b){return b.score-a.score;});
-    var myExpRank = allScores.findIndex(function(x){return x.tid===teamId;})+1;
-    // Confidence band
-    var myScore = allScores.find(function(x){return x.tid===teamId;});
-    var bandLo=myExpRank, bandHi=myExpRank, THRESH=8;
-    for(var bi=allScores.findIndex(function(x){return x.tid===teamId;})-1;bi>=0;bi--){if(Math.abs(allScores[bi].score-(myScore?myScore.score:0))<=THRESH)bandLo=bi+1;else break;}
-    for(var bj=allScores.findIndex(function(x){return x.tid===teamId;})+1;bj<allScores.length;bj++){if(Math.abs(allScores[bj].score-(myScore?myScore.score:0))<=THRESH)bandHi=bj+1;else break;}
-    function ord(n){return n+(n===1?'st':n===2?'nd':n===3?'rd':'th');}
-    arcRowInTable = {expRank:myExpRank, bandStr:bandLo===bandHi?ord(bandLo):ord(bandLo)+' \u2013 '+ord(bandHi)};
-  }
-  var rankDiff = (curRank && arcRowInTable) ? arcRowInTable.expRank - curRank : null;
-
-  // ── Trend Outlook ─────────────────────────────────────────────────────
-  var trendStrength = Math.abs(gap) + 10*Math.abs(joe);
-  var strength = trendStrength>=20?'Strong':trendStrength>=10?'Moderate':'Weak';
-  var dir = arcEntry.dir || 'Flat';
-  var isPos = dir==='Up'||dir==='Slight Up';
-  var isNeg = dir==='Down'||dir==='Slight Down';
-  var isSlight = dir.indexOf('Slight')!==-1;
-  var trendLabel, trendDesc, trendBg, trendCol;
-  if(isPos&&!isSlight&&strength==='Strong'){trendLabel='Strong positive outlook';trendDesc='Strong upward momentum expected due to underlying performance and luck correction.';}
-  else if(isPos&&!isSlight){trendLabel='Positive outlook';trendDesc='Expected to gain ground over the next 2-4 weeks if trends hold.';}
-  else if(isPos&&isSlight){trendLabel='Mild positive outlook';trendDesc='Minor upward movement expected based on current trends.';}
-  else if(isNeg&&!isSlight&&strength==='Strong'){trendLabel='Strong negative outlook';trendDesc='Significant regression expected as current results exceed underlying strength.';}
-  else if(isNeg&&!isSlight){trendLabel='Negative outlook';trendDesc='Performance likely to regress as current results exceed underlying strength.';}
-  else if(isNeg&&isSlight){trendLabel='Mild negative outlook';trendDesc='Minor downward movement expected based on current trends.';}
-  else{trendLabel='Stable outlook';trendDesc='Team performance is aligned with results. Expect stability.';}
-  trendCol = isPos?'#1e6b3a':isNeg?'#c0392b':'#5f5e5a';
-  trendBg  = isPos?'#e8f0eb':isNeg?'#fce8e8':'#f1efe8';
-
-  // ── Recommended Action ────────────────────────────────────────────────
-  var primaryMove, primaryReason;
-  if((arcEntry.arch||'').indexOf('Contender')!==-1&&(dir==='Up'||dir==='Slight Up')){primaryMove='Hold / Buy';primaryReason='This team is underperforming relative to its underlying strength.';}
-  else if((arcEntry.arch||'').indexOf('Contender')!==-1&&dir==='Flat'){primaryMove='Optimize';primaryReason='Maintain current core. Look for marginal upgrades.';}
-  else if(dir==='Down'||dir==='Slight Down'){primaryMove='Sell High / Rebalance';primaryReason='Current results may not last. Move overperformers while value is high.';}
-  else if((arcEntry.arch||'').indexOf('Middle')!==-1){primaryMove='Choose Direction';primaryReason='Team is in the middle — decide whether to push for contention or rebuild.';}
-  else if((arcEntry.arch||'').indexOf('Weak')!==-1||(arcEntry.arch||'').indexOf('Rebuild')!==-1){primaryMove='Rebuild';primaryReason='Focus on acquiring young talent and high-upside players.';}
-  else{primaryMove=arcEntry.action||'Hold';primaryReason='Follow archetype guidance.';}
-
-  var doNotDo, doNotReason;
-  if(joe<-0.4){doNotDo='Do not sell core pieces';doNotReason='Selling risks missing upside from luck correction.';}
-  else if(joe>0.4){doNotDo='Do not chase current production';doNotReason='Results are inflated by favorable schedule outcomes.';}
-  else if(Math.abs(gap)>15){doNotDo='Do not ignore category imbalance';doNotReason='Team performance is not aligned with underlying strengths.';}
-  else{doNotDo='Avoid unnecessary roster churn';doNotReason='Team is reasonably aligned. Stay patient.';}
-
-  // Determine if pitching or hitting is weaker
-  var hitStr = ((posData['Infield']&&posData['Infield'].avg||0)+(posData['Outfield']&&posData['Outfield'].avg||0))/2;
-  var pitStr = ((posData['SP']&&posData['SP'].avg||0)+(posData['RP']&&posData['RP'].avg||0))/2;
-  var upgradeType, upgradeReason;
-  if(lgPct>fwarPct){upgradeType='High-impact upgrade';upgradeReason='Add players with high upside to match talent with production.';}
-  else if(pitStr<hitStr){upgradeType='Bullpen help or ratio SP';upgradeReason='Improves pitching stability and maximises category efficiency.';}
-  else{upgradeType='Power bat or SB specialist';upgradeReason='Hitting categories are the path to standings improvement.';}
-
-  // ── Colour helpers ────────────────────────────────────────────────────
-  function bktCol(b){return b==='High'?'#1e6b3a':b==='Mid'?'#b7791f':'#c0392b';}
-  function bktBg(b){ return b==='High'?'#e8f0eb':b==='Mid'?'#fef3e2':'#fce8e8';}
-  function joeCol(v){return v>=0.12?'#c0392b':v<=-0.12?'#2980b9':'#5f5e5a';}
-  function joeBg(v){ return v>=0.12?'#fce8e8':v<=-0.12?'#e8f4fd':'#f1efe8';}
-  var mc = 'background:var(--bg);border-radius:var(--radius);padding:12px 14px';
-  var lb = 'font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted)';
-  var pill = function(txt,bg,col){return '<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:500;background:'+bg+';color:'+col+'">'+txt+'</span>';};
-
-  // ── Build HTML ────────────────────────────────────────────────────────
-  var h = '<div class="card" style="margin-bottom:20px">';
-  h += '<div class="card-header"><span class="card-title">Team diagnostic</span>';
-  h += pill(arcEntry.arch||'—', bktBg(fBucket), bktCol(fBucket));
-  h += '</div><div class="card-body" style="padding:14px 16px;display:flex;flex-direction:column;gap:14px">';
-
-  // Row 1: 4 summary tiles
-  h += '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">';
-  // Archetype
-  h += '<div style="'+mc+'"><div style="'+lb+'">Archetype</div>';
-  h += '<div style="font-size:15px;font-weight:500;color:'+bktCol(fBucket)+';margin:5px 0 3px">'+(arcEntry.arch||'—')+'</div>';
-  h += '<div style="font-size:11px;color:var(--muted)">'+arcKey+'</div></div>';
-  // Direction
-  var dirCol = isPos?'#1e6b3a':isNeg?'#c0392b':'#5f5e5a';
-  h += '<div style="'+mc+'"><div style="'+lb+'">Should-be direction</div>';
-  h += '<div style="font-size:15px;font-weight:500;color:'+dirCol+';margin:5px 0 3px">'+(dir||'—')+'</div>';
-  h += '<div style="font-size:11px;color:var(--muted)">'+trendLabel+'</div></div>';
-  // Action
-  h += '<div style="'+mc+'"><div style="'+lb+'">Action</div>';
-  h += '<div style="font-size:15px;font-weight:500;color:#185fa5;margin:5px 0 3px">'+primaryMove+'</div>';
-  h += '<div style="font-size:11px;color:var(--muted)">'+primaryReason+'</div></div>';
-  // Trust Score
-  var tc = trust>=65?'#1e6b3a':trust>=50?'#b7791f':'#c0392b';
-  h += '<div style="'+mc+'"><div style="'+lb+'">Trust score</div>';
-  h += '<div style="display:flex;align-items:center;gap:8px;margin:5px 0 3px">';
-  h += '<span style="font-size:22px;font-weight:500;color:'+tc+'">'+trust+'</span>';
-  h += pill(trustTier(trust), trust>=65?'#e8f0eb':trust>=50?'#fef3e2':'#fce8e8', tc);
-  h += '</div><div style="font-size:11px;color:var(--muted)">'+(trust>=65?'Model alignment is strong':trust>=50?'Moderate confidence':'Low confidence — high noise')+'</div></div>';
-  h += '</div>';
-
-  // Row 2: Model inputs
-  h += '<div><div style="'+lb+';margin-bottom:10px">Model inputs</div>';
-  h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">';
-  // fWAR%
-  function gradBar(pct, low, high, markerCol){
-    var bh='<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:2px"><span>0</span><span>50</span><span>100</span></div>';
-    bh+='<div style="height:7px;border-radius:3px;background:linear-gradient(to right,#E24B4A,#EF9F27,#639922);position:relative">';
-    bh+='<div style="position:absolute;top:-3px;left:'+pct+'%;width:2px;height:13px;background:'+markerCol+';border-radius:1px"></div></div>';
-    return bh;
-  }
-  h += '<div style="'+mc+'"><div style="'+lb+'">Team production (fWAR%)</div>';
-  h += '<div style="display:flex;align-items:baseline;gap:6px;margin:6px 0 3px"><span style="font-size:22px;font-weight:500">'+fwarPct+'</span><span style="font-size:11px;color:var(--muted)">th pct</span>'+pill(fBucket,bktBg(fBucket),bktCol(fBucket))+'</div>';
-  h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Actual fantasy output vs league</div>';
-  h += gradBar(fwarPct,'#E24B4A','#639922',bktCol(fBucket))+'</div>';
-  // Lg Rating%
-  h += '<div style="'+mc+'"><div style="'+lb+'">Underlying talent (Rating%)</div>';
-  h += '<div style="display:flex;align-items:baseline;gap:6px;margin:6px 0 3px"><span style="font-size:22px;font-weight:500">'+lgPct+'</span><span style="font-size:11px;color:var(--muted)">th pct</span>'+pill(lBucket,bktBg(lBucket),bktCol(lBucket))+'</div>';
-  h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Roster quality across all positions</div>';
-  h += gradBar(lgPct,'#E24B4A','#639922',bktCol(lBucket))+'</div>';
-  // JOE
-  var jc=joeCol(joe), jbg=joeBg(joe);
-  var joeMarkerPct = Math.round((joe+1)/2*100);
-  h += '<div style="'+mc+'"><div style="'+lb+'">Luck / schedule (JOE factor)</div>';
-  h += '<div style="display:flex;align-items:baseline;gap:6px;margin:6px 0 3px"><span style="font-size:22px;font-weight:500;color:'+jc+'">'+(joe>=0?'+':'')+joe.toFixed(2)+'</span>'+pill(jBucket,jbg,jc)+'</div>';
-  h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Negative = unlucky, Positive = lucky</div>';
-  h += '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:2px"><span>-1.0</span><span>0</span><span>+1.0</span></div>';
-  h += '<div style="height:7px;border-radius:3px;background:linear-gradient(to right,#E24B4A,#EF9F27,#639922);position:relative">';
-  h += '<div style="position:absolute;top:-3px;left:'+joeMarkerPct+'%;width:2px;height:13px;background:'+jc+';border-radius:1px"></div></div></div>';
-  h += '</div></div>';
-
-  // Row 3: Why + right column
-  h += '<div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:12px">';
-  // Why section
-  h += '<div><div style="'+lb+';margin-bottom:10px">Why this team is labeled this way</div>';
-  h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px">';
-  var gapStr = (gap>=0?'+':'')+Math.round(gap);
-  var gapCol = gap>0?'#1e6b3a':gap<0?'#c0392b':'#5f5e5a';
-  h += '<div style="'+mc+';text-align:center"><div style="'+lb+'">Performance gap</div><div style="font-size:20px;font-weight:500;color:'+gapCol+';margin:5px 0 2px">'+gapStr+'</div><div style="font-size:10px;color:var(--muted)">fWAR% minus Rating%</div></div>';
-  h += '<div style="'+mc+';text-align:center"><div style="'+lb+'">Combined key</div><div style="font-size:12px;font-weight:500;color:'+jc+';margin:5px 0 2px">'+arcKey+'</div><div style="font-size:10px;color:var(--muted)">Production / Talent / Luck</div></div>';
-  h += '<div style="'+mc+';text-align:center"><div style="'+lb+'">Luck tier</div><div style="font-size:14px;font-weight:500;color:'+jc+';margin:5px 0 2px">'+jBucket+'</div><div style="font-size:10px;color:var(--muted)">'+(jBucket==='Unlucky'?'Schedule hurting results':jBucket==='Lucky'?'Results may be inflated':'Schedule is neutral')+'</div></div>';
-  h += '</div>';
-  // Explanation paragraph
-  var expText = buildDiagExplanation(fBucket, lBucket, jBucket, gap, dir);
-  h += '<div style="background:'+trendBg+';border-radius:var(--radius);padding:10px 12px;font-size:12px;color:'+trendCol+';line-height:1.6;margin-bottom:12px">'+expText+'</div>';
-
-  // Positional group breakdown
-  h += '<div style="'+lb+';margin-bottom:8px">Positional group breakdown</div>';
-  h += '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">';
-  var DIAG_GROUPS = ['Infield','Outfield','SP','RP'];
-  var DIAG_LABELS = ['Infield','Outfield','Starting P','Relief P'];
-  DIAG_GROUPS.forEach(function(g,gi) {
-    var ps = posData[g] ? Math.round((posData[g].avg||0)*100) : 0;
-    var fw = fwarByGroup[g] != null ? fwarByGroup[g] : null;
-    var psCol = ps>=65?'#1e6b3a':ps>=50?'#4a9a68':ps>=35?'#b7791f':'#c0392b';
-    var fwCol = fw==null?'var(--muted)':fw>=5?'#1e6b3a':fw>=2?'#4a9a68':fw>=-1?'#b7791f':'#c0392b';
-    var barW = Math.min(100,Math.max(0,ps));
-    h += '<div style="'+mc+'">';
-    h += '<div style="'+lb+';margin-bottom:5px">'+DIAG_LABELS[gi]+'</div>';
-    h += '<div style="display:flex;align-items:baseline;gap:4px;margin-bottom:1px">';
-    h += '<span style="font-size:17px;font-weight:500;color:'+psCol+'">'+ps+'</span>';
-    h += '<span style="font-size:10px;color:var(--muted)">pos str</span></div>';
-    h += '<div style="display:flex;align-items:baseline;gap:4px;margin-bottom:6px">';
-    h += '<span style="font-size:13px;font-weight:500;color:'+fwCol+'">'+(fw!=null?(fw>=0?'+':'')+fw.toFixed(1):'—')+'</span>';
-    h += '<span style="font-size:10px;color:var(--muted)">fWAR</span></div>';
-    h += '<div style="height:5px;border-radius:2px;background:var(--border);position:relative">';
-    h += '<div style="width:'+barW+'%;height:100%;border-radius:2px;background:'+psCol+'"></div>';
-    h += '<div style="position:absolute;top:-3px;left:50%;width:1.5px;height:11px;background:var(--muted);opacity:0.35;border-radius:1px"></div></div>';
-    h += '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:2px"><span>0</span><span>avg</span><span>100</span></div>';
-    h += '</div>';
+  var myPlayers=(TA.players||[]).filter(function(p){return p.ftId===teamId;});
+  var posStrength={};
+  GROUPS.forEach(function(g){
+    var gp=myPlayers.filter(function(p){return p.bestGroup===g;});
+    var avg=gp.length?gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length:null;
+    posStrength[g]={avg:avg,count:gp.length,diff:avg!=null?avg-leagueAvg[g]:null};
   });
-  h += '</div>';
-  h += '</div>';
-
-  // Right column: Should-Be Score, Current vs Expected, Trend
-  h += '<div style="display:flex;flex-direction:column;gap:10px">';
-  // Should-Be Score
-  var ic=interpColor(expScore), ibg=interpBg(expScore);
-  h += '<div style="'+mc+'"><div style="'+lb+';margin-bottom:6px">Should-be score</div>';
-  h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span style="font-size:26px;font-weight:500;color:'+ic+'">'+expScore+'</span>'+pill(interpLabel(expScore),ibg,ic)+'</div>';
-  h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Calculated score (higher is better)</div>';
-  h += '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:2px"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>';
-  h += '<div style="height:6px;border-radius:3px;background:var(--border);position:relative"><div style="height:100%;width:'+Math.min(100,Math.max(0,expScore))+'%;background:'+ic+';border-radius:3px"></div></div></div>';
-  // Current vs Expected
-  if (arcRowInTable && curRank) {
-    h += '<div style="'+mc+'"><div style="'+lb+';margin-bottom:8px">Current vs expected</div>';
-    h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;text-align:center">';
-    function ord2(n){return n+(n===1?'st':n===2?'nd':n===3?'rd':'th');}
-    h += '<div><div style="'+lb+'">Current rank</div><div style="font-size:20px;font-weight:500;margin-top:4px">'+ord2(curRank)+'</div></div>';
-    h += '<div><div style="'+lb+'">Expected band</div><div style="font-size:13px;font-weight:500;color:'+ic+';margin-top:6px">'+arcRowInTable.bandStr+'</div></div>';
-    var rdiff = arcRowInTable.expRank - curRank;
-    var dcol = rdiff>0?'#1e6b3a':rdiff<0?'#c0392b':'#5f5e5a';
-    h += '<div><div style="'+lb+'">Difference</div><div style="font-size:20px;font-weight:500;color:'+dcol+';margin-top:4px">'+(rdiff>0?'+':'')+rdiff+'</div></div>';
-    h += '</div></div>';
+  var myHitters=FWAR.hitResults.filter(function(p){return p.ftId===teamId&&p.fWAR!=null;}).sort(function(a,b){return b.fWAR-a.fWAR;}).slice(0,5);
+  var myPitchers=FWAR.pitResults.filter(function(p){return p.ftId===teamId&&p.fWAR!=null;}).sort(function(a,b){return b.fWAR-a.fWAR;}).slice(0,5);
+  function posColor(avg){
+    if(avg==null)return{bg:'var(--bg)',fg:'var(--muted)',border:'var(--border)',titleFg:'var(--muted)'};
+    var p=Math.round(avg*100);
+    if(p>=65)return{bg:'#e8f0eb',fg:'#2d5a3d',border:'#c8ddd0',titleFg:'#1e4a28'};
+    if(p>=52)return{bg:'#f0f7ec',fg:'#3a7a52',border:'#c8ddd0',titleFg:'#2d5a3d'};
+    if(p>=38)return{bg:'#fef3e2',fg:'#b7791f',border:'#f0d090',titleFg:'#854f0b'};
+    return{bg:'#fce8e8',fg:'#c0392b',border:'#f7c1c1',titleFg:'#a32d2d'};
   }
-  // Trend Outlook
-  h += '<div style="'+mc+'"><div style="'+lb+';margin-bottom:6px">Trend outlook</div>';
-  h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'+pill(trendLabel,trendBg,trendCol);
-  h += '<span style="font-size:11px;color:var(--muted)">'+strength+' strength</span></div>';
-  h += '<div style="font-size:12px;color:var(--muted);line-height:1.6">'+trendDesc+'</div></div>';
-  h += '</div></div>';
-
-  // Row 4: Recommended Action
-  h += '<div><div style="'+lb+';margin-bottom:10px">Recommended action</div>';
-  h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">';
-  h += '<div style="'+mc+'"><div style="'+lb+';color:#1e6b3a">Primary move</div><div style="font-size:15px;font-weight:500;margin:5px 0 4px">'+primaryMove+'</div><div style="font-size:11px;color:var(--muted)">'+primaryReason+'</div></div>';
-  h += '<div style="'+mc+'"><div style="'+lb+';color:#c0392b">Do not do</div><div style="font-size:15px;font-weight:500;margin:5px 0 4px">'+doNotDo+'</div><div style="font-size:11px;color:var(--muted)">'+doNotReason+'</div></div>';
-  h += '<div style="'+mc+'"><div style="'+lb+';color:#185fa5">Best upgrade type</div><div style="font-size:15px;font-weight:500;margin:5px 0 4px">'+upgradeType+'</div><div style="font-size:11px;color:var(--muted)">'+upgradeReason+'</div></div>';
-  h += '</div></div>';
-
-  h += '</div></div>';
+  function posLabel(avg){
+    if(avg==null)return'-';var p=Math.round(avg*100);
+    return p>=65?'Strong':p>=52?'Above avg':p>=38?'Average':p>=25?'Weak':'Poor';
+  }
+  function zColor(z){
+    if(z==null)return'var(--muted)';
+    return z>=0.7?'#1e6b3a':z>=0?'#4a9a68':z>=-0.7?'#e05c4b':'#c0392b';
+  }
+  function fwarColor(v){return v>=2?'#1e6b3a':v>=0.5?'#4a9a68':v>=-0.5?'#b7791f':'#c0392b';}
+  function ratingBadge(r){
+    if(r==null)return'<span style="color:var(--muted)">-</span>';
+    var pct=Math.round(r>1?r:r*100);
+    var col=pct>=65?'#1e6b3a':pct>=50?'#4a9a68':pct>=35?'#b7791f':'#c0392b';
+    return'<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600;background:'+col+'22;color:'+col+'">'+pct+'</span>';
+  }
+  var uid='dc'+Date.now();
+  var scatterCid='dc-scatter-'+uid;
+  var h='';
+  h+='<div class="card" style="margin-bottom:20px">';
+  h+='<div style="font-size:15px;font-weight:500;color:var(--text);margin-bottom:14px">Team diagnostic</div>';
+  h+='<div style="display:grid;grid-template-columns:220px 210px 1fr;gap:14px;margin-bottom:14px;align-items:start">';
+  /* Z-Score bars */
+  h+='<div>';
+  h+='<div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Category Z-Scores</div>';
+  h+='<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid var(--border)"><span>worse</span><span>avg</span><span>better</span></div>';
+  allCatsDef.forEach(function(cd){
+    var z=myZ?(myZ[cd.zKey]&&myZ[cd.zKey][cd.key]!=null?myZ[cd.zKey][cd.key]:0):0;
+    var rank=catLeagueRank(cd.key,cd.zKey);
+    var pct=Math.min(Math.abs(z)/3,1)*50;
+    var col=zColor(z);
+    var zStr=(z>=0?'+':'')+z.toFixed(2);
+    h+='<div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:0.5px solid var(--border)">';
+    h+='<span style="font-size:11px;font-weight:500;color:var(--text);width:34px;flex-shrink:0">'+cd.label+'</span>';
+    h+='<div style="flex:1;height:7px;background:var(--bg);border-radius:4px;position:relative;overflow:visible">';
+    h+='<div style="position:absolute;top:-3px;left:50%;width:1.5px;height:13px;background:var(--border);border-radius:1px"></div>';
+    if(z>=0){h+='<div style="position:absolute;left:50%;width:'+pct+'%;height:100%;background:'+col+';border-radius:4px"></div>';}
+    else{h+='<div style="position:absolute;right:50%;width:'+pct+'%;height:100%;background:'+col+';border-radius:4px"></div>';}
+    h+='</div>';
+    h+='<span style="font-size:11px;font-weight:500;color:'+col+';width:38px;text-align:right;flex-shrink:0">'+zStr+'</span>';
+    h+='<span style="font-size:10px;color:var(--muted);width:24px;text-align:right;flex-shrink:0">'+(rank?rank+'th':'-')+'</span>';
+    h+='</div>';
+  });
+  h+='</div>';
+  /* Scatter */
+  h+='<div>';
+  h+='<div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Batting vs pitching Z</div>';
+  h+='<div style="position:relative;height:200px"><canvas id="'+scatterCid+'" role="img" aria-label="Scatter of team batting vs pitching Z-scores">Batting vs pitching Z-scores for all teams.</canvas></div>';
+  h+='<div style="display:flex;gap:12px;justify-content:center;margin-top:5px">';
+  h+='<span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><span style="width:8px;height:8px;border-radius:50%;background:#2d5a3d;display:inline-block"></span>Your team</span>';
+  h+='<span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><span style="width:8px;height:8px;border-radius:50%;background:#b5d4f4;border:1px solid #378add;display:inline-block"></span>Others</span>';
+  h+='</div></div>';
+  /* Positional cards */
+  h+='<div>';
+  h+='<div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Positional strength</div>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px">';
+  var posLabels={Infield:'IF',Outfield:'OF',SP:'SP',RP:'RP'};
+  var insightParts=[];
+  GROUPS.forEach(function(g){
+    var d=posStrength[g],avg=d.avg,pc=posColor(avg);
+    var pct=avg!=null?Math.round(avg*100):null;
+    var diff=d.diff!=null?Math.round(d.diff*100):null;
+    var sign=diff!=null?(diff>=0?'+':''):'';
+    h+='<div style="border-radius:var(--radius);padding:10px;text-align:center;border:0.5px solid '+pc.border+';background:'+pc.bg+'">';
+    h+='<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:'+pc.titleFg+';margin-bottom:4px">'+posLabels[g]+'</div>';
+    h+='<div style="font-size:24px;font-weight:500;line-height:1;color:'+pc.fg+';margin-bottom:2px">'+(pct!=null?pct:'-')+'</div>';
+    h+='<div style="font-size:10px;font-weight:500;color:'+pc.fg+';margin-bottom:2px">'+posLabel(avg)+'</div>';
+    h+='<div style="font-size:10px;color:'+pc.fg+';opacity:0.8;margin-bottom:5px">'+(diff!=null?sign+diff+' vs avg':'-')+'</div>';
+    h+='<div style="height:3px;border-radius:2px;background:'+pc.fg+';opacity:0.4;width:'+(pct||0)+'%;margin:0 auto"></div>';
+    h+='</div>';
+    if(pct!=null&&pct>=65)insightParts.push(posLabels[g]+' is a strength');
+    if(pct!=null&&pct<=35)insightParts.push(posLabels[g]+' is a weakness');
+  });
+  h+='</div>';
+  var insight=insightParts.length?insightParts.join('. ')+'.':'Balanced across all positions.';
+  h+='<div style="font-size:11px;color:var(--muted);line-height:1.5;padding:7px 9px;background:var(--bg);border-radius:var(--radius);border:0.5px solid var(--border)">'+insight+'</div>';
+  h+='</div>';
+  h+='</div>'; /* row 1 */
+  h+='<div style="border-top:0.5px solid var(--border);margin-bottom:14px"></div>';
+  /* Row 2: fWAR tables side by side */
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">';
+  function fwarTable(players,isHit){
+    var fwPctLookup=isHit?(window._fwarPctLookupHit||window._fwarPctLookup||{}):(window._fwarPctLookupPit||window._fwarPctLookup||{});
+    var out='<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-bottom:6px;padding-bottom:4px;border-bottom:0.5px solid var(--border)">'+(isHit?'Top 5 hitters':'Top 5 pitchers')+' by fWAR</div>';
+    if(!players.length){return out+'<div style="font-size:12px;color:var(--muted);padding:8px 0">Run Refresh all data to calculate fWAR.</div>';}
+    out+='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>';
+    ['Player','fWAR','fWAR%','Lg Rtg','Z'].forEach(function(h2,ci){
+      var cols=['#8a8479','var(--accent)','#9b59b6','#4a9a68','#8a8479'];
+      out+='<th style="text-align:'+(ci===0?'left':'right')+';padding:4px 6px;font-size:9px;text-transform:uppercase;letter-spacing:0.05em;color:'+cols[ci]+';border-bottom:0.5px solid var(--border)">'+h2+'</th>';
+    });
+    out+='</tr></thead><tbody>';
+    var avBg=['#eeedfe','#e1f5ee','#e6f1fb','#faeeda','#faece7'];
+    var avFg=['#534ab7','#0f6e56','#185fa5','#854f0b','#993c1d'];
+    players.forEach(function(p,i){
+      var k=normN(p.name);
+      var fpct=fwPctLookup[k];
+      var lgR=(window._lgRatingLookup||{})[k];
+      var tz=p.totalZ!=null?p.totalZ:null;
+      var fc=fwarColor(p.fWAR);
+      var init=p.name.split(' ').map(function(w){return w[0];}).join('').slice(0,2);
+      out+='<tr style="border-bottom:0.5px solid var(--border)">';
+      out+='<td style="padding:6px 6px"><div style="display:flex;align-items:center;gap:6px">';
+      if(p.hs){out+='<img src="'+p.hs+'" style="width:22px;height:22px;border-radius:50%;object-fit:cover;border:1px solid var(--border);flex-shrink:0" alt="" onerror="this.style.display=\'none\'">';}
+      else{out+='<div style="width:22px;height:22px;border-radius:50%;background:'+avBg[i%5]+';color:'+avFg[i%5]+';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:500;flex-shrink:0">'+init+'</div>';}
+      out+='<div><div style="font-size:11px;font-weight:500;white-space:nowrap">'+p.name+'</div>';
+      out+='<span style="display:inline-block;padding:1px 4px;border-radius:3px;font-size:9px;background:var(--bg);color:var(--muted);border:0.5px solid var(--border)">'+(p.assignedSlot||p.pos||'')+'</span>';
+      out+='</div></div></td>';
+      out+='<td style="text-align:right;padding:6px 6px;font-weight:600;color:'+fc+'">'+(p.fWAR>=0?'+':'')+p.fWAR.toFixed(2)+'</td>';
+      out+='<td style="text-align:right;padding:6px 6px">'+ratingBadge(fpct!=null?fpct/100:null)+'</td>';
+      out+='<td style="text-align:right;padding:6px 6px">'+ratingBadge(lgR)+'</td>';
+      out+='<td style="text-align:right;padding:6px 6px;font-size:11px;color:'+(tz!=null?zColor(tz):'var(--muted)')+'">'+(tz!=null?(tz>=0?'+':'')+tz.toFixed(1):'-')+'</td>';
+      out+='</tr>';
+    });
+    out+='</tbody></table>';
+    return out;
+  }
+  h+='<div>'+fwarTable(myHitters,true)+'</div>';
+  h+='<div>'+fwarTable(myPitchers,false)+'</div>';
+  h+='</div>';
+  h+='</div>';
+  requestAnimationFrame(function(){
+    var el=document.getElementById(scatterCid);
+    if(!el||!S.zData||!S.zData.length)return;
+    if(window._diagScatterChart){try{window._diagScatterChart.destroy();}catch(e){}}
+    var others=S.zData.filter(function(d){return d.teamId!==teamId;});
+    var me=S.zData.find(function(d){return d.teamId===teamId;});
+    window._diagScatterChart=new Chart(el,{
+      type:'bubble',
+      data:{datasets:[
+        {label:'Other teams',data:others.map(function(d){return{x:d.totalBatZ,y:d.totalPitZ,r:6};}),backgroundColor:'#b5d4f488',borderColor:'#378add',borderWidth:1},
+        {label:'Your team',data:me?[{x:me.totalBatZ,y:me.totalPitZ,r:10}]:[],backgroundColor:'#2d5a3d',borderColor:'#2d5a3d',borderWidth:1}
+      ]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},
+          tooltip:{callbacks:{label:function(ctx){
+            var isMe=ctx.datasetIndex===1;
+            var nm='';
+            if(isMe&&me){var ti=S.teamInfo[me.teamId]||{};nm=(ti.shortName||ti.name||'Your team');}
+            else{var d2=S.zData.filter(function(d){return d.teamId!==teamId;})[ctx.dataIndex];if(d2){var ti2=S.teamInfo[d2.teamId]||{};nm=ti2.shortName||ti2.name||'';}}
+            return(nm?nm+': ':'')+'Bat '+ctx.parsed.x.toFixed(1)+' / Pit '+ctx.parsed.y.toFixed(1);
+          }}}
+        },
+        scales:{
+          x:{title:{display:true,text:'Batting Z',font:{size:9},color:'#8a8479'},ticks:{font:{size:9},color:'#8a8479'},grid:{color:'rgba(136,135,128,0.15)'}},
+          y:{title:{display:true,text:'Pitching Z',font:{size:9},color:'#8a8479'},ticks:{font:{size:9},color:'#8a8479'},grid:{color:'rgba(136,135,128,0.15)'}}
+        }
+      }
+    });
+  });
   return h;
 }
+
 
 function buildDiagExplanation(fBkt, lBkt, jBkt, gap, dir) {
   var parts = [];
