@@ -289,6 +289,7 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div class="trade-tabs" id="fantrax-tabs">
       <button class="trade-tab active" onclick="showFantraxTab('standings',this)">Standings</button>
       <button class="trade-tab" onclick="showFantraxTab('season',this)">Season Stats</button>
+      <button class="trade-tab" onclick="showFantraxTab('byperiod',this)">By Period</button>
       <button class="trade-tab" onclick="showFantraxTab('tables',this)">Tables</button>
       <button class="trade-tab" onclick="showFantraxTab('historic',this)">Historic League Data</button>
     </div>
@@ -297,6 +298,9 @@ td.neg { color: #c0392b; font-weight: 500; }
     </div>
     <div id="fantrax-tab-season" class="trade-tab-content">
       <div id="season-body"><div class="loading">Loading...</div></div>
+    </div>
+    <div id="fantrax-tab-byperiod" class="trade-tab-content">
+      <div id="byperiod-body"><div class="loading">Loading...</div></div>
     </div>
     <div id="fantrax-tab-tables" class="trade-tab-content">
       <div class="card">
@@ -1866,6 +1870,36 @@ function renderGuideDashboardCharts() {
   });
 }
 
+function renderByPeriodTab() {
+  var el = document.getElementById('byperiod-body');
+  if (!el) return;
+  // Already loaded
+  if (el.querySelector('.card')) return;
+  el.innerHTML = '<div class="loading">Loading by-period data...</div>';
+
+  loadJSON('standings_schedule.json').then(function(data) {
+    S.scheduleData = data;
+    var tables = (data && data.data && data.data.tableList) || [];
+    // Filter to scoring period tables only
+    var periodTables = tables.filter(function(t) {
+      return t.tableType !== 'SECTION_HEADING' &&
+             /scoring period/i.test(t.caption || '');
+    });
+    if (!periodTables.length) {
+      el.innerHTML = '<div class="error-msg">No per-period data found in standings_schedule.json. Run the GitHub Action to fetch updated data.</div>';
+      return;
+    }
+    // Sort by period number ascending
+    periodTables.sort(function(a, b) {
+      var ma = (a.caption||'').match(/(\d+)/), mb = (b.caption||'').match(/(\d+)/);
+      return (ma ? parseInt(ma[1]) : 0) - (mb ? parseInt(mb[1]) : 0);
+    });
+    renderTableListPage({data:{tableList:periodTables}}, 'byperiod-body');
+  }).catch(function() {
+    el.innerHTML = '<div class="error-msg">standings_schedule.json not found. Run the GitHub Action to fetch schedule data.</div>';
+  });
+}
+
 window.showFantraxTab = function(tab, btn) {
   document.querySelectorAll('#fantrax-tabs .trade-tab').forEach(function(b){b.classList.remove('active');});
   document.querySelectorAll('#page-fantrax .trade-tab-content').forEach(function(c){c.classList.remove('active');});
@@ -1874,6 +1908,7 @@ window.showFantraxTab = function(tab, btn) {
   if (el) el.classList.add('active');
   if (tab === 'tables') renderAnalytics();
   if (tab === 'historic') renderHistoricPage();
+  if (tab === 'byperiod') renderByPeriodTab();
 };
 
 function init() {
