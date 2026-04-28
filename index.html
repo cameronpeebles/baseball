@@ -7305,19 +7305,121 @@ function assembleDashboard(teamId, el) {
   if (standingsRow) html += '<div style="color:var(--muted);font-size:13px">#' + standingsRow.rank + ' in league · ' + standingsRow.pts + ' pts</div>';
   html += '</div></div>';
 
-  // Key metrics row
-  var luckStr = avgLuck != null ? (avgLuck >= 0 ? '+' : '') + avgLuck.toFixed(3) : '-';
-  var luckCol = avgLuck == null ? 'var(--text)' : avgLuck > 0.2 ? '#2d5a3d' : avgLuck < -0.2 ? '#c0392b' : 'var(--muted)';
-  var luckLabel = avgLuck == null ? '-' : avgLuck > 0.2 ? 'Lucky' : avgLuck < -0.2 ? 'Unlucky' : 'Even';
-  html += '<div class="dash-metric-grid">';
-  if (standingsRow) {
-    html += '<div class="dash-metric"><div class="dash-metric-label">Record</div><div class="dash-metric-value" style="font-size:18px">' + (standingsRow.pts||'-') + ' pts</div><div class="dash-metric-sub">Rank #' + standingsRow.rank + ' of ' + allTeamRows.length + '</div></div>';
+  // Key metrics row — extract W/L/T from ptTable
+  var myW = 0, myL = 0, myT = 0;
+  if (ptTable) {
+    var wltHIdx = {};
+    ((ptTable.header && ptTable.header.cells)||[]).forEach(function(h,i){
+      if(h.key) wltHIdx[h.key.toUpperCase()]=i;
+      if(h.shortName) wltHIdx[h.shortName.toUpperCase()]=i;
+    });
+    (ptTable.rows||[]).forEach(function(row){
+      var fc=row.fixedCells||[], cells=row.cells||[];
+      var id=(fc[1]&&fc[1].teamId)||'';
+      if(id!==teamId) return;
+      var wi=wltHIdx['W'], li=wltHIdx['L'], ti=wltHIdx['T'];
+      if(wi!=null) myW=parseFloat(cells[wi]&&cells[wi].content)||0;
+      if(li!=null) myL=parseFloat(cells[li]&&cells[li].content)||0;
+      if(ti!=null) myT=parseFloat(cells[ti]&&cells[ti].content)||0;
+    });
   }
-  html += '<div class="dash-metric"><div class="dash-metric-label">JOE Factor luck</div><div class="dash-metric-value" style="color:' + luckCol + ';font-size:20px">' + luckStr + '</div><div class="dash-metric-sub">' + luckLabel + ' · ' + myJOEWeeks.length + ' weeks</div></div>';
-  html += '<div class="dash-metric"><div class="dash-metric-label">Avg win%</div><div class="dash-metric-value" style="font-size:20px">' + (avgActual!=null?(avgActual*100).toFixed(1)+'%':'-') + '</div><div class="dash-metric-sub">Expected: ' + (avgCase!=null?(avgCase*100).toFixed(1)+'%':'-') + '</div></div>';
-  var overallPos = groups.map(function(g){return posData[g].avg||0;}).filter(function(v){return v>0;});
-  var overallAvg = overallPos.length ? overallPos.reduce(function(s,v){return s+v;})/overallPos.length : 0;
-  html += '<div class="dash-metric"><div class="dash-metric-label">Overall roster</div><div class="dash-metric-value" style="color:' + ratingColor(overallAvg) + ';font-size:20px">' + Math.round(overallAvg*100) + 'th pct</div><div class="dash-metric-sub">Across all positions</div></div>';
+  var totalGames = myW+myL+myT;
+  var winPct = totalGames>0 ? (myW/totalGames*100).toFixed(1)+'%' : '-';
+
+  // H2H rank: rank teams by W descending, then pts
+  var h2hRanked = (ptTable ? (ptTable.rows||[]).map(function(row,ri){
+    var fc=row.fixedCells||[], cells=row.cells||[];
+    var id=(fc[1]&&fc[1].teamId)||'';
+    var wltHI = {};
+    ((ptTable.header&&ptTable.header.cells)||[]).forEach(function(h,i){if(h.key)wltHI[h.key.toUpperCase()]=i;if(h.shortName)wltHI[h.shortName.toUpperCase()]=i;});
+    var w=parseFloat(cells[wltHI['W']]&&cells[wltHI['W']].content)||0;
+    var ptsI=wltHI['PTS']!=null?wltHI['PTS']:0;
+    var pts=parseFloat(cells[ptsI]&&cells[ptsI].content)||0;
+    return {id:id, w:w, pts:pts};
+  }) : []).sort(function(a,b){return b.w-a.w||b.pts-a.pts;});
+  var h2hRank = h2hRanked.findIndex(function(x){return x.id===teamId;})+1 || null;
+  var ptsRank = standingsRow ? standingsRow.rank : null;
+  var rankDiffPtsH2h = (ptsRank && h2hRank) ? h2hRank - ptsRank : null;
+
+  // Expected rank band from diagnostic
+  var expBandStr = '-', expRankNum = null;
+  var teamIds2 = Object.keys(S.teamInfo);
+  function normN_d(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  if (teamIds2.length && window._fwarPctLookupHit) {
+    function teamFwarT(tid){ var tot=0; ['Infield','Outfield','SP','RP'].forEach(function(g){ var isH=g==='Infield'||g==='Outfield'; var lk=isH?(window._fwarPctLookupHit||window._fwarPctLookup||{}):(window._fwarPctLookupPit||window._fwarPctLookup||{}); var gp=(TA.players||[]).filter(function(p){return p.ftId===tid&&p.bestGroup===g;}); var s=0,c=0; gp.forEach(function(p){var v=lk[normN_d(p.name)];if(v!=null){s+=v;c++;}}); tot+=c?s/c:0; }); return tot; }
+    function teamLgT(tid){ var tot=0; ['Infield','Outfield','SP','RP'].forEach(function(g){ var gp=(TA.players||[]).filter(function(p){return p.ftId===tid&&p.bestGroup===g;}); var s=0,c=0; gp.forEach(function(p){var v=(window._lgRatingLookup||{})[normN_d(p.name)];if(v!=null){s+=v*100;c++;}}); tot+=c?s/c:0; }); return tot; }
+    var fwTots=teamIds2.map(function(tid){return {tid:tid,v:teamFwarT(tid)};}).sort(function(a,b){return a.v-b.v;});
+    var lgTots=teamIds2.map(function(tid){return {tid:tid,v:teamLgT(tid)};}).sort(function(a,b){return a.v-b.v;});
+    function rPct(sorted,tid){var i=sorted.findIndex(function(x){return x.tid===tid;});return Math.round(i/(sorted.length-1||1)*100);}
+    var allExp=teamIds2.map(function(tid){
+      var fp=rPct(fwTots,tid),lp=rPct(lgTots,tid);
+      var jr=(window._joeSeasonData||[]).find(function(r){return r.team===((S.teamInfo[tid]||{}).name||(S.teamInfo[tid]||{}).shortName||'');});
+      var jv=jr?(jr.joe!=null?jr.joe:0):0;
+      return {tid:tid,score:parseFloat((0.55*fp+0.30*lp-10*jv).toFixed(1))};
+    }).sort(function(a,b){return b.score-a.score;});
+    expRankNum=allExp.findIndex(function(x){return x.tid===teamId;})+1;
+    var myExpScore=allExp.find(function(x){return x.tid===teamId;});
+    var THRESH=8, lo=expRankNum, hi=expRankNum;
+    for(var bi=expRankNum-2;bi>=0;bi--){if(Math.abs(allExp[bi].score-(myExpScore?myExpScore.score:0))<=THRESH)lo=bi+1;else break;}
+    for(var bj=expRankNum;bj<allExp.length;bj++){if(Math.abs(allExp[bj].score-(myExpScore?myExpScore.score:0))<=THRESH)hi=bj+1;else break;}
+    function ord3(n){return n+(n===1?'st':n===2?'nd':n===3?'rd':'th');}
+    expBandStr = lo===hi ? ord3(lo) : ord3(lo)+' \u2013 '+ord3(hi);
+  }
+
+  var mc='background:var(--bg);border-radius:var(--radius);padding:12px 14px';
+  var lb='font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted)';
+  function pill(txt,bg,col){return '<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;background:'+bg+';color:'+col+'">'+txt+'</span>';}
+
+  html += '<div class="dash-metric-grid">';
+
+  // Tile 1: Record
+  if (standingsRow) {
+    html += '<div style="'+mc+'"><div style="'+lb+'">Record</div>';
+    html += '<div style="font-size:20px;font-weight:500;margin:5px 0 2px">'+(standingsRow.pts||'-')+' pts</div>';
+    html += '<div style="font-size:12px;color:var(--muted)">Rank #'+standingsRow.rank+' of '+allTeamRows.length+'</div></div>';
+  }
+
+  // Tile 2: H2H Results
+  html += '<div style="'+mc+'"><div style="'+lb+'">H2H results</div>';
+  html += '<div style="display:flex;align-items:baseline;gap:6px;margin:5px 0 3px">';
+  html += '<span style="font-size:20px;font-weight:500;color:#1e6b3a">'+myW+'</span><span style="font-size:13px;color:var(--muted)">W</span>';
+  html += '<span style="font-size:20px;font-weight:500;color:#c0392b">'+myL+'</span><span style="font-size:13px;color:var(--muted)">L</span>';
+  if(myT>0) html += '<span style="font-size:20px;font-weight:500;color:#b7791f">'+myT+'</span><span style="font-size:13px;color:var(--muted)">T</span>';
+  html += '</div>';
+  html += '<div style="font-size:12px;color:var(--muted)">'+winPct+' win rate</div></div>';
+
+  // Tile 3: Points rank vs H2H rank
+  html += '<div style="'+mc+'"><div style="'+lb+'">Points vs H2H rank</div>';
+  html += '<div style="display:flex;align-items:center;gap:8px;margin:5px 0 3px;flex-wrap:wrap">';
+  html += '<span style="font-size:14px;font-weight:500">Pts #'+(ptsRank||'-')+'</span>';
+  html += '<span style="color:var(--muted)">·</span>';
+  html += '<span style="font-size:14px;font-weight:500">H2H #'+(h2hRank||'-')+'</span>';
+  if(rankDiffPtsH2h!=null){
+    var diffCol=rankDiffPtsH2h<0?'#1e6b3a':rankDiffPtsH2h>0?'#c0392b':'var(--muted)';
+    var diffBg=rankDiffPtsH2h<0?'#e8f0eb':rankDiffPtsH2h>0?'#fce8e8':'var(--bg)';
+    html += pill((rankDiffPtsH2h>0?'+':'')+rankDiffPtsH2h,diffBg,diffCol);
+  }
+  html += '</div>';
+  var h2hNote=rankDiffPtsH2h==null?'':rankDiffPtsH2h<0?'H2H rank beats points rank':rankDiffPtsH2h>0?'H2H rank trails points rank':'Ranks are aligned';
+  html += '<div style="font-size:12px;color:var(--muted)">'+h2hNote+'</div></div>';
+
+  // Tile 4: Expected rank
+  html += '<div style="'+mc+'"><div style="'+lb+'">Expected rank</div>';
+  html += '<div style="font-size:18px;font-weight:500;color:#1e6b3a;margin:5px 0 3px">'+expBandStr+'</div>';
+  if(ptsRank && expRankNum){
+    var statusDiff=expRankNum-ptsRank;
+    var sBg=statusDiff<0?'#fce8e8':statusDiff>0?'#e8f0eb':'#f1efe8';
+    var sCol=statusDiff<0?'#c0392b':statusDiff>0?'#1e6b3a':'#5f5e5a';
+    var sLabel=statusDiff<0?'Below expected':statusDiff>0?'Above expected':'On track';
+    html += '<div style="display:flex;align-items:center;gap:6px">';
+    html += '<span style="font-size:12px;color:var(--muted)">Current #'+ptsRank+'</span>';
+    html += pill(sLabel,sBg,sCol);
+    html += '</div>';
+  } else {
+    html += '<div style="font-size:12px;color:var(--muted)">Refresh data to load</div>';
+  }
+  html += '</div>';
+
   html += '</div>';
 
   // ── Team Diagnostic Card ────────────────────────────────────────────────
