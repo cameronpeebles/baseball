@@ -93,6 +93,12 @@ r = fetch([{"method": "getStandings", "data": {"leagueId": LEAGUE_ID, "view": "C
           f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/standings;view=COMBINED")
 save("standings_combined.json", r[0])
 
+# Fetch schedule / by-period standings
+print("Fetching schedule (by period) standings...")
+r = fetch([{"method": "getStandings", "data": {"leagueId": LEAGUE_ID, "view": "SCHEDULE"}}],
+          f"https://www.fantrax.com/fantasy/league/{LEAGUE_ID}/standings;view=SCHEDULE")
+save("standings_schedule.json", r[0])
+
 # Fetch hitting stats — paginate until we have 1000 players or run out of pages
 print("Fetching hitting stats...")
 
