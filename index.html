@@ -7227,9 +7227,7 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   h += '<div style="'+mc+'"><div style="'+lb+';color:#185fa5">Best upgrade type</div><div style="font-size:15px;font-weight:500;margin:5px 0 4px">'+upgradeType+'</div><div style="font-size:11px;color:var(--muted)">'+upgradeReason+'</div></div>';
   h += '</div></div>';
 
-  h += '</div></div>';
-  return h;
-    requestAnimationFrame(function(){
+  requestAnimationFrame(function(){
     var el=document.getElementById(scatterCid);
     if(!el||!S.zData||!S.zData.length)return;
     if(window._diagScatterChart){try{window._diagScatterChart.destroy();}catch(e){}}
@@ -7259,6 +7257,8 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
       }
     });
   });
+  h += '</div></div>';
+  return h;
   return h;
 
 }
