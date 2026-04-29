@@ -7601,206 +7601,65 @@ function assembleDashboard(teamId, el) {
   var lb='font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted)';
   function pill(txt,bg,col){return '<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;background:'+bg+';color:'+col+'">'+txt+'</span>';}
 
-  // ── Pre-compute diagnostic vars for 7-tile grid ──────────────────────
-  {
-  var GROUPS = ['Infield','Outfield','SP','RP'];
-  function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
-
-  // ── Compute team fWAR% percentile ─────────────────────────────────────
-  var teamIds = Object.keys(S.teamInfo);
-  function teamFwarTotal(tid) {
+  // ── Inline compute for 7-tile grid ────────────────────────────────────
+  var _GROUPS7 = ['Infield','Outfield','SP','RP'];
+  var _normN7  = function(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); };
+  var _teamIds7 = Object.keys(S.teamInfo);
+  var _fwTotals = _teamIds7.map(function(tid){
     var total=0;
-    GROUPS.forEach(function(g){
+    _GROUPS7.forEach(function(g){
       var isHit=g==='Infield'||g==='Outfield';
       var lk=isHit?(window._fwarPctLookupHit||window._fwarPctLookup||{}):(window._fwarPctLookupPit||window._fwarPctLookup||{});
       var gp=(TA.players||[]).filter(function(p){return p.ftId===tid&&p.bestGroup===g;});
-      var s=0,c=0; gp.forEach(function(p){var v=lk[normN(p.name)];if(v!=null){s+=v;c++;}});
+      var s=0,c=0; gp.forEach(function(p){var v=lk[_normN7(p.name)];if(v!=null){s+=v;c++;}});
       total+=c?s/c:0;
     });
-    return total;
-  }
-  function teamLgTotal(tid) {
+    return {tid:tid,v:total};
+  }).sort(function(a,b){return a.v-b.v;});
+  var _lgTotals = _teamIds7.map(function(tid){
     var total=0;
-    GROUPS.forEach(function(g){
+    _GROUPS7.forEach(function(g){
       var gp=(TA.players||[]).filter(function(p){return p.ftId===tid&&p.bestGroup===g;});
-      var s=0,c=0; gp.forEach(function(p){var v=(window._lgRatingLookup||{})[normN(p.name)];if(v!=null){s+=v*100;c++;}});
+      var s=0,c=0; gp.forEach(function(p){var v=(window._lgRatingLookup||{})[_normN7(p.name)];if(v!=null){s+=v*100;c++;}});
       total+=c?s/c:0;
     });
-    return total;
-  }
+    return {tid:tid,v:total};
+  }).sort(function(a,b){return a.v-b.v;});
+  var _rp7 = function(sorted,tid){var i=sorted.findIndex(function(x){return x.tid===tid;});return Math.round(i/(sorted.length-1||1)*100);};
+  var _fwarPct7 = _rp7(_fwTotals, teamId);
+  var _lgPct7   = _rp7(_lgTotals, teamId);
+  var _joe7     = avgLuck != null ? avgLuck : 0;
+  var _gap7     = _fwarPct7 - _lgPct7;
+  var _trustRaw7= 100 - (0.8*Math.abs(_gap7)) - (35*Math.abs(_joe7));
+  if(_fwarPct7<50&&_lgPct7<50) _trustRaw7=Math.min(_trustRaw7,80);
+  var _trust7   = Math.max(0,Math.min(100,Math.round(_trustRaw7)));
+  var _fBkt7    = _fwarPct7>=65?'High':_fwarPct7>=45?'Mid':'Low';
+  var _lBkt7    = _lgPct7>=65?'High':_lgPct7>=45?'Mid':'Low';
+  var _jBkt7    = _joe7>=0.12?'Lucky':_joe7<=-0.12?'Unlucky':'Neutral';
+  var _bktCol7  = function(b){return b==='High'?'#1e6b3a':b==='Mid'?'#b7791f':'#c0392b';};
+  var _bktBg7   = function(b){return b==='High'?'#e8f0eb':b==='Mid'?'#fef3e2':'#fce8e8';};
+  var _joeCol7  = _joe7>=0.12?'#c0392b':_joe7<=-0.12?'#2980b9':'#5f5e5a';
+  var _joeBg7   = _joe7>=0.12?'#fce8e8':_joe7<=-0.12?'#e8f4fd':'#f1efe8';
+  var _pill7    = function(t,bg,col){return '<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;background:'+bg+';color:'+col+'">'+t+'</span>';};
+  var _tTier7   = _trust7>=80?'Very High':_trust7>=65?'High':_trust7>=50?'Medium':_trust7>=35?'Low':'Very Low';
+  var _tc7      = _trust7>=65?'#1e6b3a':_trust7>=50?'#b7791f':'#c0392b';
+  var _tbg7     = _trust7>=65?'#e8f0eb':_trust7>=50?'#fef3e2':'#fce8e8';
 
-  var fwarTotals = teamIds.map(function(tid){return {tid:tid,v:teamFwarTotal(tid)};}).sort(function(a,b){return a.v-b.v;});
-  var lgTotals   = teamIds.map(function(tid){return {tid:tid,v:teamLgTotal(tid)};}).sort(function(a,b){return a.v-b.v;});
-  function rankPct(sorted, tid){ var i=sorted.findIndex(function(x){return x.tid===tid;}); return Math.round(i/(sorted.length-1||1)*100); }
-
-  var fwarPct = rankPct(fwarTotals, teamId);
-  var lgPct   = rankPct(lgTotals,   teamId);
-  var joe     = joeVal != null ? joeVal : 0;
-
-  // fWAR by group for positional breakdown
-  var fwarByGroup = {Infield:null,Outfield:null,SP:null,RP:null};
-  var fwMapD = {};
-  (FWAR.hitResults||[]).concat(FWAR.pitResults||[]).forEach(function(p){ fwMapD[normN(p.name)]=p; fwMapD[(p.name||'').toLowerCase()]=p; });
-  (TA.players||[]).filter(function(p){return p.ftId===teamId;}).forEach(function(p){
-    var fw=fwMapD[normN(p.name)]||fwMapD[(p.name||'').toLowerCase()];
-    var g=p.bestGroup||'';
-    if(fw&&fwarByGroup[g]!=null) fwarByGroup[g]=parseFloat(((fwarByGroup[g]||0)+(fw.fWAR||0)).toFixed(2));
-    else if(fw&&fwarByGroup.hasOwnProperty(g)&&fwarByGroup[g]===null) fwarByGroup[g]=parseFloat((fw.fWAR||0).toFixed(2));
-  });
-
-  // ── Bucket functions ──────────────────────────────────────────────────
-  function fBkt(v){ return v>=65?'High':v>=45?'Mid':'Low'; }
-  function jBkt(v){ return v>=0.12?'Lucky':v<=-0.12?'Unlucky':'Neutral'; }
-
-  var fBucket = fBkt(fwarPct);
-  var lBucket = fBkt(lgPct);
-  var jBucket = jBkt(joe);
-  var arcKey  = fBucket+'-'+lBucket+'-'+jBucket;
-  var arcEntry = (typeof ARCHETYPE_MAP !== 'undefined' && ARCHETYPE_MAP[arcKey]) || {arch:'—',dir:'Flat',action:'—'};
-
-  // ── Trust Score ───────────────────────────────────────────────────────
-  var gap     = fwarPct - lgPct;
-  var trustRaw = 100 - (0.8*Math.abs(gap)) - (35*Math.abs(joe));
-  // Cap trust at 80 for weak teams (both production and talent below average)
-  if (fwarPct < 50 && lgPct < 50) trustRaw = Math.min(trustRaw, 80);
-  var trust   = Math.max(0, Math.min(100, Math.round(trustRaw)));
-  function trustTier(v){ return v>=80?'Very High':v>=65?'High':v>=50?'Medium':v>=35?'Low':'Very Low'; }
-  function trustIcon(v){ return v>=80?'🔒':v>=65?'✅':v>=50?'⚖️':v>=35?'⚠️':'🚨'; }
-
-  // ── Expected Score ────────────────────────────────────────────────────
-  var expScore = parseFloat((0.55*fwarPct + 0.30*lgPct - 10*joe).toFixed(1));
-  function interpLabel(s){ return s>=70?'True Contender':s>=55?'Playoff Caliber':s>=45?'Middling':'Weak Team'; }
-  function interpColor(s){ return s>=70?'#1e6b3a':s>=55?'#4a9a68':s>=45?'#b7791f':'#c0392b'; }
-  function interpBg(s){    return s>=70?'#e8f0eb':s>=55?'#f0f7ec':s>=45?'#fef3e2':'#fce8e8'; }
-
-  // ── Current vs Expected rank ──────────────────────────────────────────
-  var curRank = standingsRow ? standingsRow.rank : null;
-  // Get expected band from archetype table
-  var arcRowInTable = null;
-  if (typeof renderArchetypePage !== 'undefined') {
-    // Recompute expected rank from full table
-    var allScores = teamIds.map(function(tid){
-      var fp=rankPct(fwarTotals,tid), lp=rankPct(lgTotals,tid);
-      var jr=(window._joeSeasonData||[]).find(function(r){return r.team===((S.teamInfo[tid]||{}).name||(S.teamInfo[tid]||{}).shortName||'');});
-      var jv=jr?(jr.joe!=null?jr.joe:0):0;
-      return {tid:tid, score: parseFloat((0.55*fp+0.30*lp-10*jv).toFixed(1))};
-    }).sort(function(a,b){return b.score-a.score;});
-    var myExpRank = allScores.findIndex(function(x){return x.tid===teamId;})+1;
-    // Confidence band
-    var myScore = allScores.find(function(x){return x.tid===teamId;});
-    var bandLo=myExpRank, bandHi=myExpRank, THRESH=8;
-    for(var bi=allScores.findIndex(function(x){return x.tid===teamId;})-1;bi>=0;bi--){if(Math.abs(allScores[bi].score-(myScore?myScore.score:0))<=THRESH)bandLo=bi+1;else break;}
-    for(var bj=allScores.findIndex(function(x){return x.tid===teamId;})+1;bj<allScores.length;bj++){if(Math.abs(allScores[bj].score-(myScore?myScore.score:0))<=THRESH)bandHi=bj+1;else break;}
-    function ord(n){return n+(n===1?'st':n===2?'nd':n===3?'rd':'th');}
-    arcRowInTable = {expRank:myExpRank, bandStr:bandLo===bandHi?ord(bandLo):ord(bandLo)+' \u2013 '+ord(bandHi)};
-  }
-  var rankDiff = (curRank && arcRowInTable) ? arcRowInTable.expRank - curRank : null;
-
-  // ── Trend Outlook ─────────────────────────────────────────────────────
-  var trendStrength = Math.abs(gap) + 10*Math.abs(joe);
-  var strength = trendStrength>=20?'Strong':trendStrength>=10?'Moderate':'Weak';
-  var dir = arcEntry.dir || 'Flat';
-  var isPos = dir==='Up'||dir==='Slight Up';
-  var isNeg = dir==='Down'||dir==='Slight Down';
-  var isSlight = dir.indexOf('Slight')!==-1;
-  var trendLabel, trendDesc, trendBg, trendCol;
-  if(isPos&&!isSlight&&strength==='Strong'){trendLabel='Strong positive outlook';trendDesc='Strong upward momentum expected due to underlying performance and luck correction.';}
-  else if(isPos&&!isSlight){trendLabel='Positive outlook';trendDesc='Expected to gain ground over the next 2-4 weeks if trends hold.';}
-  else if(isPos&&isSlight){trendLabel='Mild positive outlook';trendDesc='Minor upward movement expected based on current trends.';}
-  else if(isNeg&&!isSlight&&strength==='Strong'){trendLabel='Strong negative outlook';trendDesc='Significant regression expected as current results exceed underlying strength.';}
-  else if(isNeg&&!isSlight){trendLabel='Negative outlook';trendDesc='Performance likely to regress as current results exceed underlying strength.';}
-  else if(isNeg&&isSlight){trendLabel='Mild negative outlook';trendDesc='Minor downward movement expected based on current trends.';}
-  else{trendLabel='Stable outlook';trendDesc='Team performance is aligned with results. Expect stability.';}
-  trendCol = isPos?'#1e6b3a':isNeg?'#c0392b':'#5f5e5a';
-  trendBg  = isPos?'#e8f0eb':isNeg?'#fce8e8':'#f1efe8';
-
-  // ── Recommended Action ────────────────────────────────────────────────
-  var primaryMove, primaryReason;
-  if((arcEntry.arch||'').indexOf('Contender')!==-1&&(dir==='Up'||dir==='Slight Up')){primaryMove='Hold / Buy';primaryReason='This team is underperforming relative to its underlying strength.';}
-  else if((arcEntry.arch||'').indexOf('Contender')!==-1&&dir==='Flat'){primaryMove='Optimize';primaryReason='Maintain current core. Look for marginal upgrades.';}
-  else if(dir==='Down'||dir==='Slight Down'){primaryMove='Sell High / Rebalance';primaryReason='Current results may not last. Move overperformers while value is high.';}
-  else if((arcEntry.arch||'').indexOf('Middle')!==-1){primaryMove='Choose Direction';primaryReason='Team is in the middle — decide whether to push for contention or rebuild.';}
-  else if((arcEntry.arch||'').indexOf('Weak')!==-1||(arcEntry.arch||'').indexOf('Rebuild')!==-1){primaryMove='Rebuild';primaryReason='Focus on acquiring young talent and high-upside players.';}
-  else{primaryMove=arcEntry.action||'Hold';primaryReason='Follow archetype guidance.';}
-
-  var doNotDo, doNotReason;
-  if(joe<-0.4){doNotDo='Do not sell core pieces';doNotReason='Selling risks missing upside from luck correction.';}
-  else if(joe>0.4){doNotDo='Do not chase current production';doNotReason='Results are inflated by favorable schedule outcomes.';}
-  else if(Math.abs(gap)>15){doNotDo='Do not ignore category imbalance';doNotReason='Team performance is not aligned with underlying strengths.';}
-  else{doNotDo='Avoid unnecessary roster churn';doNotReason='Team is reasonably aligned. Stay patient.';}
-
-  // Determine if pitching or hitting is weaker
-  var hitStr = ((posData['Infield']&&posData['Infield'].avg||0)+(posData['Outfield']&&posData['Outfield'].avg||0))/2;
-  var pitStr = ((posData['SP']&&posData['SP'].avg||0)+(posData['RP']&&posData['RP'].avg||0))/2;
-  var upgradeType, upgradeReason;
-  if(lgPct>fwarPct){upgradeType='High-impact upgrade';upgradeReason='Add players with high upside to match talent with production.';}
-  else if(pitStr<hitStr){upgradeType='Bullpen help or ratio SP';upgradeReason='Improves pitching stability and maximises category efficiency.';}
-  else{upgradeType='Power bat or SB specialist';upgradeReason='Hitting categories are the path to standings improvement.';}
-
-  // ── Colour helpers ────────────────────────────────────────────────────
-  function bktCol(b){return b==='High'?'#1e6b3a':b==='Mid'?'#b7791f':'#c0392b';}
-  function bktBg(b){ return b==='High'?'#e8f0eb':b==='Mid'?'#fef3e2':'#fce8e8';}
-  function joeCol(v){return v>=0.12?'#c0392b':v<=-0.12?'#2980b9':'#5f5e5a';}
-  function joeBg(v){ return v>=0.12?'#fce8e8':v<=-0.12?'#e8f4fd':'#f1efe8';}
-  var mc = 'background:var(--bg);border-radius:var(--radius);padding:12px 14px';
-  var lb = 'font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted)';
-  var pill = function(txt,bg,col){return '<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:500;background:'+bg+';color:'+col+'">'+txt+'</span>';};
-
-  // ── 7-tile metric grid ──────────────────────────────────────────────────
+  // ── 7-tile metric grid ───────────────────────────────────────────────────
   html += '<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin-bottom:20px">';
-
-  // Tile 1: Record
-  html += '<div style="'+mc+'"><div style="'+lb+'">Record</div>';
-  html += '<div style="font-size:20px;font-weight:500;margin:5px 0 2px">'+myW+'-'+myL+'-'+myT+'</div>';
-  html += '<div style="font-size:12px;color:var(--muted)">'+(ptsRank?'#'+ptsRank+' in league':'-')+'</div></div>';
-
-  // Tile 2: Points
-  html += '<div style="'+mc+'"><div style="'+lb+'">Points</div>';
-  html += '<div style="font-size:20px;font-weight:500;margin:5px 0 2px">'+(standingsRow?standingsRow.pts:'-')+'</div>';
-  html += '<div style="font-size:12px;color:var(--muted)">'+(ptsRank?'#'+ptsRank+' of '+allTeamRows.length:'')+'</div></div>';
-
-  // Tile 3: Avg Win %
-  html += '<div style="'+mc+'"><div style="'+lb+'">Avg Win %</div>';
-  html += '<div style="font-size:20px;font-weight:500;margin:5px 0 2px">'+winPct+'</div>';
-  html += '<div style="font-size:12px;color:var(--muted)">(Expected: 50.0%)</div></div>';
-
-  // Tile 4: JOE Factor
-  html += '<div style="'+mc+'"><div style="'+lb+'">JOE Factor</div>';
-  html += '<div style="display:flex;align-items:center;gap:5px;margin:5px 0 2px">';
-  html += '<span style="font-size:17px;font-weight:500;color:'+joeCol(joe)+'">'+(joe>=0?'+':'')+joe.toFixed(2)+'</span>';
-  html += pill(jBkt(joe),joeBg(joe),joeCol(joe));
-  html += '</div><div style="font-size:12px;color:var(--muted)">Luck Z-Score</div></div>';
-
-  // Tile 5: fWAR %
-  html += '<div style="'+mc+'"><div style="'+lb+'">fWAR %</div>';
-  html += '<div style="display:flex;align-items:center;gap:5px;margin:5px 0 2px">';
-  html += '<span style="font-size:17px;font-weight:500">'+fwarPct+'%</span>';
-  html += pill(fBucket,bktBg(fBucket),bktCol(fBucket));
-  html += '</div><div style="font-size:12px;color:var(--muted)">vs League</div></div>';
-
-  // Tile 6: Rating %
-  html += '<div style="'+mc+'"><div style="'+lb+'">Rating %</div>';
-  html += '<div style="display:flex;align-items:center;gap:5px;margin:5px 0 2px">';
-  html += '<span style="font-size:17px;font-weight:500">'+lgPct+'%</span>';
-  html += pill(lBucket,bktBg(lBucket),bktCol(lBucket));
-  html += '</div><div style="font-size:12px;color:var(--muted)">vs League</div></div>';
-
-  // Tile 7: Trust Score
-  html += '<div style="'+mc+'"><div style="'+lb+'">Trust Score</div>';
-  html += '<div style="display:flex;align-items:center;gap:5px;margin:5px 0 2px">';
-  html += '<span style="font-size:17px;font-weight:500">'+trust+'</span>';
-  var tc7=trust>=65?'#1e6b3a':trust>=50?'#b7791f':'#c0392b';
-  var tbg7=trust>=65?'#e8f0eb':trust>=50?'#fef3e2':'#fce8e8';
-  html += pill(trustTier(trust),tbg7,tc7);
-  html += '</div><div style="font-size:12px;color:var(--muted)">Model Confidence</div></div>';
-
+  html += '<div style="'+mc+'"><div style="'+lb+'">Record</div><div style="font-size:20px;font-weight:500;margin:5px 0 2px">'+myW+'-'+myL+'-'+myT+'</div><div style="font-size:12px;color:var(--muted)">'+(ptsRank?'#'+ptsRank+' in league':'-')+'</div></div>';
+  html += '<div style="'+mc+'"><div style="'+lb+'">Points</div><div style="font-size:20px;font-weight:500;margin:5px 0 2px">'+(standingsRow?standingsRow.pts:'-')+'</div><div style="font-size:12px;color:var(--muted)">'+(ptsRank?'#'+ptsRank+' of '+allTeamRows.length:'')+'</div></div>';
+  html += '<div style="'+mc+'"><div style="'+lb+'">Avg Win %</div><div style="font-size:20px;font-weight:500;margin:5px 0 2px">'+winPct+'</div><div style="font-size:12px;color:var(--muted)">(Expected: 50.0%)</div></div>';
+  html += '<div style="'+mc+'"><div style="'+lb+'">JOE Factor</div><div style="display:flex;align-items:center;gap:5px;margin:5px 0 2px"><span style="font-size:17px;font-weight:500;color:'+_joeCol7+'">'+(_joe7>=0?'+':'')+_joe7.toFixed(2)+'</span>'+_pill7(_jBkt7,_joeBg7,_joeCol7)+'</div><div style="font-size:12px;color:var(--muted)">Luck Z-Score</div></div>';
+  html += '<div style="'+mc+'"><div style="'+lb+'">fWAR %</div><div style="display:flex;align-items:center;gap:5px;margin:5px 0 2px"><span style="font-size:17px;font-weight:500">'+_fwarPct7+'%</span>'+_pill7(_fBkt7,_bktBg7(_fBkt7),_bktCol7(_fBkt7))+'</div><div style="font-size:12px;color:var(--muted)">vs League</div></div>';
+  html += '<div style="'+mc+'"><div style="'+lb+'">Rating %</div><div style="display:flex;align-items:center;gap:5px;margin:5px 0 2px"><span style="font-size:17px;font-weight:500">'+_lgPct7+'%</span>'+_pill7(_lBkt7,_bktBg7(_lBkt7),_bktCol7(_lBkt7))+'</div><div style="font-size:12px;color:var(--muted)">vs League</div></div>';
+  html += '<div style="'+mc+'"><div style="'+lb+'">Trust Score</div><div style="display:flex;align-items:center;gap:5px;margin:5px 0 2px"><span style="font-size:17px;font-weight:500">'+_trust7+'</span>'+_pill7(_tTier7,_tbg7,_tc7)+'</div><div style="font-size:12px;color:var(--muted)">Model Confidence</div></div>';
   html += '</div>';
-  } // end pre-compute block
 
-  // ── Trend Outlook, Recommended Action, Model Inputs etc. ────────────────
+  // ── Trend Outlook, Recommended Action, Model Inputs etc. ─────────────────
   html += buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posData, avgLuck);
 
-  // ── New Team Diagnostic Card (Z-scores, scatter, positional strength) ───
+  // ── New Team Diagnostic Card (Z-scores, scatter, positional strength) ────
   html += buildNewDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posData, avgLuck);
 
   // ── 8. Top 5 hitters and pitchers by fWAR ───────────────────────────────
