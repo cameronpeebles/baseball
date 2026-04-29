@@ -7370,6 +7370,111 @@ function assembleDashboard(teamId, el) {
   // ── Team Diagnostic Card ────────────────────────────────────────────────
   html += buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posData, avgLuck);
 
+  // ── 8. Top 5 hitters and pitchers by fWAR ───────────────────────────────
+  var hasFWAR = FWAR.hitResults && FWAR.hitResults.length > 0;
+
+  if (hasFWAR) {
+    var myHittersFWAR = FWAR.hitResults
+      .filter(function(p) { return p.ftId === teamId && p.fWAR != null; })
+      .sort(function(a,b) { return b.fWAR - a.fWAR; })
+      .slice(0, 5);
+    var myPitchersFWAR = FWAR.pitResults
+      .filter(function(p) { return p.ftId === teamId && p.fWAR != null; })
+      .sort(function(a,b) { return b.fWAR - a.fWAR; })
+      .slice(0, 5);
+
+    function fwarColor(v) {
+      return v >= 2 ? '#1e6b3a' : v >= 0.5 ? '#4a9a68' : v >= -0.5 ? '#b7791f' : '#c0392b';
+    }
+
+    var hitCats  = ['R','HR','RBI','SB','AVG'];
+    var pitCats  = ['W','SVH3','K','ERA','WHIP'];
+
+    function fwarTable(players, label, cats) {
+      var isHit = label === 'Hitters';
+      var fwPctLookup = isHit ? (window._fwarPctLookupHit||window._fwarPctLookup||{}) : (window._fwarPctLookupPit||window._fwarPctLookup||{});
+      function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+      function rCol(v){ return v==null?'var(--muted)':v>=65?'#1e6b3a':v>=50?'#4a9a68':v>=35?'#b7791f':'#c0392b'; }
+
+      var h = '<div style="flex:1;min-width:0">';
+      h += '<div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:12px 16px 8px;border-bottom:1px solid var(--border)">' + label + '</div>';
+      h += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
+      h += '<thead><tr>';
+      h += '<th style="text-align:left;padding:7px 8px 7px 16px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);white-space:nowrap">Player</th>';
+      h += '<th style="padding:7px 8px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:#9b59b6;white-space:nowrap;text-align:right">fWAR%</th>';
+      h += '<th style="padding:7px 8px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:#4a9a68;white-space:nowrap;text-align:right">Lg Rating</th>';
+      cats.forEach(function(c) {
+        h += '<th style="padding:7px 8px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);text-align:right;white-space:nowrap">' + c + '</th>';
+      });
+      h += '</tr></thead><tbody>';
+
+      if (!players.length) {
+        h += '<tr><td colspan="' + (3 + cats.length) + '" style="padding:16px;text-align:center;color:var(--muted)">No data</td></tr>';
+      } else {
+        players.forEach(function(p, i) {
+          var isOdd = i % 2 === 1;
+          var k = normN(p.name);
+          var fwPct = fwPctLookup[k];
+          var lgR = (window._lgRatingLookup||{})[k];
+          var lgRVal = lgR != null ? Math.round(lgR * 100) : null;
+
+          h += '<tr style="' + (isOdd ? 'background:var(--bg)' : '') + ';border-bottom:1px solid var(--border)">';
+
+          // Player cell
+          h += '<td style="padding:8px 8px 8px 16px;text-align:left;white-space:nowrap">';
+          h += '<div style="display:flex;align-items:center;gap:7px">';
+          h += '<span style="font-size:11px;font-weight:600;color:var(--muted);width:14px;flex-shrink:0">' + (i+1) + '</span>';
+          h += p.hs ? '<img class="player-hs" src="' + p.hs + '" alt="" onerror="this.style.display=\'none\'">' : '';
+          h += '<div>';
+          h += '<div style="font-size:13px;font-weight:500">' + p.name + '</div>';
+          h += '<div style="font-size:10px;color:var(--muted)"><span class="pos-badge">' + (p.assignedSlot || primaryPos(p.pos)) + '</span> ' + p.mlb + '</div>';
+          h += '</div></div></td>';
+
+          // fWAR%
+          h += '<td style="padding:8px;text-align:right;white-space:nowrap">';
+          h += '<span style="font-size:13px;font-weight:700;color:' + rCol(fwPct) + '">' + (fwPct != null ? Math.round(fwPct) : '—') + '</span>';
+          h += '</td>';
+
+          // League Rating
+          h += '<td style="padding:8px;text-align:right;white-space:nowrap">';
+          h += '<span style="font-size:13px;font-weight:700;color:' + rCol(lgRVal) + '">' + (lgRVal != null ? lgRVal : '—') + '</span>';
+          h += '</td>';
+
+          // Stat columns
+          cats.forEach(function(c) {
+            var v = p.raw ? p.raw[c] : null;
+            var str = '-';
+            if (v != null) {
+              if (c === 'AVG')  str = v.toFixed(3);
+              else if (c === 'ERA' || c === 'WHIP') str = v.toFixed(2);
+              else str = Math.round(v).toString();
+            }
+            h += '<td style="padding:8px;text-align:right;white-space:nowrap;font-size:12px">' + str + '</td>';
+          });
+
+          h += '</tr>';
+        });
+      }
+      h += '</tbody></table></div></div>';
+      return h;
+    }
+
+    html += '<div class="card" style="margin-bottom:20px">';
+    html += '<div class="card-header"><span class="card-title">Top 5 by fWAR</span>';
+    html += '<span style="font-size:11px;color:var(--muted)">Based on current fWAR model settings</span></div>';
+    html += '<div style="padding:0 16px">' + dashInfoBox('Your top 5 hitters and pitchers ranked by fWAR. fWAR% shows how each player ranks among all rostered players at their position — green is above average, red is below. League Rating shows their overall percentile vs the entire league. Stats columns show season-to-date totals.') + '</div>';
+    html += '<div style="display:flex;gap:0;flex-wrap:wrap">';
+    html += fwarTable(myHittersFWAR, 'Hitters', hitCats);
+    html += '<div style="width:1px;background:var(--border);flex-shrink:0"></div>';
+    html += fwarTable(myPitchersFWAR, 'Pitchers', pitCats);
+    html += '</div></div>';
+  } else {
+    html += '<div class="card" style="margin-bottom:20px"><div class="card-body" style="padding:16px 20px;text-align:center;color:var(--muted);font-size:13px">';
+    html += 'Visit the <strong>fWAR</strong> page and click <strong>Recalculate</strong> to see top players by fWAR here.';
+    html += '</div></div>';
+  }
+
+
   // Positional strength cards
   html += '<div class="card" style="margin-bottom:20px">';
   html += '<div class="card-header"><span class="card-title">Positional strength</span></div>';
@@ -7585,111 +7690,6 @@ function assembleDashboard(teamId, el) {
   html += '</div>'; // end right column
   html += '</div>'; // end dash-two-col
 
-  // ── 8. Top 5 hitters and pitchers by fWAR ───────────────────────────────
-  var hasFWAR = FWAR.hitResults && FWAR.hitResults.length > 0;
-
-  html += '</div>'; // dash-two-col (trade/waiver)
-
-  if (hasFWAR) {
-    var myHittersFWAR = FWAR.hitResults
-      .filter(function(p) { return p.ftId === teamId && p.fWAR != null; })
-      .sort(function(a,b) { return b.fWAR - a.fWAR; })
-      .slice(0, 5);
-    var myPitchersFWAR = FWAR.pitResults
-      .filter(function(p) { return p.ftId === teamId && p.fWAR != null; })
-      .sort(function(a,b) { return b.fWAR - a.fWAR; })
-      .slice(0, 5);
-
-    function fwarColor(v) {
-      return v >= 2 ? '#1e6b3a' : v >= 0.5 ? '#4a9a68' : v >= -0.5 ? '#b7791f' : '#c0392b';
-    }
-
-    var hitCats  = ['R','HR','RBI','SB','AVG'];
-    var pitCats  = ['W','SVH3','K','ERA','WHIP'];
-
-    function fwarTable(players, label, cats) {
-      var isHit = label === 'Hitters';
-      var fwPctLookup = isHit ? (window._fwarPctLookupHit||window._fwarPctLookup||{}) : (window._fwarPctLookupPit||window._fwarPctLookup||{});
-      function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
-      function rCol(v){ return v==null?'var(--muted)':v>=65?'#1e6b3a':v>=50?'#4a9a68':v>=35?'#b7791f':'#c0392b'; }
-
-      var h = '<div style="flex:1;min-width:0">';
-      h += '<div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:12px 16px 8px;border-bottom:1px solid var(--border)">' + label + '</div>';
-      h += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
-      h += '<thead><tr>';
-      h += '<th style="text-align:left;padding:7px 8px 7px 16px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);white-space:nowrap">Player</th>';
-      h += '<th style="padding:7px 8px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:#9b59b6;white-space:nowrap;text-align:right">fWAR%</th>';
-      h += '<th style="padding:7px 8px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:#4a9a68;white-space:nowrap;text-align:right">Lg Rating</th>';
-      cats.forEach(function(c) {
-        h += '<th style="padding:7px 8px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);text-align:right;white-space:nowrap">' + c + '</th>';
-      });
-      h += '</tr></thead><tbody>';
-
-      if (!players.length) {
-        h += '<tr><td colspan="' + (3 + cats.length) + '" style="padding:16px;text-align:center;color:var(--muted)">No data</td></tr>';
-      } else {
-        players.forEach(function(p, i) {
-          var isOdd = i % 2 === 1;
-          var k = normN(p.name);
-          var fwPct = fwPctLookup[k];
-          var lgR = (window._lgRatingLookup||{})[k];
-          var lgRVal = lgR != null ? Math.round(lgR * 100) : null;
-
-          h += '<tr style="' + (isOdd ? 'background:var(--bg)' : '') + ';border-bottom:1px solid var(--border)">';
-
-          // Player cell
-          h += '<td style="padding:8px 8px 8px 16px;text-align:left;white-space:nowrap">';
-          h += '<div style="display:flex;align-items:center;gap:7px">';
-          h += '<span style="font-size:11px;font-weight:600;color:var(--muted);width:14px;flex-shrink:0">' + (i+1) + '</span>';
-          h += p.hs ? '<img class="player-hs" src="' + p.hs + '" alt="" onerror="this.style.display=\'none\'">' : '';
-          h += '<div>';
-          h += '<div style="font-size:13px;font-weight:500">' + p.name + '</div>';
-          h += '<div style="font-size:10px;color:var(--muted)"><span class="pos-badge">' + (p.assignedSlot || primaryPos(p.pos)) + '</span> ' + p.mlb + '</div>';
-          h += '</div></div></td>';
-
-          // fWAR%
-          h += '<td style="padding:8px;text-align:right;white-space:nowrap">';
-          h += '<span style="font-size:13px;font-weight:700;color:' + rCol(fwPct) + '">' + (fwPct != null ? Math.round(fwPct) : '—') + '</span>';
-          h += '</td>';
-
-          // League Rating
-          h += '<td style="padding:8px;text-align:right;white-space:nowrap">';
-          h += '<span style="font-size:13px;font-weight:700;color:' + rCol(lgRVal) + '">' + (lgRVal != null ? lgRVal : '—') + '</span>';
-          h += '</td>';
-
-          // Stat columns
-          cats.forEach(function(c) {
-            var v = p.raw ? p.raw[c] : null;
-            var str = '-';
-            if (v != null) {
-              if (c === 'AVG')  str = v.toFixed(3);
-              else if (c === 'ERA' || c === 'WHIP') str = v.toFixed(2);
-              else str = Math.round(v).toString();
-            }
-            h += '<td style="padding:8px;text-align:right;white-space:nowrap;font-size:12px">' + str + '</td>';
-          });
-
-          h += '</tr>';
-        });
-      }
-      h += '</tbody></table></div></div>';
-      return h;
-    }
-
-    html += '<div class="card" style="margin-bottom:20px">';
-    html += '<div class="card-header"><span class="card-title">Top 5 by fWAR</span>';
-    html += '<span style="font-size:11px;color:var(--muted)">Based on current fWAR model settings</span></div>';
-    html += '<div style="padding:0 16px">' + dashInfoBox('Your top 5 hitters and pitchers ranked by fWAR. fWAR% shows how each player ranks among all rostered players at their position — green is above average, red is below. League Rating shows their overall percentile vs the entire league. Stats columns show season-to-date totals.') + '</div>';
-    html += '<div style="display:flex;gap:0;flex-wrap:wrap">';
-    html += fwarTable(myHittersFWAR, 'Hitters', hitCats);
-    html += '<div style="width:1px;background:var(--border);flex-shrink:0"></div>';
-    html += fwarTable(myPitchersFWAR, 'Pitchers', pitCats);
-    html += '</div></div>';
-  } else {
-    html += '<div class="card" style="margin-bottom:20px"><div class="card-body" style="padding:16px 20px;text-align:center;color:var(--muted);font-size:13px">';
-    html += 'Visit the <strong>fWAR</strong> page and click <strong>Recalculate</strong> to see top players by fWAR here.';
-    html += '</div></div>';
-  }
 
   // fWAR% vs League Rating full-width scatter card
   html += '<div class="card" style="margin-bottom:20px">';
