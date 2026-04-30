@@ -256,6 +256,7 @@ td.neg { color: #c0392b; font-weight: 500; }
   <button onclick="showPage('zscores',this)">Z-Scores</button>
   <button onclick="showPage('joe',this)">JOE Factor</button>
   <button onclick="showPage('teamroster',this)">Team Roster</button>
+  <button onclick="showPage('ros',this)">ROS</button>
   <button onclick="showPage('trade',this)">Player Trade &amp; Market</button>
   <button onclick="showPage('fwar',this)">Player Data</button>
   <button onclick="showPage('targets',this)">Trade Waiver Wire Targets</button>
@@ -634,6 +635,16 @@ td.neg { color: #c0392b; font-weight: 500; }
     </div>
   </div>
   <div class="page" id="page-historic" style="display:none"></div>
+  <div class="page" id="page-ros">
+    <div class="page-title">ROS Projections</div>
+    <div class="page-subtitle">FantasyPros consensus rest-of-season projections for all players.</div>
+    <div class="trade-tabs" id="ros-tabs">
+      <button class="trade-tab active" onclick="showROSTab('hitters',this)">Hitters</button>
+      <button class="trade-tab" onclick="showROSTab('pitchers',this)">Pitchers</button>
+    </div>
+    <div id="ros-body"><div class="loading">Loading...</div></div>
+  </div>
+
   <div class="page" id="page-leaders">
     <div class="page-title">League Leaders</div>
     <div class="page-subtitle">Top players and teams across every scoring category.</div>
@@ -2042,6 +2053,7 @@ function showPage(name, btn) {
   if (name === 'newdash') renderNewDash();
   if (name === 'archetype') renderArchetypePage();
   if (name === 'fantrax') { if (!fantraxRendered) { fantraxRendered = true; } }
+  if (name === 'ros') renderROSPage();
   if (name === 'combined') renderCombinedPage();
   if (name === 'zscores') renderZScores();
   if (name === 'joe') renderJOEFactor();
@@ -4290,6 +4302,120 @@ window.appendJoeWeeklyCharts = function() {
     window._joePageMiniCharts.push(c);
   });
 };
+
+// ── ROS Projections Page ──────────────────────────────────────────────────
+var rosRendered = false;
+var _rosHitData = null, _rosPitData = null;
+var _rosCurrentTab = 'hitters';
+
+window.showROSTab = function(tab, btn) {
+  _rosCurrentTab = tab;
+  document.querySelectorAll('#ros-tabs .trade-tab').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  var el = document.getElementById('ros-body');
+  if (!el) return;
+  if (tab === 'hitters') buildROSTable(el, _rosHitData || [], true);
+  else                   buildROSTable(el, _rosPitData || [], false);
+};
+
+function renderROSPage() {
+  var el = document.getElementById('ros-body');
+  if (!el) return;
+  if (rosRendered) { window.showROSTab(_rosCurrentTab, document.querySelector('#ros-tabs .trade-tab.active')); return; }
+  rosRendered = true;
+  el.innerHTML = '<div class="loading">Loading projections...</div>';
+
+  var hitLoaded = false, pitLoaded = false;
+  function tryRender() {
+    if (!hitLoaded || !pitLoaded) return;
+    var activeBtn = document.querySelector('#ros-tabs .trade-tab.active') || document.querySelector('#ros-tabs .trade-tab');
+    window.showROSTab(_rosCurrentTab, activeBtn);
+  }
+
+  loadJSON('fantasypros_hitters.json')
+    .then(function(d){ _rosHitData = d || []; hitLoaded = true; tryRender(); })
+    .catch(function(){ _rosHitData = []; hitLoaded = true; tryRender(); });
+
+  loadJSON('fantasypros_pitchers.json')
+    .then(function(d){ _rosPitData = d || []; pitLoaded = true; tryRender(); })
+    .catch(function(){ _rosPitData = []; pitLoaded = true; tryRender(); });
+}
+
+function buildROSTable(el, players, isHit) {
+  if (!players || !players.length) {
+    el.innerHTML = '<div class="error-msg">No projection data found. Run the GitHub Action to fetch FantasyPros data.</div>';
+    return;
+  }
+
+  // Sort by projected value (HR for hitters, K for pitchers)
+  var sortKey = isHit ? 'HR' : 'K';
+  var sorted = players.slice().sort(function(a,b){ return (parseFloat(b[sortKey])||0) - (parseFloat(a[sortKey])||0); });
+
+  var cats = isHit ? ['R','HR','RBI','SB','AVG','AB'] : ['W','K','ERA','WHIP','SV','IP'];
+  var colColors = isHit
+    ? { R:'#185fa5', HR:'#185fa5', RBI:'#185fa5', SB:'#185fa5', AVG:'#185fa5', AB:'#888780' }
+    : { W:'#2d5a3d', K:'#2d5a3d', ERA:'#c0392b', WHIP:'#c0392b', SV:'#2d5a3d', IP:'#888780' };
+  var lowCats = { ERA:true, WHIP:true };
+
+  // Compute min/max per stat for color scaling
+  var statRanges = {};
+  cats.forEach(function(cat) {
+    var vals = sorted.map(function(p){ return parseFloat(p[cat]); }).filter(function(v){ return !isNaN(v); });
+    if (!vals.length) { statRanges[cat] = {min:0, max:1}; return; }
+    statRanges[cat] = { min:Math.min.apply(null,vals), max:Math.max.apply(null,vals) };
+  });
+
+  function statColor(cat, val) {
+    var v = parseFloat(val);
+    if (isNaN(v)) return 'var(--muted)';
+    var r = statRanges[cat];
+    var range = r.max - r.min || 1;
+    var pct = (v - r.min) / range; // 0=worst, 1=best
+    if (lowCats[cat]) pct = 1 - pct;  // invert for ERA/WHIP
+    if (pct >= 0.75) return '#1e6b3a';
+    if (pct >= 0.50) return '#4a9a68';
+    if (pct >= 0.25) return '#b7791f';
+    return '#c0392b';
+  }
+
+  var html = '<div class="table-wrap"><table><thead><tr>';
+  html += '<th class="left" style="min-width:160px">Player</th>';
+  html += '<th class="left">Pos</th>';
+  html += '<th class="left">Team</th>';
+  cats.forEach(function(cat) {
+    html += '<th style="color:' + (colColors[cat]||'var(--text)') + '">' + cat + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+
+  sorted.forEach(function(p, i) {
+    var name = p.name || p.name_key || '—';
+    var pos  = p.pos  || '—';
+    var team = p.mlb_team || p.team || '—';
+    var hs   = p.hs   || '';
+
+    html += '<tr>';
+    html += '<td class="left"><div style="display:flex;align-items:center;gap:8px">';
+    if (hs) {
+      html += '<img src="' + hs + '" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border);flex-shrink:0" alt="" onerror="this.style.display=\'none\'">';
+    } else {
+      html += '<div style="width:24px;height:24px;border-radius:50%;background:var(--surface);border:1px solid var(--border);flex-shrink:0"></div>';
+    }
+    html += '<span style="font-weight:500">' + name + '</span></div></td>';
+    html += '<td class="left"><span style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;background:var(--bg);border:0.5px solid var(--border);color:var(--muted)">' + pos + '</span></td>';
+    html += '<td class="left" style="color:var(--muted);font-size:12px">' + team + '</td>';
+
+    cats.forEach(function(cat) {
+      var val = p[cat];
+      var disp = (val != null && val !== '') ? (cat === 'AVG' ? parseFloat(val).toFixed(3) : parseFloat(val).toFixed(cat === 'ERA' || cat === 'WHIP' ? 2 : 0)) : '—';
+      var col = (val != null && val !== '') ? statColor(cat, val) : 'var(--muted)';
+      html += '<td style="font-weight:500;color:' + col + '">' + disp + '</td>';
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
 
 window.showMatrixWeek = function(wk, btn) {
   document.querySelectorAll('#matrix-week-pills .pill').forEach(function(p){ p.classList.remove('active'); });
