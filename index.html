@@ -7009,9 +7009,6 @@ function renderArchetypePage() {
   });
   scatterHtml += '</div></div></div>';
 
-  html = scatterHtml + html;
-
-
   // ── Build HTML table ──────────────────────────────────────────────────────
   var thStyle = 'padding:8px 10px;text-align:left;font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;background:var(--bg)';
   var tdStyle = 'padding:8px 10px;border-bottom:0.5px solid var(--border);vertical-align:middle';
@@ -7085,7 +7082,7 @@ function renderArchetypePage() {
   html += 'Confidence band: teams with scores within 8 points are considered statistically similar and share overlapping bands.';
   html += '</div></div>';
 
-  el.innerHTML = html;
+  el.innerHTML = scatterHtml + html;
   // ── Draw charts after DOM ─────────────────────────────────────────────────
   setTimeout(function() {
     if (typeof Chart === 'undefined') return;
