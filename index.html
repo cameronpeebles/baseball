@@ -737,6 +737,7 @@ td.neg { color: #c0392b; font-weight: 500; }
       <button class="trade-tab" onclick="showGuideTab('data',this)">Data Pipeline</button>
       <button class="trade-tab" onclick="showGuideTab('glossary',this)">Glossary</button>
       <button class="trade-tab" onclick="showGuideTab('changelog',this)">Changelog</button>
+      <button class="trade-tab" onclick="showGuideTab('archetype',this)">Team Archetype</button>
     </div>
 
     <!-- Getting Started -->
@@ -1654,6 +1655,324 @@ td.neg { color: #c0392b; font-weight: 500; }
           </div>
         </div>
       </div>
+    <!-- Team Archetype Guide Tab -->
+    <div id="guide-tab-archetype" class="trade-tab-content">
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Team Archetype — How it works</span></div>
+        <div class="card-body" style="padding:20px">
+          <p style="font-size:13px;line-height:1.7;margin-bottom:16px">Every team is classified into one of 27 archetypes based on three model inputs: <strong>fWAR%</strong> (actual fantasy production), <strong>Rating%</strong> (underlying roster talent), and <strong>JOE Factor</strong> (schedule luck). Each input is bucketed independently, and the three-bucket combination produces a unique key, a recommended direction, and an action.</p>
+
+          <div style="font-weight:600;font-size:13px;margin:20px 0 8px">Step 1 — fWAR% (Team Production Percentile)</div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:8px">For each positional group (Infield, Outfield, SP, RP), compute the average fWAR percentile of all rostered players. Average the four group scores to get the team total. Rank all 10 teams — your percentile rank (0–100) is your <strong>fWAR%</strong>.</div>
+          <div style="padding:10px 14px;background:#e8f0eb;border-radius:8px;font-size:12px;margin-bottom:20px;color:#1e4a28;font-family:monospace">fWAR% = percentile_rank( mean( avg_fWAR_pct(IF), avg_fWAR_pct(OF), avg_fWAR_pct(SP), avg_fWAR_pct(RP) ) )</div>
+
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Step 2 — Rating% (Underlying Talent Percentile)</div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:8px">Same approach as fWAR%, but uses each player's <strong>league rating</strong> (positional rank vs the full player pool) rather than fWAR percentile. Captures roster quality independent of recent production — a team with elite talent but underperforming players will show High Rating% but Low fWAR%.</div>
+          <div style="padding:10px 14px;background:#e8f0eb;border-radius:8px;font-size:12px;margin-bottom:20px;color:#1e4a28;font-family:monospace">Rating% = percentile_rank( mean( avg_league_rating(IF), avg_league_rating(OF), avg_league_rating(SP), avg_league_rating(RP) ) )</div>
+
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Step 3 — JOE Factor (Schedule Luck)</div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:20px">Measures scheduling luck on a −1.0 to +1.0 scale. Positive = you've faced weaker opponents; negative = unlucky scheduling. See the JOE Factor tab for the full formula.</div>
+
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Step 4 — Bucket each input</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:2">
+              <strong>fWAR% and Rating%</strong><br>
+              ≥ 65 → <span style="color:#1e6b3a;font-weight:600">High</span><br>
+              45–64 → <span style="color:#b7791f;font-weight:600">Mid</span><br>
+              &lt; 45 → <span style="color:#c0392b;font-weight:600">Low</span>
+            </div>
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:2">
+              <strong>JOE Factor</strong><br>
+              ≥ +0.12 → <span style="color:#c0392b;font-weight:600">Lucky</span><br>
+              −0.12 to +0.12 → <span style="color:#5f5e5a;font-weight:600">Neutral</span><br>
+              ≤ −0.12 → <span style="color:#2980b9;font-weight:600">Unlucky</span>
+            </div>
+          </div>
+
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Step 5 — Archetype Key</div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:8px">
+            Concatenate the three bucket labels to form the key:<br>
+            <span style="font-family:monospace"><strong>Key = {fWAR% bucket} – {Rating% bucket} – {JOE bucket}</strong></span><br><br>
+            <em>Example:</em> fWAR% = 72 → High, Rating% = 58 → Mid, JOE = −0.18 → Unlucky<br>
+            Key = <strong>High-Mid-Unlucky</strong> → <em>Real Contender</em> · Direction: Up · Action: Hold / Buy
+          </div>
+
+          <div style="font-weight:600;font-size:13px;margin:20px 0 8px">Trust Score — Model Confidence</div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:8px">
+            Measures how reliable the archetype is (0–100). High = fWAR% and Rating% are aligned and JOE is near zero. Low = large production/talent gap or extreme luck values distorting results.<br><br>
+            <span style="font-family:monospace"><strong>Trust = 100 − (0.8 × |fWAR% − Rating%|) − (35 × |JOE|)</strong></span><br>
+            Capped at 80 if both fWAR% &lt; 50 <em>and</em> Rating% &lt; 50. Clamped to 0–100.
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:24px">
+            <div style="padding:10px 12px;background:#e8f0eb;border-radius:8px;font-size:12px;text-align:center;color:#1e4a28"><div style="font-size:18px;font-weight:600">65–100</div><div style="font-weight:600;margin:2px 0">High / Very High</div><div>Model alignment strong</div></div>
+            <div style="padding:10px 12px;background:#fef3e2;border-radius:8px;font-size:12px;text-align:center;color:#633806"><div style="font-size:18px;font-weight:600">50–64</div><div style="font-weight:600;margin:2px 0">Medium</div><div>Moderate confidence</div></div>
+            <div style="padding:10px 12px;background:#fce8e8;border-radius:8px;font-size:12px;text-align:center;color:#791f1f"><div style="font-size:18px;font-weight:600">0–49</div><div style="font-weight:600;margin:2px 0">Low</div><div>High noise — use caution</div></div>
+          </div>
+
+          <div style="font-weight:600;font-size:13px;margin:0 0 10px">All 27 Archetypes</div>
+          <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead>
+              <tr style="background:var(--bg)">
+                <th style="padding:8px 10px;text-align:left;border-bottom:1.5px solid var(--border);white-space:nowrap">fWAR Bucket</th>
+                <th style="padding:8px 10px;text-align:left;border-bottom:1.5px solid var(--border);white-space:nowrap">Rating Bucket</th>
+                <th style="padding:8px 10px;text-align:left;border-bottom:1.5px solid var(--border);white-space:nowrap">JOE Bucket</th>
+                <th style="padding:8px 10px;text-align:left;border-bottom:1.5px solid var(--border)">Key</th>
+                <th style="padding:8px 10px;text-align:left;border-bottom:1.5px solid var(--border)">Archetype</th>
+                <th style="padding:8px 10px;text-align:left;border-bottom:1.5px solid var(--border)">Direction</th>
+                <th style="padding:8px 10px;text-align:left;border-bottom:1.5px solid var(--border)">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="background:#f8f8f6">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#1e6b3a">High</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#1e6b3a">High</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#2980b9">Unlucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">High-High-Unlucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Underperforming Contender</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#1e6b3a;font-weight:500;white-space:nowrap">Up</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Hold / Buy</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#1e6b3a">High</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#1e6b3a">High</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#5f5e5a">Neutral</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">High-High-Neutral</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">True Contender</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#5f5e5a;font-weight:500;white-space:nowrap">Stable</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Push In</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#1e6b3a">High</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#1e6b3a">High</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Lucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">High-High-Lucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Strong but Inflated Contender</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#c0392b;font-weight:500;white-space:nowrap">Slight Down</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Hold / Trim Depth</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#1e6b3a">High</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#b7791f">Mid</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#2980b9">Unlucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">High-Mid-Unlucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Real Contender</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#1e6b3a;font-weight:500;white-space:nowrap">Up</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Hold / Buy</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#1e6b3a">High</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#b7791f">Mid</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#5f5e5a">Neutral</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">High-Mid-Neutral</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Good Contender</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#5f5e5a;font-weight:500;white-space:nowrap">Stable</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Optimize</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#1e6b3a">High</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#b7791f">Mid</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Lucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">High-Mid-Lucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Overperforming Contender</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#c0392b;font-weight:500;white-space:nowrap">Down</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Rebalance</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#1e6b3a">High</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Low</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#2980b9">Unlucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">High-Low-Unlucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Format-Favored Team</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#1e6b3a;font-weight:500;white-space:nowrap">Slight Up</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Patch Weaknesses</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#1e6b3a">High</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Low</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#5f5e5a">Neutral</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">High-Low-Neutral</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Format Mismatch Winner</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#5f5e5a;font-weight:500;white-space:nowrap">Flat</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Monitor</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#1e6b3a">High</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Low</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Lucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">High-Low-Lucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Fragile Contender</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#c0392b;font-weight:500;white-space:nowrap">Down</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Sell High / Rebalance</td>
+              </tr>
+              <tr style="background:#f8f8f6">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#b7791f">Mid</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#1e6b3a">High</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#2980b9">Unlucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">Mid-High-Unlucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Hidden Sleeper</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#1e6b3a;font-weight:500;white-space:nowrap">Up</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Buy / Stay Patient</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#b7791f">Mid</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#1e6b3a">High</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#5f5e5a">Neutral</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">Mid-High-Neutral</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Underperforming Good Team</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#1e6b3a;font-weight:500;white-space:nowrap">Up</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Rebalance</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#b7791f">Mid</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#1e6b3a">High</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Lucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">Mid-High-Lucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Talent-Rich but Uneven</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#5f5e5a;font-weight:500;white-space:nowrap">Flat</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Improve Fit</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#b7791f">Mid</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#b7791f">Mid</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#2980b9">Unlucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">Mid-Mid-Unlucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Stable Team with Upside</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#1e6b3a;font-weight:500;white-space:nowrap">Up</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Hold / Small Adds</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#b7791f">Mid</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#b7791f">Mid</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#5f5e5a">Neutral</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">Mid-Mid-Neutral</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">True Middle Team</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#5f5e5a;font-weight:500;white-space:nowrap">Flat</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Choose Direction</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#b7791f">Mid</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#b7791f">Mid</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Lucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">Mid-Mid-Lucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Soft Middle Team</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#c0392b;font-weight:500;white-space:nowrap">Down</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Sell High / Rebalance</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#b7791f">Mid</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Low</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#2980b9">Unlucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">Mid-Low-Unlucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Scrappy Team</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#1e6b3a;font-weight:500;white-space:nowrap">Slight Up</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Short-Term Adds</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#b7791f">Mid</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Low</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#5f5e5a">Neutral</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">Mid-Low-Neutral</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Limited Ceiling Team</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#5f5e5a;font-weight:500;white-space:nowrap">Flat</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Rebalance</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#b7791f">Mid</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Low</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Lucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">Mid-Low-Lucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Pretender</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#c0392b;font-weight:500;white-space:nowrap">Down</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Sell High</td>
+              </tr>
+              <tr style="background:#f8f8f6">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Low</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#1e6b3a">High</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#2980b9">Unlucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">Low-High-Unlucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Hidden Sleeper</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#1e6b3a;font-weight:500;white-space:nowrap">Up</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Be Patient / Buy</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Low</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#1e6b3a">High</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#5f5e5a">Neutral</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">Low-High-Neutral</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Misbuilt Good Team</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#5f5e5a;font-weight:500;white-space:nowrap">Flat</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Fix Category Fit</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Low</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#1e6b3a">High</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Lucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">Low-High-Lucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Good Talent, Bad Fit</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#c0392b;font-weight:500;white-space:nowrap">Down</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Rebuild Structure</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Low</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#b7791f">Mid</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#2980b9">Unlucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">Low-Mid-Unlucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Weak Team with Bad Luck</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#1e6b3a;font-weight:500;white-space:nowrap">Slight Up</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Incremental Fixes</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Low</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#b7791f">Mid</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#5f5e5a">Neutral</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">Low-Mid-Neutral</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Weak-Middle Team</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#5f5e5a;font-weight:500;white-space:nowrap">Flat</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Rebuild or Churn</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Low</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#b7791f">Mid</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Lucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">Low-Mid-Lucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">False Middle Team</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#c0392b;font-weight:500;white-space:nowrap">Down</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Sell Hot Pieces</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Low</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Low</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#2980b9">Unlucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">Low-Low-Unlucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Rebuild Candidate</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#1e6b3a;font-weight:500;white-space:nowrap">Slight Up</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Rebuild</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Low</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Low</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#5f5e5a">Neutral</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">Low-Low-Neutral</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">Weak Team</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#5f5e5a;font-weight:500;white-space:nowrap">Flat</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Rebuild</td>
+              </tr>
+              <tr style="">
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Low</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Low</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:600;color:#c0392b">Lucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:11px;white-space:nowrap">Low-Low-Lucky</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);font-weight:500">False Hope Team</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border);color:#c0392b;font-weight:500;white-space:nowrap">Down</td>
+                <td style="padding:6px 10px;border-bottom:0.5px solid var(--border)">Sell / Rebuild</td>
+              </tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+    </div>
     </div>
   </div>
 
