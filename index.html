@@ -4044,16 +4044,12 @@ function buildJOEPage(byWeek, schedule) {
     var avgCase    = avgArr(d.avgs);
     var avgBest    = avgArr(d.bests);
     var avgWorst   = avgArr(d.worsts);
-    var meanDiff   = avgArr(d.diffs);
-    var stdDiff    = stdArr(d.diffs) || 0.001;
-    var rawZ       = meanDiff != null ? meanDiff / stdDiff : 0;
+    // Season JOE = simple average of weekly JOE values
+    var joeAvg = d.joes.length
+      ? parseFloat((d.joes.reduce(function(s,v){return s+v;},0) / d.joes.length).toFixed(3))
+      : 0;
     return { team:team, avgActual:avgActual, avgCase:avgCase, avgBest:avgBest,
-             avgWorst:avgWorst, rawZ:rawZ, weeks:d.joes.length };
-  });
-
-  // Normalise rawZ to [-1,+1] using fixed scale (divide by 3) so neutral teams stay near 0
-  seasonRows.forEach(function(r) {
-    r.joe = parseFloat(Math.max(-1, Math.min(1, r.rawZ / 3)).toFixed(3));
+             avgWorst:avgWorst, joe:joeAvg, weeks:d.joes.length };
   });
   seasonRows.sort(function(a,b){ return b.joe - a.joe; });
   // Store for dashboard - same shape expected: {team, luck (normalized joe)}
@@ -4191,16 +4187,27 @@ function buildJOEPage(byWeek, schedule) {
   // Render first week
   if (completedWeeks.length) showMatrixWeek(completedWeeks[0], document.querySelector('#matrix-week-pills .pill'));
   // Append weekly JOE team charts at bottom
-  if (window._archTeamScores && window._archTeamScores.length) {
-    setTimeout(window.appendJoeWeeklyCharts, 150);
-  }
+  setTimeout(window.appendJoeWeeklyCharts, 150);
 }
 
 window.appendJoeWeeklyCharts = function() {
   var joeBody = document.getElementById('joe-body');
   if (!joeBody) return;
-  var ts = window._archTeamScores;
-  if (!ts || !ts.length) return;
+
+  // Build team list from _joeSeasonData (always available after renderJOEFactor)
+  var seasonData = window._joeSeasonData || [];
+  if (!seasonData.length) return;
+
+  // Build ts array compatible with the chart drawing code
+  var ts = seasonData.map(function(r) {
+    // Find teamId from S.teamInfo by matching name
+    var teamId = null;
+    Object.keys(S.teamInfo).forEach(function(tid) {
+      var ti = S.teamInfo[tid];
+      if ((ti.name||ti.shortName||'') === r.team) teamId = tid;
+    });
+    return { teamId:teamId, teamName:r.team, joe:r.joe };
+  });
 
   function joeAvgCol(v) { return v > 0 ? '#1D9E75' : v < 0 ? '#E24B4A' : '#EF9F27'; }
   function joePtCol(v)  { return v > 0 ? '#1D9E75' : v < 0 ? '#E24B4A' : '#EF9F27'; }
