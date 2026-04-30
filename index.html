@@ -1980,6 +1980,13 @@ td.neg { color: #c0392b; font-weight: 500; }
 </main>
 
 <script>
+// Safe fallbacks in case joe-factor.js hasn't defined these yet
+if (typeof mergeManualPeriodsIntoJOE === 'undefined') {
+  window.mergeManualPeriodsIntoJOE = function() {};
+}
+if (typeof loadManualPeriods === 'undefined') {
+  window.loadManualPeriods = function() { return window._manualPeriods || {}; };
+}
 var BASE = 'https://raw.githubusercontent.com/cameronpeebles/baseball/main/data/';
 
 var S = {
