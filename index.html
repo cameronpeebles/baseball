@@ -6968,6 +6968,193 @@ function renderArchetypePage() {
     t.band = lo===hi ? ordinal(lo) : ordinal(lo)+' \u2013 '+ordinal(hi);
   });
 
+
+  // ── fWAR% vs League Rating% Scatter + JOE Weekly Charts ─────────────────
+  var scatterUid = 'arch-scatter-' + Date.now();
+  var joeGridUid = 'arch-joe-grid-' + Date.now();
+
+  var scatterHtml = '<div style="display:grid;grid-template-columns:1fr 280px;gap:12px;align-items:start;margin-bottom:16px">';
+
+  // Left: Scatter card
+  scatterHtml += '<div class="card" style="padding:14px 16px">';
+  scatterHtml += '<div style="font-size:14px;font-weight:500;margin-bottom:2px">fWAR% vs League Rating%</div>';
+  scatterHtml += '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Talent (Rating%) vs Production (fWAR%) &middot; dot color = JOE Factor</div>';
+  scatterHtml += '<div style="display:flex;gap:14px;margin-bottom:8px;font-size:10px;color:var(--muted)">';
+  scatterHtml += '<span style="display:flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#1D9E75;display:inline-block"></span>Unlucky</span>';
+  scatterHtml += '<span style="display:flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#EF9F27;display:inline-block"></span>Neutral</span>';
+  scatterHtml += '<span style="display:flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#E24B4A;display:inline-block"></span>Lucky</span>';
+  scatterHtml += '</div>';
+  scatterHtml += '<div style="position:relative;height:480px"><canvas id="' + scatterUid + '" role="img" aria-label="fWAR% vs League Rating% scatter for all teams">Team scatter.</canvas></div>';
+  scatterHtml += '</div>';
+
+  // Right: JOE weekly charts 2-col grid
+  scatterHtml += '<div>';
+  scatterHtml += '<div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">Weekly JOE &middot; dashed = avg</div>';
+  scatterHtml += '<div id="' + joeGridUid + '" style="display:grid;grid-template-columns:1fr 1fr;gap:5px">';
+
+  // Build mini chart cells
+  teamScores.forEach(function(t, idx) {
+    var jc = t.joe >= 0.12 ? '#E24B4A' : t.joe <= -0.12 ? '#1D9E75' : '#EF9F27';
+    var sign = t.joe != null ? (t.joe >= 0 ? '+' : '') + t.joe.toFixed(2) : '—';
+    var shortName = (S.teamInfo[t.teamId]||{}).shortName || t.teamName.split(' ')[0];
+    scatterHtml += '<div style="background:var(--card);border:0.5px solid var(--border);border-radius:8px;padding:5px 7px">';
+    scatterHtml += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">';
+    scatterHtml += '<span style="font-size:9px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px">' + shortName + '</span>';
+    scatterHtml += '<span style="font-size:9px;color:' + jc + ';font-weight:500;flex-shrink:0;margin-left:2px">' + sign + '</span>';
+    scatterHtml += '</div>';
+    scatterHtml += '<div style="position:relative;height:46px"><canvas id="' + scatterUid + '-joe-' + idx + '" role="img" aria-label="Weekly JOE for ' + t.teamName + '">' + t.teamName + ' JOE</canvas></div>';
+    scatterHtml += '</div>';
+  });
+  scatterHtml += '</div></div></div>';
+
+  html = scatterHtml + html;
+
+  // ── Draw charts after DOM ─────────────────────────────────────────────────
+  setTimeout(function() {
+    if (typeof Chart === 'undefined') return;
+
+    function joeAvgCol(v) { return v >= 0.12 ? '#E24B4A' : v <= -0.12 ? '#1D9E75' : '#EF9F27'; }
+    function joePtCol(v)  { return v > 0 ? '#E24B4A' : v < 0 ? '#1D9E75' : '#EF9F27'; }
+    function joePtStr(v)  { return v > 0 ? '#A32D2D' : v < 0 ? '#0F6E56' : '#854F0B'; }
+
+    // ── Scatter chart ────────────────────────────────────────────────────────
+    var scEl = document.getElementById(scatterUid);
+    if (scEl) {
+      var quadPlugin = {
+        id: 'archQuads',
+        beforeDraw: function(chart) {
+          var ctx = chart.ctx, xS = chart.scales.x, yS = chart.scales.y;
+          var x0=xS.left, x1=xS.getPixelForValue(45), x2=xS.getPixelForValue(65), x3=xS.right;
+          var y3=yS.bottom, y2=yS.getPixelForValue(45), y1=yS.getPixelForValue(65), y0=yS.top;
+          var cells=[
+            {x:x0,y:y0,w:x1-x0,h:y1-y0,fill:'rgba(253,236,234,0.65)',tl:'HIGH / LOW', ts:'Overachievers', tc:'#A32D2D'},
+            {x:x1,y:y0,w:x2-x1,h:y1-y0,fill:'rgba(255,248,225,0.65)',tl:'HIGH / MID', ts:'Breakout',      tc:'#854F0B'},
+            {x:x2,y:y0,w:x3-x2,h:y1-y0,fill:'rgba(234,243,230,0.65)',tl:'HIGH / HIGH',ts:'Elite',         tc:'#27500A'},
+            {x:x0,y:y1,w:x1-x0,h:y2-y1,fill:'rgba(248,247,243,0.4)', tl:'',           ts:'',              tc:''},
+            {x:x1,y:y1,w:x2-x1,h:y2-y1,fill:'rgba(242,242,240,0.4)', tl:'MID / MID',  ts:'Balanced',      tc:'#5F5E5A'},
+            {x:x2,y:y1,w:x3-x2,h:y2-y1,fill:'rgba(248,247,243,0.4)', tl:'MID / HIGH', ts:'Good / Streaky', tc:'#854F0B'},
+            {x:x0,y:y2,w:x1-x0,h:y3-y2,fill:'rgba(253,236,234,0.4)', tl:'LOW / LOW',  ts:'Bottom Dwellers',tc:'#A32D2D'},
+            {x:x1,y:y2,w:x2-x1,h:y3-y2,fill:'rgba(255,248,225,0.4)', tl:'LOW / MID',  ts:'Underachievers', tc:'#854F0B'},
+            {x:x2,y:y2,w:x3-x2,h:y3-y2,fill:'rgba(234,243,230,0.4)', tl:'LOW / HIGH', ts:'Disappointing',  tc:'#27500A'},
+          ];
+          ctx.save();
+          cells.forEach(function(c) {
+            ctx.fillStyle=c.fill; ctx.fillRect(c.x,c.y,c.w,c.h);
+            if (c.tl) {
+              ctx.font='500 9px sans-serif'; ctx.fillStyle=c.tc; ctx.textAlign='center';
+              ctx.fillText(c.tl, c.x+c.w/2, c.y+14);
+              ctx.font='400 10px sans-serif'; ctx.fillStyle='#5F5E5A';
+              ctx.fillText(c.ts, c.x+c.w/2, c.y+27);
+            }
+          });
+          function dashed(ax,ay,bx,by){ctx.save();ctx.setLineDash([3,4]);ctx.strokeStyle='rgba(136,135,128,0.3)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();ctx.restore();}
+          dashed(x1,y0,x1,y3); dashed(x2,y0,x2,y3); dashed(x0,y1,x3,y1); dashed(x0,y2,x3,y2);
+          ctx.restore();
+        }
+      };
+      var labelPlugin = {
+        id: 'archLabels',
+        afterDraw: function(chart) {
+          var ctx=chart.ctx; ctx.save(); ctx.font='400 10px sans-serif';
+          teamScores.forEach(function(t, i) {
+            var meta=chart.getDatasetMeta(i);
+            if (!meta.data[0]) return;
+            var pt=meta.data[0];
+            var shortName = (S.teamInfo[t.teamId]||{}).shortName || t.teamName.split(' ')[0];
+            ctx.fillStyle='#444441'; ctx.textAlign='center';
+            ctx.fillText(shortName, pt.x, pt.y+20);
+          });
+          ctx.restore();
+        }
+      };
+      if (window._archScatterChart) { try{window._archScatterChart.destroy();}catch(e){} }
+      window._archScatterChart = new Chart(scEl, {
+        type: 'bubble',
+        data: {
+          datasets: teamScores.map(function(t) {
+            var jc = joeAvgCol(t.joe != null ? t.joe : 0);
+            var js = t.joe >= 0.12 ? '#A32D2D' : t.joe <= -0.12 ? '#0F6E56' : '#854F0B';
+            return { label:t.teamName, data:[{x:t.lgPct, y:t.fwarPct, r:12}], backgroundColor:jc+'CC', borderColor:js, borderWidth:1.5 };
+          })
+        },
+        options: {
+          responsive:true, maintainAspectRatio:false,
+          layout:{padding:{top:6,right:8,bottom:4,left:4}},
+          plugins:{
+            legend:{display:false},
+            tooltip:{
+              backgroundColor:'rgba(255,255,255,0.96)', titleColor:'#2C2C2A', bodyColor:'#5F5E5A',
+              borderColor:'rgba(136,135,128,0.3)', borderWidth:1,
+              callbacks:{
+                title:function(i){return i[0].dataset.label;},
+                label:function(c){var t=teamScores[c.datasetIndex];return['fWAR%: '+t.fwarPct,'Rating%: '+t.lgPct,'JOE avg: '+(t.joe!=null?(t.joe>=0?'+':'')+t.joe.toFixed(2):'—')];}
+              }
+            }
+          },
+          scales:{
+            x:{title:{display:true,text:'League Rating% (Talent)',font:{size:10},color:'#888780'},ticks:{font:{size:9},color:'#888780',stepSize:25},grid:{color:'rgba(136,135,128,0.08)'},border:{color:'rgba(136,135,128,0.2)'},min:0,max:100},
+            y:{title:{display:true,text:'fWAR% (Production)',font:{size:10},color:'#888780'},ticks:{font:{size:9},color:'#888780',stepSize:25},grid:{color:'rgba(136,135,128,0.08)'},border:{color:'rgba(136,135,128,0.2)'},min:0,max:100}
+          }
+        },
+        plugins:[quadPlugin, labelPlugin]
+      });
+    }
+
+    // ── Mini JOE charts ───────────────────────────────────────────────────────
+    var wkLabels = (window._joeWeeks || []).map(function(w){return 'W'+w;});
+    if (!wkLabels.length) wkLabels = ['W1','W2','W3','W4','W5'];
+    if (window._archJoeCharts) { window._archJoeCharts.forEach(function(c){try{c.destroy();}catch(e){}});}
+    window._archJoeCharts = [];
+
+    teamScores.forEach(function(t, idx) {
+      var cEl = document.getElementById(scatterUid + '-joe-' + idx);
+      if (!cEl) return;
+      var avgCol = joeAvgCol(t.joe != null ? t.joe : 0);
+      var weeklyRows = (window._joeByTeamWeek||[]).filter(function(r){return r.team===t.teamName;});
+      weeklyRows.sort(function(a,b){return a.week-b.week;});
+      var weekVals = weeklyRows.map(function(r){return r.joe != null ? r.joe : 0;});
+      var weekLabels = weeklyRows.map(function(r){return 'W'+r.week;});
+      if (!weekVals.length) { weekVals=[0]; weekLabels=['—']; }
+      var avgVal = t.joe != null ? t.joe : 0;
+
+      var avgLinePlugin = {id:'avgL'+idx, afterDraw:function(chart){
+        var ctx=chart.ctx, yS=chart.scales.y, xS=chart.scales.x;
+        var yPx=yS.getPixelForValue(avgVal);
+        ctx.save(); ctx.strokeStyle=avgCol; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+        ctx.beginPath(); ctx.moveTo(xS.left,yPx); ctx.lineTo(xS.right,yPx); ctx.stroke(); ctx.restore();
+      }};
+
+      var c = new Chart(cEl, {
+        type:'line',
+        data:{labels:weekLabels,datasets:[{
+          data:weekVals,
+          borderColor:'#B4B2A9', borderWidth:1.5,
+          pointBackgroundColor:weekVals.map(joePtCol),
+          pointBorderColor:weekVals.map(joePtStr),
+          pointRadius:3, pointBorderWidth:1,
+          tension:0.3, fill:false
+        }]},
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{legend:{display:false},tooltip:{
+            backgroundColor:'rgba(255,255,255,0.96)',titleColor:'#2C2C2A',bodyColor:'#5F5E5A',
+            borderColor:'rgba(136,135,128,0.3)',borderWidth:1,
+            callbacks:{label:function(c2){var v=c2.parsed.y;return 'JOE: '+(v>=0?'+':'')+v.toFixed(2);}}
+          }},
+          scales:{
+            x:{ticks:{font:{size:8},color:'#888780'},grid:{display:false},border:{color:'rgba(136,135,128,0.15)'}},
+            y:{min:-1,max:1,ticks:{display:false},
+              grid:{color:function(c2){return c2.tick.value===0?'rgba(44,44,42,0.2)':'transparent';},lineWidth:function(c2){return c2.tick.value===0?1:0;}},
+              border:{display:false}}
+          }
+        },
+        plugins:[avgLinePlugin]
+      });
+      window._archJoeCharts.push(c);
+    });
+  }, 100);
+
+
   // ── Build HTML table ──────────────────────────────────────────────────────
   var thStyle = 'padding:8px 10px;text-align:left;font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;background:var(--bg)';
   var tdStyle = 'padding:8px 10px;border-bottom:0.5px solid var(--border);vertical-align:middle';
