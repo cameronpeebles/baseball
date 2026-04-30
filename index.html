@@ -4144,7 +4144,6 @@ function buildJOEPage(byWeek, schedule) {
     html += '<td>' + (r.avgCase!=null?r.avgCase.toFixed(3):'-') + '</td>';
     html += '<td>' + (r.avgBest!=null?r.avgBest.toFixed(3):'-') + '</td>';
     html += '<td>' + (r.avgWorst!=null?r.avgWorst.toFixed(3):'-') + '</td>';
-    html += '<td>' + s(r.rawZ) + r.rawZ.toFixed(3) + '</td>';
     html += '<td style="font-weight:700;color:' + joeCol + '">' + s(r.joe) + r.joe.toFixed(3) + '</td>';
     html += '</tr>';
   });
