@@ -6969,6 +6969,8 @@ function renderArchetypePage() {
   });
 
 
+  window._archTeamScores = teamScores;
+
   // ── fWAR% vs League Rating% Scatter + JOE Weekly Charts ─────────────────
   var scatterUid = 'arch-scatter-' + Date.now();
   var joeGridUid = 'arch-joe-grid-' + Date.now();
@@ -7131,7 +7133,7 @@ function renderArchetypePage() {
         id: 'archLabels',
         afterDraw: function(chart) {
           var ctx=chart.ctx; ctx.save(); ctx.font='400 10px sans-serif';
-          teamScores.forEach(function(t, i) {
+          (window._archTeamScores||[]).forEach(function(t, i) {
             var meta=chart.getDatasetMeta(i);
             if (!meta.data[0]) return;
             var pt=meta.data[0];
@@ -7146,7 +7148,7 @@ function renderArchetypePage() {
       window._archScatterChart = new Chart(scEl, {
         type: 'bubble',
         data: {
-          datasets: teamScores.map(function(t) {
+          datasets: (window._archTeamScores||[]).map(function(t) {
             var jc = joeAvgCol(t.joe != null ? t.joe : 0);
             var js = t.joe >= 0.12 ? '#A32D2D' : t.joe <= -0.12 ? '#0F6E56' : '#854F0B';
             return { label:t.teamName, data:[{x:t.lgPct, y:t.fwarPct, r:12}], backgroundColor:jc+'CC', borderColor:js, borderWidth:1.5 };
@@ -7162,7 +7164,7 @@ function renderArchetypePage() {
               borderColor:'rgba(136,135,128,0.3)', borderWidth:1,
               callbacks:{
                 title:function(i){return i[0].dataset.label;},
-                label:function(c){var t=teamScores[c.datasetIndex];return['fWAR%: '+t.fwarPct,'Rating%: '+t.lgPct,'JOE avg: '+(t.joe!=null?(t.joe>=0?'+':'')+t.joe.toFixed(2):'—')];}
+                label:function(c){var t=(window._archTeamScores||[])[c.datasetIndex];return['fWAR%: '+t.fwarPct,'Rating%: '+t.lgPct,'JOE avg: '+(t.joe!=null?(t.joe>=0?'+':'')+t.joe.toFixed(2):'—')];}
               }
             }
           },
@@ -7181,7 +7183,7 @@ function renderArchetypePage() {
     if (window._archJoeCharts) { window._archJoeCharts.forEach(function(c){try{c.destroy();}catch(e){}});}
     window._archJoeCharts = [];
 
-    teamScores.forEach(function(t, idx) {
+    (window._archTeamScores||[]).forEach(function(t, idx) {
       var cEl = document.getElementById(scatterUid + '-joe-' + idx);
       if (!cEl) return;
       var avgCol = joeAvgCol(t.joe != null ? t.joe : 0);
