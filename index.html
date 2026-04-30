@@ -6975,7 +6975,7 @@ function renderArchetypePage() {
   var scatterUid = 'arch-scatter-' + Date.now();
   var joeGridUid = 'arch-joe-grid-' + Date.now();
 
-  var scatterHtml = '<div style="display:grid;grid-template-columns:1fr 280px;gap:12px;align-items:start;margin-bottom:16px">';
+  var scatterHtml = '<div style="display:grid;grid-template-columns:3fr 2fr;gap:12px;align-items:start;margin-bottom:16px">';
 
   // Left: Scatter card
   scatterHtml += '<div class="card" style="padding:14px 16px">';
@@ -6990,8 +6990,8 @@ function renderArchetypePage() {
   scatterHtml += '</div>';
 
   // Right: JOE weekly charts 2-col grid
-  scatterHtml += '<div>';
-  scatterHtml += '<div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">Weekly JOE &middot; dashed = avg</div>';
+  scatterHtml += '<div class="card" style="padding:12px 14px">';
+  scatterHtml += '<div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Weekly JOE &middot; dashed = avg</div>';
   scatterHtml += '<div id="' + joeGridUid + '" style="display:grid;grid-template-columns:1fr 1fr;gap:5px">';
 
   // Build mini chart cells
