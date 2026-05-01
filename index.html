@@ -2273,6 +2273,8 @@ function init() {
     S.teamInfo = (standings.data && standings.data.fantasyTeamInfo) || (season.data && season.data.fantasyTeamInfo) || {};
     S.seasonData = season;
     S.standingsData = standings;
+    // Cache team stat totals for ROS SGP page
+    window._rosTeamStats = buildRosTeamStats(season);
     S.combinedData = combined;
 
     // Build FanGraphs lookup by player name (lowercase for matching) - legacy, kept for backward compat
@@ -4304,6 +4306,31 @@ window.appendJoeWeeklyCharts = function() {
 };
 
 // ── ROS Projections Page ──────────────────────────────────────────────────
+function buildRosTeamStats(seasonData) {
+  var result = {};
+  var tables = (seasonData&&seasonData.data&&seasonData.data.tableList)||[];
+  var statTable = null;
+  for (var ti=0;ti<tables.length;ti++){
+    var cap=(tables[ti].caption||'').toLowerCase();
+    if(cap.indexOf('stat total')!==-1||cap.indexOf('season stat')!==-1){statTable=tables[ti];break;}
+    if(!statTable&&cap!==''&&cap.indexOf('point')===-1&&(tables[ti].rows||[]).length>0&&tables[ti].tableType!=='SECTION_HEADING') statTable=tables[ti];
+  }
+  if (!statTable) return result;
+  (statTable.rows||[]).forEach(function(row){
+    var fc=row.fixedCells||[],cells=row.cells||[];
+    var id=(fc[1]&&fc[1].teamId)||''; if(!id) return;
+    var ab=gvROS(cells,'AB')||0, ip=gvROS(cells,'IP')||0;
+    result[id]={
+      R:gvROS(cells,'R')||0, HR:gvROS(cells,'HR')||0,
+      RBI:gvROS(cells,'RBI')||0, SB:gvROS(cells,'SB')||0,
+      AVG:gvROS(cells,'AVG'), AB:ab,
+      K:gvROS(cells,'K')||0, W:gvROS(cells,'W')||0,
+      SVH3:gvROS(cells,'SVH3')||gvROS(cells,'SV')||0,
+      ERA:gvROS(cells,'ERA'), WHIP:gvROS(cells,'WHIP'), IP:ip
+    };
+  });
+  return result;
+}
 function gvROS(cells, key) {
   for (var ci=0; ci<cells.length; ci++) {
     if ((cells[ci].columnId||'').toUpperCase() === key.toUpperCase() ||
@@ -4389,36 +4416,13 @@ function buildROSTable() {
     w:15.3, k:216.8, svh3:18.5, era:0.106, whip:0.0191
   };
 
-  // Get selected team's current stats from season data
+  // Get selected team's current stats from cached _rosTeamStats
   var teamStat = { R:0,HR:0,RBI:0,SB:0,AVG:null,AB:0, K:0,W:0,SVH3:0,ERA:null,WHIP:null,IP:0 };
-  var teamName = '';
-  if (_rosSelectedTeam && S.teamInfo[_rosSelectedTeam]) {
-    teamName = S.teamInfo[_rosSelectedTeam].name || '';
-    // Pull from season stat table
-    var tables = (S.seasonData&&S.seasonData.data&&S.seasonData.data.tableList)||[];
-    var statTable = null;
-    for (var ti=0;ti<tables.length;ti++){
-      var cap=(tables[ti].caption||'').toLowerCase();
-      if(cap.indexOf('stat total')!==-1||cap.indexOf('season stat')!==-1){statTable=tables[ti];break;}
-      if(!statTable&&cap!==''&&cap.indexOf('point')===-1&&(tables[ti].rows||[]).length>0&&tables[ti].tableType!=='SECTION_HEADING') statTable=tables[ti];
-    }
-    if (statTable) {
-
-      (statTable.rows||[]).forEach(function(row){
-        var fc=row.fixedCells||[],cells=row.cells||[];
-        var id=(fc[1]&&fc[1].teamId)||'';
-        if (id !== _rosSelectedTeam) return;
-        var ab=gvROS(cells,'AB')||0, ip=gvROS(cells,'IP')||0;
-        teamStat = {
-          R:gvROS(cells,'R')||0, HR:gvROS(cells,'HR')||0,
-          RBI:gvROS(cells,'RBI')||0, SB:gvROS(cells,'SB')||0,
-          AVG:gvROS(cells,'AVG'), AB:ab,
-          K:gvROS(cells,'K')||0, W:gvROS(cells,'W')||0,
-          SVH3:gvROS(cells,'SVH3')||gvROS(cells,'SV')||0,
-          ERA:gvROS(cells,'ERA'), WHIP:gvROS(cells,'WHIP'), IP:ip
-        };
-      });
-    }
+  if (!window._rosTeamStats && S.seasonData) {
+    window._rosTeamStats = buildRosTeamStats(S.seasonData);
+  }
+  if (_rosSelectedTeam && window._rosTeamStats && window._rosTeamStats[_rosSelectedTeam]) {
+    teamStat = window._rosTeamStats[_rosSelectedTeam];
   }
 
   // Build table
