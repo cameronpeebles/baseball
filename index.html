@@ -4861,33 +4861,41 @@ function buildROSTable() {
   function currentPlayerSGP(p) {
     function normP(n){ return (n||'').replace(/\s*\([^)]*\).*$/, '').trim().toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
     var cs = (window._rosCurrentStats||{})[normP(p.name||'')] || {};
-    var D2 = D; // same denominators
+    var D2 = D;
     var total = 0;
     if (isHit) {
       if (cs.R  != null) total += cs.R  / D2.r;
       if (cs.HR != null) total += cs.HR / D2.hr;
       if (cs.RBI!= null) total += cs.RBI/ D2.rbi;
       if (cs.SB != null) total += cs.SB / D2.sb;
-      // AVG: use player's own H and AB (no team context needed for current)
-      if (cs.AVG != null && cs.AB > 0) {
-        // Just use player's own AVG contribution relative to league avg
-        var lgAVG = teamStat.AVG || 0.260;
-        var delta = cs.AVG - lgAVG;
+      // AVG: same team-context formula as ROS
+      var csH  = (cs.H != null && cs.H > 0) ? cs.H : (cs.AVG != null && cs.AB ? cs.AVG * cs.AB : null);
+      if (csH != null && cs.AB > 0 && teamStat.AVG != null && teamStat.AB > 0) {
+        var curH  = (teamStat.AVG||0) * (teamStat.AB||0);
+        var newH  = curH + csH;
+        var newAB = (teamStat.AB||0) + (cs.AB||0);
+        var delta = newAB > 0 ? (newH/newAB) - (teamStat.AVG||0) : 0;
         total += delta / D2.avg;
       }
     } else {
       if (cs.W   != null) total += cs.W   / D2.w;
       if (cs.K   != null) total += cs.K   / D2.k;
       if (cs.SVH3!= null) total += cs.SVH3/ D2.svh3;
-      if (cs.ERA != null && cs.IP > 0) {
-        var lgERA = teamStat.ERA || 4.00;
-        var delta2 = lgERA - cs.ERA;
-        total += delta2 / D2.era;
+      // ERA: same team-context formula as ROS
+      if (cs.ERA != null && cs.IP > 0 && teamStat.ERA != null && teamStat.IP > 0) {
+        var tER  = (teamStat.ERA||0)*(teamStat.IP||0)/9;
+        var pER  = cs.ERA*(cs.IP||0)/9;
+        var nIP  = (teamStat.IP||0)+(cs.IP||0);
+        var nERA = nIP > 0 ? (tER+pER)/nIP*9 : teamStat.ERA;
+        total += ((teamStat.ERA||0) - nERA) / D2.era;
       }
-      if (cs.WHIP!= null && cs.IP > 0) {
-        var lgWHIP = teamStat.WHIP || 1.25;
-        var delta3 = lgWHIP - cs.WHIP;
-        total += delta3 / D2.whip;
+      // WHIP: same team-context formula as ROS
+      if (cs.WHIP != null && cs.IP > 0 && teamStat.WHIP != null && teamStat.IP > 0) {
+        var tBR  = (teamStat.WHIP||0)*(teamStat.IP||0);
+        var pBR  = cs.WHIP*(cs.IP||0);
+        var nIP2 = (teamStat.IP||0)+(cs.IP||0);
+        var nWHIP= nIP2 > 0 ? (tBR+pBR)/nIP2 : teamStat.WHIP;
+        total += ((teamStat.WHIP||0) - nWHIP) / D2.whip;
       }
     }
     return total;
