@@ -4578,7 +4578,8 @@ function buildROSTable() {
         return { teamId: d.teamId, z: (d[zKey] && d[zKey][cat] != null) ? d[zKey][cat] : 0 };
       });
       // Sort: higher Z = better rank (rank 1), except low-is-better cats (ERA/WHIP) invert
-      scores.sort(function(a,b) { return isLow ? a.z - b.z : b.z - a.z; });
+      // For ERA/WHIP (lower=better): higher Z = worse = rank 1 = most need = ×1.8
+      scores.sort(function(a,b) { return b.z - a.z; }); // always sort descending by Z
       var rank = scores.findIndex(function(s) { return s.teamId === _rosSelectedTeam; }) + 1;
       if (rank > 0) {
         catMultipliers[cat] = needMultiplier(rank);
@@ -4689,7 +4690,7 @@ function buildROSTable() {
     ? [{k:'R',d:'r'},{k:'HR',d:'hr'},{k:'RBI',d:'rbi'},{k:'SB',d:'sb'},{k:'AVG',d:'avg',rate:true}]
     : [{k:'W',d:'w'},{k:'K',d:'k'},{k:'SVH3',d:'svh3',sv:true},{k:'ERA',d:'era',rate:true,inv:true},{k:'WHIP',d:'whip',rate:true,inv:true}];
 
-  var html = '<div class="table-wrap"><table><thead><tr>';
+  var html = '<div class="card" style="padding:0;overflow:hidden;margin-bottom:0"><div style="overflow-x:auto"><table style="min-width:max-content;width:100%"><thead><tr>';
   html += '<th class="left" style="min-width:160px">Player</th>';
   html += '<th class="left">Pos</th>';
   html += '<th class="left">Team</th>';
@@ -4730,11 +4731,9 @@ function buildROSTable() {
       var rawSGP = catSGP(p, c.k);
       var mult   = catMultipliers[c.k] || 1.0;
       var sgpVal = rawSGP != null ? rawSGP * mult : null;
-      var rank   = catRanks[c.k];
-      var rankLabel = rank !== '-' ? '<span style="font-size:9px;color:var(--muted);margin-left:2px">('+rank+'th×'+mult+')</span>' : '';
       var disp = sgpVal!=null ? (sgpVal>=0?'+':'')+sgpVal.toFixed(2) : '—';
       var col  = sgpVal!=null ? sgpColor(sgpVal) : 'var(--muted)';
-      html += '<td style="font-weight:500;color:'+col+';white-space:nowrap">'+disp+rankLabel+'</td>';
+      html += '<td style="font-weight:500;color:'+col+'">'+disp+'</td>';
     });
 
     // Total SGP
@@ -4757,7 +4756,7 @@ function buildROSTable() {
     html += '</tr>';
   });
 
-  html += '</tbody></table></div>';
+  html += '</tbody></table></div></div>';
   wrap.innerHTML = html;
 }
 
