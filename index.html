@@ -4562,6 +4562,121 @@ function renderROSPage() {
     .catch(function(){ _rosPitData = []; pitLoaded = true; tryRender(); });
 }
 
+
+
+// ── ROS Team Diagnostic Panel ─────────────────────────────────────────────
+function buildROSTeamPanel(teamId) {
+  if (!teamId || !S.zData || !S.zData.length) return '';
+
+  var CATS = [
+    {key:'R',   label:'R',    zKey:'batZ', hi:true},
+    {key:'HR',  label:'HR',   zKey:'batZ', hi:true},
+    {key:'RBI', label:'RBI',  zKey:'batZ', hi:true},
+    {key:'SB',  label:'SB',   zKey:'batZ', hi:true},
+    {key:'AVG', label:'AVG',  zKey:'batZ', hi:true},
+    {key:'ERA', label:'ERA',  zKey:'pitZ', hi:false},
+    {key:'WHIP',label:'WHIP', zKey:'pitZ', hi:false},
+    {key:'W',   label:'W',    zKey:'pitZ', hi:true},
+    {key:'K',   label:'K',    zKey:'pitZ', hi:true},
+    {key:'SVH3',label:'SVH3', zKey:'pitZ', hi:true}
+  ];
+
+  function zCol(z) {
+    if (z == null) return 'var(--muted)';
+    return z >= 0.7 ? '#1e6b3a' : z >= 0 ? '#4a9a68' : z > -0.7 ? '#e05c4b' : '#c0392b';
+  }
+
+  var myZ = S.zData.find(function(d){ return d.teamId === teamId; });
+
+  // Z-score bars
+  var zHtml = '<div>';
+  zHtml += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Category Z-Scores</div>';
+  zHtml += '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid var(--border)"><span>worse</span><span>avg</span><span>better</span></div>';
+  CATS.forEach(function(c) {
+    var z = myZ ? (myZ[c.zKey] && myZ[c.zKey][c.key] != null ? myZ[c.zKey][c.key] : 0) : 0;
+    var vals = S.zData.map(function(d){ return {id:d.teamId, v:d[c.zKey]&&d[c.zKey][c.key]!=null?d[c.zKey][c.key]:null}; })
+      .filter(function(x){ return x.v != null; }).sort(function(a,b){ return b.v - a.v; });
+    var rank = vals.findIndex(function(x){ return x.id === teamId; }) + 1;
+    var pct  = Math.min(Math.abs(z) / 3, 1) * 50;
+    var col  = zCol(z);
+    var zStr = (z >= 0 ? '+' : '') + z.toFixed(2);
+    zHtml += '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:0.5px solid var(--border)">';
+    zHtml += '<span style="font-size:11px;font-weight:500;color:var(--text);width:32px;flex-shrink:0">'+c.label+'</span>';
+    zHtml += '<div style="flex:1;height:7px;background:var(--bg);border-radius:4px;position:relative;overflow:visible">';
+    zHtml += '<div style="position:absolute;top:-3px;left:50%;width:1.5px;height:13px;background:var(--border);border-radius:1px"></div>';
+    if (z >= 0) {
+      zHtml += '<div style="position:absolute;left:50%;width:'+pct+'%;height:100%;background:'+col+';border-radius:4px"></div>';
+    } else {
+      zHtml += '<div style="position:absolute;right:50%;width:'+pct+'%;height:100%;background:'+col+';border-radius:4px"></div>';
+    }
+    zHtml += '</div>';
+    zHtml += '<span style="font-size:11px;font-weight:500;color:'+col+';width:36px;text-align:right;flex-shrink:0">'+zStr+'</span>';
+    zHtml += '<span style="font-size:10px;color:var(--muted);width:22px;text-align:right;flex-shrink:0">'+(rank ? rank+'th' : '-')+'</span>';
+    zHtml += '</div>';
+  });
+  zHtml += '</div>';
+
+  // Category breakdown vs league avg
+  var tables = (S.seasonData&&S.seasonData.data&&S.seasonData.data.tableList)||[];
+  var statTable = null;
+  for (var ti=0;ti<tables.length;ti++){
+    var cap=(tables[ti].caption||'').toLowerCase();
+    if(cap.indexOf('stat total')!==-1||cap.indexOf('season stat')!==-1){statTable=tables[ti];break;}
+    if(!statTable&&cap!==''&&cap.indexOf('point')===-1&&(tables[ti].rows||[]).length>0&&tables[ti].tableType!=='SECTION_HEADING') statTable=tables[ti];
+  }
+  var catHtml = '<div>';
+  catHtml += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Category Breakdown vs League Avg</div>';
+  if (statTable) {
+    var hIdx2 = {};
+    ((statTable.header&&statTable.header.cells)||[]).forEach(function(h,j){
+      if(h.key)       hIdx2[h.key.toUpperCase()] = j;
+      if(h.shortName) hIdx2[h.shortName.toUpperCase()] = j;
+      if(h.name)      hIdx2[h.name.toUpperCase()] = j;
+    });
+    var allVals = {}; CATS.forEach(function(c){ allVals[c.key] = []; });
+    var myVals = {};
+    (statTable.rows||[]).forEach(function(row){
+      var fc=row.fixedCells||[], cells=row.cells||[];
+      var tid=(fc[1]&&fc[1].teamId)||''; if(!tid) return;
+      CATS.forEach(function(c){
+        var v = gvROS(cells, c.key, hIdx2);
+        if(v != null) allVals[c.key].push({id:tid, v:v});
+        if(tid === teamId && v != null) myVals[c.key] = v;
+      });
+    });
+    CATS.forEach(function(c) {
+      var myV = myVals[c.key]; if (myV == null) return;
+      var sorted = allVals[c.key].slice().sort(function(a,b){ return c.hi ? b.v-a.v : a.v-b.v; });
+      var rank = sorted.findIndex(function(x){ return x.id === teamId; }) + 1;
+      var max  = allVals[c.key].reduce(function(m,x){ return Math.max(m,Math.abs(x.v)); }, 0) || 1;
+      var avg  = allVals[c.key].length ? allVals[c.key].reduce(function(s,x){return s+x.v;},0)/allVals[c.key].length : 0;
+      var barPct = Math.min(Math.abs(myV)/max,1)*100;
+      var avgPct = Math.min(Math.abs(avg)/max,1)*100;
+      var isGood = c.hi ? myV >= avg : myV <= avg;
+      var barCol = isGood ? '#2d5a3d' : '#c0392b';
+      var dispV  = c.key==='AVG' ? myV.toFixed(3) : c.key==='ERA'||c.key==='WHIP' ? myV.toFixed(2) : Math.round(myV);
+      var rankCol = rank <= 3 ? '#1e6b3a' : rank >= 8 ? '#c0392b' : '#b7791f';
+      catHtml += '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:0.5px solid var(--border)">';
+      catHtml += '<span style="font-size:11px;font-weight:500;color:var(--text);width:32px;flex-shrink:0">'+c.label+'</span>';
+      catHtml += '<div style="flex:1;height:7px;background:var(--bg);border-radius:4px;position:relative">';
+      catHtml += '<div style="position:absolute;left:0;width:'+barPct+'%;height:100%;background:'+barCol+';border-radius:4px;opacity:0.85"></div>';
+      catHtml += '<div style="position:absolute;top:-2px;left:'+avgPct+'%;width:1.5px;height:11px;background:var(--muted);opacity:0.5"></div>';
+      catHtml += '</div>';
+      catHtml += '<span style="font-size:11px;font-weight:500;color:var(--text);width:44px;text-align:right;flex-shrink:0">'+dispV+'</span>';
+      catHtml += '<span style="font-size:10px;font-weight:500;color:'+rankCol+';width:22px;text-align:right;flex-shrink:0">#'+rank+'</span>';
+      catHtml += '</div>';
+    });
+  } else {
+    catHtml += '<div style="font-size:11px;color:var(--muted)">Load main data first.</div>';
+  }
+  catHtml += '</div>';
+
+  return '<div class="card" style="padding:14px 16px;margin-bottom:16px">'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">'
+    + zHtml + catHtml + '</div></div>';
+}
+
+
 function buildROSTable() {
   var wrap = document.getElementById('ros-table-wrap');
   if (!wrap) return;
