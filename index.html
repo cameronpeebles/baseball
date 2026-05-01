@@ -4671,6 +4671,17 @@ function buildROSTable() {
     return 0;
   }
 
+  function rawPlayerSGP(p) {
+    // No team need weighting - pure category SGP × Trust
+    var cats = isHit ? ['R','HR','RBI','SB','AVG'] : ['W','K','SVH3','ERA','WHIP'];
+    var total = 0;
+    cats.forEach(function(cat) {
+      var raw = catSGP(p, cat);
+      if (raw != null) total += raw;
+    });
+    return total * trustScore(p, isHit);
+  }
+
   function playerSGP(p) {
     var cats = isHit ? ['R','HR','RBI','SB','AVG'] : ['W','K','SVH3','ERA','WHIP'];
     var total = 0;
@@ -4713,7 +4724,8 @@ function buildROSTable() {
     var subtitle = rank !== '-' ? '<br><span style="font-size:9px;font-weight:400;color:var(--muted)">Rank '+rank+' ×'+mult+'</span>' : '';
     html += '<th style="color:' + (c.inv?'#c0392b':'#2d5a3d') + '">' + c.k + '_SGP' + subtitle + '</th>';
   });
-  html += '<th style="color:var(--accent);font-weight:700">Total SGP</th>';
+  html += '<th style="color:var(--muted);font-weight:600">Raw SGP</th>';
+  html += '<th style="color:var(--accent);font-weight:700">Team SGP</th>';
   html += '<th style="color:#5a7a9a">Trust</th>';
   // Also show raw ROS stat columns
   html += '<th style="border-left:1px solid var(--border);color:var(--muted);font-size:10px">' + (isHit?'ROS: R':'ROS: W') + '</th>';
@@ -4749,7 +4761,11 @@ function buildROSTable() {
       html += '<td style="font-weight:500;color:'+col+'">'+disp+'</td>';
     });
 
-    // Total SGP
+    // Raw SGP (unweighted)
+    var rawTotal = rawPlayerSGP(p);
+    var rawDisp = (rawTotal>=0?'+':'')+rawTotal.toFixed(2);
+    html += '<td style="font-weight:500;color:'+totalColor(rawTotal)+'">'+rawDisp+'</td>';
+    // Team SGP (weighted by need)
     var tDisp = (total>=0?'+':'')+total.toFixed(2);
     html += '<td style="font-weight:700;color:'+totalColor(total)+'">'+tDisp+'</td>';
     // Trust score
