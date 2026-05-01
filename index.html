@@ -749,6 +749,7 @@ td.neg { color: #c0392b; font-weight: 500; }
       <button class="trade-tab" onclick="showGuideTab('glossary',this)">Glossary</button>
       <button class="trade-tab" onclick="showGuideTab('changelog',this)">Changelog</button>
       <button class="trade-tab" onclick="showGuideTab('archetype',this)">Team Archetype</button>
+      <button class="trade-tab" onclick="showGuideTab('ros',this)">ROS</button>
     </div>
 
     <!-- Getting Started -->
@@ -1983,6 +1984,126 @@ td.neg { color: #c0392b; font-weight: 500; }
             </tbody>
           </table>
           </div>
+        </div>
+      </div>
+    </div>
+    <!-- ROS Guide Tab -->
+    <div id="guide-tab-ros" class="trade-tab-content">
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">ROS Projections — How the rankings work</span></div>
+        <div class="card-body" style="padding:20px">
+
+          <p style="font-size:13px;line-height:1.7;margin-bottom:16px">The ROS page ranks all projected players by their expected value added to a <strong>specific team</strong>. The final score combines raw projected stats, SGP value, team need weighting, and projection reliability (Trust). Each component is explained below.</p>
+
+          <!-- SGP -->
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Step 1 — Raw SGP per Category</div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:8px">
+            SGP (Standings Gain Points) measures how many standings places a player's projected stats are worth. Each counting stat is divided by the SGP denominator — the average gap between adjacent teams in that category.
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+              <div style="font-weight:500;margin-bottom:8px;color:var(--text)">Counting Stats (R, HR, RBI, SB, W, K, SVH3)</div>
+              <div style="font-family:monospace;background:var(--surface);padding:8px 10px;border-radius:6px;font-size:11px">SGP = ROS_stat / SGP_denominator</div>
+              <div style="color:var(--muted);margin-top:6px;font-size:11px">Example: 25 projected HR ÷ 21.2 = +1.18 SGP</div>
+            </div>
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+              <div style="font-weight:500;margin-bottom:8px;color:var(--text)">SGP Denominators</div>
+              <table style="width:100%;font-size:11px;border-collapse:collapse">
+                <tr><td style="padding:2px 6px;color:var(--muted)">R</td><td style="padding:2px 6px;font-weight:500">65.4</td><td style="padding:2px 6px;color:var(--muted)">W</td><td style="padding:2px 6px;font-weight:500">15.3</td></tr>
+                <tr><td style="padding:2px 6px;color:var(--muted)">HR</td><td style="padding:2px 6px;font-weight:500">21.2</td><td style="padding:2px 6px;color:var(--muted)">K</td><td style="padding:2px 6px;font-weight:500">216.8</td></tr>
+                <tr><td style="padding:2px 6px;color:var(--muted)">RBI</td><td style="padding:2px 6px;font-weight:500">54.8</td><td style="padding:2px 6px;color:var(--muted)">SVH3</td><td style="padding:2px 6px;font-weight:500">18.5</td></tr>
+                <tr><td style="padding:2px 6px;color:var(--muted)">SB</td><td style="padding:2px 6px;font-weight:500">17.0</td><td style="padding:2px 6px;color:var(--muted)">ERA</td><td style="padding:2px 6px;font-weight:500">0.106</td></tr>
+                <tr><td style="padding:2px 6px;color:var(--muted)">AVG</td><td style="padding:2px 6px;font-weight:500">0.00178</td><td style="padding:2px 6px;color:var(--muted)">WHIP</td><td style="padding:2px 6px;font-weight:500">0.0191</td></tr>
+              </table>
+            </div>
+          </div>
+
+          <!-- Rate stats -->
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Rate Stats — Team Context Required</div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:10px">AVG, ERA, and WHIP depend on your current team totals because adding a player changes the team average. The selected team's season AB and IP are pulled from the Standings - Stat Totals table.</p>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:11px;line-height:1.9">
+              <div style="font-weight:500;margin-bottom:6px;color:var(--text);font-size:12px">AVG</div>
+              <div style="font-family:monospace;background:var(--surface);padding:6px 8px;border-radius:5px;font-size:10px;line-height:1.8">
+                New_H = Team_H + ROS_H<br>
+                New_AB = Team_AB + ROS_AB<br>
+                New_AVG = New_H / New_AB<br>
+                delta = New_AVG − Team_AVG<br>
+                AVG_SGP = delta / 0.00178
+              </div>
+            </div>
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:11px;line-height:1.9">
+              <div style="font-weight:500;margin-bottom:6px;color:var(--text);font-size:12px">ERA</div>
+              <div style="font-family:monospace;background:var(--surface);padding:6px 8px;border-radius:5px;font-size:10px;line-height:1.8">
+                Team_ER = Team_ERA × IP / 9<br>
+                Player_ER = ROS_ERA × ROS_IP / 9<br>
+                New_ERA = (Team_ER + Player_ER)<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;÷ (Team_IP + ROS_IP) × 9<br>
+                delta = Team_ERA − New_ERA<br>
+                ERA_SGP = delta / 0.106
+              </div>
+            </div>
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:11px;line-height:1.9">
+              <div style="font-weight:500;margin-bottom:6px;color:var(--text);font-size:12px">WHIP</div>
+              <div style="font-family:monospace;background:var(--surface);padding:6px 8px;border-radius:5px;font-size:10px;line-height:1.8">
+                Team_BR = Team_WHIP × IP<br>
+                Player_BR = ROS_WHIP × ROS_IP<br>
+                New_WHIP = (Team_BR + Player_BR)<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;÷ (Team_IP + ROS_IP)<br>
+                delta = Team_WHIP − New_WHIP<br>
+                WHIP_SGP = delta / 0.0191
+              </div>
+            </div>
+          </div>
+
+          <!-- Need weights -->
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Step 2 — Team Need Weighting</div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:10px">
+            Each category SGP is multiplied by a need weight based on how your selected team ranks in that category vs the rest of the league. Rank is determined by the category Z-score from the Z-Scores page. Lower rank = weaker category = higher multiplier.
+          </div>
+          <div style="font-family:monospace;background:var(--surface);padding:10px 12px;border-radius:6px;font-size:12px;margin-bottom:10px">
+            Weighted_Cat_SGP = Cat_SGP × need_multiplier(team_rank)
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:20px">
+            <div style="padding:10px;background:#e8f0eb;border-radius:8px;text-align:center;font-size:12px;color:#1e4a28"><div style="font-weight:600;font-size:15px">×0.5</div><div style="margin-top:2px">Rank 1–2</div><div style="font-size:10px;opacity:0.8">Already elite</div></div>
+            <div style="padding:10px;background:#f0f7ec;border-radius:8px;text-align:center;font-size:12px;color:#2d5a3d"><div style="font-weight:600;font-size:15px">×0.8</div><div style="margin-top:2px">Rank 3–4</div><div style="font-size:10px;opacity:0.8">Above average</div></div>
+            <div style="padding:10px;background:#fef3e2;border-radius:8px;text-align:center;font-size:12px;color:#633806"><div style="font-weight:600;font-size:15px">×1.0</div><div style="margin-top:2px">Rank 5–6</div><div style="font-size:10px;opacity:0.8">Average</div></div>
+            <div style="padding:10px;background:#faeeda;border-radius:8px;text-align:center;font-size:12px;color:#854f0b"><div style="font-weight:600;font-size:15px">×1.4</div><div style="margin-top:2px">Rank 7–8</div><div style="font-size:10px;opacity:0.8">Below average</div></div>
+            <div style="padding:10px;background:#fce8e8;border-radius:8px;text-align:center;font-size:12px;color:#791f1f"><div style="font-weight:600;font-size:15px">×1.8</div><div style="margin-top:2px">Rank 9–10</div><div style="font-size:10px;opacity:0.8">Weak — need it</div></div>
+          </div>
+
+          <!-- Trust -->
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Step 3 — Trust Score</div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:10px">
+            Trust measures how much to rely on the projection. Players with more projected playing time have more reliable projections. Trust is applied as a final multiplier to Total SGP — so a 50% trust player is valued at half their raw SGP.
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+              <div style="font-weight:500;margin-bottom:6px;color:#185fa5">Hitters</div>
+              <div style="font-family:monospace;background:var(--surface);padding:6px 8px;border-radius:5px;font-size:11px">Trust = min(1, ROS_AB / 250)</div>
+              <div style="color:var(--muted);margin-top:6px;font-size:11px">250+ AB = 100% · 125 AB = 50%</div>
+            </div>
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+              <div style="font-weight:500;margin-bottom:6px;color:#2d5a3d">Starting Pitchers</div>
+              <div style="font-family:monospace;background:var(--surface);padding:6px 8px;border-radius:5px;font-size:11px">Trust = min(1, ROS_IP / 60)</div>
+              <div style="color:var(--muted);margin-top:6px;font-size:11px">60+ IP = 100% · 30 IP = 50%</div>
+            </div>
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+              <div style="font-weight:500;margin-bottom:6px;color:#854f0b">Relievers</div>
+              <div style="font-family:monospace;background:var(--surface);padding:6px 8px;border-radius:5px;font-size:11px">Trust = min(1, ROS_IP / 30)</div>
+              <div style="color:var(--muted);margin-top:6px;font-size:11px">30+ IP = 100% · 15 IP = 50%</div>
+            </div>
+          </div>
+
+          <!-- Final score -->
+          <div style="font-weight:600;font-size:13px;margin:20px 0 8px">Final Score</div>
+          <div style="padding:12px 16px;background:#e8f0eb;border-radius:8px;font-size:13px;font-family:monospace;color:#1e4a28;line-height:1.8;margin-bottom:8px">
+            Total SGP = Σ (Cat_SGP × need_multiplier) × Trust
+          </div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.7">Players are sorted by Total SGP descending. A player who fills a weak category, has a reliable projection, and has high projected playing time will rank highest. Change the team dropdown to see rankings from any team's perspective.</div>
+
         </div>
       </div>
     </div>
