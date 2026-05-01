@@ -4316,27 +4316,40 @@ function buildRosTeamStats(seasonData) {
     if(!statTable&&cap!==''&&cap.indexOf('point')===-1&&(tables[ti].rows||[]).length>0&&tables[ti].tableType!=='SECTION_HEADING') statTable=tables[ti];
   }
   if (!statTable) return result;
+  // Build header index exactly like buildSGPRos does
+  var hIdx = {};
+  ((statTable.header&&statTable.header.cells)||[]).forEach(function(h,j){
+    if(h.key)       hIdx[h.key.toUpperCase()] = j;
+    if(h.shortName) hIdx[h.shortName.toUpperCase()] = j;
+  });
   (statTable.rows||[]).forEach(function(row){
     var fc=row.fixedCells||[],cells=row.cells||[];
     var id=(fc[1]&&fc[1].teamId)||''; if(!id) return;
-    var ab=gvROS(cells,'AB')||0, ip=gvROS(cells,'IP')||0;
+    var ab=gvROS(cells,'AB',hIdx)||0, ip=gvROS(cells,'IP',hIdx)||0;
     result[id]={
-      R:gvROS(cells,'R')||0, HR:gvROS(cells,'HR')||0,
-      RBI:gvROS(cells,'RBI')||0, SB:gvROS(cells,'SB')||0,
-      AVG:gvROS(cells,'AVG'), AB:ab,
-      K:gvROS(cells,'K')||0, W:gvROS(cells,'W')||0,
-      SVH3:gvROS(cells,'SVH3')||gvROS(cells,'SV')||0,
-      ERA:gvROS(cells,'ERA'), WHIP:gvROS(cells,'WHIP'), IP:ip
+      R:gvROS(cells,'R',hIdx)||0,   HR:gvROS(cells,'HR',hIdx)||0,
+      RBI:gvROS(cells,'RBI',hIdx)||0, SB:gvROS(cells,'SB',hIdx)||0,
+      AVG:gvROS(cells,'AVG',hIdx),  AB:ab,
+      K:gvROS(cells,'K',hIdx)||0,   W:gvROS(cells,'W',hIdx)||0,
+      SVH3:gvROS(cells,'SVH3',hIdx)||gvROS(cells,'SV',hIdx)||0,
+      ERA:gvROS(cells,'ERA',hIdx),  WHIP:gvROS(cells,'WHIP',hIdx), IP:ip
     };
   });
   return result;
 }
-function gvROS(cells, key) {
+function gvROS(cells, key, idx) {
+  // Use pre-built header index (same approach as buildSGPRos)
+  if (idx) {
+    var i = idx[key.toUpperCase()];
+    if (i == null) return null;
+    var v = parseFloat((cells[i]||{}).content);
+    return isNaN(v) ? null : v;
+  }
+  // Fallback: scan by columnId
   for (var ci=0; ci<cells.length; ci++) {
-    if ((cells[ci].columnId||'').toUpperCase() === key.toUpperCase() ||
-        (cells[ci].stats && cells[ci].stats[key] != null)) {
-      var v = cells[ci].value != null ? cells[ci].value : (cells[ci].stats && cells[ci].stats[key]);
-      return v != null ? parseFloat(v) : null;
+    if ((cells[ci].columnId||'').toUpperCase() === key.toUpperCase()) {
+      var v2 = parseFloat(cells[ci].value != null ? cells[ci].value : cells[ci].content);
+      return isNaN(v2) ? null : v2;
     }
   }
   return null;
