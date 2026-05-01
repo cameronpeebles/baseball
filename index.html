@@ -4598,7 +4598,7 @@ function buildROSTeamPanel(teamId) {
       .filter(function(x){ return x.v != null; }).sort(function(a,b){ return b.v - a.v; });
     var rank = vals.findIndex(function(x){ return x.id === teamId; }) + 1;
     var pct  = Math.min(Math.abs(z) / 3, 1) * 50;
-    var col  = zCol(z);
+    var col  = rank <= 3 ? '#1e6b3a' : rank >= 8 ? '#c0392b' : '#b7791f';
     var zStr = (z >= 0 ? '+' : '') + z.toFixed(2);
     zHtml += '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:0.5px solid var(--border)">';
     zHtml += '<span style="font-size:11px;font-weight:500;color:var(--text);width:32px;flex-shrink:0">'+c.label+'</span>';
@@ -4611,7 +4611,7 @@ function buildROSTeamPanel(teamId) {
     }
     zHtml += '</div>';
     zHtml += '<span style="font-size:11px;font-weight:500;color:'+col+';width:36px;text-align:right;flex-shrink:0">'+zStr+'</span>';
-    zHtml += '<span style="font-size:10px;color:var(--muted);width:22px;text-align:right;flex-shrink:0">'+(rank ? rank+'th' : '-')+'</span>';
+    zHtml += '<span style="font-size:10px;color:'+col+';width:22px;text-align:right;flex-shrink:0">'+(rank ? rank+'th' : '-')+'</span>';
     zHtml += '</div>';
   });
   zHtml += '</div>';
@@ -4626,6 +4626,7 @@ function buildROSTeamPanel(teamId) {
   }
   var catHtml = '<div>';
   catHtml += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Category Breakdown</div>';
+  catHtml += '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid var(--border)"><span>0</span><span>league avg</span><span>best</span></div>';
   if (statTable) {
     var hIdx2 = {};
     ((statTable.header&&statTable.header.cells)||[]).forEach(function(h,j){
@@ -4699,10 +4700,6 @@ function buildROSTable() {
   var wrap = document.getElementById('ros-table-wrap');
   if (!wrap) return;
 
-  // Update team diagnostic panel
-  var panelEl = document.getElementById('ros-team-panel');
-  if (panelEl) panelEl.innerHTML = buildROSTeamPanel(_rosSelectedTeam);
-
   var isHit = (_rosCurrentTab === 'hitters');
   var players = isHit ? (_rosHitData||[]) : (_rosPitData||[]);
 
@@ -4758,6 +4755,10 @@ function buildROSTable() {
     window._rosCatMultipliers = catMultipliers;
     window._rosCatRanks = catRanks;
   }
+
+  // Update team diagnostic panel (after multipliers and stat ranks are computed)
+  var panelEl = document.getElementById('ros-team-panel');
+  if (panelEl) panelEl.innerHTML = buildROSTeamPanel(_rosSelectedTeam);
 
   // Get selected team's current stats from cached _rosTeamStats
   var teamStat = { R:0,HR:0,RBI:0,SB:0,AVG:null,AB:0, K:0,W:0,SVH3:0,ERA:null,WHIP:null,IP:0 };
