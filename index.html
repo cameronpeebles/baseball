@@ -4652,8 +4652,7 @@ function buildROSTeamPanel(teamId) {
       var avg  = allVals[c.key].length ? allVals[c.key].reduce(function(s,x){return s+x.v;},0)/allVals[c.key].length : 0;
       var barPct = Math.min(Math.abs(myV)/max,1)*100;
       var avgPct = Math.min(Math.abs(avg)/max,1)*100;
-      var isGood = c.hi ? myV >= avg : myV <= avg;
-      var barCol = isGood ? '#2d5a3d' : '#c0392b';
+      var barCol = rank <= 3 ? '#1e6b3a' : rank >= 8 ? '#c0392b' : '#b7791f';
       var dispV  = c.key==='AVG' ? myV.toFixed(3) : c.key==='ERA'||c.key==='WHIP' ? myV.toFixed(2) : Math.round(myV);
       var rankCol = rank <= 3 ? '#1e6b3a' : rank >= 8 ? '#c0392b' : '#b7791f';
       catHtml += '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:0.5px solid var(--border)">';
@@ -4671,9 +4670,25 @@ function buildROSTeamPanel(teamId) {
   }
   catHtml += '</div>';
 
+  // Need multipliers column
+  var multHtml = '<div>';
+  multHtml += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Team Need Weight</div>';
+  multHtml += '<div style="font-size:9px;color:var(--muted);margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid var(--border)">category &middot; rank &middot; multiplier</div>';
+  CATS.forEach(function(c) {
+    var mult = (window._rosCatMultipliers||{})[c.key] || 1.0;
+    var catRank = (window._rosCatRanks||{})[c.key] || '-';
+    var multCol = mult >= 1.4 ? '#c0392b' : mult <= 0.8 ? '#1e6b3a' : '#b7791f';
+    multHtml += '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:0.5px solid var(--border)">';
+    multHtml += '<span style="font-size:11px;font-weight:500;color:var(--text);width:32px;flex-shrink:0">'+c.label+'</span>';
+    multHtml += '<span style="font-size:10px;color:var(--muted);flex:1">rank '+catRank+'</span>';
+    multHtml += '<span style="font-size:11px;font-weight:600;color:'+multCol+'">×'+mult+'</span>';
+    multHtml += '</div>';
+  });
+  multHtml += '</div>';
+
   return '<div class="card" style="padding:14px 16px;margin-bottom:16px">'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">'
-    + zHtml + catHtml + '</div></div>';
+    + '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:24px">'
+    + zHtml + catHtml + multHtml + '</div></div>';
 }
 
 
@@ -4712,6 +4727,8 @@ function buildROSTable() {
   // Build category rank for selected team using S.zData
   var catMultipliers = { R:1.0, HR:1.0, RBI:1.0, SB:1.0, AVG:1.0, W:1.0, K:1.0, SVH3:1.0, ERA:1.0, WHIP:1.0 };
   var catRanks = { R:'-', HR:'-', RBI:'-', SB:'-', AVG:'-', W:'-', K:'-', SVH3:'-', ERA:'-', WHIP:'-' };
+  window._rosCatMultipliers = catMultipliers;
+  window._rosCatRanks = catRanks;
   if (_rosSelectedTeam && S.zData && S.zData.length) {
     // Low-is-better categories (ERA, WHIP): invert Z for ranking
     var LOW_CATS_Z = { ERA:true, WHIP:true };
@@ -4735,6 +4752,8 @@ function buildROSTable() {
         catRanks[cat] = rank;
       }
     });
+    window._rosCatMultipliers = catMultipliers;
+    window._rosCatRanks = catRanks;
   }
 
   // Get selected team's current stats from cached _rosTeamStats
@@ -4875,16 +4894,13 @@ function buildROSTable() {
 
   var sorted = filtered.slice().sort(function(a,b){ return playerSGP(b)-playerSGP(a); });
 
-  var html = pillHtml + '<div class="card" style="padding:0;overflow:hidden;margin-bottom:0"><div style="overflow-x:auto"><table style="min-width:max-content;width:115%;font-size:87%"><thead><tr>';
+  var html = pillHtml + '<div class="card" style="padding:0;overflow:hidden;margin-bottom:0"><div style="overflow-x:auto"><table style="min-width:max-content;width:150%;font-size:87%"><thead><tr>';
   html += '<th class="left" style="min-width:140px">Player</th>';
   html += '<th class="left">Pos</th>';
   html += '<th class="left">MLB</th>';
   html += '<th class="left">Fantasy</th>';
   sgpCols.forEach(function(c){
-    var mult = catMultipliers[c.k] || 1.0;
-    var rank = catRanks[c.k];
-    var subtitle = rank !== '-' ? '<br><span style="font-size:9px;font-weight:400;color:var(--muted)">Rank '+rank+' ×'+mult+'</span>' : '';
-    html += '<th style="color:' + (c.inv?'#c0392b':'#2d5a3d') + '">' + c.k + '_SGP' + subtitle + '</th>';
+    html += '<th style="color:' + (c.inv?'#c0392b':'#2d5a3d') + '">' + c.k + '_SGP</th>';
   });
   html += '<th style="color:var(--muted);font-weight:600">Raw SGP</th>';
   html += '<th style="color:var(--accent);font-weight:700">Team SGP</th>';
