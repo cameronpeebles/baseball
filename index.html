@@ -261,8 +261,6 @@ td.neg { color: #c0392b; font-weight: 500; }
   <button onclick="showPage('trade',this)">Player Trade &amp; Market</button>
   <button onclick="showPage('fwar',this)">Player Data</button>
   <button onclick="showPage('targets',this)">Trade Waiver Wire Targets</button>
-  <button onclick="showPage('sgp',this)">SGP</button>
-  <button onclick="showPage('matchup',this)">Match Predictions</button>
 </nav>
 
 <main>
@@ -9039,45 +9037,6 @@ function assembleDashboard(teamId, el) {
   }
 
   // ── 2-col: Left = Z-scatter + Category breakdown | Right = Matchup + Upcoming ──
-  html += '<div class="dash-two-col" style="align-items:stretch">';
-
-  // LEFT COLUMN
-  html += '<div style="display:flex;flex-direction:column;gap:16px;height:100%">';
-  html += '<div class="card">';
-  html += '<div class="card-header"><span class="card-title">Batting vs pitching Z-score</span></div>';
-  html += '<div class="card-body" style="padding:12px 16px">';
-  html += dashInfoBox('Each bubble is a team. X = total batting Z-score, Y = total pitching Z-score. Bubble size = total Z. Your team is highlighted. Top-right = strong everywhere. Bottom-left = weak everywhere. Above the diagonal = pitching-heavy; below = hitting-heavy.');
-  html += '<div style="position:relative;height:220px"><canvas id="dash-zscatter" role="img" aria-label="Batting vs pitching Z-score scatter">Z-score scatter.</canvas></div>';
-  html += '</div></div>';
-
-  html += '<div class="card" style="flex:1"><div class="card-header"><span class="card-title">Category breakdown vs league avg</span></div><div class="card-body" style="padding:12px 20px">' + dashInfoBox('Bars show your season-to-date stat total vs the league average for each category. Green bars mean you are above average (winning that category), red means below. Width represents how far above or below the average you are. ERA and WHIP are reversed - lower is better.');
-  var maxCatVal = {};
-  CAT_DISPLAY.forEach(function(c) {
-    var vals = allTeamRows.map(function(r){return r.catVals[c.k];}).filter(function(v){return v!=null;});
-    maxCatVal[c.k] = vals.length ? Math.max.apply(null,vals) : 1;
-  });
-  CAT_DISPLAY.forEach(function(c) {
-    var myVal  = myCatVals[c.k];
-    var lgVal  = catLeagueAvg[c.k];
-    var rank   = catRanks[c.k];
-    if (myVal == null) return;
-    var isGood = c.hi ? myVal >= lgVal : myVal <= lgVal;
-    var barPct = Math.min(100, Math.round((myVal / (maxCatVal[c.k]||1))*100));
-    var barCol = isGood ? '#2d5a3d' : '#c0392b';
-    var dispVal = c.k==='AVG'?myVal.toFixed(3):(c.k==='ERA'||c.k==='WHIP')?myVal.toFixed(2):Math.round(myVal);
-    var lgDisp  = c.k==='AVG'?lgVal.toFixed(3):(c.k==='ERA'||c.k==='WHIP')?lgVal.toFixed(2):Math.round(lgVal);
-    html += '<div class="dash-cat-row">';
-    html += '<span class="dash-cat-name">' + c.label + '</span>';
-    html += '<div class="dash-cat-bar-wrap"><div class="dash-cat-bar" style="width:' + barPct + '%;background:' + barCol + '"></div></div>';
-    html += '<span class="dash-cat-val" style="color:' + barCol + '">' + dispVal + '</span>';
-    html += '<span class="dash-cat-rank" title="League avg: ' + lgDisp + '">#' + rank + '</span>';
-    html += '</div>';
-  });
-  html += '</div></div>';
-  html += '</div>'; // end left column
-
-  // RIGHT COLUMN
-  html += '<div style="display:flex;flex-direction:column;gap:16px;height:100%">';
   html += matchupHtml;
   html += '<div class="card" style="flex:1"><div class="card-header"><span class="card-title">Upcoming schedule</span></div>';
   html += '<div style="padding:0 16px">' + dashInfoBox('Your next several matchups with win probability estimates. Win probability is based on your fWAR and category ratings vs your opponent. Use this to plan roster moves - a tough stretch ahead means prioritise adds now.') + '</div>';
@@ -9103,8 +9062,6 @@ function assembleDashboard(teamId, el) {
     });
   }
   html += '</div>';
-  html += '</div>'; // end right column
-  html += '</div>'; // end dash-two-col
 
 
 
