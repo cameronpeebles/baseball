@@ -4625,7 +4625,7 @@ function buildROSTeamPanel(teamId) {
     if(!statTable&&cap!==''&&cap.indexOf('point')===-1&&(tables[ti].rows||[]).length>0&&tables[ti].tableType!=='SECTION_HEADING') statTable=tables[ti];
   }
   var catHtml = '<div>';
-  catHtml += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Category Breakdown vs League Avg</div>';
+  catHtml += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Category Breakdown</div>';
   if (statTable) {
     var hIdx2 = {};
     ((statTable.header&&statTable.header.cells)||[]).forEach(function(h,j){
@@ -4648,13 +4648,14 @@ function buildROSTeamPanel(teamId) {
       var myV = myVals[c.key]; if (myV == null) return;
       var sorted = allVals[c.key].slice().sort(function(a,b){ return c.hi ? b.v-a.v : a.v-b.v; });
       var rank = sorted.findIndex(function(x){ return x.id === teamId; }) + 1;
+      if (!window._rosCatStatRanks) window._rosCatStatRanks = {};
+      window._rosCatStatRanks[c.key] = rank;
       var max  = allVals[c.key].reduce(function(m,x){ return Math.max(m,Math.abs(x.v)); }, 0) || 1;
       var avg  = allVals[c.key].length ? allVals[c.key].reduce(function(s,x){return s+x.v;},0)/allVals[c.key].length : 0;
       var barPct = Math.min(Math.abs(myV)/max,1)*100;
       var avgPct = Math.min(Math.abs(avg)/max,1)*100;
       var barCol = rank <= 3 ? '#1e6b3a' : rank >= 8 ? '#c0392b' : '#b7791f';
       var dispV  = c.key==='AVG' ? myV.toFixed(3) : c.key==='ERA'||c.key==='WHIP' ? myV.toFixed(2) : Math.round(myV);
-      var rankCol = rank <= 3 ? '#1e6b3a' : rank >= 8 ? '#c0392b' : '#b7791f';
       catHtml += '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:0.5px solid var(--border)">';
       catHtml += '<span style="font-size:11px;font-weight:500;color:var(--text);width:32px;flex-shrink:0">'+c.label+'</span>';
       catHtml += '<div style="flex:1;height:7px;background:var(--bg);border-radius:4px;position:relative">';
@@ -4662,7 +4663,7 @@ function buildROSTeamPanel(teamId) {
       catHtml += '<div style="position:absolute;top:-2px;left:'+avgPct+'%;width:1.5px;height:11px;background:var(--muted);opacity:0.5"></div>';
       catHtml += '</div>';
       catHtml += '<span style="font-size:11px;font-weight:500;color:var(--text);width:44px;text-align:right;flex-shrink:0">'+dispV+'</span>';
-      catHtml += '<span style="font-size:10px;font-weight:500;color:'+rankCol+';width:22px;text-align:right;flex-shrink:0">#'+rank+'</span>';
+
       catHtml += '</div>';
     });
   } else {
@@ -4680,7 +4681,9 @@ function buildROSTeamPanel(teamId) {
     var multCol = mult >= 1.4 ? '#c0392b' : mult <= 0.8 ? '#1e6b3a' : '#b7791f';
     multHtml += '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:0.5px solid var(--border)">';
     multHtml += '<span style="font-size:11px;font-weight:500;color:var(--text);width:32px;flex-shrink:0">'+c.label+'</span>';
-    multHtml += '<span style="font-size:10px;color:var(--muted);flex:1">rank '+catRank+'</span>';
+    var statRank = (window._rosCatStatRanks||{})[c.key] || catRank;
+    var rankCol2 = statRank && statRank <= 3 ? '#1e6b3a' : statRank >= 8 ? '#c0392b' : '#b7791f';
+    multHtml += '<span style="font-size:10px;font-weight:500;color:'+rankCol2+';flex:1">#'+statRank+'</span>';
     multHtml += '<span style="font-size:11px;font-weight:600;color:'+multCol+'">×'+mult+'</span>';
     multHtml += '</div>';
   });
@@ -4894,7 +4897,7 @@ function buildROSTable() {
 
   var sorted = filtered.slice().sort(function(a,b){ return playerSGP(b)-playerSGP(a); });
 
-  var html = pillHtml + '<div class="card" style="padding:0;overflow:hidden;margin-bottom:0"><div style="overflow-x:auto"><table style="min-width:max-content;width:150%;font-size:87%"><thead><tr>';
+  var html = pillHtml + '<div class="card" style="padding:0;overflow:hidden;margin-bottom:0"><div style="overflow-x:auto"><table style="min-width:max-content;width:150%;font-size:79%"><thead><tr>';
   html += '<th class="left" style="min-width:140px">Player</th>';
   html += '<th class="left">Pos</th>';
   html += '<th class="left">MLB</th>';
