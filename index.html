@@ -8664,8 +8664,14 @@ function assembleDashboard(teamId, el) {
     : (window._joeCompletedWeeks && window._joeCompletedWeeks.length
         ? window._joeCompletedWeeks[window._joeCompletedWeeks.length - 1] + 1
         : 1);
+  // Build all name variants for this team to handle name format differences
+  var _teamNameVariants = [teamName];
+  if (ti.name && ti.name !== teamName) _teamNameVariants.push(ti.name);
+  if (ti.shortName && ti.shortName !== teamName) _teamNameVariants.push(ti.shortName);
+  function _matchesTeam(n) { return _teamNameVariants.indexOf(n) !== -1; }
+
   var upcomingMatches = (window._mpPredictions || []).filter(function(m) {
-    return (m.away === teamName || m.home === teamName) && m.period >= _upcomingCurPeriod;
+    return (_matchesTeam(m.away) || _matchesTeam(m.home)) && m.period >= _upcomingCurPeriod;
   }).sort(function(a,b){return a.period - b.period;}).slice(0, 5);
 
   // ── 5. Category breakdown vs league avg ─────────────────────────────────
