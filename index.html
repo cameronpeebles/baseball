@@ -8658,8 +8658,14 @@ function assembleDashboard(teamId, el) {
   var avgCase   = myJOEWeeks.length ? myJOEWeeks.reduce(function(s,r){return s+r.avgCase;},0)/myJOEWeeks.length : null;
 
   // ── 4. Upcoming schedule ─────────────────────────────────────────────────
+  // Use current period from Match Predictions or derive from completed JOE weeks
+  var _upcomingCurPeriod = window._currentPeriod
+    ? window._currentPeriod
+    : (window._joeCompletedWeeks && window._joeCompletedWeeks.length
+        ? window._joeCompletedWeeks[window._joeCompletedWeeks.length - 1] + 1
+        : 1);
   var upcomingMatches = (window._mpPredictions || []).filter(function(m) {
-    return (m.away === teamName || m.home === teamName);
+    return (m.away === teamName || m.home === teamName) && m.period >= _upcomingCurPeriod;
   }).sort(function(a,b){return a.period - b.period;}).slice(0, 5);
 
   // ── 5. Category breakdown vs league avg ─────────────────────────────────
