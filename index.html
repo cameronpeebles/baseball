@@ -4498,7 +4498,6 @@ window.showROSTab = function(tab, btn) {
   _rosCurrentTab = tab;
   _rosPosFilter = 'ALL';
   _rosRostFilter = 'ALL';
-  window._rosDropSelections = {};
   document.querySelectorAll('#ros-tabs .trade-tab').forEach(function(b){ b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
   buildROSTable();
@@ -4506,13 +4505,6 @@ window.showROSTab = function(tab, btn) {
 
 window.rosTeamChanged = function(sel) {
   _rosSelectedTeam = sel.value;
-  buildROSTable();
-};
-window.rosDropChanged = function(sel, playerKey) {
-  // Store drop selection and rebuild just that row's net gain cell
-  if (!window._rosDropSelections) window._rosDropSelections = {};
-  window._rosDropSelections[playerKey] = sel.value;
-  // Rebuild table to reflect new net gain
   buildROSTable();
 };
 window.rosSetRost = function(val, btn) {
@@ -4561,12 +4553,7 @@ function renderROSPage() {
         ERA:gv3('ERA'), WHIP:gv3('WHIP'), IP:gv3('IP'),
         pos: sc.posShortNames || '', isHit: isHitter
       };
-      // Team roster lookup
-      if (!window._rosTeamRoster) window._rosTeamRoster = {};
-      if (teamId) {
-        if (!window._rosTeamRoster[teamId]) window._rosTeamRoster[teamId] = [];
-        window._rosTeamRoster[teamId].push({ name:name, normName:key, pos:sc.posShortNames||'', isHit:isHitter });
-      }
+
     });
     // Build team dropdown options from S.teamInfo
     var teams = Object.keys(S.teamInfo).map(function(id){
@@ -5012,8 +4999,6 @@ function buildROSTable() {
   html += '<th style="color:var(--muted);font-weight:600">Curr SGP</th>';
   html += '<th style="color:var(--muted);font-weight:600">Raw SGP</th>';
   html += '<th style="color:var(--accent);font-weight:700">Team SGP</th>';
-  html += '<th style="color:#2d7a4a;font-weight:600">Drop</th>';
-  html += '<th style="color:#2d7a4a;font-weight:600">Net Gain</th>';
   html += '<th style="color:#5a7a9a">Trust</th>';
   // Also show raw ROS stat columns
   html += '<th style="border-left:1px solid var(--border);color:var(--muted);font-size:10px">' + (isHit?'ROS: R':'ROS: W') + '</th>';
@@ -5077,78 +5062,7 @@ function buildROSTable() {
     // Team SGP (weighted by need)
     var tDisp = (total>=0?'+':'')+total.toFixed(2);
     html += '<td style="font-weight:700;color:'+totalColor(total)+'">'+tDisp+'</td>';
-    // Drop selector + Net Gain
-    function normP2(n){ return (n||'').replace(/\s*\([^)]*\).*$/, '').trim().toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
-    var playerKey2 = normP2(name);
-    var rInfo2 = (window._rosRosterLookup||{})[playerKey2] || {};
-    var isFA2 = !rInfo2.teamName;
-    if (isFA2 && _rosSelectedTeam) {
-      // Get rostered players on selected team at matching position
-      var teamRoster = (window._rosTeamRoster||{})[_rosSelectedTeam] || [];
-      var posStr2 = pos.toUpperCase();
-      var matchRoster = teamRoster.filter(function(r){
-        if (isHit !== r.isHit) return false;
-        if (!posStr2 || posStr2 === '—') return true;
-        var rpos = r.pos.toUpperCase();
-        // Match if any position overlaps
-        var pParts = posStr2.split(',');
-        var rParts = rpos.split(',');
-        return pParts.some(function(pp){ return rParts.some(function(rp){ return pp.trim()===rp.trim(); }); });
-      });
-      if (!matchRoster.length) matchRoster = teamRoster.filter(function(r){ return r.isHit === isHit; });
 
-      var dropKey = 'drop_' + playerKey2;
-      var savedDrop = (window._rosDropSelections||{})[playerKey2] || '';
-      var selectHtml = '<select data-pkey="'+playerKey2+'" onchange="rosDropChanged(this,this.dataset.pkey)" style="font-size:10px;padding:2px 4px;border:0.5px solid var(--border);border-radius:4px;background:var(--card);max-width:90px">';
-      selectHtml += '<option value="">— none —</option>';
-      matchRoster.forEach(function(r){
-        var sel2 = savedDrop === r.normName ? ' selected' : '';
-        selectHtml += '<option value="'+r.normName+'"'+sel2+'>'+r.name+'</option>';
-      });
-      selectHtml += '</select>';
-      html += '<td style="padding:4px 6px">'+selectHtml+'</td>';
-
-      // Net Gain
-      var netGain = null;
-      if (savedDrop) {
-        var dropStats = (window._rosCurrentStats||{})[savedDrop] || {};
-        // Compute dropped player's current SGP using same formula
-        var dropSGP = 0;
-        if (isHit) {
-          if (dropStats.R  != null) dropSGP += dropStats.R  / D.r;
-          if (dropStats.HR != null) dropSGP += dropStats.HR / D.hr;
-          if (dropStats.RBI!= null) dropSGP += dropStats.RBI/ D.rbi;
-          if (dropStats.SB != null) dropSGP += dropStats.SB / D.sb;
-          var dsH = (dropStats.H>0)?dropStats.H:(dropStats.AVG&&dropStats.AB?dropStats.AVG*dropStats.AB:null);
-          if (dsH && dropStats.AB>0 && teamStat.AVG!=null && teamStat.AB>0) {
-            var dCurH=(teamStat.AVG||0)*(teamStat.AB||0), dNewH=dCurH+dsH, dNewAB=(teamStat.AB||0)+(dropStats.AB||0);
-            dropSGP += dNewAB>0?((dNewH/dNewAB)-(teamStat.AVG||0))/D.avg:0;
-          }
-        } else {
-          if (dropStats.W   != null) dropSGP += dropStats.W   / D.w;
-          if (dropStats.K   != null) dropSGP += dropStats.K   / D.k;
-          if (dropStats.SVH3!= null) dropSGP += dropStats.SVH3/ D.svh3;
-          if (dropStats.ERA!=null&&dropStats.IP>0&&teamStat.ERA!=null&&teamStat.IP>0){
-            var dtER=(teamStat.ERA||0)*(teamStat.IP||0)/9,dpER=dropStats.ERA*(dropStats.IP||0)/9,dnIP=(teamStat.IP||0)+(dropStats.IP||0);
-            dropSGP+=dnIP>0?((teamStat.ERA||0)-(dtER+dpER)/dnIP*9)/D.era:0;
-          }
-          if (dropStats.WHIP!=null&&dropStats.IP>0&&teamStat.WHIP!=null&&teamStat.IP>0){
-            var dtBR=(teamStat.WHIP||0)*(teamStat.IP||0),dpBR=dropStats.WHIP*(dropStats.IP||0),dnIP2=(teamStat.IP||0)+(dropStats.IP||0);
-            dropSGP+=dnIP2>0?((teamStat.WHIP||0)-(dtBR+dpBR)/dnIP2)/D.whip:0;
-          }
-        }
-        netGain = total - dropSGP;
-      }
-      if (netGain != null) {
-        var ngDisp = (netGain>=0?'+':'')+netGain.toFixed(2);
-        var ngCol = netGain >= 0.5 ? '#1e6b3a' : netGain >= 0 ? '#4a9a68' : '#c0392b';
-        html += '<td style="font-weight:700;color:'+ngCol+'">'+ngDisp+'</td>';
-      } else {
-        html += '<td style="color:var(--muted);font-size:10px">select drop</td>';
-      }
-    } else {
-      html += '<td></td><td></td>';
-    }
     // Trust score
     var trust = trustScore(p, isHit);
     var trustPct = Math.round(trust * 100);
