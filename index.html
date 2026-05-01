@@ -4490,10 +4490,12 @@ var _rosHitData = null, _rosPitData = null;
 var _rosCurrentTab = 'hitters';
 var _rosSelectedTeam = null;
 var _rosPosFilter = 'ALL';
+var _rosRostFilter = 'ALL';
 
 window.showROSTab = function(tab, btn) {
   _rosCurrentTab = tab;
   _rosPosFilter = 'ALL';
+  _rosRostFilter = 'ALL';
   document.querySelectorAll('#ros-tabs .trade-tab').forEach(function(b){ b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
   buildROSTable();
@@ -4501,6 +4503,12 @@ window.showROSTab = function(tab, btn) {
 
 window.rosTeamChanged = function(sel) {
   _rosSelectedTeam = sel.value;
+  buildROSTable();
+};
+window.rosSetRost = function(val, btn) {
+  _rosRostFilter = val;
+  document.querySelectorAll('.ros-rost-pill').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
   buildROSTable();
 };
 window.rosSetPos = function(pos, btn) {
@@ -4880,6 +4888,14 @@ function buildROSTable() {
   var hitPills = ['ALL','C','1B','2B','3B','SS','OF','DH'];
   var pitPills = ['ALL','SP','RP'];
   var pills = isHit ? hitPills : pitPills;
+  // Roster filter pills
+  var rostHtml = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">';
+  [['ALL','All'],['ROSTERED','Rostered'],['FA','Free Agents']].forEach(function(r){
+    var active = (_rosRostFilter===r[0]) ? 'active' : '';
+    rostHtml += '<button class="pill ros-rost-pill '+active+'" onclick="rosSetRost(\''+r[0]+'\',this)" style="padding:3px 12px;font-size:11px">'+r[1]+'</button>';
+  });
+  rostHtml += '</div>';
+
   var pillHtml = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">';
   pillHtml += '<span style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">Position:</span>';
   pills.forEach(function(pos){
@@ -4889,16 +4905,28 @@ function buildROSTable() {
   pillHtml += '</div>';
 
   // Filter players by position
+  function normRos3(n){ return (n||'').replace(/\s*\([^)]*\).*$/, '').trim().toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
   var filtered = players.filter(function(p){
+    // Roster filter
+    if (_rosRostFilter !== 'ALL') {
+      var rInfo = (window._rosRosterLookup||{})[normRos3(p.name||'')] || {};
+      var isRostered = !!rInfo.teamName;
+      if (_rosRostFilter === 'ROSTERED' && !isRostered) return false;
+      if (_rosRostFilter === 'FA' && isRostered) return false;
+    }
     if (_rosPosFilter === 'ALL') return true;
-    var pos = (p.pos||'').toUpperCase();
-    if (_rosPosFilter === 'OF') return pos.indexOf('LF')!==-1||pos.indexOf('CF')!==-1||pos.indexOf('RF')!==-1||pos.indexOf('OF')!==-1;
-    return pos.indexOf(_rosPosFilter) !== -1;
+    // Get pos from name parentheses
+    var nameStr = (p.name||''); var posStr = (p.pos||'');
+    var nm = nameStr.match(/\(([^)]+)\)/);
+    if (nm) { var pts = nm[1].split(' - '); if (pts.length >= 2) posStr = pts.slice(1).join(','); }
+    posStr = posStr.toUpperCase();
+    if (_rosPosFilter === 'OF') return posStr.indexOf('LF')!==-1||posStr.indexOf('CF')!==-1||posStr.indexOf('RF')!==-1||posStr.indexOf('OF')!==-1;
+    return posStr.indexOf(_rosPosFilter) !== -1;
   });
 
   var sorted = filtered.slice().sort(function(a,b){ return playerSGP(b)-playerSGP(a); });
 
-  var html = pillHtml + '<div class="card" style="padding:0;overflow:hidden;margin-bottom:0"><div style="overflow-x:auto"><table style="min-width:max-content;width:100%;font-size:79%"><thead><tr>';
+  var html = rostHtml + pillHtml + '<div class="card" style="padding:0;overflow:hidden;margin-bottom:0;width:100%"><div style="overflow-x:auto;width:100%"><table style="width:100%;font-size:79%"<thead><tr>';
   html += '<th class="left" style="min-width:140px">Player</th>';
   html += '<th class="left">Pos</th>';
   html += '<th class="left">Fantasy</th>';
@@ -4917,7 +4945,14 @@ function buildROSTable() {
 
   sorted.forEach(function(p) {
     var name = p.name || p.name_key || '—';
-    var pos  = p.pos  || '—';
+    // Extract pos from "Player Name (TEAM - POS)" pattern
+    var posFromName = '';
+    var nameMatch = name.match(/\(([^)]+)\)/);
+    if (nameMatch) {
+      var parts = nameMatch[1].split(' - ');
+      if (parts.length >= 2) posFromName = parts.slice(1).join(',');
+    }
+    var pos  = posFromName || p.pos || '—';
     var team = p.mlb_team || p.team || '—';
     var hs   = p.hs   || '';
     var total = playerSGP(p);
