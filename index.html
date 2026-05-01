@@ -8660,12 +8660,24 @@ function assembleDashboard(teamId, el) {
   var avgCase   = myJOEWeeks.length ? myJOEWeeks.reduce(function(s,r){return s+r.avgCase;},0)/myJOEWeeks.length : null;
 
   // ── 4. Upcoming schedule ─────────────────────────────────────────────────
-  // Use current period from Match Predictions or derive from completed JOE weeks
-  var _upcomingCurPeriod = window._currentPeriod
-    ? window._currentPeriod
-    : (window._joeCompletedWeeks && window._joeCompletedWeeks.length
-        ? window._joeCompletedWeeks[window._joeCompletedWeeks.length - 1] + 1
-        : 1);
+  // Derive current period from S.scheduleData (always available from standings_schedule.json)
+  var _upcomingCurPeriod = (function() {
+    if (window._currentPeriod) return window._currentPeriod;
+    // Count completed scoring period tables in scheduleData
+    if (S.scheduleData && S.scheduleData.data && S.scheduleData.data.tableList) {
+      var ptbls = S.scheduleData.data.tableList.filter(function(t){
+        return t.tableType !== 'SECTION_HEADING' && /scoring period/i.test(t.caption||'');
+      });
+      if (ptbls.length) return ptbls.length + 1; // last completed + 1 = current
+    }
+    // Fallback: last completed JOE week + 1
+    if (window._joeCompletedWeeks && window._joeCompletedWeeks.length)
+      return window._joeCompletedWeeks[window._joeCompletedWeeks.length - 1] + 1;
+    // Last fallback: use myJOEWeeks
+    if (myJOEWeeks && myJOEWeeks.length)
+      return Math.max.apply(null, myJOEWeeks.map(function(r){return r.week||0;})) + 1;
+    return 1;
+  })();
   // Build all name variants for this team to handle name format differences
   var _teamNameVariants = [teamName];
   if (ti.name && ti.name !== teamName) _teamNameVariants.push(ti.name);
