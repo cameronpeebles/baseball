@@ -4462,17 +4462,24 @@ function buildRosTeamStats(seasonData) {
   return result;
 }
 function gvROS(cells, key, idx) {
+  function parseContent(raw) {
+    if (raw == null) return NaN;
+    // Strip commas (e.g. "1,234" -> "1234") and % signs before parsing
+    var cleaned = String(raw).replace(/,/g, '').replace(/%/g, '').trim();
+    return parseFloat(cleaned);
+  }
   // Use pre-built header index (same approach as buildSGPRos)
   if (idx) {
     var i = idx[key.toUpperCase()];
     if (i == null) return null;
-    var v = parseFloat((cells[i]||{}).content);
+    var v = parseContent((cells[i]||{}).content);
     return isNaN(v) ? null : v;
   }
   // Fallback: scan by columnId
   for (var ci=0; ci<cells.length; ci++) {
     if ((cells[ci].columnId||'').toUpperCase() === key.toUpperCase()) {
-      var v2 = parseFloat(cells[ci].value != null ? cells[ci].value : cells[ci].content);
+      var raw = cells[ci].value != null ? cells[ci].value : cells[ci].content;
+      var v2 = parseContent(raw);
       return isNaN(v2) ? null : v2;
     }
   }
@@ -4538,7 +4545,6 @@ function renderROSPage() {
 function buildROSTable() {
   var wrap = document.getElementById('ros-table-wrap');
   if (!wrap) return;
-  window._rosDebug = true; setTimeout(function(){ window._rosDebug = false; }, 2000);
 
   var isHit = (_rosCurrentTab === 'hitters');
   var players = isHit ? (_rosHitData||[]) : (_rosPitData||[]);
@@ -4638,7 +4644,6 @@ function buildROSTable() {
         var newH  = curH + rosH;
         var newAB = (teamStat.AB||0)+rosAB;
         var delta = newAB>0 ? (newH/newAB)-(teamStat.AVG||0) : 0;
-        if (window._rosDebug) console.log('AVG SGP debug:', p.name, 'rosH='+rosH, 'rosAB='+rosAB, 'teamAVG='+teamStat.AVG, 'teamAB='+teamStat.AB, 'delta='+delta.toFixed(5), 'sgp='+(delta/D.avg).toFixed(2));
         return delta / D.avg;
       }
       return null;
