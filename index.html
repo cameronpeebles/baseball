@@ -4429,6 +4429,43 @@ function buildROSTable() {
     w:15.3, k:216.8, svh3:18.5, era:0.106, whip:0.0191
   };
 
+  // ── Category need multipliers based on team rank in each category ────────
+  // Rank 1-2=0.5, 3-4=0.8, 5-6=1.0, 7-8=1.4, 9-10=1.8
+  function needMultiplier(rank) {
+    if (rank <= 2) return 0.5;
+    if (rank <= 4) return 0.8;
+    if (rank <= 6) return 1.0;
+    if (rank <= 8) return 1.4;
+    return 1.8;
+  }
+
+  // Build category rank for selected team using S.zData
+  var catMultipliers = { R:1.0, HR:1.0, RBI:1.0, SB:1.0, AVG:1.0, W:1.0, K:1.0, SVH3:1.0, ERA:1.0, WHIP:1.0 };
+  var catRanks = { R:'-', HR:'-', RBI:'-', SB:'-', AVG:'-', W:'-', K:'-', SVH3:'-', ERA:'-', WHIP:'-' };
+  if (_rosSelectedTeam && S.zData && S.zData.length) {
+    // Low-is-better categories (ERA, WHIP): invert Z for ranking
+    var LOW_CATS_Z = { ERA:true, WHIP:true };
+    var BAT_Z_CATS = ['R','HR','RBI','SB','AVG'];
+    var PIT_Z_CATS = ['W','K','SVH3','ERA','WHIP'];
+    var allCats = BAT_Z_CATS.concat(PIT_Z_CATS);
+    allCats.forEach(function(cat) {
+      var isBat = BAT_Z_CATS.indexOf(cat) !== -1;
+      var zKey  = isBat ? 'batZ' : 'pitZ';
+      var isLow = LOW_CATS_Z[cat];
+      // Get Z-score for each team in this category
+      var scores = S.zData.map(function(d) {
+        return { teamId: d.teamId, z: (d[zKey] && d[zKey][cat] != null) ? d[zKey][cat] : 0 };
+      });
+      // Sort: higher Z = better rank (rank 1), except low-is-better cats (ERA/WHIP) invert
+      scores.sort(function(a,b) { return isLow ? a.z - b.z : b.z - a.z; });
+      var rank = scores.findIndex(function(s) { return s.teamId === _rosSelectedTeam; }) + 1;
+      if (rank > 0) {
+        catMultipliers[cat] = needMultiplier(rank);
+        catRanks[cat] = rank;
+      }
+    });
+  }
+
   // Get selected team's current stats from cached _rosTeamStats
   var teamStat = { R:0,HR:0,RBI:0,SB:0,AVG:null,AB:0, K:0,W:0,SVH3:0,ERA:null,WHIP:null,IP:0 };
   if (!window._rosTeamStats && S.seasonData) {
@@ -4442,45 +4479,56 @@ function buildROSTable() {
   var cats    = isHit ? ['R','HR','RBI','SB','AVG']         : ['W','K','SVH3','ERA','WHIP'];
   var denomKeys = isHit ? ['r','hr','rbi','sb','avg']       : ['w','k','svh3','era','whip'];
 
-  // Sort by total SGP descending
-  function playerSGP(p) {
-    var total = 0;
-    if (isHit) {
-      total += (p.R||0)  / D.r;
-      total += (p.HR||0) / D.hr;
-      total += (p.RBI||0)/ D.rbi;
-      total += (p.SB||0) / D.sb;
-      // AVG
+  // Sort by total weighted SGP descending
+  function catSGP(p, cat) {
+    // Returns raw (unweighted) SGP for a single category
+    if (cat==='R')   return (p.R||0)  / D.r;
+    if (cat==='HR')  return (p.HR||0) / D.hr;
+    if (cat==='RBI') return (p.RBI||0)/ D.rbi;
+    if (cat==='SB')  return (p.SB||0) / D.sb;
+    if (cat==='W')   return (p.W||0)  / D.w;
+    if (cat==='K')   return (p.K||0)  / D.k;
+    if (cat==='SVH3') return (p.SV||0) / D.svh3;
+    if (cat==='AVG') {
       if (p.AVG!=null && p.AB && teamStat.AVG!=null) {
-        var curH  = (teamStat.AVG||0) * (teamStat.AB||0);
-        var newH  = curH + (p.AVG * p.AB);
-        var newAB = (teamStat.AB||0) + (p.AB||0);
-        var delta = newAB>0 ? (newH/newAB) - (teamStat.AVG||0) : 0;
-        total += delta / D.avg;
+        var curH  = (teamStat.AVG||0)*(teamStat.AB||0);
+        var newH  = curH + p.AVG*p.AB;
+        var newAB = (teamStat.AB||0)+(p.AB||0);
+        var delta = newAB>0 ? (newH/newAB)-(teamStat.AVG||0) : 0;
+        return delta / D.avg;
       }
-    } else {
-      total += (p.W||0)  / D.w;
-      total += (p.K||0)  / D.k;
-      total += (p.SV||0) / D.svh3;
-      // ERA
-      if (p.ERA!=null && p.IP && teamStat.ERA!=null && teamStat.IP) {
-        var tER   = (teamStat.ERA||0) * (teamStat.IP||0) / 9;
-        var pER   = p.ERA * (p.IP||0) / 9;
-        var newIP = (teamStat.IP||0) + (p.IP||0);
-        var newERA = newIP>0 ? (tER+pER)/newIP*9 : teamStat.ERA;
-        var delta  = (teamStat.ERA||0) - newERA;
-        total += delta / D.era;
-      }
-      // WHIP
-      if (p.WHIP!=null && p.IP && teamStat.WHIP!=null && teamStat.IP) {
-        var tBR   = (teamStat.WHIP||0) * (teamStat.IP||0);
-        var pBR   = p.WHIP * (p.IP||0);
-        var newIP2= (teamStat.IP||0) + (p.IP||0);
-        var newWHIP = newIP2>0 ? (tBR+pBR)/newIP2 : teamStat.WHIP;
-        var delta2  = (teamStat.WHIP||0) - newWHIP;
-        total += delta2 / D.whip;
-      }
+      return null;
     }
+    if (cat==='ERA') {
+      if (p.ERA!=null && p.IP && teamStat.ERA!=null && teamStat.IP) {
+        var tER  = (teamStat.ERA||0)*(teamStat.IP||0)/9;
+        var pER  = p.ERA*(p.IP||0)/9;
+        var nIP  = (teamStat.IP||0)+(p.IP||0);
+        var nERA = nIP>0?(tER+pER)/nIP*9:teamStat.ERA;
+        return ((teamStat.ERA||0)-nERA)/D.era;
+      }
+      return null;
+    }
+    if (cat==='WHIP') {
+      if (p.WHIP!=null && p.IP && teamStat.WHIP!=null && teamStat.IP) {
+        var tBR  = (teamStat.WHIP||0)*(teamStat.IP||0);
+        var pBR  = p.WHIP*(p.IP||0);
+        var nIP2 = (teamStat.IP||0)+(p.IP||0);
+        var nWHIP= nIP2>0?(tBR+pBR)/nIP2:teamStat.WHIP;
+        return ((teamStat.WHIP||0)-nWHIP)/D.whip;
+      }
+      return null;
+    }
+    return 0;
+  }
+
+  function playerSGP(p) {
+    var cats = isHit ? ['R','HR','RBI','SB','AVG'] : ['W','K','SVH3','ERA','WHIP'];
+    var total = 0;
+    cats.forEach(function(cat) {
+      var raw = catSGP(p, cat);
+      if (raw != null) total += raw * catMultipliers[cat];
+    });
     return total;
   }
 
@@ -4511,7 +4559,10 @@ function buildROSTable() {
   html += '<th class="left">Pos</th>';
   html += '<th class="left">Team</th>';
   sgpCols.forEach(function(c){
-    html += '<th style="color:' + (c.inv?'#c0392b':'#2d5a3d') + '">' + c.k + '_SGP</th>';
+    var mult = catMultipliers[c.k] || 1.0;
+    var rank = catRanks[c.k];
+    var subtitle = rank !== '-' ? '<br><span style="font-size:9px;font-weight:400;color:var(--muted)">Rank '+rank+' ×'+mult+'</span>' : '';
+    html += '<th style="color:' + (c.inv?'#c0392b':'#2d5a3d') + '">' + c.k + '_SGP' + subtitle + '</th>';
   });
   html += '<th style="color:var(--accent);font-weight:700">Total SGP</th>';
   // Also show raw ROS stat columns
@@ -4540,38 +4591,14 @@ function buildROSTable() {
     html += '<td class="left" style="color:var(--muted);font-size:12px">'+team+'</td>';
 
     sgpCols.forEach(function(c) {
-      var sgpVal;
-      if (!c.rate) {
-        var rawVal = c.sv ? (p.SV||0) : (p[c.k]||0);
-        sgpVal = rawVal / D[c.d];
-      } else if (c.k === 'AVG') {
-        if (p.AVG!=null && p.AB && teamStat.AVG!=null) {
-          var curH  = (teamStat.AVG||0)*(teamStat.AB||0);
-          var newH  = curH + p.AVG*p.AB;
-          var newAB = (teamStat.AB||0)+(p.AB||0);
-          var delta = newAB>0?(newH/newAB)-(teamStat.AVG||0):0;
-          sgpVal = delta / D.avg;
-        } else { sgpVal = null; }
-      } else if (c.k === 'ERA') {
-        if (p.ERA!=null && p.IP && teamStat.ERA!=null && teamStat.IP) {
-          var tER  = (teamStat.ERA||0)*(teamStat.IP||0)/9;
-          var pER  = p.ERA*(p.IP||0)/9;
-          var nIP  = (teamStat.IP||0)+(p.IP||0);
-          var nERA = nIP>0?(tER+pER)/nIP*9:teamStat.ERA;
-          sgpVal   = ((teamStat.ERA||0)-nERA)/D.era;
-        } else { sgpVal = null; }
-      } else if (c.k === 'WHIP') {
-        if (p.WHIP!=null && p.IP && teamStat.WHIP!=null && teamStat.IP) {
-          var tBR  = (teamStat.WHIP||0)*(teamStat.IP||0);
-          var pBR  = p.WHIP*(p.IP||0);
-          var nIP2 = (teamStat.IP||0)+(p.IP||0);
-          var nWHIP= nIP2>0?(tBR+pBR)/nIP2:teamStat.WHIP;
-          sgpVal   = ((teamStat.WHIP||0)-nWHIP)/D.whip;
-        } else { sgpVal = null; }
-      }
+      var rawSGP = catSGP(p, c.k);
+      var mult   = catMultipliers[c.k] || 1.0;
+      var sgpVal = rawSGP != null ? rawSGP * mult : null;
+      var rank   = catRanks[c.k];
+      var rankLabel = rank !== '-' ? '<span style="font-size:9px;color:var(--muted);margin-left:2px">('+rank+'th×'+mult+')</span>' : '';
       var disp = sgpVal!=null ? (sgpVal>=0?'+':'')+sgpVal.toFixed(2) : '—';
       var col  = sgpVal!=null ? sgpColor(sgpVal) : 'var(--muted)';
-      html += '<td style="font-weight:500;color:'+col+'">'+disp+'</td>';
+      html += '<td style="font-weight:500;color:'+col+';white-space:nowrap">'+disp+rankLabel+'</td>';
     });
 
     // Total SGP
