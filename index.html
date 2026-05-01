@@ -4543,6 +4543,7 @@ function renderROSPage() {
     dropHtml += '</select>';
     dropHtml += '<span style="font-size:11px;color:var(--muted)">Rate stats (AVG, ERA, WHIP) show impact on selected team\'s season averages</span>';
     dropHtml += '</div>';
+    dropHtml += '<div id="ros-team-panel"></div>';
     dropHtml += '<div id="ros-table-wrap"></div>';
 
     el.innerHTML = dropHtml;
@@ -4564,6 +4565,10 @@ function renderROSPage() {
 function buildROSTable() {
   var wrap = document.getElementById('ros-table-wrap');
   if (!wrap) return;
+
+  // Update team diagnostic panel
+  var panelEl = document.getElementById('ros-team-panel');
+  if (panelEl) panelEl.innerHTML = buildROSTeamPanel(_rosSelectedTeam);
 
   var isHit = (_rosCurrentTab === 'hitters');
   var players = isHit ? (_rosHitData||[]) : (_rosPitData||[]);
