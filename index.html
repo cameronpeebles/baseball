@@ -4519,7 +4519,7 @@ function renderROSPage() {
     if (!hitLoaded || !pitLoaded) return;
     // Build player→team lookup from S.hitRows/S.pitRows
     window._rosRosterLookup = {};
-    function normRos(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+    function normRos(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); } // S.hitRows names have no suffix
     var allRows = (S.hitRows||[]).concat(S.pitRows||[]);
     allRows.forEach(function(row){
       var sc = row.scorer||{};
@@ -4611,7 +4611,7 @@ function buildROSTeamPanel(teamId) {
     }
     zHtml += '</div>';
     zHtml += '<span style="font-size:11px;font-weight:500;color:'+col+';width:36px;text-align:right;flex-shrink:0">'+zStr+'</span>';
-    zHtml += '<span style="font-size:10px;color:'+col+';width:22px;text-align:right;flex-shrink:0">'+(rank ? rank+'th' : '-')+'</span>';
+
     zHtml += '</div>';
   });
   zHtml += '</div>';
@@ -4898,10 +4898,9 @@ function buildROSTable() {
 
   var sorted = filtered.slice().sort(function(a,b){ return playerSGP(b)-playerSGP(a); });
 
-  var html = pillHtml + '<div class="card" style="padding:0;overflow:hidden;margin-bottom:0"><div style="overflow-x:auto"><table style="min-width:max-content;width:150%;font-size:79%"><thead><tr>';
+  var html = pillHtml + '<div class="card" style="padding:0;overflow:hidden;margin-bottom:0"><div style="overflow-x:auto"><table style="min-width:max-content;width:100%;font-size:79%"><thead><tr>';
   html += '<th class="left" style="min-width:140px">Player</th>';
   html += '<th class="left">Pos</th>';
-  html += '<th class="left">MLB</th>';
   html += '<th class="left">Fantasy</th>';
   sgpCols.forEach(function(c){
     html += '<th style="color:' + (c.inv?'#c0392b':'#2d5a3d') + '">' + c.k + '_SGP</th>';
@@ -4932,9 +4931,12 @@ function buildROSTable() {
     }
     html += '<span style="font-weight:500">'+name+'</span></div></td>';
     html += '<td class="left"><span style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;background:var(--bg);border:0.5px solid var(--border);color:var(--muted)">'+pos+'</span></td>';
-    html += '<td class="left" style="color:var(--muted);font-size:12px">'+team+'</td>';
     // Fantasy team column
-    function normRos2(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+    function normRos2(n){
+      // Strip "(TEAM - POS)" suffix that FantasyPros adds to names
+      var clean = (n||'').replace(/\s*\([^)]*\).*$/, '').trim();
+      return clean.toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+    }
     var rosterInfo = (window._rosRosterLookup||{})[normRos2(name)] || {};
     var fantasyTeam = rosterInfo.teamName || '';
     var ftStyle = fantasyTeam ? 'font-size:11px;font-weight:500;color:var(--text)' : 'font-size:11px;color:var(--muted)';
