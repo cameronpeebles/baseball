@@ -4304,6 +4304,16 @@ window.appendJoeWeeklyCharts = function() {
 };
 
 // ── ROS Projections Page ──────────────────────────────────────────────────
+function gvROS(cells, key) {
+  for (var ci=0; ci<cells.length; ci++) {
+    if ((cells[ci].columnId||'').toUpperCase() === key.toUpperCase() ||
+        (cells[ci].stats && cells[ci].stats[key] != null)) {
+      var v = cells[ci].value != null ? cells[ci].value : (cells[ci].stats && cells[ci].stats[key]);
+      return v != null ? parseFloat(v) : null;
+    }
+  }
+  return null;
+}
 var rosRendered = false;
 var _rosHitData = null, _rosPitData = null;
 var _rosCurrentTab = 'hitters';
@@ -4393,15 +4403,7 @@ function buildROSTable() {
       if(!statTable&&cap!==''&&cap.indexOf('point')===-1&&(tables[ti].rows||[]).length>0&&tables[ti].tableType!=='SECTION_HEADING') statTable=tables[ti];
     }
     if (statTable) {
-      function gvROS(cells, key) {
-        for (var ci=0;ci<cells.length;ci++){
-          if((cells[ci].columnId||'').toUpperCase()===key.toUpperCase()||(cells[ci].stats&&cells[ci].stats[key]!=null)){
-            var v=cells[ci].value!=null?cells[ci].value:(cells[ci].stats&&cells[ci].stats[key]);
-            return v!=null?parseFloat(v):null;
-          }
-        }
-        return null;
-      }
+
       (statTable.rows||[]).forEach(function(row){
         var fc=row.fixedCells||[],cells=row.cells||[];
         var id=(fc[1]&&fc[1].teamId)||'';
