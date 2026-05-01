@@ -8669,6 +8669,8 @@ function assembleDashboard(teamId, el) {
   if (ti.name && ti.name !== teamName) _teamNameVariants.push(ti.name);
   if (ti.shortName && ti.shortName !== teamName) _teamNameVariants.push(ti.shortName);
   function _matchesTeam(n) { return _teamNameVariants.indexOf(n) !== -1; }
+  console.log('Schedule debug: teamName='+teamName+' variants='+JSON.stringify(_teamNameVariants)+' curPeriod='+_upcomingCurPeriod);
+  console.log('Schedule debug: _mpPredictions count='+(window._mpPredictions||[]).length+' sample='+(window._mpPredictions&&window._mpPredictions[0]?JSON.stringify(window._mpPredictions[0]):'none'));
 
   var upcomingMatches = (window._mpPredictions || []).filter(function(m) {
     return (_matchesTeam(m.away) || _matchesTeam(m.home)) && m.period >= _upcomingCurPeriod;
