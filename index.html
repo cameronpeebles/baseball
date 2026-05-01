@@ -4442,13 +4442,13 @@ function buildRosTeamStats(seasonData) {
   ((statTable.header&&statTable.header.cells)||[]).forEach(function(h,j){
     if(h.key)       hIdx[h.key.toUpperCase()] = j;
     if(h.shortName) hIdx[h.shortName.toUpperCase()] = j;
+    if(h.name)      hIdx[h.name.toUpperCase()] = j;
   });
   (statTable.rows||[]).forEach(function(row){
     var fc=row.fixedCells||[],cells=row.cells||[];
     var id=(fc[1]&&fc[1].teamId)||''; if(!id) return;
     var ab=gvROS(cells,'AB',hIdx)||0, ip=gvROS(cells,'IP',hIdx)||0;
-    // Sanity check: skip rows where AB is unreasonably small (not a stat totals row)
-    if (ab < 500 && ip < 50) return;
+
     result[id]={
       R:gvROS(cells,'R',hIdx)||0,   HR:gvROS(cells,'HR',hIdx)||0,
       RBI:gvROS(cells,'RBI',hIdx)||0, SB:gvROS(cells,'SB',hIdx)||0,
@@ -4632,7 +4632,7 @@ function buildROSTable() {
       // Use p.H directly if available (more accurate than p.AVG * p.AB)
       var rosH  = (p.H!=null && p.H > 0) ? p.H : (p.AVG!=null && p.AB ? p.AVG * p.AB : null);
       var rosAB = p.AB || 0;
-      if (rosH!=null && rosAB>0 && teamStat.AVG!=null && teamStat.AB>500) {
+      if (rosH!=null && rosAB>0 && teamStat.AVG!=null && teamStat.AB>0) {
         var curH  = (teamStat.AVG||0)*(teamStat.AB||0);
         var newH  = curH + rosH;
         var newAB = (teamStat.AB||0)+rosAB;
