@@ -4526,16 +4526,31 @@ function renderROSPage() {
   var hitLoaded = false, pitLoaded = false;
   function tryRender() {
     if (!hitLoaded || !pitLoaded) return;
-    // Build player→team lookup from S.hitRows/S.pitRows
+    // Build player→team lookup AND current season stat lookup from S.hitRows/S.pitRows
     window._rosRosterLookup = {};
+    window._rosCurrentStats = {};  // normName → {R,HR,RBI,SB,AVG,AB,K,W,SVH3,ERA,WHIP,IP}
     function normRos(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); } // S.hitRows names have no suffix
+    var _hitIdx = buildStatIdx ? buildStatIdx(S.hitHeaders) : {};
+    var _pitIdx = buildStatIdx ? buildStatIdx(S.pitHeaders) : {};
     var allRows = (S.hitRows||[]).concat(S.pitRows||[]);
     allRows.forEach(function(row){
       var sc = row.scorer||{};
       var name = sc.name||''; if(!name) return;
-      var teamId = (row.cells&&row.cells[1]&&row.cells[1].teamId)||'';
+      var isHitter = (S.hitRows||[]).indexOf(row) !== -1;
+      var idx3 = isHitter ? _hitIdx : _pitIdx;
+      var cells = row.cells||[];
+      var teamId = (cells[1]&&cells[1].teamId)||'';
       var teamName = teamId ? ((S.teamInfo[teamId]||{}).shortName||(S.teamInfo[teamId]||{}).name||'') : '';
-      window._rosRosterLookup[normRos(name)] = { teamId:teamId, teamName:teamName };
+      var key = normRos(name);
+      window._rosRosterLookup[key] = { teamId:teamId, teamName:teamName };
+      // Current season stats
+      function gv3(cat){ return getStatVal ? getStatVal(cells, cat, idx3) : null; }
+      window._rosCurrentStats[key] = {
+        R:gv3('R'), HR:gv3('HR'), RBI:gv3('RBI'), SB:gv3('SB'),
+        AVG:gv3('AVG'), AB:gv3('AB'), H:gv3('H'),
+        K:gv3('K'), W:gv3('W'), SVH3:gv3('SVH3'),
+        ERA:gv3('ERA'), WHIP:gv3('WHIP'), IP:gv3('IP')
+      };
     });
     // Build team dropdown options from S.teamInfo
     var teams = Object.keys(S.teamInfo).map(function(id){
@@ -4842,6 +4857,42 @@ function buildROSTable() {
     return 0;
   }
 
+  // Current season SGP (no team weighting, no trust)
+  function currentPlayerSGP(p) {
+    function normP(n){ return (n||'').replace(/\s*\([^)]*\).*$/, '').trim().toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+    var cs = (window._rosCurrentStats||{})[normP(p.name||'')] || {};
+    var D2 = D; // same denominators
+    var total = 0;
+    if (isHit) {
+      if (cs.R  != null) total += cs.R  / D2.r;
+      if (cs.HR != null) total += cs.HR / D2.hr;
+      if (cs.RBI!= null) total += cs.RBI/ D2.rbi;
+      if (cs.SB != null) total += cs.SB / D2.sb;
+      // AVG: use player's own H and AB (no team context needed for current)
+      if (cs.AVG != null && cs.AB > 0) {
+        // Just use player's own AVG contribution relative to league avg
+        var lgAVG = teamStat.AVG || 0.260;
+        var delta = cs.AVG - lgAVG;
+        total += delta / D2.avg;
+      }
+    } else {
+      if (cs.W   != null) total += cs.W   / D2.w;
+      if (cs.K   != null) total += cs.K   / D2.k;
+      if (cs.SVH3!= null) total += cs.SVH3/ D2.svh3;
+      if (cs.ERA != null && cs.IP > 0) {
+        var lgERA = teamStat.ERA || 4.00;
+        var delta2 = lgERA - cs.ERA;
+        total += delta2 / D2.era;
+      }
+      if (cs.WHIP!= null && cs.IP > 0) {
+        var lgWHIP = teamStat.WHIP || 1.25;
+        var delta3 = lgWHIP - cs.WHIP;
+        total += delta3 / D2.whip;
+      }
+    }
+    return total;
+  }
+
   function rawPlayerSGP(p) {
     // No team need weighting - pure category SGP × Trust
     var cats = isHit ? ['R','HR','RBI','SB','AVG'] : ['W','K','SVH3','ERA','WHIP'];
@@ -4934,6 +4985,7 @@ function buildROSTable() {
   sgpCols.forEach(function(c){
     html += '<th style="color:' + (c.inv?'#c0392b':'#2d5a3d') + '">' + c.k + '_SGP</th>';
   });
+  html += '<th style="color:var(--muted);font-weight:600">Curr SGP</th>';
   html += '<th style="color:var(--muted);font-weight:600">Raw SGP</th>';
   html += '<th style="color:var(--accent);font-weight:700">Team SGP</th>';
   html += '<th style="color:#5a7a9a">Trust</th>';
@@ -4988,6 +5040,10 @@ function buildROSTable() {
       html += '<td style="font-weight:500;color:'+col+'">'+disp+'</td>';
     });
 
+    // Current season SGP
+    var currTotal = currentPlayerSGP(p);
+    var currDisp = (currTotal >= 0 ? '+' : '') + currTotal.toFixed(2);
+    html += '<td style="font-weight:500;color:'+totalColor(currTotal)+'">'+currDisp+'</td>';
     // Raw SGP (unweighted)
     var rawTotal = rawPlayerSGP(p);
     var rawDisp = (rawTotal>=0?'+':'')+rawTotal.toFixed(2);
