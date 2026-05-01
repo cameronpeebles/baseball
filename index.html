@@ -4489,9 +4489,11 @@ var rosRendered = false;
 var _rosHitData = null, _rosPitData = null;
 var _rosCurrentTab = 'hitters';
 var _rosSelectedTeam = null;
+var _rosPosFilter = 'ALL';
 
 window.showROSTab = function(tab, btn) {
   _rosCurrentTab = tab;
+  _rosPosFilter = 'ALL';
   document.querySelectorAll('#ros-tabs .trade-tab').forEach(function(b){ b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
   buildROSTable();
@@ -4499,6 +4501,12 @@ window.showROSTab = function(tab, btn) {
 
 window.rosTeamChanged = function(sel) {
   _rosSelectedTeam = sel.value;
+  buildROSTable();
+};
+window.rosSetPos = function(pos, btn) {
+  _rosPosFilter = pos;
+  document.querySelectorAll('.ros-pos-pill').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
   buildROSTable();
 };
 
@@ -4509,6 +4517,17 @@ function renderROSPage() {
   var hitLoaded = false, pitLoaded = false;
   function tryRender() {
     if (!hitLoaded || !pitLoaded) return;
+    // Build player→team lookup from S.hitRows/S.pitRows
+    window._rosRosterLookup = {};
+    function normRos(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+    var allRows = (S.hitRows||[]).concat(S.pitRows||[]);
+    allRows.forEach(function(row){
+      var sc = row.scorer||{};
+      var name = sc.name||''; if(!name) return;
+      var teamId = (row.cells&&row.cells[1]&&row.cells[1].teamId)||'';
+      var teamName = teamId ? ((S.teamInfo[teamId]||{}).shortName||(S.teamInfo[teamId]||{}).name||'') : '';
+      window._rosRosterLookup[normRos(name)] = { teamId:teamId, teamName:teamName };
+    });
     // Build team dropdown options from S.teamInfo
     var teams = Object.keys(S.teamInfo).map(function(id){
       return { id:id, name:(S.teamInfo[id].shortName||S.teamInfo[id].name||id) };
@@ -4714,10 +4733,33 @@ function buildROSTable() {
     ? [{k:'R',d:'r'},{k:'HR',d:'hr'},{k:'RBI',d:'rbi'},{k:'SB',d:'sb'},{k:'AVG',d:'avg',rate:true}]
     : [{k:'W',d:'w'},{k:'K',d:'k'},{k:'SVH3',d:'svh3',sv:true},{k:'ERA',d:'era',rate:true,inv:true},{k:'WHIP',d:'whip',rate:true,inv:true}];
 
-  var html = '<div class="card" style="padding:0;overflow:hidden;margin-bottom:0"><div style="overflow-x:auto"><table style="min-width:max-content;width:115%;font-size:87%"><thead><tr>';
+  // Position pills
+  var hitPills = ['ALL','C','1B','2B','3B','SS','OF','DH'];
+  var pitPills = ['ALL','SP','RP'];
+  var pills = isHit ? hitPills : pitPills;
+  var pillHtml = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">';
+  pillHtml += '<span style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">Position:</span>';
+  pills.forEach(function(pos){
+    var active = (_rosPosFilter===pos) ? 'active' : '';
+    pillHtml += '<button class="pill ros-pos-pill '+active+'" onclick="rosSetPos(\''+pos+'\',this)" style="padding:3px 10px;font-size:11px">'+pos+'</button>';
+  });
+  pillHtml += '</div>';
+
+  // Filter players by position
+  var filtered = players.filter(function(p){
+    if (_rosPosFilter === 'ALL') return true;
+    var pos = (p.pos||'').toUpperCase();
+    if (_rosPosFilter === 'OF') return pos.indexOf('LF')!==-1||pos.indexOf('CF')!==-1||pos.indexOf('RF')!==-1||pos.indexOf('OF')!==-1;
+    return pos.indexOf(_rosPosFilter) !== -1;
+  });
+
+  var sorted = filtered.slice().sort(function(a,b){ return playerSGP(b)-playerSGP(a); });
+
+  var html = pillHtml + '<div class="card" style="padding:0;overflow:hidden;margin-bottom:0"><div style="overflow-x:auto"><table style="min-width:max-content;width:115%;font-size:87%"><thead><tr>';
   html += '<th class="left" style="min-width:140px">Player</th>';
   html += '<th class="left">Pos</th>';
-  html += '<th class="left">Team</th>';
+  html += '<th class="left">MLB</th>';
+  html += '<th class="left">Fantasy</th>';
   sgpCols.forEach(function(c){
     var mult = catMultipliers[c.k] || 1.0;
     var rank = catRanks[c.k];
@@ -4751,6 +4793,13 @@ function buildROSTable() {
     html += '<span style="font-weight:500">'+name+'</span></div></td>';
     html += '<td class="left"><span style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;background:var(--bg);border:0.5px solid var(--border);color:var(--muted)">'+pos+'</span></td>';
     html += '<td class="left" style="color:var(--muted);font-size:12px">'+team+'</td>';
+    // Fantasy team column
+    function normRos2(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+    var rosterInfo = (window._rosRosterLookup||{})[normRos2(name)] || {};
+    var fantasyTeam = rosterInfo.teamName || '';
+    var ftStyle = fantasyTeam ? 'font-size:11px;font-weight:500;color:var(--text)' : 'font-size:11px;color:var(--muted)';
+    var ftLabel = fantasyTeam || 'FA';
+    html += '<td class="left"><span style="'+ftStyle+'">'+ftLabel+'</span></td>';
 
     sgpCols.forEach(function(c) {
       var rawSGP = catSGP(p, c.k);
