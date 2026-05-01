@@ -4662,7 +4662,7 @@ function buildROSTeamPanel(teamId) {
       catHtml += '<div style="position:absolute;left:0;width:'+barPct+'%;height:100%;background:'+barCol+';border-radius:4px;opacity:0.85"></div>';
       catHtml += '<div style="position:absolute;top:-2px;left:'+avgPct+'%;width:1.5px;height:11px;background:var(--muted);opacity:0.5"></div>';
       catHtml += '</div>';
-      catHtml += '<span style="font-size:11px;font-weight:500;color:var(--text);width:44px;text-align:right;flex-shrink:0">'+dispV+'</span>';
+      catHtml += '<span style="font-size:11px;font-weight:500;color:var(--text);width:52px;text-align:right;flex-shrink:0">'+dispV+'</span>';
 
       catHtml += '</div>';
     });
@@ -4691,7 +4691,7 @@ function buildROSTeamPanel(teamId) {
 
   return '<div class="card" style="padding:14px 16px;margin-bottom:16px">'
     + '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:24px">'
-    + zHtml + catHtml + multHtml + '</div></div>';
+    + catHtml + zHtml + multHtml + '</div></div>';
 }
 
 
