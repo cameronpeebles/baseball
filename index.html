@@ -4703,8 +4703,8 @@ function buildROSTable() {
     ? [{k:'R',d:'r'},{k:'HR',d:'hr'},{k:'RBI',d:'rbi'},{k:'SB',d:'sb'},{k:'AVG',d:'avg',rate:true}]
     : [{k:'W',d:'w'},{k:'K',d:'k'},{k:'SVH3',d:'svh3',sv:true},{k:'ERA',d:'era',rate:true,inv:true},{k:'WHIP',d:'whip',rate:true,inv:true}];
 
-  var html = '<div class="card" style="padding:0;overflow:hidden;margin-bottom:0"><div style="overflow-x:auto"><table style="min-width:max-content;width:100%"><thead><tr>';
-  html += '<th class="left" style="min-width:160px">Player</th>';
+  var html = '<div class="card" style="padding:0;overflow:hidden;margin-bottom:0"><div style="overflow-x:auto"><table style="min-width:max-content;width:115%;font-size:87%"><thead><tr>';
+  html += '<th class="left" style="min-width:140px">Player</th>';
   html += '<th class="left">Pos</th>';
   html += '<th class="left">Team</th>';
   sgpCols.forEach(function(c){
