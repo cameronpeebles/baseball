@@ -4479,6 +4479,20 @@ function buildROSTable() {
   var cats    = isHit ? ['R','HR','RBI','SB','AVG']         : ['W','K','SVH3','ERA','WHIP'];
   var denomKeys = isHit ? ['r','hr','rbi','sb','avg']       : ['w','k','svh3','era','whip'];
 
+  // ── Trust score ──────────────────────────────────────────────────────────
+  function trustScore(p, isHitter) {
+    if (isHitter) {
+      return Math.min(1, (parseFloat(p.AB)||0) / 250);
+    } else {
+      var ip = parseFloat(p.IP)||0;
+      var pos = (p.pos||'').toUpperCase();
+      // SP if pos contains SP but not RP, or if IP suggests starter (>=30 projected IP)
+      var isSP = pos.indexOf('SP') !== -1 && pos.indexOf('RP') === -1;
+      if (!isSP && pos.indexOf('SP') !== -1) isSP = true; // SP,RP -> treat as SP
+      return isSP ? Math.min(1, ip / 60) : Math.min(1, ip / 30);
+    }
+  }
+
   // Sort by total weighted SGP descending
   function catSGP(p, cat) {
     // Returns raw (unweighted) SGP for a single category
@@ -4529,7 +4543,7 @@ function buildROSTable() {
       var raw = catSGP(p, cat);
       if (raw != null) total += raw * catMultipliers[cat];
     });
-    return total;
+    return total * trustScore(p, isHit);
   }
 
   var sorted = players.slice().sort(function(a,b){ return playerSGP(b) - playerSGP(a); });
@@ -4565,6 +4579,7 @@ function buildROSTable() {
     html += '<th style="color:' + (c.inv?'#c0392b':'#2d5a3d') + '">' + c.k + '_SGP' + subtitle + '</th>';
   });
   html += '<th style="color:var(--accent);font-weight:700">Total SGP</th>';
+  html += '<th style="color:#5a7a9a">Trust</th>';
   // Also show raw ROS stat columns
   html += '<th style="border-left:1px solid var(--border);color:var(--muted);font-size:10px">' + (isHit?'ROS: R':'ROS: W') + '</th>';
   (isHit ? ['HR','RBI','SB','AVG','AB'] : ['K','SV','ERA','WHIP','IP']).forEach(function(c){
@@ -4604,6 +4619,11 @@ function buildROSTable() {
     // Total SGP
     var tDisp = (total>=0?'+':'')+total.toFixed(2);
     html += '<td style="font-weight:700;color:'+totalColor(total)+'">'+tDisp+'</td>';
+    // Trust score
+    var trust = trustScore(p, isHit);
+    var trustPct = Math.round(trust * 100);
+    var trustCol = trustPct >= 80 ? '#1e6b3a' : trustPct >= 50 ? '#b7791f' : '#c0392b';
+    html += '<td style="color:'+trustCol+';font-weight:500">'+trustPct+'%</td>';
 
     // Raw ROS stats
     var rawCols = isHit ? ['R','HR','RBI','SB','AVG','AB'] : ['W','K','SV','ERA','WHIP','IP'];
