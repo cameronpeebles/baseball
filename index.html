@@ -2382,15 +2382,15 @@ function init() {
     loadJSON('fangraphs_pitching.json').catch(function(){ return {}; }),
     loadJSON('statcast_hitting.json').catch(function(){ return {}; }),
     loadJSON('statcast_pitching.json').catch(function(){ return {}; }),
-    loadJSON('targets_hitting.json').catch(function(){ return []; })
+    loadJSON('targets_hitting.json').catch(function(){ return []; }),
+    loadJSON('full_schedule.json').catch(function(){ return []; })
   ]).then(function(results) {
-    var standings = results[0], season = results[1];
-    var fullSched = results[2]; window._fullSchedule = Array.isArray(fullSched) ? fullSched : [];
-    var combined = results[3];
-    var hitting = results[4], pitching = results[5], rosters = results[6];
-    var fgHit = results[7], fgPit = results[8];
-    var scHit = results[9], scPit = results[10];
-    var tgtHit = results[11];
+    var standings = results[0], season = results[1], combined = results[2];
+    var hitting = results[3], pitching = results[4], rosters = results[5];
+    var fgHit = results[6], fgPit = results[7];
+    var scHit = results[8], scPit = results[9];
+    var tgtHit = results[10];
+    var fullSchedData = results[11]; window._fullSchedule = Array.isArray(fullSchedData) ? fullSchedData : [];
 
     S.teamInfo = (standings.data && standings.data.fantasyTeamInfo) || (season.data && season.data.fantasyTeamInfo) || {};
     S.seasonData = season;
