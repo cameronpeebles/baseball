@@ -26,6 +26,7 @@ nav button { background: none; border: none; border-bottom: 2px solid transparen
 nav button:hover { color: var(--text); }
 nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
 main { max-width: 1280px; margin: 0 auto; padding: 32px 24px; }
+#page-ros { margin: 0 -24px; padding: 0 24px; max-width: none; width: calc(100% + 48px); box-sizing: border-box; }
 .page { display: none; }
 .page.active { display: block; }
 .page-title { font-family: var(--font-display); font-size: 26px; margin-bottom: 4px; }
@@ -4926,7 +4927,7 @@ function buildROSTable() {
 
   var sorted = filtered.slice().sort(function(a,b){ return playerSGP(b)-playerSGP(a); });
 
-  var html = rostHtml + pillHtml + '<div class="card" style="padding:0;overflow:hidden;margin-bottom:0;width:100%"><div style="overflow-x:auto;width:100%"><table style="width:100%;font-size:79%"<thead><tr>';
+  var html = rostHtml + pillHtml + '<div class="card" style="padding:0;overflow:hidden;margin-bottom:0;width:100%"><div style="overflow-x:auto;width:100%"><table style="min-width:max-content;width:100%;font-size:79%"<thead><tr>';
   html += '<th class="left" style="min-width:140px">Player</th>';
   html += '<th class="left">Pos</th>';
   html += '<th class="left">Fantasy</th>';
