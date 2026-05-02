@@ -4627,6 +4627,7 @@ function _rosAdBuildPanelHtml() {
   h += '<div id="ros-drop-meta" style="font-size:10px;color:var(--muted)"></div>';
   h += '<div style="display:flex;gap:10px;margin-top:4px">';
   h += '<div><div style="font-size:9px;color:var(--muted)">Curr SGP</div><div id="ros-drop-curr" style="font-size:12px;font-weight:500"></div></div>';
+  h += '<div><div style="font-size:9px;color:var(--muted)">Raw SGP</div><div id="ros-drop-raw" style="font-size:12px;font-weight:500"></div></div>';
   h += '</div></div></div></div></div>';
 
   // CENTER
@@ -4995,6 +4996,11 @@ window.rosAdSelect = function(side, idx) {
     document.getElementById('ros-drop-name').textContent = r._displayName;
     document.getElementById('ros-drop-meta').textContent = r._pos+' · '+(r._team||'')+' · Rostered';
     document.getElementById('ros-drop-curr').innerHTML='<span style="color:'+_rosAdCol(r._currSGP)+'">'+_rosAdFmt(r._currSGP)+'</span>';
+    var rawDropEl = document.getElementById('ros-drop-raw');
+    if (rawDropEl) {
+      var rawDropSGP = _rosCurrSGP(r._cs, r.isHit);
+      rawDropEl.innerHTML='<span style="color:'+_rosAdCol(rawDropSGP)+'">'+_rosAdFmt(rawDropSGP)+'</span>';
+    }
   }
   _rosAdRenderBars();
 };
