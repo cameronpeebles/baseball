@@ -641,6 +641,7 @@ td.neg { color: #c0392b; font-weight: 500; }
       <button class="trade-tab active" onclick="showROSTab('hitters',this)">Hitters</button>
       <button class="trade-tab" onclick="showROSTab('pitchers',this)">Pitchers</button>
     </div>
+    <div id="ros-team-dropdown" style="margin-bottom:10px"></div>
     <div id="ros-addrop-panel" style="display:none;margin-bottom:14px"></div>
     <div id="ros-body"><div class="loading">Loading...</div></div>
   </div>
@@ -4562,19 +4563,25 @@ function renderROSPage() {
     }).sort(function(a,b){ return a.name.localeCompare(b.name); });
     if (!_rosSelectedTeam && teams.length) _rosSelectedTeam = teams[0].id;
 
-    var dropHtml = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">';
-    dropHtml += '<label style="font-size:12px;color:var(--muted);font-weight:500">Base team for rate stats:</label>';
-    dropHtml += '<select onchange="rosTeamChanged(this)" style="padding:5px 10px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);font-size:12px">';
-    teams.forEach(function(t){
-      dropHtml += '<option value="' + t.id + '"' + (t.id===_rosSelectedTeam?' selected':'') + '>' + t.name + '</option>';
-    });
-    dropHtml += '</select>';
-    dropHtml += '<span style="font-size:11px;color:var(--muted)">Rate stats (AVG, ERA, WHIP) show impact on selected team\'s season averages</span>';
-    dropHtml += '</div>';
+    var dropHtml = '';
     dropHtml += '<div id="ros-team-panel"></div>';
     dropHtml += '<div id="ros-table-wrap"></div>';
 
     el.innerHTML = dropHtml;
+    // Render team dropdown into its own div above simulator
+    var tdDiv = document.getElementById('ros-team-dropdown');
+    if (tdDiv) {
+      var tdHtml = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:0">';
+      tdHtml += '<label style="font-size:12px;color:var(--muted);font-weight:500">Base team for rate stats:</label>';
+      tdHtml += '<select onchange="rosTeamChanged(this)" style="padding:5px 10px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);font-size:12px">';
+      teams.forEach(function(t){
+        tdHtml += '<option value="' + t.id + '"' + (t.id===_rosSelectedTeam?' selected':'') + '>' + t.name + '</option>';
+      });
+      tdHtml += '</select>';
+      tdHtml += '<span style="font-size:11px;color:var(--muted)">Rate stats (AVG, ERA, WHIP) show impact on selected team\'s season averages</span>';
+      tdHtml += '</div>';
+      tdDiv.innerHTML = tdHtml;
+    }
     // Render add/drop panel
     var panelDiv = document.getElementById('ros-addrop-panel');
     if (panelDiv) {
@@ -4599,53 +4606,62 @@ function renderROSPage() {
 
 
 function _rosAdBuildPanelHtml() {
-  var h = '<div style="background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px 16px">';
+  var h = '<div class="card" style="padding:14px 16px;margin-bottom:14px">';
   h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:10px">Add / Drop Simulator</div>';
   h += '<div style="display:grid;grid-template-columns:1fr 90px 1fr;gap:12px;align-items:start">';
-  // Add side
+
+  var listStyle = 'display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:0.5px solid var(--border);border-radius:6px;z-index:50;max-height:200px;overflow-y:auto;margin-top:3px;box-shadow:0 4px 12px rgba(0,0,0,0.15)';
+  var inputStyle = 'width:100%;box-sizing:border-box;padding:6px 10px;font-size:12px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--text)';
+
+  // LEFT: Drop (Rostered)
   h += '<div>';
-  h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px">Add (Free Agent)</div>';
+  h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px">Drop (Rostered)</div>';
   h += '<div style="position:relative">';
-  h += '<input id="ros-add-search" type="text" placeholder="Search free agents..." oninput="rosAdSearch(this.value)" onfocus="rosAdShow(&quot;add&quot;)" style="width:100%;box-sizing:border-box;padding:6px 10px;font-size:12px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--text)">';
-  h += '<div id="ros-add-list" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:0.5px solid var(--border);border-radius:6px;z-index:50;max-height:200px;overflow-y:auto;margin-top:3px;box-shadow:0 4px 12px rgba(0,0,0,0.12)"></div>';
+  h += '<input id="ros-drop-search" type="text" placeholder="Search your roster..." oninput="rosDropSearch(this.value)" onfocus="rosAdShow(&quot;drop&quot;)" style="' + inputStyle + '">';
+  h += '<div id="ros-drop-list" style="' + listStyle + '"></div>';
   h += '</div>';
-  h += '<div id="ros-add-card" style="display:none;margin-top:8px;background:var(--bg);border-radius:6px;padding:8px 10px">';
+  h += '<div id="ros-drop-card" style="display:none;margin-top:8px;background:var(--bg);border-radius:6px;padding:8px 10px">';
   h += '<div style="display:flex;align-items:center;gap:8px">';
-  h += '<img id="ros-add-hs" src="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">';
-  h += '<div><div id="ros-add-name" style="font-size:12px;font-weight:500;color:var(--text)"></div>';
-  h += '<div id="ros-add-meta" style="font-size:10px;color:var(--muted)"></div>';
+  h += '<img id="ros-drop-hs" src="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">';
+  h += '<div style="flex:1"><div id="ros-drop-name" style="font-size:12px;font-weight:500;color:var(--text)"></div>';
+  h += '<div id="ros-drop-meta" style="font-size:10px;color:var(--muted)"></div>';
   h += '<div style="display:flex;gap:10px;margin-top:4px">';
-  h += '<div><div style="font-size:9px;color:var(--muted)">Raw SGP</div><div id="ros-add-raw" style="font-size:12px;font-weight:500"></div></div>';
-  h += '<div><div style="font-size:9px;color:var(--muted)">Team SGP</div><div id="ros-add-team" style="font-size:12px;font-weight:500"></div></div>';
+  h += '<div><div style="font-size:9px;color:var(--muted)">Curr SGP</div><div id="ros-drop-curr" style="font-size:12px;font-weight:500"></div></div>';
   h += '</div></div></div></div></div>';
-  // Center
+
+  // CENTER
   h += '<div style="display:flex;flex-direction:column;align-items:center;padding-top:20px;gap:8px">';
   h += '<div style="font-size:20px;color:var(--muted)">&#8644;</div>';
   h += '<div id="ros-net-card" style="display:none;background:var(--bg);border-radius:6px;padding:6px 8px;text-align:center">';
   h += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">Net</div>';
   h += '<div id="ros-net-val" style="font-size:14px;font-weight:500"></div>';
   h += '</div></div>';
-  // Drop side
+
+  // RIGHT: Add (All Players)
   h += '<div>';
-  h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px">Drop (Your Roster)</div>';
+  h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px">Add Player</div>';
   h += '<div style="position:relative">';
-  h += '<input id="ros-drop-search" type="text" placeholder="Search your roster..." oninput="rosDropSearch(this.value)" onfocus="rosAdShow(&quot;drop&quot;)" style="width:100%;box-sizing:border-box;padding:6px 10px;font-size:12px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--text)">';
-  h += '<div id="ros-drop-list" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:0.5px solid var(--border);border-radius:6px;z-index:50;max-height:200px;overflow-y:auto;margin-top:3px;box-shadow:0 4px 12px rgba(0,0,0,0.12)"></div>';
+  h += '<input id="ros-add-search" type="text" placeholder="Search all players..." oninput="rosAdSearch(this.value)" onfocus="rosAdShow(&quot;add&quot;)" style="' + inputStyle + '">';
+  h += '<div id="ros-add-list" style="' + listStyle + '"></div>';
   h += '</div>';
-  h += '<div id="ros-drop-card" style="display:none;margin-top:8px;background:var(--bg);border-radius:6px;padding:8px 10px">';
+  h += '<div id="ros-add-card" style="display:none;margin-top:8px;background:var(--bg);border-radius:6px;padding:8px 10px">';
   h += '<div style="display:flex;align-items:center;gap:8px">';
-  h += '<img id="ros-drop-hs" src="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">';
-  h += '<div><div id="ros-drop-name" style="font-size:12px;font-weight:500;color:var(--text)"></div>';
-  h += '<div id="ros-drop-meta" style="font-size:10px;color:var(--muted)"></div>';
-  h += '<div style="margin-top:4px"><div style="font-size:9px;color:var(--muted)">Curr SGP</div>';
-  h += '<div id="ros-drop-curr" style="font-size:12px;font-weight:500"></div></div></div></div></div></div>';
+  h += '<img id="ros-add-hs" src="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">';
+  h += '<div style="flex:1"><div id="ros-add-name" style="font-size:12px;font-weight:500;color:var(--text)"></div>';
+  h += '<div id="ros-add-meta" style="font-size:10px;color:var(--muted)"></div>';
+  h += '<div style="display:flex;gap:10px;margin-top:4px">';
+  h += '<div><div style="font-size:9px;color:var(--muted)">Raw SGP</div><div id="ros-add-raw" style="font-size:12px;font-weight:500"></div></div>';
+  h += '<div><div style="font-size:9px;color:var(--muted)">Team SGP</div><div id="ros-add-team" style="font-size:12px;font-weight:500"></div></div>';
+  h += '</div></div></div></div></div>';
+
   h += '</div>'; // end grid
-  // Category bars section
+
+  // Category bars
   h += '<div id="ros-ad-bars" style="display:none;margin-top:12px;padding-top:10px;border-top:0.5px solid var(--border)">';
   h += '<div style="font-size:10px;color:var(--muted);display:flex;gap:14px;margin-bottom:7px">';
-  h += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:#D3D1C7;display:inline-block;border-radius:2px"></span>Add player</span>';
+  h += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:#D3D1C7;display:inline-block;border-radius:2px"></span>Drop player</span>';
   h += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:#1D9E75;display:inline-block;border-radius:2px"></span>Net after swap</span>';
-  h += '<span style="margin-left:auto">cat &middot; add &middot; delta &middot; net</span>';
+  h += '<span style="margin-left:auto">cat &middot; drop &middot; delta &middot; net</span>';
   h += '</div><div id="ros-ad-cats"></div></div>';
   h += '</div>';
   return h;
@@ -4861,9 +4877,7 @@ function _rosAdBuildLists() {
   var fpData = isHit ? (_rosHitData||[]) : (_rosPitData||[]);
   function normFP(n){ return (n||'').replace(/\s*\([^)]*\).*$/, '').trim().toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
   _rosAdFAList = fpData.filter(function(p){
-    var key = normFP(p.name||'');
-    var ri = rosterLookup[key] || {};
-    return !ri.teamName; // FA only
+    return true; // All players - FA and rostered
   }).map(function(p){
     var key = normFP(p.name||'');
     var posFromName = '';
