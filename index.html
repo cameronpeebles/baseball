@@ -4509,6 +4509,23 @@ window.showROSTab = function(tab, btn) {
 
 window.rosTeamChanged = function(sel) {
   _rosSelectedTeam = sel.value;
+  // Reset add/drop simulator state when team changes
+  _rosAdSelected = null;
+  _rosDropSelected = null;
+  _rosAdRosterList = [];
+  _rosAdFAList = [];
+  _rosAdFAFiltered = [];
+  _rosAdRostFiltered = [];
+  var panelDiv = document.getElementById('ros-addrop-panel');
+  if (panelDiv && panelDiv.style.display !== 'none') {
+    panelDiv.innerHTML = _rosAdBuildPanelHtml();
+  }
+  // Also update team dropdown in the static panel
+  var tdDiv = document.getElementById('ros-team-dropdown');
+  if (tdDiv) {
+    var selEl = tdDiv.querySelector('select');
+    if (selEl) selEl.value = _rosSelectedTeam;
+  }
   buildROSTable();
 };
 window.rosSetRost = function(val, btn) {
