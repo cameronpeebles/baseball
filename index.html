@@ -345,7 +345,7 @@ td.neg { color: #c0392b; font-weight: 500; }
         <!-- 1. Player / Archetype -->
         <div style="width:250px;height:250px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-            <img id="fwar-profile-hs" src="" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'">
+            <img id="fwar-profile-hs" src="" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">
             <div style="flex:1;min-width:0">
               <div id="fwar-profile-name" style="font-size:13px;font-weight:700;color:var(--text);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
               <div id="fwar-profile-sub" style="font-size:10px;color:var(--muted)"></div>
@@ -641,6 +641,7 @@ td.neg { color: #c0392b; font-weight: 500; }
       <button class="trade-tab active" onclick="showROSTab('hitters',this)">Hitters</button>
       <button class="trade-tab" onclick="showROSTab('pitchers',this)">Pitchers</button>
     </div>
+    <div id="ros-addrop-panel" style="display:none;margin-bottom:14px"></div>
     <div id="ros-body"><div class="loading">Loading...</div></div>
   </div>
 
@@ -4574,6 +4575,12 @@ function renderROSPage() {
     dropHtml += '<div id="ros-table-wrap"></div>';
 
     el.innerHTML = dropHtml;
+    // Render add/drop panel
+    var panelDiv = document.getElementById('ros-addrop-panel');
+    if (panelDiv) {
+      panelDiv.style.display = 'block';
+      panelDiv.innerHTML = _rosAdBuildPanelHtml();
+    }
     buildROSTable();
   }
 
@@ -4590,6 +4597,59 @@ function renderROSPage() {
 }
 
 
+
+function _rosAdBuildPanelHtml() {
+  var h = '<div style="background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px 16px">';
+  h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:10px">Add / Drop Simulator</div>';
+  h += '<div style="display:grid;grid-template-columns:1fr 90px 1fr;gap:12px;align-items:start">';
+  // Add side
+  h += '<div>';
+  h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px">Add (Free Agent)</div>';
+  h += '<div style="position:relative">';
+  h += '<input id="ros-add-search" type="text" placeholder="Search free agents..." oninput="rosAdSearch(this.value)" onfocus="rosAdShow(&quot;add&quot;)" style="width:100%;box-sizing:border-box;padding:6px 10px;font-size:12px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--text)">';
+  h += '<div id="ros-add-list" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:0.5px solid var(--border);border-radius:6px;z-index:50;max-height:200px;overflow-y:auto;margin-top:3px;box-shadow:0 4px 12px rgba(0,0,0,0.12)"></div>';
+  h += '</div>';
+  h += '<div id="ros-add-card" style="display:none;margin-top:8px;background:var(--bg);border-radius:6px;padding:8px 10px">';
+  h += '<div style="display:flex;align-items:center;gap:8px">';
+  h += '<img id="ros-add-hs" src="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">';
+  h += '<div><div id="ros-add-name" style="font-size:12px;font-weight:500;color:var(--text)"></div>';
+  h += '<div id="ros-add-meta" style="font-size:10px;color:var(--muted)"></div>';
+  h += '<div style="display:flex;gap:10px;margin-top:4px">';
+  h += '<div><div style="font-size:9px;color:var(--muted)">Raw SGP</div><div id="ros-add-raw" style="font-size:12px;font-weight:500"></div></div>';
+  h += '<div><div style="font-size:9px;color:var(--muted)">Team SGP</div><div id="ros-add-team" style="font-size:12px;font-weight:500"></div></div>';
+  h += '</div></div></div></div></div>';
+  // Center
+  h += '<div style="display:flex;flex-direction:column;align-items:center;padding-top:20px;gap:8px">';
+  h += '<div style="font-size:20px;color:var(--muted)">&#8644;</div>';
+  h += '<div id="ros-net-card" style="display:none;background:var(--bg);border-radius:6px;padding:6px 8px;text-align:center">';
+  h += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">Net</div>';
+  h += '<div id="ros-net-val" style="font-size:14px;font-weight:500"></div>';
+  h += '</div></div>';
+  // Drop side
+  h += '<div>';
+  h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px">Drop (Your Roster)</div>';
+  h += '<div style="position:relative">';
+  h += '<input id="ros-drop-search" type="text" placeholder="Search your roster..." oninput="rosDropSearch(this.value)" onfocus="rosAdShow(&quot;drop&quot;)" style="width:100%;box-sizing:border-box;padding:6px 10px;font-size:12px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--text)">';
+  h += '<div id="ros-drop-list" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:0.5px solid var(--border);border-radius:6px;z-index:50;max-height:200px;overflow-y:auto;margin-top:3px;box-shadow:0 4px 12px rgba(0,0,0,0.12)"></div>';
+  h += '</div>';
+  h += '<div id="ros-drop-card" style="display:none;margin-top:8px;background:var(--bg);border-radius:6px;padding:8px 10px">';
+  h += '<div style="display:flex;align-items:center;gap:8px">';
+  h += '<img id="ros-drop-hs" src="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">';
+  h += '<div><div id="ros-drop-name" style="font-size:12px;font-weight:500;color:var(--text)"></div>';
+  h += '<div id="ros-drop-meta" style="font-size:10px;color:var(--muted)"></div>';
+  h += '<div style="margin-top:4px"><div style="font-size:9px;color:var(--muted)">Curr SGP</div>';
+  h += '<div id="ros-drop-curr" style="font-size:12px;font-weight:500"></div></div></div></div></div></div>';
+  h += '</div>'; // end grid
+  // Category bars section
+  h += '<div id="ros-ad-bars" style="display:none;margin-top:12px;padding-top:10px;border-top:0.5px solid var(--border)">';
+  h += '<div style="font-size:10px;color:var(--muted);display:flex;gap:14px;margin-bottom:7px">';
+  h += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:#D3D1C7;display:inline-block;border-radius:2px"></span>Add player</span>';
+  h += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:#1D9E75;display:inline-block;border-radius:2px"></span>Net after swap</span>';
+  h += '<span style="margin-left:auto">cat &middot; add &middot; delta &middot; net</span>';
+  h += '</div><div id="ros-ad-cats"></div></div>';
+  h += '</div>';
+  return h;
+}
 
 // ── Add/Drop Simulator ────────────────────────────────────────────────────
 var _rosAdSelected = null;   // selected FA player object
