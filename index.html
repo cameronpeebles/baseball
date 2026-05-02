@@ -236,6 +236,8 @@ td.neg { color: #c0392b; font-weight: 500; }
 .fwar-badge { display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600; }
 .fwar-pos { display:inline-block;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:500;background:var(--bg);color:var(--muted);border:1px solid var(--border);margin-right:3px; }
 .fwar-pos.assigned { background:var(--accent-light);color:var(--accent);border-color:var(--accent); }
+#ros-addrop-panel, #ros-addrop-panel .card, #ros-addrop-panel * { overflow: visible !important; }
+#ros-addrop-panel .card { overflow: visible !important; }
 </style>
 </head>
 <body>
@@ -642,7 +644,7 @@ td.neg { color: #c0392b; font-weight: 500; }
       <button class="trade-tab" onclick="showROSTab('pitchers',this)">Pitchers</button>
     </div>
     <div id="ros-team-dropdown" style="margin-bottom:10px"></div>
-    <div id="ros-addrop-panel" style="display:none;margin-bottom:14px"></div>
+    <div id="ros-addrop-panel" style="display:none;margin-bottom:14px;overflow:visible"></div>
     <div id="ros-body"><div class="loading">Loading...</div></div>
   </div>
 
@@ -4606,9 +4608,9 @@ function renderROSPage() {
 
 
 function _rosAdBuildPanelHtml() {
-  var h = '<div class="card" style="padding:14px 16px;margin-bottom:14px">';
+  var h = '<div class="card" style="padding:14px 16px;margin-bottom:14px;overflow:visible">';
   h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:10px">Add / Drop Simulator</div>';
-  h += '<div style="display:grid;grid-template-columns:1fr 90px 1fr;gap:12px;align-items:start">';
+  h += '<div style="display:grid;grid-template-columns:1fr 90px 1fr;gap:12px;align-items:start;overflow:visible">';
 
   var listStyle = 'display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:0.5px solid var(--border);border-radius:6px;z-index:1000;max-height:200px;overflow-y:auto;margin-top:3px;box-shadow:0 4px 12px rgba(0,0,0,0.15)';
   var inputStyle = 'width:100%;box-sizing:border-box;padding:6px 10px;font-size:12px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--text)';
