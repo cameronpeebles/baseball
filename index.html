@@ -4591,6 +4591,341 @@ function renderROSPage() {
 
 
 
+// ── Add/Drop Simulator ────────────────────────────────────────────────────
+var _rosAdSelected = null;   // selected FA player object
+var _rosDropSelected = null; // selected rostered player normName key
+
+function _rosAdFmt(v){ return (v>=0?'+':'')+v.toFixed(2); }
+function _rosAdCol(v){ return v>0.05?'#1e6b3a':v>0?'#4a9a68':v<-0.05?'#c0392b':'#888780'; }
+
+function _rosAdPlayerSGP(p, isHit) {
+  // Compute full Team SGP for a player (same logic as playerSGP but standalone)
+  var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
+  var ts = (window._rosTeamStats||{})[_rosSelectedTeam] || {R:0,HR:0,RBI:0,SB:0,AVG:null,AB:0,K:0,W:0,SVH3:0,ERA:null,WHIP:null,IP:0};
+  var mults = window._rosCatMultipliers || {};
+  var total = 0;
+  if (isHit) {
+    total += ((p.R||0)/D2.r) * (mults.R||1);
+    total += ((p.HR||0)/D2.hr) * (mults.HR||1);
+    total += ((p.RBI||0)/D2.rbi) * (mults.RBI||1);
+    total += ((p.SB||0)/D2.sb) * (mults.SB||1);
+    var rH=(p.H>0?p.H:(p.AVG&&p.AB?p.AVG*p.AB:null));
+    if(rH&&p.AB>0&&ts.AVG!=null&&ts.AB>0){
+      var cH=(ts.AVG||0)*(ts.AB||0),nH=cH+rH,nAB=(ts.AB||0)+(p.AB||0);
+      total += (nAB>0?((nH/nAB)-(ts.AVG||0)):0)/D2.avg*(mults.AVG||1);
+    }
+  } else {
+    total += ((p.W||0)/D2.w) * (mults.W||1);
+    total += ((p.K||0)/D2.k) * (mults.K||1);
+    total += ((p.SV||0)/D2.svh3) * (mults.SVH3||1);
+    if(p.ERA!=null&&p.IP>0&&ts.ERA!=null&&ts.IP>0){
+      var tER=(ts.ERA||0)*(ts.IP||0)/9,pER=p.ERA*(p.IP||0)/9,nIP=(ts.IP||0)+(p.IP||0);
+      total += (nIP>0?((ts.ERA||0)-(tER+pER)/nIP*9):0)/D2.era*(mults.ERA||1);
+    }
+    if(p.WHIP!=null&&p.IP>0&&ts.WHIP!=null&&ts.IP>0){
+      var tBR=(ts.WHIP||0)*(ts.IP||0),pBR=p.WHIP*(p.IP||0),nIP2=(ts.IP||0)+(p.IP||0);
+      total += (nIP2>0?((ts.WHIP||0)-(tBR+pBR)/nIP2):0)/D2.whip*(mults.WHIP||1);
+    }
+  }
+  var trust = isHit ? Math.min(1,(p.AB||0)/250) : ((p.pos||'').toUpperCase().indexOf('SP')!==-1?Math.min(1,(p.IP||0)/60):Math.min(1,(p.IP||0)/30));
+  return total * trust;
+}
+
+function _rosCurrSGP(cs, isHit) {
+  var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
+  var ts = (window._rosTeamStats||{})[_rosSelectedTeam] || {R:0,HR:0,RBI:0,SB:0,AVG:null,AB:0,K:0,W:0,SVH3:0,ERA:null,WHIP:null,IP:0};
+  var total = 0;
+  if (isHit) {
+    if(cs.R!=null)  total += cs.R/D2.r;
+    if(cs.HR!=null) total += cs.HR/D2.hr;
+    if(cs.RBI!=null)total += cs.RBI/D2.rbi;
+    if(cs.SB!=null) total += cs.SB/D2.sb;
+    var cH2=(cs.H>0?cs.H:(cs.AVG&&cs.AB?cs.AVG*cs.AB:null));
+    if(cH2&&cs.AB>0&&ts.AVG!=null&&ts.AB>0){
+      var cH3=(ts.AVG||0)*(ts.AB||0),nH2=cH3+cH2,nAB2=(ts.AB||0)+(cs.AB||0);
+      total += (nAB2>0?((nH2/nAB2)-(ts.AVG||0)):0)/D2.avg;
+    }
+  } else {
+    if(cs.W!=null)   total += cs.W/D2.w;
+    if(cs.K!=null)   total += cs.K/D2.k;
+    if(cs.SVH3!=null)total += cs.SVH3/D2.svh3;
+    if(cs.ERA!=null&&cs.IP>0&&ts.ERA!=null&&ts.IP>0){
+      var tER2=(ts.ERA||0)*(ts.IP||0)/9,pER2=cs.ERA*(cs.IP||0)/9,nIP3=(ts.IP||0)+(cs.IP||0);
+      total += (nIP3>0?((ts.ERA||0)-(tER2+pER2)/nIP3*9):0)/D2.era;
+    }
+    if(cs.WHIP!=null&&cs.IP>0&&ts.WHIP!=null&&ts.IP>0){
+      var tBR2=(ts.WHIP||0)*(ts.IP||0),pBR2=cs.WHIP*(cs.IP||0),nIP4=(ts.IP||0)+(cs.IP||0);
+      total += (nIP4>0?((ts.WHIP||0)-(tBR2+pBR2)/nIP4):0)/D2.whip;
+    }
+  }
+  return total;
+}
+
+function _rosAdRenderBars() {
+  var barsEl = document.getElementById('ros-ad-bars');
+  var catsEl = document.getElementById('ros-ad-cats');
+  var netCard = document.getElementById('ros-net-card');
+  if (!barsEl || !catsEl) return;
+  if (!_rosAdSelected && !_rosDropSelected) { barsEl.style.display='none'; return; }
+  barsEl.style.display = 'block';
+
+  var isHit = _rosAdSelected ? !!_rosAdSelected.isHit : (_rosDropSelected ? (_rosDropSelected.isHit!==false) : true);
+  var cats = isHit ? ['R','HR','RBI','SB','AVG'] : ['W','K','SVH3','ERA','WHIP'];
+  var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
+  var ts = (window._rosTeamStats||{})[_rosSelectedTeam] || {};
+  var mults = window._rosCatMultipliers || {};
+
+  function catSGPFA(p, cat) {
+    if (!p) return 0;
+    if (cat==='R')   return (p.R||0)/D2.r*(mults.R||1);
+    if (cat==='HR')  return (p.HR||0)/D2.hr*(mults.HR||1);
+    if (cat==='RBI') return (p.RBI||0)/D2.rbi*(mults.RBI||1);
+    if (cat==='SB')  return (p.SB||0)/D2.sb*(mults.SB||1);
+    if (cat==='W')   return (p.W||0)/D2.w*(mults.W||1);
+    if (cat==='K')   return (p.K||0)/D2.k*(mults.K||1);
+    if (cat==='SVH3')return (p.SV||0)/D2.svh3*(mults.SVH3||1);
+    if (cat==='AVG') {
+      var rH=(p.H>0?p.H:(p.AVG&&p.AB?p.AVG*p.AB:null));
+      if(!rH||!p.AB||ts.AVG==null||!ts.AB) return 0;
+      var nH=(ts.AVG||0)*(ts.AB||0)+rH, nAB=(ts.AB||0)+(p.AB||0);
+      return (nAB>0?((nH/nAB)-(ts.AVG||0)):0)/D2.avg*(mults.AVG||1);
+    }
+    if (cat==='ERA') {
+      if(!p.ERA||!p.IP||ts.ERA==null||!ts.IP) return 0;
+      var tER=(ts.ERA||0)*(ts.IP||0)/9,pER=p.ERA*(p.IP||0)/9,nIP=(ts.IP||0)+(p.IP||0);
+      return (nIP>0?((ts.ERA||0)-(tER+pER)/nIP*9):0)/D2.era*(mults.ERA||1);
+    }
+    if (cat==='WHIP') {
+      if(!p.WHIP||!p.IP||ts.WHIP==null||!ts.IP) return 0;
+      var tBR=(ts.WHIP||0)*(ts.IP||0),pBR=p.WHIP*(p.IP||0),nIP2=(ts.IP||0)+(p.IP||0);
+      return (nIP2>0?((ts.WHIP||0)-(tBR+pBR)/nIP2):0)/D2.whip*(mults.WHIP||1);
+    }
+    return 0;
+  }
+
+  function catSGPRoster(cs, cat) {
+    if (!cs) return 0;
+    if (cat==='R')   return (cs.R||0)/D2.r;
+    if (cat==='HR')  return (cs.HR||0)/D2.hr;
+    if (cat==='RBI') return (cs.RBI||0)/D2.rbi;
+    if (cat==='SB')  return (cs.SB||0)/D2.sb;
+    if (cat==='W')   return (cs.W||0)/D2.w;
+    if (cat==='K')   return (cs.K||0)/D2.k;
+    if (cat==='SVH3')return (cs.SVH3||0)/D2.svh3;
+    if (cat==='AVG') {
+      var cH=(cs.H>0?cs.H:(cs.AVG&&cs.AB?cs.AVG*cs.AB:null));
+      if(!cH||!cs.AB||ts.AVG==null||!ts.AB) return 0;
+      var nH2=(ts.AVG||0)*(ts.AB||0)+cH, nAB2=(ts.AB||0)+(cs.AB||0);
+      return (nAB2>0?((nH2/nAB2)-(ts.AVG||0)):0)/D2.avg;
+    }
+    if (cat==='ERA') {
+      if(!cs.ERA||!cs.IP||ts.ERA==null||!ts.IP) return 0;
+      var tER2=(ts.ERA||0)*(ts.IP||0)/9,pER2=cs.ERA*(cs.IP||0)/9,nIP3=(ts.IP||0)+(cs.IP||0);
+      return (nIP3>0?((ts.ERA||0)-(tER2+pER2)/nIP3*9):0)/D2.era;
+    }
+    if (cat==='WHIP') {
+      if(!cs.WHIP||!cs.IP||ts.WHIP==null||!ts.IP) return 0;
+      var tBR2=(ts.WHIP||0)*(ts.IP||0),pBR2=cs.WHIP*(cs.IP||0),nIP4=(ts.IP||0)+(cs.IP||0);
+      return (nIP4>0?((ts.WHIP||0)-(tBR2+pBR2)/nIP4):0)/D2.whip;
+    }
+    return 0;
+  }
+
+  var cs = _rosDropSelected ? (window._rosCurrentStats||{})[_rosDropSelected] : null;
+  var maxV = 0;
+  cats.forEach(function(cat) {
+    var addV = catSGPFA(_rosAdSelected, cat);
+    var dropV = cs ? -catSGPRoster(cs, cat) : 0;
+    var net = addV + dropV;
+    maxV = Math.max(maxV, Math.abs(addV), Math.abs(net));
+  });
+  maxV = maxV * 1.2 || 1;
+
+  // Net total
+  var addTotal = _rosAdSelected ? cats.reduce(function(s,c){return s+catSGPFA(_rosAdSelected,c);},0) : 0;
+  var dropTotal = cs ? -cats.reduce(function(s,c){return s+catSGPRoster(cs,c);},0) : 0;
+  var net = addTotal + dropTotal;
+  if (netCard) {
+    netCard.style.display = 'block';
+    document.getElementById('ros-net-val').textContent = _rosAdFmt(net);
+    document.getElementById('ros-net-val').style.color = _rosAdCol(net);
+  }
+
+  var html = '';
+  cats.forEach(function(cat) {
+    var addV = catSGPFA(_rosAdSelected, cat);
+    var dropV = cs ? -catSGPRoster(cs, cat) : 0;
+    var delta = addV + dropV;
+    var curPct = Math.min(100, Math.abs(addV) / maxV * 100);
+    var nwPct  = Math.min(100, Math.abs(delta) / maxV * 100);
+    var barCol = delta >= 0 ? '#1D9E75' : '#E24B4A';
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:4px 0;border-bottom:0.5px solid var(--border)">';
+    html += '<span style="font-size:11px;font-weight:500;color:var(--text);width:36px;flex-shrink:0">'+cat+'</span>';
+    html += '<div style="flex:1;position:relative;height:24px">';
+    html += '<div style="position:absolute;left:0;top:3px;height:8px;width:'+curPct.toFixed(1)+'%;background:#D3D1C7;border-radius:3px"></div>';
+    html += '<div style="position:absolute;left:0;top:13px;height:8px;width:'+nwPct.toFixed(1)+'%;background:'+barCol+';border-radius:3px;opacity:0.85"></div>';
+    html += '</div>';
+    html += '<span style="font-size:10px;color:var(--muted);width:32px;text-align:right;flex-shrink:0">'+addV.toFixed(2)+'</span>';
+    html += '<span style="font-size:11px;font-weight:500;color:'+_rosAdCol(delta)+';width:38px;text-align:center;flex-shrink:0">'+_rosAdFmt(delta)+'</span>';
+    html += '<span style="font-size:11px;font-weight:500;color:'+_rosAdCol(delta)+';width:32px;text-align:right;flex-shrink:0">'+delta.toFixed(2)+'</span>';
+    html += '</div>';
+  });
+  catsEl.innerHTML = html;
+}
+
+function _rosAdListHtml(players, side) {
+  if (!players.length) return '<div style="padding:10px 12px;font-size:12px;color:var(--muted)">No players found</div>';
+  return players.map(function(p, i) {
+    var sgpV = side==='add' ? (p._teamSGP||0) : (p._currSGP||0);
+    var hs = p.hs || '';
+    var avatarHtml = hs
+      ? '<img src="'+hs+'" style="width:26px;height:26px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=\'none\'">'
+      : '<div style="width:26px;height:26px;border-radius:50%;background:var(--bg);border:0.5px solid var(--border);flex-shrink:0"></div>';
+    return '<div onclick="rosAdSelect(\''+side+'\','+i+')" style="display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;border-bottom:0.5px solid var(--border)" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'transparent\'">'
+      + avatarHtml
+      + '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+p._displayName+'</div>'
+      + '<div style="font-size:10px;color:var(--muted)">'+p._pos+' · '+(p._team||'')+'</div></div>'
+      + '<span style="font-size:11px;font-weight:500;color:'+_rosAdCol(sgpV)+';flex-shrink:0">'+_rosAdFmt(sgpV)+'</span>'
+      + '</div>';
+  }).join('');
+}
+
+var _rosAdFAList = [], _rosAdRosterList = [], _rosAdFAFiltered = [], _rosAdRostFiltered = [];
+
+function _rosAdBuildLists() {
+  var isHit = _rosCurrentTab === 'hitters';
+  var curStats = window._rosCurrentStats || {};
+  var rosterLookup = window._rosRosterLookup || {};
+
+  // FA list from _rosHitData / _rosPitData
+  var fpData = isHit ? (_rosHitData||[]) : (_rosPitData||[]);
+  function normFP(n){ return (n||'').replace(/\s*\([^)]*\).*$/, '').trim().toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  _rosAdFAList = fpData.filter(function(p){
+    var key = normFP(p.name||'');
+    var ri = rosterLookup[key] || {};
+    return !ri.teamName; // FA only
+  }).map(function(p){
+    var key = normFP(p.name||'');
+    var posFromName = '';
+    var nm = (p.name||'').match(/\(([^)]+)\)/);
+    if(nm){var pts=nm[1].split(' - ');if(pts.length>=2)posFromName=pts.slice(1).join(',');}
+    var teamSGP = 0; // compute approximate
+    var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
+    var mults = window._rosCatMultipliers || {};
+    var ts = (window._rosTeamStats||{})[_rosSelectedTeam] || {};
+    if(isHit){
+      teamSGP += ((p.R||0)/D2.r)*(mults.R||1)+((p.HR||0)/D2.hr)*(mults.HR||1)+((p.RBI||0)/D2.rbi)*(mults.RBI||1)+((p.SB||0)/D2.sb)*(mults.SB||1);
+      var rH=p.H>0?p.H:(p.AVG&&p.AB?p.AVG*p.AB:null);
+      if(rH&&p.AB>0&&ts.AVG!=null&&ts.AB>0){var nH=(ts.AVG||0)*(ts.AB||0)+rH,nAB=(ts.AB||0)+(p.AB||0);teamSGP+=(nAB>0?((nH/nAB)-(ts.AVG||0)):0)/D2.avg*(mults.AVG||1);}
+      var trust=Math.min(1,(p.AB||0)/250); teamSGP*=trust;
+    } else {
+      teamSGP += ((p.W||0)/D2.w)*(mults.W||1)+((p.K||0)/D2.k)*(mults.K||1)+((p.SV||0)/D2.svh3)*(mults.SVH3||1);
+      var isSP=(p.pos||'').toUpperCase().indexOf('SP')!==-1&&(p.pos||'').toUpperCase().indexOf('RP')===-1;
+      var trust2=isSP?Math.min(1,(p.IP||0)/60):Math.min(1,(p.IP||0)/30); teamSGP*=trust2;
+    }
+    p._displayName = (p.name||'').replace(/\s*\([^)]*\).*$/,'').trim();
+    p._pos = posFromName || p.pos || '—';
+    p._team = p.mlb_team || p.team || '';
+    p._teamSGP = teamSGP;
+    p.isHit = isHit;
+    return p;
+  }).sort(function(a,b){return b._teamSGP-a._teamSGP;});
+
+  // Roster list from _rosCurrentStats filtered to selected team
+  _rosAdRosterList = [];
+  var selTeamName = _rosSelectedTeam ? ((S.teamInfo[_rosSelectedTeam]||{}).shortName||(S.teamInfo[_rosSelectedTeam]||{}).name||'') : '';
+  Object.keys(curStats).forEach(function(key) {
+    var cs = curStats[key];
+    if (!cs) return;
+    if (cs.isHit !== isHit) return;
+    var ri = rosterLookup[key] || {};
+    if (!ri.teamId || ri.teamId !== _rosSelectedTeam) return;
+    var currSGP = _rosCurrSGP(cs, isHit);
+    _rosAdRosterList.push({
+      _key: key, _displayName: cs.name||key, _pos: cs.pos||'—',
+      _team: selTeamName, _currSGP: currSGP,
+      hs: cs.hs||'', isHit: isHit, _cs: cs
+    });
+  });
+  _rosAdRosterList.sort(function(a,b){return b._currSGP-a._currSGP;});
+
+  _rosAdFAFiltered = _rosAdFAList.slice(0,30);
+  _rosAdRostFiltered = _rosAdRosterList.slice();
+}
+
+window.rosAdShow = function(side) {
+  _rosAdBuildLists();
+  var listEl = document.getElementById('ros-'+side+'-list');
+  if (!listEl) return;
+  listEl.style.display = 'block';
+  var data = side==='add' ? _rosAdFAFiltered : _rosAdRostFiltered;
+  listEl.innerHTML = _rosAdListHtml(data, side);
+  setTimeout(function(){
+    function handler(e){
+      if(!e.target.closest('#ros-'+side+'-search')&&!e.target.closest('#ros-'+side+'-list')){
+        listEl.style.display='none';
+        document.removeEventListener('click',handler);
+      }
+    }
+    document.addEventListener('click',handler);
+  },0);
+};
+
+window.rosAdSearch = function(q) {
+  _rosAdBuildLists();
+  q = (q||'').toLowerCase();
+  _rosAdFAFiltered = _rosAdFAList.filter(function(p){
+    return p._displayName.toLowerCase().indexOf(q)!==-1||p._pos.toLowerCase().indexOf(q)!==-1||(p._team||'').toLowerCase().indexOf(q)!==-1;
+  });
+  var listEl = document.getElementById('ros-add-list');
+  if(listEl && listEl.style.display!=='none') listEl.innerHTML = _rosAdListHtml(_rosAdFAFiltered,'add');
+};
+
+window.rosDropSearch = function(q) {
+  _rosAdBuildLists();
+  q = (q||'').toLowerCase();
+  _rosAdRostFiltered = _rosAdRosterList.filter(function(p){
+    return p._displayName.toLowerCase().indexOf(q)!==-1||p._pos.toLowerCase().indexOf(q)!==-1;
+  });
+  var listEl = document.getElementById('ros-drop-list');
+  if(listEl && listEl.style.display!=='none') listEl.innerHTML = _rosAdListHtml(_rosAdRostFiltered,'drop');
+};
+
+window.rosAdSelect = function(side, idx) {
+  var listEl = document.getElementById('ros-'+side+'-list');
+  if(listEl) listEl.style.display='none';
+  if(side==='add'){
+    var p = _rosAdFAFiltered[idx];
+    if(!p) return;
+    _rosAdSelected = p;
+    document.getElementById('ros-add-search').value = p._displayName;
+    document.getElementById('ros-add-card').style.display='block';
+    document.getElementById('ros-add-hs').src = p.hs||'';
+    document.getElementById('ros-add-hs').style.display = p.hs?'block':'none';
+    document.getElementById('ros-add-name').textContent = p._displayName;
+    document.getElementById('ros-add-meta').textContent = p._pos+' · '+(p._team||'')+' · FA';
+    var rawSGP = 0;
+    var D2=(typeof SGP_D!=='undefined')?SGP_D:{r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
+    if(p.isHit) rawSGP=((p.R||0)/D2.r)+((p.HR||0)/D2.hr)+((p.RBI||0)/D2.rbi)+((p.SB||0)/D2.sb);
+    else rawSGP=((p.W||0)/D2.w)+((p.K||0)/D2.k)+((p.SV||0)/D2.svh3);
+    document.getElementById('ros-add-raw').innerHTML='<span style="color:'+_rosAdCol(rawSGP)+'">'+_rosAdFmt(rawSGP)+'</span>';
+    document.getElementById('ros-add-team').innerHTML='<span style="color:'+_rosAdCol(p._teamSGP)+'">'+_rosAdFmt(p._teamSGP)+'</span>';
+  } else {
+    var r = _rosAdRostFiltered[idx];
+    if(!r) return;
+    _rosDropSelected = r._key;
+    document.getElementById('ros-drop-search').value = r._displayName;
+    document.getElementById('ros-drop-card').style.display='block';
+    document.getElementById('ros-drop-hs').src = r.hs||'';
+    document.getElementById('ros-drop-hs').style.display = r.hs?'block':'none';
+    document.getElementById('ros-drop-name').textContent = r._displayName;
+    document.getElementById('ros-drop-meta').textContent = r._pos+' · '+(r._team||'')+' · Rostered';
+    document.getElementById('ros-drop-curr').innerHTML='<span style="color:'+_rosAdCol(r._currSGP)+'">'+_rosAdFmt(r._currSGP)+'</span>';
+  }
+  _rosAdRenderBars();
+};
+
+
 // ── ROS Team Diagnostic Panel ─────────────────────────────────────────────
 function buildROSTeamPanel(teamId) {
   if (!teamId || !S.zData || !S.zData.length) return '';
