@@ -4610,13 +4610,13 @@ function _rosAdBuildPanelHtml() {
   h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:10px">Add / Drop Simulator</div>';
   h += '<div style="display:grid;grid-template-columns:1fr 90px 1fr;gap:12px;align-items:start">';
 
-  var listStyle = 'display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:0.5px solid var(--border);border-radius:6px;z-index:50;max-height:200px;overflow-y:auto;margin-top:3px;box-shadow:0 4px 12px rgba(0,0,0,0.15)';
+  var listStyle = 'display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:0.5px solid var(--border);border-radius:6px;z-index:1000;max-height:200px;overflow-y:auto;margin-top:3px;box-shadow:0 4px 12px rgba(0,0,0,0.15)';
   var inputStyle = 'width:100%;box-sizing:border-box;padding:6px 10px;font-size:12px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--text)';
 
   // LEFT: Drop (Rostered)
   h += '<div>';
   h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px">Drop (Rostered)</div>';
-  h += '<div style="position:relative">';
+  h += '<div style="position:relative;z-index:100">';
   h += '<input id="ros-drop-search" type="text" placeholder="Search your roster..." oninput="rosDropSearch(this.value)" onfocus="rosAdShow(&quot;drop&quot;)" style="' + inputStyle + '">';
   h += '<div id="ros-drop-list" style="' + listStyle + '"></div>';
   h += '</div>';
@@ -4640,7 +4640,7 @@ function _rosAdBuildPanelHtml() {
   // RIGHT: Add (All Players)
   h += '<div>';
   h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px">Add Player</div>';
-  h += '<div style="position:relative">';
+  h += '<div style="position:relative;z-index:100">';
   h += '<input id="ros-add-search" type="text" placeholder="Search all players..." oninput="rosAdSearch(this.value)" onfocus="rosAdShow(&quot;add&quot;)" style="' + inputStyle + '">';
   h += '<div id="ros-add-list" style="' + listStyle + '"></div>';
   h += '</div>';
