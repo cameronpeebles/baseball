@@ -4627,7 +4627,7 @@ function _rosAdBuildPanelHtml() {
   h += '<div id="ros-drop-meta" style="font-size:10px;color:var(--muted)"></div>';
   h += '<div style="display:flex;gap:10px;margin-top:4px">';
   h += '<div><div style="font-size:9px;color:var(--muted)">Curr SGP</div><div id="ros-drop-curr" style="font-size:12px;font-weight:500"></div></div>';
-  h += '<div><div style="font-size:9px;color:var(--muted)">Raw SGP</div><div id="ros-drop-raw" style="font-size:12px;font-weight:500"></div></div>';
+  h += '<div><div style="font-size:9px;color:var(--muted)">ROS SGP</div><div id="ros-drop-raw" style="font-size:12px;font-weight:500"></div></div>';
   h += '</div></div></div></div></div>';
 
   // CENTER
@@ -4660,7 +4660,7 @@ function _rosAdBuildPanelHtml() {
   // Category bars
   h += '<div id="ros-ad-bars" style="display:none;margin-top:12px;padding-top:10px;border-top:0.5px solid var(--border)">';
   h += '<div style="font-size:10px;color:var(--muted);display:flex;gap:14px;margin-bottom:7px">';
-  h += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:#D3D1C7;display:inline-block;border-radius:2px"></span>Drop player</span>';
+  h += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:#D3D1C7;display:inline-block;border-radius:2px"></span>Drop ROS</span>';
   h += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:#1D9E75;display:inline-block;border-radius:2px"></span>Net after swap</span>';
   h += '<span style="margin-left:auto">cat &middot; drop &middot; delta &middot; net</span>';
   h += '</div><div id="ros-ad-cats"></div></div>';
@@ -4809,10 +4809,11 @@ function _rosAdRenderBars() {
   }
 
   var cs = _rosDropSelected ? (window._rosCurrentStats||{})[_rosDropSelected] : null;
+  var dropFP = cs && cs._fp ? cs._fp : null;
   var maxV = 0;
   cats.forEach(function(cat) {
     var addV = catSGPFA(_rosAdSelected, cat);
-    var dropV = cs ? -catSGPRoster(cs, cat) : 0;
+    var dropV = dropFP ? -catSGPFA(dropFP, cat) : (cs ? -catSGPRoster(cs, cat) : 0);
     var net = addV + dropV;
     maxV = Math.max(maxV, Math.abs(addV), Math.abs(net));
   });
