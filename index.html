@@ -4684,11 +4684,8 @@ function _rosAdBuildPanelHtml() {
 
   // Category bars
   h += '<div id="ros-ad-bars" style="display:none;margin-top:12px;padding-top:10px;border-top:0.5px solid var(--border)">';
-  h += '<div style="font-size:10px;color:var(--muted);display:flex;gap:14px;margin-bottom:7px">';
-  h += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:#D3D1C7;display:inline-block;border-radius:2px"></span>Drop ROS</span>';
-  h += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:#1D9E75;display:inline-block;border-radius:2px"></span>Net after swap</span>';
-  h += '<span style="margin-left:auto">cat &middot; drop &middot; delta &middot; net</span>';
-  h += '</div><div id="ros-ad-cats"></div></div>';
+  h += '<div id="ros-ad-cats"></div>';
+  h += '</div>';
   h += '</div>';
   return h;
 }
@@ -4805,92 +4802,73 @@ function _rosAdRenderBars() {
     return 0;
   }
 
-  function catSGPRoster(cs, cat) {
-    if (!cs) return 0;
-    if (cat==='R')   return (cs.R||0)/D2.r;
-    if (cat==='HR')  return (cs.HR||0)/D2.hr;
-    if (cat==='RBI') return (cs.RBI||0)/D2.rbi;
-    if (cat==='SB')  return (cs.SB||0)/D2.sb;
-    if (cat==='W')   return (cs.W||0)/D2.w;
-    if (cat==='K')   return (cs.K||0)/D2.k;
-    if (cat==='SVH3')return (cs.SVH3||0)/D2.svh3;
-    if (cat==='AVG') {
-      var cH=(cs.H>0?cs.H:(cs.AVG&&cs.AB?cs.AVG*cs.AB:null));
-      if(!cH||!cs.AB||ts.AVG==null||!ts.AB) return 0;
-      var nH2=(ts.AVG||0)*(ts.AB||0)+cH, nAB2=(ts.AB||0)+(cs.AB||0);
-      return (nAB2>0?((nH2/nAB2)-(ts.AVG||0)):0)/D2.avg;
-    }
-    if (cat==='ERA') {
-      if(!cs.ERA||!cs.IP||ts.ERA==null||!ts.IP) return 0;
-      var tER2=(ts.ERA||0)*(ts.IP||0)/9,pER2=cs.ERA*(cs.IP||0)/9,nIP3=(ts.IP||0)+(cs.IP||0);
-      return (nIP3>0?((ts.ERA||0)-(tER2+pER2)/nIP3*9):0)/D2.era;
-    }
-    if (cat==='WHIP') {
-      if(!cs.WHIP||!cs.IP||ts.WHIP==null||!ts.IP) return 0;
-      var tBR2=(ts.WHIP||0)*(ts.IP||0),pBR2=cs.WHIP*(cs.IP||0),nIP4=(ts.IP||0)+(cs.IP||0);
-      return (nIP4>0?((ts.WHIP||0)-(tBR2+pBR2)/nIP4):0)/D2.whip;
-    }
-    return 0;
-  }
-
   var cs = _rosDropSelected ? (window._rosCurrentStats||{})[_rosDropSelected] : null;
   var dropFP = cs && cs._fp ? cs._fp : null;
-  var maxV = 0;
-  cats.forEach(function(cat) {
-    var addV = catSGPFA(_rosAdSelected, cat);
-    var dropV = dropFP ? -catSGPFA(dropFP, cat) : (cs ? -catSGPRoster(cs, cat) : 0);
-    var net = addV + dropV;
-    maxV = Math.max(maxV, Math.abs(addV), Math.abs(net));
-  });
-  maxV = maxV * 1.2 || 1;
 
-  // Net total
-  var addTotal = _rosAdSelected ? cats.reduce(function(s,c){return s+catSGPFA(_rosAdSelected,c);},0) : 0;
-  // Net = Add Team SGP minus Drop Raw SGP (raw = counting stats only, no team weighting)
-  var D2net = (typeof SGP_D!=='undefined')?SGP_D:{r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
-  var dropRaw = 0;
-  if (cs) {
-    if (isHit) {
-      if(cs.R!=null)  dropRaw+=cs.R/D2net.r;
-      if(cs.HR!=null) dropRaw+=cs.HR/D2net.hr;
-      if(cs.RBI!=null)dropRaw+=cs.RBI/D2net.rbi;
-      if(cs.SB!=null) dropRaw+=cs.SB/D2net.sb;
-      if(cs.AVG!=null&&cs.AB>0) dropRaw+=((cs.AVG-0.260)/D2net.avg)*(cs.AB/500);
-    } else {
-      if(cs.W!=null)   dropRaw+=cs.W/D2net.w;
-      if(cs.K!=null)   dropRaw+=cs.K/D2net.k;
-      if(cs.SVH3!=null)dropRaw+=cs.SVH3/D2net.svh3;
-      if(cs.ERA!=null&&cs.IP>0) dropRaw+=((4.00-cs.ERA)/D2net.era)*(cs.IP/150);
-      if(cs.WHIP!=null&&cs.IP>0)dropRaw+=((1.25-cs.WHIP)/D2net.whip)*(cs.IP/150);
-    }
-  }
-  var net = addTotal - dropRaw;
+  var dropVals = cats.map(function(cat){ return dropFP ? parseFloat(catSGPFA(dropFP,cat).toFixed(2)) : 0; });
+  var addVals  = cats.map(function(cat){ return _rosAdSelected ? parseFloat(catSGPFA(_rosAdSelected,cat).toFixed(2)) : 0; });
+  var netVals  = cats.map(function(cat,i){ return parseFloat((addVals[i] - dropVals[i]).toFixed(2)); });
+
+  var addTotal = addVals.reduce(function(s,v){return s+v;},0);
+  var dropRosTotal = dropVals.reduce(function(s,v){return s+v;},0);
+  var net = parseFloat((addTotal - dropRosTotal).toFixed(2));
   if (netCard) {
-    netCard.style.display = 'block';
-    document.getElementById('ros-net-val').textContent = _rosAdFmt(net);
-    document.getElementById('ros-net-val').style.color = _rosAdCol(net);
+    netCard.style.display='block';
+    document.getElementById('ros-net-val').textContent=(net>=0?'+':'')+net.toFixed(2);
+    document.getElementById('ros-net-val').style.color=net>=0?'#1e6b3a':'#c0392b';
   }
 
-  var html = '';
-  cats.forEach(function(cat) {
-    var addV = catSGPFA(_rosAdSelected, cat);
-    var dropV = cs ? -catSGPRoster(cs, cat) : 0;
-    var delta = addV + dropV;
-    var curPct = Math.min(100, Math.abs(addV) / maxV * 100);
-    var nwPct  = Math.min(100, Math.abs(delta) / maxV * 100);
-    var barCol = delta >= 0 ? '#1D9E75' : '#E24B4A';
-    html += '<div style="display:flex;align-items:center;gap:10px;padding:4px 0;border-bottom:0.5px solid var(--border)">';
-    html += '<span style="font-size:11px;font-weight:500;color:var(--text);width:36px;flex-shrink:0">'+cat+'</span>';
-    html += '<div style="flex:1;position:relative;height:24px">';
-    html += '<div style="position:absolute;left:0;top:3px;height:8px;width:'+curPct.toFixed(1)+'%;background:#D3D1C7;border-radius:3px"></div>';
-    html += '<div style="position:absolute;left:0;top:13px;height:8px;width:'+nwPct.toFixed(1)+'%;background:'+barCol+';border-radius:3px;opacity:0.85"></div>';
-    html += '</div>';
-    html += '<span style="font-size:10px;color:var(--muted);width:32px;text-align:right;flex-shrink:0">'+addV.toFixed(2)+'</span>';
-    html += '<span style="font-size:11px;font-weight:500;color:'+_rosAdCol(delta)+';width:38px;text-align:center;flex-shrink:0">'+_rosAdFmt(delta)+'</span>';
-    html += '<span style="font-size:11px;font-weight:500;color:'+_rosAdCol(delta)+';width:32px;text-align:right;flex-shrink:0">'+delta.toFixed(2)+'</span>';
-    html += '</div>';
+  // Destroy previous chart if exists
+  if (window._rosAdChart) { try { window._rosAdChart.destroy(); } catch(e){} window._rosAdChart=null; }
+
+  // Build legend + canvas
+  var dropName = _rosDropSelected ? ((window._rosCurrentStats||{})[_rosDropSelected]||{}).name || 'Drop' : 'Drop';
+  var addName  = _rosAdSelected ? (_rosAdSelected._displayName || 'Add') : 'Add';
+
+  var legendHtml = '<div style="display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:#888780">';
+  legendHtml += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#B4B2A9;display:inline-block"></span>'+dropName+'</span>';
+  legendHtml += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1D9E75;display:inline-block"></span>'+addName+'</span>';
+  legendHtml += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#378ADD;display:inline-block"></span>Net gain</span>';
+  legendHtml += '</div>';
+  legendHtml += '<div style="position:relative;width:100%;height:180px"><canvas id="ros-ad-chart" role="img" aria-label="Grouped bar chart of SGP impact per category">'+cats.join(', ')+'</canvas></div>';
+  catsEl.innerHTML = legendHtml;
+
+  if (typeof Chart === 'undefined') {
+    var s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
+    s.onload=function(){ _rosAdDrawChart(cats,dropVals,addVals,netVals); };
+    document.head.appendChild(s);
+  } else {
+    _rosAdDrawChart(cats,dropVals,addVals,netVals);
+  }
+}
+
+function _rosAdDrawChart(cats,dropVals,addVals,netVals) {
+  var canvas = document.getElementById('ros-ad-chart');
+  if (!canvas) return;
+  window._rosAdChart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: cats,
+      datasets: [
+        { label:'Drop ROS', data:dropVals, backgroundColor:'#B4B2A9', borderRadius:3, barPercentage:0.75 },
+        { label:'Add ROS',  data:addVals,  backgroundColor:'#1D9E75', borderRadius:3, barPercentage:0.75 },
+        { label:'Net gain', data:netVals,  backgroundColor:netVals.map(function(v){return v>=0?'#378ADD':'#E24B4A';}), borderRadius:3, barPercentage:0.75 }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:function(ctx){var v=ctx.parsed.y;return ' '+ctx.dataset.label+': '+(v>=0?'+':'')+v.toFixed(2);}}}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:11},color:'#888780'}},
+        y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10},color:'#888780',callback:function(v){return v.toFixed(1);}},
+           min:Math.min(-0.2,Math.min.apply(null,netVals)-0.1)}
+      }
+    }
   });
-  catsEl.innerHTML = html;
 }
 
 function _rosAdListHtml(players, side) {
