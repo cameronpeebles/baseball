@@ -4965,6 +4965,38 @@ function _rosAdBuildLists() {
   _rosAdRostFiltered = _rosAdRosterList.slice();
 }
 
+window.rosAdToggle = function(side) {
+  var listEl = document.getElementById('ros-'+side+'-list');
+  if (!listEl) return;
+  if (listEl.style.display === 'block') {
+    listEl.style.display = 'none';
+  } else {
+    _rosAdBuildLists();
+    var q = (document.getElementById('ros-'+side+'-search')||{}).value || '';
+    if (side==='add') rosAdSearch(q); else rosDropSearch(q);
+    listEl.style.display = 'block';
+    var searchEl = document.getElementById('ros-'+side+'-search');
+    if (searchEl) searchEl.focus();
+  }
+};
+window.rosAdHide = function(side) {
+  setTimeout(function(){
+    var listEl = document.getElementById('ros-'+side+'-list');
+    if (listEl) listEl.style.display = 'none';
+  }, 200);
+};
+window.rosAdClear = function(side) {
+  if (side === 'add') {
+    _rosAdSelected = null;
+    var c = document.getElementById('ros-add-card'); if (c) c.style.display='none';
+    var i = document.getElementById('ros-add-search'); if (i) i.value='';
+  } else {
+    _rosDropSelected = null;
+    var c2 = document.getElementById('ros-drop-card'); if (c2) c2.style.display='none';
+    var i2 = document.getElementById('ros-drop-search'); if (i2) i2.value='';
+  }
+  _rosAdRenderBars();
+};
 window.rosAdShow = function(side) {
   _rosAdBuildLists();
   var listEl = document.getElementById('ros-'+side+'-list');
@@ -5377,13 +5409,40 @@ function buildROSTable() {
   }
 
   function rawPlayerSGP(p) {
-    // No team need weighting - pure category SGP × Trust
-    var cats = isHit ? ['R','HR','RBI','SB','AVG'] : ['W','K','SVH3','ERA','WHIP'];
+    // No team need weighting, no team context - uses fixed league baselines for rate stats
     var total = 0;
-    cats.forEach(function(cat) {
-      var raw = catSGP(p, cat);
-      if (raw != null) total += raw;
-    });
+    if (isHit) {
+      total += (p.R||0)  / D.r;
+      total += (p.HR||0) / D.hr;
+      total += (p.RBI||0)/ D.rbi;
+      total += (p.SB||0) / D.sb;
+      // AVG: use player's own H/AB vs fixed league avg baseline (.260, 4000 AB)
+      var rosH = (p.H>0) ? p.H : (p.AVG!=null && p.AB ? p.AVG*p.AB : null);
+      if (rosH!=null && p.AB>0) {
+        var lgAVG=0.260, lgAB=4000;
+        var newH = lgAVG*lgAB + rosH;
+        var newAB = lgAB + (p.AB||0);
+        total += (newAB>0 ? (newH/newAB - lgAVG) : 0) / D.avg;
+      }
+    } else {
+      total += (p.W||0)  / D.w;
+      total += (p.K||0)  / D.k;
+      total += (p.SV||0) / D.svh3;
+      // ERA: vs fixed baseline (4.00 ERA, 900 IP)
+      if (p.ERA!=null && p.IP>0) {
+        var lgERA=4.00, lgIP=900;
+        var nIP=(lgIP+(p.IP||0));
+        var nERA=nIP>0?(lgERA*lgIP/9+p.ERA*(p.IP||0)/9)/nIP*9:lgERA;
+        total += (lgERA - nERA) / D.era;
+      }
+      // WHIP: vs fixed baseline (1.25 WHIP, 900 IP)
+      if (p.WHIP!=null && p.IP>0) {
+        var lgWHIP=1.25, lgIP2=900;
+        var nIP2=(lgIP2+(p.IP||0));
+        var nWHIP=nIP2>0?(lgWHIP*lgIP2+p.WHIP*(p.IP||0))/nIP2:lgWHIP;
+        total += (lgWHIP - nWHIP) / D.whip;
+      }
+    }
     return total * trustScore(p, isHit);
   }
 
