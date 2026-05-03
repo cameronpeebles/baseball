@@ -4629,20 +4629,23 @@ function _rosAdBuildPanelHtml() {
   h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:10px">Add / Drop Simulator</div>';
   h += '<div style="display:grid;grid-template-columns:1fr 90px 1fr;gap:12px;align-items:start;overflow:visible">';
 
-  var listStyle = 'display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:0.5px solid var(--border);border-radius:6px;z-index:1000;max-height:200px;overflow-y:auto;margin-top:3px;box-shadow:0 4px 12px rgba(0,0,0,0.15)';
+  var listStyle = 'display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #d0cec8;border-radius:6px;z-index:1000;max-height:220px;overflow-y:auto;margin-top:3px;box-shadow:0 6px 20px rgba(0,0,0,0.18)';
   var inputStyle = 'width:100%;box-sizing:border-box;padding:6px 10px;font-size:12px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--text)';
 
   // LEFT: Drop (Rostered)
   h += '<div>';
   h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px">Drop (Rostered)</div>';
   h += '<div style="position:relative;z-index:100">';
-    h += '<input id="ros-drop-search" type="text" placeholder="Search your roster..." oninput="rosDropSearch(this.value)" onfocus="rosAdShow(&quot;drop&quot;)" onblur="rosAdHide(&quot;drop&quot;)" style="' + inputStyle + '">';
+  h += '<div style="display:flex;gap:4px">';
+  h += '<input id="ros-drop-search" type="text" placeholder="Search your roster..." oninput="rosDropSearch(this.value)" onfocus="rosAdShow(&quot;drop&quot;)" onblur="rosAdHide(&quot;drop&quot;)" style="' + inputStyle + ';flex:1">';
+  h += '<button onclick="rosAdToggle(&quot;drop&quot;)" style="padding:0 10px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);cursor:pointer;font-size:12px;color:var(--muted);flex-shrink:0">&#9662;</button>';
+  h += '</div>';
   h += '<div id="ros-drop-list" style="' + listStyle + '"></div>';
   h += '</div>';
   h += '<div id="ros-drop-card" style="display:none;margin-top:8px;background:var(--bg);border-radius:6px;padding:8px 10px">';
   h += '<div style="display:flex;align-items:center;gap:8px">';
   h += '<img id="ros-drop-hs" src="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">';
-  h += '<div style="flex:1"><div id="ros-drop-name" style="font-size:12px;font-weight:500;color:var(--text)"></div>';
+  h += '<div style="flex:1"><div style="display:flex;justify-content:space-between;align-items:center"><div id="ros-drop-name" style="font-size:12px;font-weight:500;color:var(--text)"></div><button onclick="rosAdClear(&quot;drop&quot;)" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:0;line-height:1">&times;</button></div>';
   h += '<div id="ros-drop-meta" style="font-size:10px;color:var(--muted)"></div>';
   h += '<div style="display:flex;gap:10px;margin-top:4px">';
   h += '<div><div style="font-size:9px;color:var(--muted)">Curr SGP</div><div id="ros-drop-curr" style="font-size:12px;font-weight:500"></div></div>';
@@ -4661,13 +4664,16 @@ function _rosAdBuildPanelHtml() {
   h += '<div>';
   h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px">Add Player</div>';
   h += '<div style="position:relative;z-index:100">';
-    h += '<input id="ros-add-search" type="text" placeholder="Search all players..." oninput="rosAdSearch(this.value)" onfocus="rosAdShow(&quot;add&quot;)" onblur="rosAdHide(&quot;add&quot;)" style="' + inputStyle + '">';
+  h += '<div style="display:flex;gap:4px">';
+  h += '<input id="ros-add-search" type="text" placeholder="Search all players..." oninput="rosAdSearch(this.value)" onfocus="rosAdShow(&quot;add&quot;)" onblur="rosAdHide(&quot;add&quot;)" style="' + inputStyle + ';flex:1">';
+  h += '<button onclick="rosAdToggle(&quot;add&quot;)" style="padding:0 10px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);cursor:pointer;font-size:12px;color:var(--muted);flex-shrink:0">&#9662;</button>';
+  h += '</div>';
   h += '<div id="ros-add-list" style="' + listStyle + '"></div>';
   h += '</div>';
   h += '<div id="ros-add-card" style="display:none;margin-top:8px;background:var(--bg);border-radius:6px;padding:8px 10px">';
   h += '<div style="display:flex;align-items:center;gap:8px">';
   h += '<img id="ros-add-hs" src="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">';
-  h += '<div style="flex:1"><div id="ros-add-name" style="font-size:12px;font-weight:500;color:var(--text)"></div>';
+  h += '<div style="flex:1"><div style="display:flex;justify-content:space-between;align-items:center"><div id="ros-add-name" style="font-size:12px;font-weight:500;color:var(--text)"></div><button onclick="rosAdClear(&quot;add&quot;)" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:0;line-height:1">&times;</button></div>';
   h += '<div id="ros-add-meta" style="font-size:10px;color:var(--muted)"></div>';
   h += '<div style="display:flex;gap:10px;margin-top:4px">';
   h += '<div><div style="font-size:9px;color:var(--muted)">Raw SGP</div><div id="ros-add-raw" style="font-size:12px;font-weight:500"></div></div>';
@@ -8917,7 +8923,20 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   h += '<hr style="border:none;border-top:0.5px solid var(--border);margin:16px 0">';
   // ── Section 2: Model Inputs ───────────────────────────────────────
   // Row 2: Model inputs
-  h += '<div><div style="'+lb+';margin-bottom:10px">Model inputs</div>';
+  h += '<div>';
+  h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
+  h += '<div style="'+lb+'">Model inputs</div>';
+  h += '<button onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\'" style="display:flex;align-items:center;gap:4px;background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:0">';
+  h += '<span style="width:14px;height:14px;border-radius:50%;border:0.5px solid var(--muted);display:inline-flex;align-items:center;justify-content:center;font-size:9px">i</span>';
+  h += '<span>How to read this</span></button>';
+  h += '</div>';
+  h += '<div style="display:none;font-size:11px;color:var(--muted);line-height:1.6;padding:8px 10px;background:var(--bg);border-radius:6px;margin-bottom:8px">';
+  h += 'Each bar shows a percentile (0–100) against the rest of the league. ';
+  h += '<strong style="color:var(--text);font-weight:500">fWAR%</strong> = what your team has actually produced (results). ';
+  h += '<strong style="color:var(--text);font-weight:500">Rating%</strong> = quality of the players themselves (talent). ';
+  h += '<strong style="color:var(--text);font-weight:500">JOE</strong> = luck-adjusted performance vs expected. ';
+  h += '50 = league average. High Rating% with low fWAR% = underperforming talent — a buy signal.';
+  h += '</div>';
   h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">';
   // fWAR%
   function gradBar(pct, low, high, markerCol){
