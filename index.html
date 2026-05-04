@@ -1999,7 +1999,7 @@ td.neg { color: #c0392b; font-weight: 500; }
           <p style="font-size:13px;line-height:1.7;margin-bottom:16px">The ROS page ranks all projected players by their expected value added to a <strong>specific team</strong>. The final score combines raw projected stats, SGP value, team need weighting, and projection reliability (Trust). Each component is explained below.</p>
 
           <!-- SGP -->
-          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Step 1 — Raw SGP per Category</div>
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Step 1 — Raw ROS SGP per Category</div>
           <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:8px">
             SGP (Standings Gain Points) measures how many standings places a player's projected stats are worth. Each counting stat is divided by the SGP denominator — the average gap between adjacent teams in that category.
           </div>
@@ -4688,8 +4688,8 @@ function _rosAdBuildPanelHtml() {
   h += '<div style="flex:1"><div style="display:flex;justify-content:space-between;align-items:center"><div id="ros-add-name" style="font-size:12px;font-weight:500;color:var(--text)"></div><button onclick="rosAdClear(&quot;add&quot;)" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:0;line-height:1">&times;</button></div>';
   h += '<div id="ros-add-meta" style="font-size:10px;color:var(--muted)"></div>';
   h += '<div style="display:flex;gap:10px;margin-top:4px">';
-  h += '<div><div style="font-size:9px;color:var(--muted)">Raw SGP</div><div id="ros-add-raw" style="font-size:12px;font-weight:500"></div></div>';
-  h += '<div><div style="font-size:9px;color:var(--muted)">Team SGP</div><div id="ros-add-team" style="font-size:12px;font-weight:500"></div></div>';
+  h += '<div><div style="font-size:9px;color:var(--muted)">Raw ROS SGP</div><div id="ros-add-raw" style="font-size:12px;font-weight:500"></div></div>';
+  h += '<div><div style="font-size:9px;color:var(--muted)">Team ROS SGP</div><div id="ros-add-team" style="font-size:12px;font-weight:500"></div></div>';
   h += '</div></div></div></div></div>';
 
   h += '</div>'; // end grid
@@ -4711,7 +4711,7 @@ function _rosAdFmt(v){ return (v>=0?'+':'')+v.toFixed(2); }
 function _rosAdCol(v){ return v>0.05?'#1e6b3a':v>0?'#4a9a68':v<-0.05?'#c0392b':'#888780'; }
 
 function _rosAdCatSGP(p, cat, isHit) {
-  // Per-category Team SGP with team context + need weight multiplier
+  // Per-category Team ROS SGP with team context + need weight multiplier
   if (!p) return null;
   var D2 = (typeof SGP_D!=='undefined')?SGP_D:{r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
   var ts = (window._rosTeamStats||{})[_rosSelectedTeam] || {R:0,HR:0,RBI:0,SB:0,AVG:null,AB:0,K:0,W:0,SVH3:0,ERA:null,WHIP:null,IP:0};
@@ -4744,7 +4744,7 @@ function _rosAdCatSGP(p, cat, isHit) {
 }
 
 function _rosAdPlayerSGP(p, isHit) {
-  // Compute full Team SGP for a player (same logic as playerSGP but standalone)
+  // Compute full Team ROS SGP for a player (same logic as playerSGP but standalone)
   var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
   var ts = (window._rosTeamStats||{})[_rosSelectedTeam] || {R:0,HR:0,RBI:0,SB:0,AVG:null,AB:0,K:0,W:0,SVH3:0,ERA:null,WHIP:null,IP:0};
   var mults = window._rosCatMultipliers || {};
@@ -4854,7 +4854,7 @@ function _rosAdRenderBars() {
   var cs = _rosDropSelected ? (window._rosCurrentStats||{})[_rosDropSelected] : null;
   var dropFP = cs && cs._fp ? cs._fp : null;
 
-    // Net = Add Team SGP - Drop Team SGP (both _rosAdPlayerSGP: team context + need weights)
+    // Net = Add Team ROS SGP - Drop Team ROS SGP (both _rosAdPlayerSGP: team context + need weights)
   var addTotal = _rosAdSelected ? _rosAdPlayerSGP(_rosAdSelected, isHit) : 0;
   var dropRosTotal = 0;
   if (_rosDropSelected) {
@@ -4997,7 +4997,7 @@ function _rosAdRenderStats() {
   h+='<div style="grid-column:2/7;display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--bg);border-radius:6px 6px 0 0;margin-right:2px">';
   h+=hsImg(addHs)+'<div><div style="font-size:10px;font-weight:500;color:var(--text)">'+addName+'</div><div style="font-size:8px;color:#1D9E75;font-weight:500;text-transform:uppercase">ADD</div></div></div>';
   h+='<div></div>';
-  h+='<div style="grid-column:9/14;display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--bg);border-radius:6px 6px 0 0;margin-left:2px">';
+  h+='<div style="grid-column:8/13;display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--bg);border-radius:6px 6px 0 0;margin-left:2px">';
   h+=hsImg(dropHs)+'<div><div style="font-size:10px;font-weight:500;color:var(--text)">'+dropName+'</div><div style="font-size:8px;color:var(--muted);font-weight:500;text-transform:uppercase">DROP</div></div></div>';
   h+='<div></div></div>';
 
@@ -5087,7 +5087,7 @@ function _rosAdRenderStats() {
   h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:600;color:'+rc(avgACR)+'">'+avgACR+'</span></div>';
   h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:700;color:'+sc(sumARS)+'">'+(sumARS>=0?'+':'')+sumARS.toFixed(2)+'</span></div>';
   h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:700;color:'+rc(avgARR)+'">'+avgARR+'</span></div>';
-  h+='<div></div><div></div>';
+  h+='<div></div>';
   h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:600;color:'+sc(sumDCS)+'">'+(sumDCS>=0?'+':'')+sumDCS.toFixed(2)+'</span></div>';
   h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:600;color:'+rc(avgDCR)+'">'+avgDCR+'</span></div>';
   h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:700;color:'+sc(sumDRS)+'">'+(sumDRS>=0?'+':'')+sumDRS.toFixed(2)+'</span></div>';
@@ -5818,8 +5818,8 @@ function buildROSTable() {
     html += '<th style="color:' + (c.inv?'#c0392b':'#2d5a3d') + '">' + c.k + '_SGP</th>';
   });
   html += '<th style="color:var(--muted);font-weight:600">Curr SGP</th>';
-  html += '<th style="color:var(--muted);font-weight:600">Raw SGP</th>';
-  html += '<th style="color:var(--accent);font-weight:700">Team SGP</th>';
+  html += '<th style="color:var(--muted);font-weight:600">Raw ROS SGP</th>';
+  html += '<th style="color:var(--accent);font-weight:700">Team ROS SGP</th>';
   html += '<th style="color:#5a7a9a">Trust</th>';
   // Also show raw ROS stat columns
   html += '<th style="border-left:1px solid var(--border);color:var(--muted);font-size:10px">' + (isHit?'ROS: R':'ROS: W') + '</th>';
@@ -5876,11 +5876,11 @@ function buildROSTable() {
     var currTotal = currentPlayerSGP(p);
     var currDisp = (currTotal >= 0 ? '+' : '') + currTotal.toFixed(2);
     html += '<td style="font-weight:500;color:'+totalColor(currTotal)+'">'+currDisp+'</td>';
-    // Raw SGP (unweighted)
+    // Raw ROS SGP (unweighted)
     var rawTotal = rawPlayerSGP(p);
     var rawDisp = (rawTotal>=0?'+':'')+rawTotal.toFixed(2);
     html += '<td style="font-weight:500;color:'+totalColor(rawTotal)+'">'+rawDisp+'</td>';
-    // Team SGP (weighted by need)
+    // Team ROS SGP (weighted by need)
     var tDisp = (total>=0?'+':'')+total.toFixed(2);
     html += '<td style="font-weight:700;color:'+totalColor(total)+'">'+tDisp+'</td>';
 
