@@ -4498,6 +4498,7 @@ var _rosSelectedTeam = null;
 var _rosPosFilter = 'ALL';
 var _rosRostFilter = 'ALL';
 var _rosDropPos = null; // position filter for add side based on drop selection
+var _rosAdPosPill = 'ALL'; // position pill filter for add dropdown
 
 window.showROSTab = function(tab, btn) {
   _rosCurrentTab = tab;
@@ -4513,6 +4514,8 @@ window.rosTeamChanged = function(sel) {
   // Reset add/drop simulator state when team changes
   _rosAdSelected = null;
   _rosDropSelected = null;
+  _rosAdPosPill = 'ALL';
+  _rosDropPos = null;
   _rosAdRosterList = [];
   _rosAdFAList = [];
   _rosAdFAFiltered = [];
@@ -4664,6 +4667,14 @@ function _rosAdBuildPanelHtml() {
   // RIGHT: Add (All Players)
   h += '<div>';
   h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px">Add Player</div>';
+  // Position pills
+  var addPills = ['ALL','C','1B','2B','3B','SS','OF','DH','SP','RP'];
+  h += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">';
+  addPills.forEach(function(pos){
+    var active = (_rosAdPosPill===pos) ? 'active' : '';
+    h += '<button class="pill ros-ad-pos-pill '+active+'" onclick="rosAdSetPos(\''+pos+'\',this)" style="padding:2px 7px;font-size:10px">'+pos+'</button>';
+  });
+  h += '</div>';
   h += '<div style="position:relative;z-index:100">';
   h += '<div style="display:flex;gap:4px">';
   h += '<input id="ros-add-search" type="text" placeholder="Search all players..." oninput="rosAdSearch(this.value)" onfocus="rosAdShow(&quot;add&quot;)" onblur="rosAdHide(&quot;add&quot;)" style="' + inputStyle + ';flex:1">';
@@ -5037,6 +5048,12 @@ function _rosAdBuildLists() {
   _rosAdRostFiltered = _rosAdRosterList.slice();
 }
 
+window.rosAdSetPos = function(pos, btn) {
+  _rosAdPosPill = pos;
+  document.querySelectorAll('.ros-ad-pos-pill').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  rosAdSearch(document.getElementById('ros-add-search') ? document.getElementById('ros-add-search').value : '');
+};
 window.rosAdToggle = function(side) {
   var listEl = document.getElementById('ros-'+side+'-list');
   if (!listEl) return;
@@ -5097,8 +5114,18 @@ window.rosAdSearch = function(q) {
   _rosAdFAFiltered = _rosAdFAList.filter(function(p){
     var matchesQ = !q || p._displayName.toLowerCase().indexOf(q)!==-1||p._pos.toLowerCase().indexOf(q)!==-1||(p._team||'').toLowerCase().indexOf(q)!==-1;
     if (!matchesQ) return false;
-    // Filter by drop player position if set
-    if (_rosDropPos && _rosDropPos !== '—') {
+    // Filter by position pill
+    if (_rosAdPosPill && _rosAdPosPill !== 'ALL') {
+      var pPos = (p._pos||'').toUpperCase();
+      var pill = _rosAdPosPill.toUpperCase();
+      if (pill === 'OF') {
+        if (pPos.indexOf('LF')===-1 && pPos.indexOf('CF')===-1 && pPos.indexOf('RF')===-1 && pPos.indexOf('OF')===-1) return false;
+      } else {
+        if (pPos.indexOf(pill) === -1) return false;
+      }
+    }
+    // Also filter by drop player position if set (overrides pill filter with auto-match)
+    if (_rosDropPos && _rosDropPos !== '—' && _rosAdPosPill === 'ALL') {
       var dropParts = _rosDropPos.toUpperCase().split(',').map(function(x){return x.trim();});
       var addParts  = (p._pos||'').toUpperCase().split(',').map(function(x){return x.trim();});
       var overlap = dropParts.some(function(dp){ return addParts.some(function(ap){ return ap===dp; }); });
