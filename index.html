@@ -4840,6 +4840,8 @@ function _rosAdRenderStats() {
   var addP = _rosAdSelected;
   var _dropObj = _rosDropSelected ? (window._rosDropPlayerObj || (function(){ return _rosAdRosterList.find(function(r){return r._key===_rosDropSelected;}); })()) : null;
   var dropP = _dropObj ? _dropObj._fp : null;
+  console.log('Stats debug - dropObj:', _dropObj ? {key:_dropObj._key, hasFP:!!_dropObj._fp, fpR:_dropObj._fp?_dropObj._fp.R:'n/a'} : null);
+  console.log('Stats debug - addP:', addP ? {name:addP._displayName, R:addP.R, HR:addP.HR} : null);
 
   var addName  = addP  ? (addP._displayName||'Add')  : '—';
   var dropName = dropP ? (function(){ var cs=(window._rosCurrentStats||{})[_rosDropSelected]||{}; return cs.name||'Drop'; })() : '—';
