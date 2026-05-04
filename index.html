@@ -4911,6 +4911,7 @@ function _rosAdRenderStats() {
 
   var aTotal=0, dTotal=0;
   var spiderAdd=[], spiderDrop=[], spiderLabels=[];
+  // Build real percentiles after cats loop using fp pool
 
   cats.forEach(function(c,i){
     var bg=i%2===0?'rgba(0,0,0,0.02)':'transparent';
@@ -4925,13 +4926,8 @@ function _rosAdRenderStats() {
     var aStatC=c.better?(aBetter?'#1e6b3a':'#c0392b'):'var(--text)';
     var dStatC=c.better?(!aBetter?'#1e6b3a':'#c0392b'):'var(--text)';
 
-    // Collect spider data for main cats only (not AB/IP)
-    if(c.sgpFn) {
-      spiderLabels.push(c.k);
-      // Convert SGP to 0-100 percentile approximation (SGP 0=50, max ~2=100, min ~-1=0)
-      spiderAdd.push(Math.min(100,Math.max(0,Math.round(((aS||0)+1)/3*100))));
-      spiderDrop.push(Math.min(100,Math.max(0,Math.round(((dS||0)+1)/3*100))));
-    }
+    // Collect spider labels for main cats only (not AB/IP)
+    if(c.sgpFn) { spiderLabels.push(c.k); }
 
     h += '<div style="display:grid;grid-template-columns:'+grid+';background:'+bg+';border-bottom:0.5px solid var(--border)">';
     h += '<div style="display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--muted)">'+c.k+'</div>';
@@ -4943,6 +4939,49 @@ function _rosAdRenderStats() {
     if(net!=null) h += '<div style="font-size:10px;font-weight:500;color:'+dc(net)+';background:'+dcbg(net)+';border-radius:3px;padding:1px 5px">'+(net>=0?'+':'')+net+'</div>';
     else h += '<span style="color:var(--muted)">—</span>';
     h += '</div></div>';
+  });
+
+  // Compute Z-score percentiles matching Player page methodology
+  // Build pool from fp data with same {stats:{}, pos:''} structure
+  var fpPoolRaw = isHit ? (_rosHitData||[]) : (_rosPitData||[]);
+  var fpPoolStructured = fpPoolRaw.map(function(p){
+    var st={}, posStr='';
+    var nm=(p.name||'').match(/\(([^)]+)\)/);
+    if(nm){var pts=nm[1].split(' - ');if(pts.length>=2)posStr=pts.slice(1).join(',');}
+    spiderLabels.concat(isHit?['AB']:['IP']).forEach(function(c){ st[c]=parseFloat(p[c]||0)||null; });
+    return {stats:st, pos:posStr};
+  }).filter(function(p){ return p.stats[spiderLabels[0]]!=null; });
+
+  function rosRankCat(cat, val, pos2) {
+    if(val==null) return 50;
+    var isLow = cat==='ERA'||cat==='WHIP';
+    // Use same sampleFactor weighting
+    var addStats = {};
+    spiderLabels.concat(isHit?['AB']:['IP']).forEach(function(c){
+      addStats[c] = val; // placeholder - factor only needs AB/IP
+    });
+    var statObj = {};
+    statObj[cat] = val;
+    statObj['AB'] = addP ? parseFloat(addP['AB']||0) : 0;
+    statObj['IP'] = addP ? parseFloat(addP['IP']||0) : 0;
+    var factor = sampleFactor(cat, statObj, pos2||'');
+
+    var poolVals = fpPoolStructured.map(function(p){ return p.stats[cat]; }).filter(function(v){return v!=null&&v>0;});
+    if(!poolVals.length) return 50;
+    var below = poolVals.filter(function(v){ return isLow ? v > val : v < val; }).length;
+    var pct = below / poolVals.length;
+    // Apply sampleFactor: blend toward 0.5 for low-sample players
+    var weighted = 0.5 + (pct - 0.5) * factor;
+    return Math.min(100, Math.max(0, Math.round(weighted * 100)));
+  }
+
+  var addPos = addP ? (addP._pos||'') : '';
+  var dropPos2 = _dropObj ? (_dropObj._pos||'') : '';
+  spiderLabels.forEach(function(cat) {
+    var aV2 = addP  ? parseFloat(addP[cat]||0)  : null;
+    var dV2 = dropP ? parseFloat(dropP[cat]||0) : null;
+    spiderAdd.push(rosRankCat(cat, aV2>0?aV2:null, addPos));
+    spiderDrop.push(rosRankCat(cat, dV2>0?dV2:null, dropPos2));
   });
 
   // Totals
