@@ -4840,8 +4840,7 @@ function _rosAdRenderStats() {
   var addP = _rosAdSelected;
   var _dropObj = _rosDropSelected ? (window._rosDropPlayerObj || (function(){ return _rosAdRosterList.find(function(r){return r._key===_rosDropSelected;}); })()) : null;
   var dropP = _dropObj ? _dropObj._fp : null;
-  console.log('Stats debug - dropObj:', _dropObj ? {key:_dropObj._key, hasFP:!!_dropObj._fp, fpR:_dropObj._fp?_dropObj._fp.R:'n/a'} : null);
-  console.log('Stats debug - addP:', addP ? {name:addP._displayName, R:addP.R, HR:addP.HR} : null);
+
 
   var addName  = addP  ? (addP._displayName||'Add')  : '—';
   var dropName = dropP ? (function(){ var cs=(window._rosCurrentStats||{})[_rosDropSelected]||{}; return cs.name||'Drop'; })() : '—';
@@ -5004,6 +5003,13 @@ function _rosAdBuildLists() {
     return p;
   }).sort(function(a,b){return b._teamSGP-a._teamSGP;});
 
+  // Build fp lookup from ALL fp data (including rostered players)
+  var fpLookup2 = {};
+  fpData.forEach(function(p){
+    var k2 = normFP(p.name||'');
+    fpLookup2[k2] = p;
+  });
+
   // Roster list from _rosCurrentStats filtered to selected team
   _rosAdRosterList = [];
   var selTeamName = _rosSelectedTeam ? ((S.teamInfo[_rosSelectedTeam]||{}).shortName||(S.teamInfo[_rosSelectedTeam]||{}).name||'') : '';
@@ -5014,13 +5020,16 @@ function _rosAdBuildLists() {
     var ri = rosterLookup[key] || {};
     if (!ri.teamId || ri.teamId !== _rosSelectedTeam) return;
     var currSGP = _rosCurrSGP(cs, isHit);
+    var fpP2 = fpLookup2[key] || null;
+    var rosSGP2 = fpP2 ? _rosAdPlayerSGP(fpP2, isHit) : null;
+    if (fpP2) cs._fp = fpP2; // store for stat table
     _rosAdRosterList.push({
       _key: key, _displayName: cs.name||key, _pos: cs.pos||'—',
-      _team: selTeamName, _currSGP: currSGP,
-      hs: cs.hs||'', isHit: isHit, _cs: cs
+      _team: selTeamName, _currSGP: currSGP, _rosSGP: rosSGP2,
+      hs: cs.hs||'', isHit: isHit, _cs: cs, _fp: fpP2
     });
   });
-  _rosAdRosterList.sort(function(a,b){return b._currSGP-a._currSGP;});
+  _rosAdRosterList.sort(function(a,b){ return (b._rosSGP||b._currSGP||0)-(a._rosSGP||a._currSGP||0); });
 
   _rosAdFAFiltered = _rosAdFAList.slice(0,30);
   _rosAdRostFiltered = _rosAdRosterList.slice();
@@ -5119,6 +5128,8 @@ window.rosAdSelect = function(side, idx) {
     document.getElementById('ros-add-raw').innerHTML='<span style="color:'+_rosAdCol(rawSGP)+'">'+_rosAdFmt(rawSGP)+'</span>';
     document.getElementById('ros-add-team').innerHTML='<span style="color:'+_rosAdCol(p._teamSGP)+'">'+_rosAdFmt(p._teamSGP)+'</span>';
   } else {
+    // Rebuild lists to ensure _fp is populated
+    _rosAdBuildLists();
     var r = _rosAdRostFiltered[idx];
     if(!r) return;
     _rosDropSelected = r._key;
