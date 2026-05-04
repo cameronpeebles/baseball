@@ -4849,64 +4849,62 @@ function _rosAdRenderStats() {
   var D2 = (typeof SGP_D!=='undefined')?SGP_D:{r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
   var ts = (window._rosTeamStats||{})[_rosSelectedTeam]||{};
 
-  var addP = _rosAdSelected;
+  var addP  = _rosAdSelected;
   var _dropObj = _rosDropSelected ? (window._rosDropPlayerObj || (function(){ return _rosAdRosterList.find(function(r){return r._key===_rosDropSelected;}); })()) : null;
   var dropP = _dropObj ? _dropObj._fp : null;
 
-
   var addName  = addP  ? (addP._displayName||'Add')  : '—';
-  var dropName = dropP ? (function(){ var cs=(window._rosCurrentStats||{})[_rosDropSelected]||{}; return cs.name||'Drop'; })() : '—';
+  var dropName = _dropObj ? (_dropObj._displayName||'Drop') : '—';
   var addHs  = addP  ? (addP.hs||'') : '';
-  var dropHs = (_rosDropSelected&&window._rosCurrentStats&&window._rosCurrentStats[_rosDropSelected]) ? (window._rosCurrentStats[_rosDropSelected].hs||'') : '';
+  var dropHs = _dropObj ? (_dropObj.hs||'') : '';
 
   var cats = isHit
-    ? [{k:'R',fmt:function(v){return Math.round(v);},sgpFn:function(v,p){return +(v/D2.r).toFixed(2);},better:'high'},
-       {k:'HR',fmt:function(v){return Math.round(v);},sgpFn:function(v,p){return +(v/D2.hr).toFixed(2);},better:'high'},
-       {k:'RBI',fmt:function(v){return Math.round(v);},sgpFn:function(v,p){return +(v/D2.rbi).toFixed(2);},better:'high'},
-       {k:'SB',fmt:function(v){return Math.round(v);},sgpFn:function(v,p){return +(v/D2.sb).toFixed(2);},better:'high'},
-       {k:'AVG',fmt:function(v){return parseFloat(v).toFixed(3);},sgpFn:function(v,p){
-         var ab=p?parseFloat(p.AB||0):0,h=parseFloat(v||0)*ab;
+    ? [{k:'R',  fmt:function(v){return Math.round(v);}, sgpFn:function(v,p){return +(v/D2.r).toFixed(2);},  better:'high'},
+       {k:'HR', fmt:function(v){return Math.round(v);}, sgpFn:function(v,p){return +(v/D2.hr).toFixed(2);}, better:'high'},
+       {k:'RBI',fmt:function(v){return Math.round(v);}, sgpFn:function(v,p){return +(v/D2.rbi).toFixed(2);},better:'high'},
+       {k:'SB', fmt:function(v){return Math.round(v);}, sgpFn:function(v,p){return +(v/D2.sb).toFixed(2);}, better:'high'},
+       {k:'AVG',fmt:function(v){return parseFloat(v).toFixed(3);}, sgpFn:function(v,p){
+         var ab=p?parseFloat(p.AB||0):0, h2=parseFloat(v||0)*ab;
          if(!ab) return null;
-         var nA=(0.260*4000+h)/(4000+ab);
-         return +((nA-0.260)/D2.avg).toFixed(2);
-       },better:'high'},
-       {k:'AB',fmt:function(v){return Math.round(v);},sgpFn:null,better:null}]
-    : [{k:'W',fmt:function(v){return Math.round(v);},sgpFn:function(v,p){return +(v/D2.w).toFixed(2);},better:'high'},
-       {k:'K',fmt:function(v){return Math.round(v);},sgpFn:function(v,p){return +(v/D2.k).toFixed(2);},better:'high'},
-       {k:'SV',fmt:function(v){return Math.round(v);},sgpFn:function(v,p){return +(v/D2.svh3).toFixed(2);},better:'high'},
-       {k:'ERA',fmt:function(v){return parseFloat(v).toFixed(2);},sgpFn:function(v,p){
+         var nA=(0.260*4000+h2)/(4000+ab); return +((nA-0.260)/D2.avg).toFixed(2);
+       }, better:'high'},
+       {k:'AB', fmt:function(v){return Math.round(v);}, sgpFn:null, better:null}]
+    : [{k:'W',   fmt:function(v){return Math.round(v);},    sgpFn:function(v,p){return +(v/D2.w).toFixed(2);},  better:'high'},
+       {k:'K',   fmt:function(v){return Math.round(v);},    sgpFn:function(v,p){return +(v/D2.k).toFixed(2);},  better:'high'},
+       {k:'SV',  fmt:function(v){return Math.round(v);},    sgpFn:function(v,p){return +(v/D2.svh3).toFixed(2);},better:'high'},
+       {k:'ERA', fmt:function(v){return parseFloat(v).toFixed(2);}, sgpFn:function(v,p){
          var ip=p?parseFloat(p.IP||0):0; if(!ip) return null;
-         var nERA=(4.00*900/9+parseFloat(v)*ip/9)/(900+ip)*9;
-         return +((4.00-nERA)/D2.era).toFixed(2);
-       },better:'low'},
-       {k:'WHIP',fmt:function(v){return parseFloat(v).toFixed(2);},sgpFn:function(v,p){
+         var nE=(4.00*900/9+parseFloat(v)*ip/9)/(900+ip)*9; return +((4.00-nE)/D2.era).toFixed(2);
+       }, better:'low'},
+       {k:'WHIP',fmt:function(v){return parseFloat(v).toFixed(2);}, sgpFn:function(v,p){
          var ip=p?parseFloat(p.IP||0):0; if(!ip) return null;
-         var nWHIP=(1.25*900+parseFloat(v)*ip)/(900+ip);
-         return +((1.25-nWHIP)/D2.whip).toFixed(2);
-       },better:'low'},
-       {k:'IP',fmt:function(v){return parseFloat(v).toFixed(0);},sgpFn:null,better:null}];
+         var nW=(1.25*900+parseFloat(v)*ip)/(900+ip); return +((1.25-nW)/D2.whip).toFixed(2);
+       }, better:'low'},
+       {k:'IP',  fmt:function(v){return parseFloat(v).toFixed(0);}, sgpFn:null, better:null}];
 
   function sc(v){return v>0.3?'#1e6b3a':v>0?'#4a9a68':v<-0.05?'#c0392b':'#888780';}
   function dc(v){return v>0?'#1D9E75':v<0?'#E24B4A':'#888780';}
   function dc_bg(v){return v>0?'rgba(29,158,117,0.1)':v<0?'rgba(226,75,74,0.1)':'transparent';}
   function hsImg(url){
-    return url ? '<img src="'+url+'" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">'
-               : '<div style="width:24px;height:24px;border-radius:50%;background:var(--bg);border:0.5px solid var(--border);flex-shrink:0"></div>';
+    return url
+      ? '<img src="'+url+'" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">'
+      : '<div style="width:24px;height:24px;border-radius:50%;background:var(--bg);border:0.5px solid var(--border);flex-shrink:0"></div>';
   }
 
-  var grid = '1fr 42px 28px 42px 1fr 48px';
+  // Grid: cat | add stat | add SGP | drop stat | drop SGP | Δ
+  var grid = '36px 1fr 42px 1fr 42px 48px';
   var h = '';
 
-  // Header row
+  // Header
   h += '<div style="display:grid;grid-template-columns:'+grid+';margin-bottom:4px;align-items:end">';
+  h += '<div></div>';
   h += '<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--bg);border-radius:6px 6px 0 0">';
   h += hsImg(addHs)+'<div><div style="font-size:11px;font-weight:500;color:var(--text)">'+addName+'</div><div style="font-size:9px;color:#1D9E75;font-weight:500;text-transform:uppercase">ADD</div></div></div>';
   h += '<div style="text-align:center;font-size:9px;color:var(--muted);padding-bottom:4px">SGP</div>';
-  h += '<div></div>';
-  h += '<div style="text-align:center;font-size:9px;color:var(--muted);padding-bottom:4px">SGP</div>';
-  h += '<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--bg);border-radius:6px 6px 0 0">';
+  h += '<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--bg);border-radius:6px 6px 0 0;border-left:1px solid var(--border)">';
   h += hsImg(dropHs)+'<div><div style="font-size:11px;font-weight:500;color:var(--text)">'+dropName+'</div><div style="font-size:9px;color:var(--muted);font-weight:500;text-transform:uppercase">DROP</div></div></div>';
-  h += '<div style="text-align:center;font-size:9px;color:var(--muted);padding-bottom:4px;border-left:1px solid var(--border);padding-left:6px">&Delta; SGP</div>';
+  h += '<div style="text-align:center;font-size:9px;color:var(--muted);padding-bottom:4px">SGP</div>';
+  h += '<div style="text-align:center;font-size:9px;color:var(--muted);padding-bottom:4px;border-left:1px solid var(--border)">&Delta;</div>';
   h += '</div>';
 
   var aTotal=0, dTotal=0;
@@ -4919,40 +4917,39 @@ function _rosAdRenderStats() {
     var net = (aS!=null&&dS!=null) ? +(aS-dS).toFixed(2) : null;
     if(aS!=null) aTotal+=aS;
     if(dS!=null) dTotal+=dS;
-    // Per-category scaling — each row independent
-    var maxV = Math.max(aV||0, dV||0) * 1.15 || 1;
     var aBetter = c.better==='high'?(aV>dV):(c.better==='low'?(aV<dV):false);
     var aStatC = c.better?(aBetter?'#1e6b3a':'#c0392b'):'var(--text)';
     var dStatC = c.better?(!aBetter?'#1e6b3a':'#c0392b'):'var(--text)';
+    var maxV = Math.max(aV||0, dV||0)*1.15||1;
 
     h += '<div style="display:grid;grid-template-columns:'+grid+';background:'+bg+';border-bottom:0.5px solid var(--border)">';
+    // Cat
+    h += '<div style="display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--muted)">'+c.k+'</div>';
     // Add stat + bar
     h += '<div style="padding:5px 8px"><div style="font-size:12px;font-weight:500;color:'+aStatC+';margin-bottom:3px">'+(aV!=null?c.fmt(aV):'—')+'</div>';
     h += '<div style="height:3px;background:var(--border);border-radius:2px"><div style="height:100%;width:'+(aV!=null?(aV/maxV*100).toFixed(1):0)+'%;background:'+aStatC+';border-radius:2px;opacity:0.6"></div></div></div>';
     // Add SGP
     h += '<div style="display:flex;align-items:center;justify-content:center">'+(aS!=null?'<span style="font-size:10px;font-weight:600;color:'+sc(aS)+'">'+(aS>=0?'+':'')+aS+'</span>':'<span style="color:var(--muted);font-size:10px">—</span>')+'</div>';
-    // Cat label
-    h += '<div style="display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--muted)">'+c.k+'</div>';
+    // Drop stat + bar
+    h += '<div style="padding:5px 8px;border-left:1px solid var(--border)"><div style="font-size:12px;font-weight:500;color:'+dStatC+';margin-bottom:3px">'+(dV!=null?c.fmt(dV):'—')+'</div>';
+    h += '<div style="height:3px;background:var(--border);border-radius:2px"><div style="height:100%;width:'+(dV!=null?(dV/maxV*100).toFixed(1):0)+'%;background:'+dStatC+';border-radius:2px;opacity:0.6"></div></div></div>';
     // Drop SGP
     h += '<div style="display:flex;align-items:center;justify-content:center">'+(dS!=null?'<span style="font-size:10px;font-weight:600;color:'+sc(dS)+'">'+(dS>=0?'+':'')+dS+'</span>':'<span style="color:var(--muted);font-size:10px">—</span>')+'</div>';
-    // Drop stat + bar
-    h += '<div style="padding:5px 8px"><div style="font-size:12px;font-weight:500;color:'+dStatC+';margin-bottom:3px">'+(dV!=null?c.fmt(dV):'—')+'</div>';
-    h += '<div style="height:3px;background:var(--border);border-radius:2px"><div style="height:100%;width:'+(dV!=null?(dV/maxV*100).toFixed(1):0)+'%;background:'+dStatC+';border-radius:2px;opacity:0.6"></div></div></div>';
-    // Net delta
+    // Delta
     h += '<div style="display:flex;align-items:center;justify-content:center;border-left:1px solid var(--border)">';
     if(net!=null) h += '<div style="font-size:11px;font-weight:700;color:'+dc(net)+';background:'+dc_bg(net)+';border-radius:4px;padding:2px 6px">'+(net>=0?'+':'')+net+'</div>';
     else h += '<span style="color:var(--muted);font-size:10px">—</span>';
     h += '</div></div>';
   });
 
-  // Totals row
+  // Totals
   var netTot = +(aTotal-dTotal).toFixed(2);
   h += '<div style="display:grid;grid-template-columns:'+grid+';border-top:1px solid var(--border);padding-top:5px;margin-top:1px">';
+  h += '<div></div>';
   h += '<div style="padding:4px 8px;font-size:10px;color:var(--muted)">Total</div>';
   h += '<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:700;color:'+sc(aTotal)+'">'+(aTotal>=0?'+':'')+aTotal.toFixed(2)+'</span></div>';
-  h += '<div></div>';
+  h += '<div style="padding:4px 8px;font-size:10px;color:var(--muted);border-left:1px solid var(--border)">Total</div>';
   h += '<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:700;color:'+sc(dTotal)+'">'+(dTotal>=0?'+':'')+dTotal.toFixed(2)+'</span></div>';
-  h += '<div style="padding:4px 8px;font-size:10px;color:var(--muted)">Total</div>';
   h += '<div style="display:flex;align-items:center;justify-content:center;border-left:1px solid var(--border)"><div style="font-size:12px;font-weight:700;color:'+dc(netTot)+';background:'+dc_bg(netTot)+';border-radius:4px;padding:3px 7px">'+(netTot>=0?'+':'')+netTot.toFixed(2)+'</div></div>';
   h += '</div>';
 
@@ -5114,21 +5111,19 @@ window.rosAdSearch = function(q) {
   _rosAdFAFiltered = _rosAdFAList.filter(function(p){
     var matchesQ = !q || p._displayName.toLowerCase().indexOf(q)!==-1||p._pos.toLowerCase().indexOf(q)!==-1||(p._team||'').toLowerCase().indexOf(q)!==-1;
     if (!matchesQ) return false;
-    // Filter by position pill
-    if (_rosAdPosPill && _rosAdPosPill !== 'ALL') {
-      var pPos = (p._pos||'').toUpperCase();
-      var pill = _rosAdPosPill.toUpperCase();
-      if (pill === 'OF') {
-        if (pPos.indexOf('LF')===-1 && pPos.indexOf('CF')===-1 && pPos.indexOf('RF')===-1 && pPos.indexOf('OF')===-1) return false;
-      } else {
-        if (pPos.indexOf(pill) === -1) return false;
-      }
+    // Filter by position pill — exact token match
+    function posHas(posStr, token) {
+      var parts = posStr.toUpperCase().split(',').map(function(x){return x.trim();});
+      if (token === 'OF') return parts.some(function(p){return p==='LF'||p==='CF'||p==='RF'||p==='OF';});
+      return parts.indexOf(token.toUpperCase()) !== -1;
     }
-    // Also filter by drop player position if set (overrides pill filter with auto-match)
+    if (_rosAdPosPill && _rosAdPosPill !== 'ALL') {
+      if (!posHas(p._pos||'', _rosAdPosPill)) return false;
+    }
+    // Also filter by drop player position if pill is ALL
     if (_rosDropPos && _rosDropPos !== '—' && _rosAdPosPill === 'ALL') {
       var dropParts = _rosDropPos.toUpperCase().split(',').map(function(x){return x.trim();});
-      var addParts  = (p._pos||'').toUpperCase().split(',').map(function(x){return x.trim();});
-      var overlap = dropParts.some(function(dp){ return addParts.some(function(ap){ return ap===dp; }); });
+      var overlap = dropParts.some(function(dp){ return posHas(p._pos||'', dp); });
       if (!overlap) return false;
     }
     return true;
