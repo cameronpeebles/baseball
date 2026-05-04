@@ -4497,6 +4497,7 @@ var _rosCurrentTab = 'hitters';
 var _rosSelectedTeam = null;
 var _rosPosFilter = 'ALL';
 var _rosRostFilter = 'ALL';
+var _rosDropPos = null; // position filter for add side based on drop selection
 
 window.showROSTab = function(tab, btn) {
   _rosCurrentTab = tab;
@@ -4898,15 +4899,6 @@ function _rosAdRenderStats() {
   h += '</div>';
 
   var aTotal=0, dTotal=0;
-  // Compute global max across all cats for consistent bar scaling
-  var globalMax = 0;
-  cats.forEach(function(c){
-    var aV2 = addP  ? parseFloat(addP[c.k]||0)  : 0;
-    var dV2 = dropP ? parseFloat(dropP[c.k]||0) : 0;
-    globalMax = Math.max(globalMax, aV2, dV2);
-  });
-  globalMax = globalMax * 1.1 || 1;
-
   cats.forEach(function(c,i){
     var bg = i%2===0?'rgba(0,0,0,0.02)':'transparent';
     var aV = addP  ? parseFloat(addP[c.k]||0)  : null;
@@ -4916,7 +4908,8 @@ function _rosAdRenderStats() {
     var net = (aS!=null&&dS!=null) ? +(aS-dS).toFixed(2) : null;
     if(aS!=null) aTotal+=aS;
     if(dS!=null) dTotal+=dS;
-    var maxV = globalMax;
+    // Per-category scaling — each row independent
+    var maxV = Math.max(aV||0, dV||0) * 1.15 || 1;
     var aBetter = c.better==='high'?(aV>dV):(c.better==='low'?(aV<dV):false);
     var aStatC = c.better?(aBetter?'#1e6b3a':'#c0392b'):'var(--text)';
     var dStatC = c.better?(!aBetter?'#1e6b3a':'#c0392b'):'var(--text)';
@@ -5072,8 +5065,11 @@ window.rosAdClear = function(side) {
   } else {
     _rosDropSelected = null;
     window._rosDropPlayerObj = null;
+    _rosDropPos = null;
     var c2 = document.getElementById('ros-drop-card'); if (c2) c2.style.display='none';
     var i2 = document.getElementById('ros-drop-search'); if (i2) i2.value='';
+    var addInp2 = document.getElementById('ros-add-search');
+    if (addInp2) addInp2.placeholder = 'Search all players...';
   }
   _rosAdRenderBars();
 };
@@ -5099,7 +5095,16 @@ window.rosAdSearch = function(q) {
   _rosAdBuildLists();
   q = (q||'').toLowerCase();
   _rosAdFAFiltered = _rosAdFAList.filter(function(p){
-    return p._displayName.toLowerCase().indexOf(q)!==-1||p._pos.toLowerCase().indexOf(q)!==-1||(p._team||'').toLowerCase().indexOf(q)!==-1;
+    var matchesQ = !q || p._displayName.toLowerCase().indexOf(q)!==-1||p._pos.toLowerCase().indexOf(q)!==-1||(p._team||'').toLowerCase().indexOf(q)!==-1;
+    if (!matchesQ) return false;
+    // Filter by drop player position if set
+    if (_rosDropPos && _rosDropPos !== '—') {
+      var dropParts = _rosDropPos.toUpperCase().split(',').map(function(x){return x.trim();});
+      var addParts  = (p._pos||'').toUpperCase().split(',').map(function(x){return x.trim();});
+      var overlap = dropParts.some(function(dp){ return addParts.some(function(ap){ return ap===dp; }); });
+      if (!overlap) return false;
+    }
+    return true;
   });
   var listEl = document.getElementById('ros-add-list');
   if(listEl && listEl.style.display!=='none') listEl.innerHTML = _rosAdListHtml(_rosAdFAFiltered,'add');
@@ -5143,6 +5148,13 @@ window.rosAdSelect = function(side, idx) {
     if(!r) return;
     _rosDropSelected = r._key;
     window._rosDropPlayerObj = r; // store full object for stat table
+    // Set position filter for add side
+    _rosDropPos = r._pos || null;
+    // Update add search placeholder
+    var addInp = document.getElementById('ros-add-search');
+    if (addInp && _rosDropPos && _rosDropPos !== '—') {
+      addInp.placeholder = 'Search ' + _rosDropPos + ' players...';
+    }
     document.getElementById('ros-drop-search').value = r._displayName;
     document.getElementById('ros-drop-card').style.display='block';
     document.getElementById('ros-drop-hs').src = r.hs||'';
@@ -9378,8 +9390,6 @@ function assembleDashboard(teamId, el) {
   if (ti.name && ti.name !== teamName) _teamNameVariants.push(ti.name);
   if (ti.shortName && ti.shortName !== teamName) _teamNameVariants.push(ti.shortName);
   function _matchesTeam(n) { return _teamNameVariants.indexOf(n) !== -1; }
-  console.log('Schedule debug: teamName='+teamName+' variants='+JSON.stringify(_teamNameVariants)+' curPeriod='+_upcomingCurPeriod);
-  console.log('Schedule debug: _mpPredictions count='+(window._mpPredictions||[]).length+' sample='+(window._mpPredictions&&window._mpPredictions[0]?JSON.stringify(window._mpPredictions[0]):'none'));
 
   // Use _mpPredictions if available, otherwise fall back to _fullSchedule
   var _schedSource = (window._mpPredictions && window._mpPredictions.length)
@@ -9774,12 +9784,12 @@ function assembleDashboard(teamId, el) {
       var isAway   = m.away === teamName;
       var opp      = isAway ? m.home : m.away;
       var r        = m.result;
-      var myPts    = isAway ? r.awayPts : r.homePts;
-      var oppPts   = isAway ? r.homePts : r.awayPts;
-      var predWin  = myPts > oppPts;
-      var predLose = myPts < oppPts;
-      var predCls  = predWin ? 'win' : predLose ? 'lose' : 'even';
-      var predLbl  = predWin ? 'Predicted W' : predLose ? 'Predicted L' : 'Toss-up';
+      var myPts    = r ? (isAway ? r.awayPts : r.homePts) : null;
+      var oppPts   = r ? (isAway ? r.homePts : r.awayPts) : null;
+      var predWin  = myPts != null && oppPts != null && myPts > oppPts;
+      var predLose = myPts != null && oppPts != null && myPts < oppPts;
+      var predCls  = r ? (predWin ? 'win' : predLose ? 'lose' : 'even') : 'even';
+      var predLbl  = r ? (predWin ? 'Predicted W' : predLose ? 'Predicted L' : 'Toss-up') : 'Scheduled';
       html += '<div class="dash-schedule-row">';
       html += '<span style="font-size:11px;color:var(--muted);width:28px">P' + m.period + '</span>';
       html += '<span class="dash-opp">' + (isAway ? '@ ' : 'vs ') + opp + '</span>';
