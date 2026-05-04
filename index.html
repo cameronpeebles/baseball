@@ -236,8 +236,8 @@ td.neg { color: #c0392b; font-weight: 500; }
 .fwar-badge { display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600; }
 .fwar-pos { display:inline-block;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:500;background:var(--bg);color:var(--muted);border:1px solid var(--border);margin-right:3px; }
 .fwar-pos.assigned { background:var(--accent-light);color:var(--accent);border-color:var(--accent); }
-#ros-addrop-panel, #ros-addrop-panel .card, #ros-addrop-panel * { overflow: visible !important; }
-#ros-addrop-panel .card { overflow: visible !important; }
+#ros-addrop-panel, #ros-addrop-panel .card { overflow: visible !important; }
+#ros-addrop-panel .ros-stat-scroll { overflow-x: auto !important; }
 </style>
 </head>
 <body>
@@ -4989,7 +4989,7 @@ function _rosAdRenderStats() {
   h+='<div style="display:grid;grid-template-columns:3fr 2fr;gap:16px;align-items:start">';
 
   // ── TABLE ────────────────────────────────────────────────────────────────
-  h+='<div style="overflow-x:auto"><div style="min-width:580px">';
+  h+='<div class="ros-stat-scroll" style="overflow-x:auto"><div style="min-width:580px">';
 
   // Player headers
   h+='<div style="display:grid;grid-template-columns:'+grid+';margin-bottom:0;align-items:end">';
