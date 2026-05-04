@@ -4898,6 +4898,15 @@ function _rosAdRenderStats() {
   h += '</div>';
 
   var aTotal=0, dTotal=0;
+  // Compute global max across all cats for consistent bar scaling
+  var globalMax = 0;
+  cats.forEach(function(c){
+    var aV2 = addP  ? parseFloat(addP[c.k]||0)  : 0;
+    var dV2 = dropP ? parseFloat(dropP[c.k]||0) : 0;
+    globalMax = Math.max(globalMax, aV2, dV2);
+  });
+  globalMax = globalMax * 1.1 || 1;
+
   cats.forEach(function(c,i){
     var bg = i%2===0?'rgba(0,0,0,0.02)':'transparent';
     var aV = addP  ? parseFloat(addP[c.k]||0)  : null;
@@ -4907,7 +4916,7 @@ function _rosAdRenderStats() {
     var net = (aS!=null&&dS!=null) ? +(aS-dS).toFixed(2) : null;
     if(aS!=null) aTotal+=aS;
     if(dS!=null) dTotal+=dS;
-    var maxV = Math.max(aV||0,dV||0)*1.1||1;
+    var maxV = globalMax;
     var aBetter = c.better==='high'?(aV>dV):(c.better==='low'?(aV<dV):false);
     var aStatC = c.better?(aBetter?'#1e6b3a':'#c0392b'):'var(--text)';
     var dStatC = c.better?(!aBetter?'#1e6b3a':'#c0392b'):'var(--text)';
