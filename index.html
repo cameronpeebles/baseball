@@ -4710,6 +4710,39 @@ var _rosDropSelected = null; // selected rostered player normName key
 function _rosAdFmt(v){ return (v>=0?'+':'')+v.toFixed(2); }
 function _rosAdCol(v){ return v>0.05?'#1e6b3a':v>0?'#4a9a68':v<-0.05?'#c0392b':'#888780'; }
 
+function _rosAdCatSGP(p, cat, isHit) {
+  // Per-category Team SGP with team context + need weight multiplier
+  if (!p) return null;
+  var D2 = (typeof SGP_D!=='undefined')?SGP_D:{r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
+  var ts = (window._rosTeamStats||{})[_rosSelectedTeam] || {R:0,HR:0,RBI:0,SB:0,AVG:null,AB:0,K:0,W:0,SVH3:0,ERA:null,WHIP:null,IP:0};
+  var mults = window._rosCatMultipliers || {};
+  var v = parseFloat(p[cat]||0);
+  if(cat==='R')   return v>0 ? (v/D2.r)*(mults.R||1)   : null;
+  if(cat==='HR')  return v>0 ? (v/D2.hr)*(mults.HR||1)  : null;
+  if(cat==='RBI') return v>0 ? (v/D2.rbi)*(mults.RBI||1): null;
+  if(cat==='SB')  return v>0 ? (v/D2.sb)*(mults.SB||1)  : null;
+  if(cat==='W')   return v>0 ? (v/D2.w)*(mults.W||1)    : null;
+  if(cat==='K')   return v>0 ? (v/D2.k)*(mults.K||1)    : null;
+  if(cat==='SV')  return v>0 ? (v/D2.svh3)*(mults.SVH3||1): null;
+  if(cat==='AVG') {
+    var rH = p.H>0 ? p.H : (p.AVG&&p.AB ? parseFloat(p.AVG)*parseFloat(p.AB||0) : null);
+    if(!rH||!p.AB||ts.AVG==null||!ts.AB) return null;
+    var nH=(ts.AVG||0)*(ts.AB||0)+rH, nAB=(ts.AB||0)+parseFloat(p.AB||0);
+    return nAB>0 ? ((nH/nAB)-(ts.AVG||0))/D2.avg*(mults.AVG||1) : null;
+  }
+  if(cat==='ERA') {
+    if(!v||!p.IP||ts.ERA==null||!ts.IP) return null;
+    var tER=(ts.ERA||0)*(ts.IP||0)/9, pER=v*(parseFloat(p.IP||0))/9, nIP=(ts.IP||0)+(parseFloat(p.IP||0));
+    return nIP>0 ? ((ts.ERA||0)-(tER+pER)/nIP*9)/D2.era*(mults.ERA||1) : null;
+  }
+  if(cat==='WHIP') {
+    if(!v||!p.IP||ts.WHIP==null||!ts.IP) return null;
+    var tBR=(ts.WHIP||0)*(ts.IP||0), pBR=v*(parseFloat(p.IP||0)), nIP2=(ts.IP||0)+(parseFloat(p.IP||0));
+    return nIP2>0 ? ((ts.WHIP||0)-(tBR+pBR)/nIP2)/D2.whip*(mults.WHIP||1) : null;
+  }
+  return null;
+}
+
 function _rosAdPlayerSGP(p, isHit) {
   // Compute full Team SGP for a player (same logic as playerSGP but standalone)
   var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
@@ -4821,11 +4854,14 @@ function _rosAdRenderBars() {
   var cs = _rosDropSelected ? (window._rosCurrentStats||{})[_rosDropSelected] : null;
   var dropFP = cs && cs._fp ? cs._fp : null;
 
-  var addTotal = _rosAdSelected ? cats.reduce(function(s,c){return s+catSGPFA(_rosAdSelected,c);},0) : 0;
+    // Net = Add Team SGP - Drop Team SGP (both _rosAdPlayerSGP: team context + need weights)
+  var addTotal = _rosAdSelected ? _rosAdPlayerSGP(_rosAdSelected, isHit) : 0;
   var dropRosTotal = 0;
   if (_rosDropSelected) {
-    var dropR = _rosAdRosterList.find(function(r){return r._key===_rosDropSelected;});
-    if (dropR && dropR._rosSGP!=null) dropRosTotal = dropR._rosSGP;
+    var dropR2 = _rosAdRosterList.find(function(r){return r._key===_rosDropSelected;});
+    var dropFPObj = dropR2 ? dropR2._fp : null;
+    if (dropFPObj) dropRosTotal = _rosAdPlayerSGP(dropFPObj, isHit);
+    else if (dropR2 && dropR2._rosSGP!=null) dropRosTotal = dropR2._rosSGP;
   }
   var net = parseFloat((addTotal - dropRosTotal).toFixed(2));
 
@@ -4988,8 +5024,9 @@ function _rosAdRenderStats() {
     var ab_a=addP?parseFloat(addP.AB||0):0, ab_d=dropP?parseFloat(dropP.AB||0):0;
     var ip_a=addP?parseFloat(addP.IP||0):0, ip_d=dropP?parseFloat(dropP.IP||0):0;
 
-    var aRosSGP  = c.sgpFn?c.sgpFn(aROSV, c.needsAB?ab_a:c.needsIP?ip_a:null):null;
-    var dRosSGP  = c.sgpFn?c.sgpFn(dROSV, c.needsAB?ab_d:c.needsIP?ip_d:null):null;
+    // Use team-context + need-weight SGP to match the player card values
+    var aRosSGP  = c.sgpFn ? _rosAdCatSGP(addP,  c.k, isHit) : null;
+    var dRosSGP  = c.sgpFn ? _rosAdCatSGP(dropP, c.k, isHit) : null;
     var aCurrSGP = c.sgpFn?currSGP_cat(addCurrStats,c.k):null;
     var dCurrSGP = c.sgpFn?currSGP_cat(dropCurrStats,c.k):null;
     var aRosRtg  = c.sgpFn?rosRating_cat(addP,c.k,addPos):null;
