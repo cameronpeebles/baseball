@@ -15772,7 +15772,7 @@ window.redrawQuadrantChart = function() {
   var statMin = statVals.length ? Math.min.apply(null,statVals) : 0;
   var statMax = statVals.length ? Math.max.apply(null,statVals) : 1;
 
-  var svg = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;max-height:220px;display:block">';
+  var svg = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;max-height:400px;display:block">';
 
   // Quadrant backgrounds
   svg += '<rect x="'+PL+'" y="'+PT+'" width="'+(x0-PL)+'" height="'+(y0-PT)+'" fill="#fce8e8" opacity="0.35"/>';
@@ -15930,7 +15930,7 @@ window.redrawFwarRatingChart = function() {
   function py(v){ return PT+(1-(v-yMin)/yRange)*cH; }
   var x0=px(50), y0=py(50);
 
-  var svg = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;max-height:220px;display:block" xmlns="http://www.w3.org/2000/svg">';
+  var svg = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;max-height:400px;display:block" xmlns="http://www.w3.org/2000/svg">';
 
   // Quadrant backgrounds
   svg+='<rect x="'+PL+'" y="'+PT+'" width="'+(x0-PL)+'" height="'+(y0-PT)+'" fill="#fce8e8" opacity="0.35"/>';   // top-left: Underperforming (red)
@@ -16374,7 +16374,7 @@ window.redrawPitFwarRatingChart = function() {
   function py(v){ return PT+(1-(v-yMin)/yRange)*cH; }
   var x0=px(50), y0=py(50);
 
-  var svg = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;max-height:220px;display:block" xmlns="http://www.w3.org/2000/svg">';
+  var svg = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;max-height:400px;display:block" xmlns="http://www.w3.org/2000/svg">';
 
   // Quadrant backgrounds
   svg+='<rect x="'+PL+'" y="'+PT+'" width="'+(x0-PL)+'" height="'+(y0-PT)+'" fill="#fce8e8" opacity="0.35"/>';
@@ -16481,7 +16481,7 @@ function buildPitQuadrantSVG(plotData, colorBy) {
   plotData.forEach(function(e){var tn=e.ti?(e.ti.shortName||e.ti.name||'FA'):'FA'; if(tn!=='FA'&&teamList.indexOf(tn)===-1)teamList.push(tn);});
   teamList.sort(); teamList.forEach(function(t,i){teamColorMap[t]=TEAM_COLORS[i%TEAM_COLORS.length];}); teamColorMap['FA']='#aaa';
 
-  var svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;max-height:220px;display:block">';
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;max-height:400px;display:block">';
 
   // Quadrant backgrounds - positive delta = underperforming (right), negative = overperforming (left)
   svg+='<rect x="'+PL+'" y="'+PT+'" width="'+(x0-PL)+'" height="'+(y0-PT)+'" fill="#fce8e8" opacity="0.35"/>';   // top-left: Sell High (red)
