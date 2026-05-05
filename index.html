@@ -2202,6 +2202,68 @@ td.neg { color: #c0392b; font-weight: 500; }
 
         </div>
       </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Suggested Moves &mdash; How recommendations work</span></div>
+        <div class="card-body" style="padding:20px">
+
+          <p style="font-size:13px;line-height:1.7;margin-bottom:16px">The Suggested Moves card surfaces the top 5 add/drop pairs for the selected team automatically, ranked by need-weighted Net SGP. It pairs every eligible candidate against every droppable rostered player, scores each pair with the same math the simulator uses, and shows the best ones &mdash; with one-click loading into the simulator below.</p>
+
+          <!-- Pair generation -->
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">How pairs are generated</div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:16px">
+            For every Add candidate, every droppable rostered player whose positions overlap is considered. Position overlap means the Add player can play <em>at least one</em> position the Drop player covers (so a 1B,DH Add can replace a 1B Drop, but not a SS Drop).
+          </div>
+
+          <!-- Filters -->
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Filters</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.7">
+              <div style="font-weight:500;margin-bottom:4px;color:var(--text)">Position</div>
+              <div style="color:var(--muted);font-size:11px">Restricts both Add and Drop to that position. Pills change between Hitters (C / 1B / 2B / 3B / SS / OF / DH) and Pitchers (SP / RP).</div>
+            </div>
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.7">
+              <div style="font-weight:500;margin-bottom:4px;color:var(--text)">Status</div>
+              <div style="color:var(--muted);font-size:11px"><strong>Free Agent</strong> = waiver pickups only. <strong>Rostered</strong> = trade target view (players on other teams). <strong>All</strong> = both. Players on your selected team are always excluded.</div>
+            </div>
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.7">
+              <div style="font-weight:500;margin-bottom:4px;color:var(--text)">Min Net</div>
+              <div style="color:var(--muted);font-size:11px">Hides marginal swaps. Default <code>+0.25</code>. Threshold applies to whichever score the active <strong>Sort by</strong> dictates.</div>
+            </div>
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.7">
+              <div style="font-weight:500;margin-bottom:4px;color:var(--text)">Protect top performers</div>
+              <div style="color:var(--muted);font-size:11px">When checked, only the bottom half of your roster (by ROS SGP, per position group) is eligible to be dropped. Stops the algorithm from suggesting drops of your stars.</div>
+            </div>
+          </div>
+
+          <!-- Sort by category -->
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Sort by category</div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:10px">
+            The <strong>Sort by</strong> row sets which score the suggestions are ranked by. <strong>Total</strong> (default) uses full need-weighted Net SGP. Picking a category &mdash; <code>R</code>, <code>HR</code>, <code>RBI</code>, <code>SB</code>, <code>AVG</code> for hitters; <code>W</code>, <code>K</code>, <code>SVH3</code>, <code>ERA</code>, <code>WHIP</code> for pitchers &mdash; ranks pairs by the Net for that single category.
+          </div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:10px">
+            When a category is active, the <strong>Min Net threshold</strong>, the <strong>Net column</strong>, and the <strong>verdict pill</strong> all switch to that category's score. The category pill itself is colored to match the team's need tier for that cat (red &asymp; high need, gray &asymp; average, green &asymp; already strong), so the visual stays consistent with the Team Need card above.
+          </div>
+          <div style="font-family:monospace;background:var(--surface);padding:10px 12px;border-radius:6px;font-size:12px;margin-bottom:10px">
+            score = (sortCat === 'TOTAL') ? (Add ROS SGP &minus; Drop ROS SGP) : Cat_Delta(Add) &minus; Cat_Delta(Drop)
+          </div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:20px">The &times;multiplier subscript on each category pill (e.g. <code>HR &times;1.8</code>) shows the team's current need-weight from the Team Need card. It's informational &mdash; clicking a pill sets the sort, not the multiplier.</div>
+
+          <!-- Reason chips -->
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Reason chips</div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:20px">
+            Each suggestion shows up to 2 chips on the Add side surfacing the largest category gains. When sorting by Total, chips prioritize high-need categories first; when sorting by a category, that category becomes the prominent primary chip and a single secondary chip follows.
+          </div>
+
+          <!-- Try this -->
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Try this &amp; Hide</div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.7">
+            <strong>Try this &darr;</strong> loads the Add and Drop into the simulator below for the full per-category breakdown, radar chart, and Net verification. <strong>Hide</strong> dismisses the pair for the session (cleared on page refresh or team change).
+          </div>
+
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -4603,6 +4665,7 @@ window.showROSTab = function(tab, btn) {
   _rosAdPosPill = 'ALL';
   _rosDropPos = null;
   _rosSugPos = 'ALL';
+  _rosSugSortCat = 'TOTAL';
   _rosAdRosterList = [];
   _rosAdFAList = [];
   _rosAdFAFiltered = [];
@@ -4742,6 +4805,7 @@ var _rosSugMinNet = 0.25;
 var _rosSugProtect = true;
 var _rosSugMode = 'pairs';
 var _rosSugStatus = 'FA';
+var _rosSugSortCat = 'TOTAL';
 var _rosSugHidden = {};
 
 function _rosSugPosOverlap(addPos, dropPos) {
@@ -4850,13 +4914,25 @@ function _rosBuildSuggestedMovesHtml() {
       var hideKey = addKey2 + '|' + dropKey2;
       if (_rosSugHidden[hideKey]) return;
       var dropSGP = (dropR._rosSGP != null) ? dropR._rosSGP : 0;
-      var net = addSGP - dropSGP;
-      if (net < _rosSugMinNet) return;
-      pairs.push({ addP:addP, dropR:dropR, net:net, addSGP:addSGP, dropSGP:dropSGP, isHit:isHit });
+      var totalNet = addSGP - dropSGP;
+      // Per-category deltas — used by sort/threshold and chip rendering
+      var pairCats = isHit ? BAT_CATS : PIT_CATS;
+      var catDelta = {};
+      pairCats.forEach(function(c) {
+        catDelta[c] = catSGPGain(addP, dropR._fp, c, isHit);
+      });
+      // Score depends on active sort: TOTAL = total net; cat = that cat's delta
+      var score = (_rosSugSortCat === 'TOTAL') ? totalNet : (catDelta[_rosSugSortCat] || 0);
+      if (score < _rosSugMinNet) return;
+      pairs.push({
+        addP:addP, dropR:dropR,
+        net:totalNet, score:score, catDelta:catDelta,
+        addSGP:addSGP, dropSGP:dropSGP, isHit:isHit
+      });
     });
   });
 
-  pairs.sort(function(a,b){ return b.net - a.net; });
+  pairs.sort(function(a,b){ return b.score - a.score; });
   // Dedupe: keep only the best drop-pairing per add player
   var seenAdd = {};
   pairs = pairs.filter(function(p) {
@@ -4867,12 +4943,23 @@ function _rosBuildSuggestedMovesHtml() {
   });
   var top = pairs.slice(0, 5);
 
-  // Verdict per net
-  function verdictFor(net) {
-    if (net >= 1.0) return { label:'Big Upgrade',  bg:'rgba(30,107,58,0.18)',  text:'#1e6b3a', cardBg:'rgba(29,158,117,0.06)', cardBorder:'rgba(29,158,117,0.22)' };
-    if (net >= 0.5) return { label:'Strong Gain',  bg:'rgba(30,107,58,0.14)',  text:'#1e6b3a', cardBg:'#fff',                   cardBorder:'var(--border)' };
-    if (net >= 0.1) return { label:'Modest Gain',  bg:'rgba(29,158,117,0.16)', text:'#1D9E75', cardBg:'#fff',                   cardBorder:'var(--border)' };
-    return                  { label:'Wash',         bg:'rgba(136,135,128,0.16)',text:'#5a594f', cardBg:'#fff',                   cardBorder:'var(--border)' };
+  // Verdict per score (works for both total and per-cat sort)
+  function verdictFor(score) {
+    var isCat = (_rosSugSortCat !== 'TOTAL');
+    var L = isCat ? {
+      big:'Big in '+_rosSugSortCat, strong:'Solid in '+_rosSugSortCat, modest:'Modest in '+_rosSugSortCat,
+      wash:'Wash in '+_rosSugSortCat, slight:'Slight loss', down:'Loss in '+_rosSugSortCat, bigDown:'Big loss in '+_rosSugSortCat
+    } : {
+      big:'Big Upgrade', strong:'Strong Gain', modest:'Modest Gain',
+      wash:'Wash', slight:'Slight Loss', down:'Downgrade', bigDown:'Big Downgrade'
+    };
+    if (score >= 1.0) return { label:L.big,    bg:'rgba(30,107,58,0.18)',  text:'#1e6b3a', cardBg:'rgba(29,158,117,0.06)', cardBorder:'rgba(29,158,117,0.22)' };
+    if (score >= 0.5) return { label:L.strong, bg:'rgba(30,107,58,0.14)',  text:'#1e6b3a', cardBg:'#fff',                   cardBorder:'var(--border)' };
+    if (score >= 0.1) return { label:L.modest, bg:'rgba(29,158,117,0.16)', text:'#1D9E75', cardBg:'#fff',                   cardBorder:'var(--border)' };
+    if (score > -0.1) return { label:L.wash,   bg:'rgba(136,135,128,0.16)',text:'#5a594f', cardBg:'#fff',                   cardBorder:'var(--border)' };
+    if (score > -0.5) return { label:L.slight, bg:'rgba(186,117,23,0.16)', text:'#854f0b', cardBg:'#fff',                   cardBorder:'var(--border)' };
+    if (score > -1.0) return { label:L.down,   bg:'rgba(192,57,43,0.16)',  text:'#c0392b', cardBg:'#fff',                   cardBorder:'var(--border)' };
+    return                    { label:L.bigDown,bg:'rgba(192,57,43,0.20)', text:'#c0392b', cardBg:'#fff',                   cardBorder:'var(--border)' };
   }
 
   // Roster ranks for drop labels
@@ -4887,7 +4974,8 @@ function _rosBuildSuggestedMovesHtml() {
   h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:12px;flex-wrap:wrap">';
   h += '<div>';
   h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Suggested Moves</div>';
-  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Top swaps for '+teamName+' ranked by Net SGP, weighted by category need.</div>';
+  var subSort = (_rosSugSortCat === 'TOTAL') ? 'Net SGP' : (_rosSugSortCat + ' Net');
+  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Top swaps for '+teamName+' ranked by '+subSort+', weighted by category need.</div>';
   h += '</div>';
   // (Mode toggle reserved for v2 — only Swap pairs is implemented for now)
   h += '</div>';
@@ -4935,8 +5023,35 @@ function _rosBuildSuggestedMovesHtml() {
   h += '<span>Protect top performers</span></label>';
   h += '</div>';
 
+  // Sort by category pill row
+  var sortCats = (_rosCurrentTab === 'hitters') ? BAT_CATS : PIT_CATS;
+  h += '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px;padding-bottom:11px;border-bottom:0.5px solid var(--border)">';
+  h += '<span style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-right:4px">Sort by</span>';
+  function sortPillStyle(active, tier) {
+    if (!active) return 'padding:2px 7px;font-size:10px;border:0.5px solid var(--border);border-radius:14px;background:var(--card);color:#5a594f;cursor:pointer;font-family:inherit';
+    var bg='#2d5a3d', border='transparent';
+    if (tier==='high')   { bg='#791f1f'; }
+    else if (tier==='below') { bg='#854f0b'; }
+    else if (tier==='above') { bg='#3b6d11'; }
+    else if (tier==='strong'){ bg='#1e6b3a'; }
+    return 'padding:2px 7px;font-size:10px;border:0.5px solid '+border+';border-radius:14px;background:'+bg+';color:#fff;cursor:pointer;font-family:inherit';
+  }
+  // TOTAL pill (no multiplier subscript)
+  h += '<button onclick="rosSugSetSortCat(\'TOTAL\')" style="'+sortPillStyle(_rosSugSortCat==='TOTAL', null)+'">Total</button>';
+  sortCats.forEach(function(cat) {
+    var rank = ranks[cat];
+    var t = tier(rank);
+    var mult = (window._rosCatMultipliers||{})[cat];
+    var multStr = (mult != null) ? mult.toFixed(1) : '1.0';
+    var active = (_rosSugSortCat === cat);
+    var subColor = active ? 'rgba(255,255,255,0.7)' : '#8a8479';
+    h += '<button onclick="rosSugSetSortCat(\''+cat+'\')" style="'+sortPillStyle(active, t)+'">'+cat+'<span style="font-size:8px;color:'+subColor+';margin-left:3px">\u00d7'+multStr+'</span></button>';
+  });
+  h += '</div>';
+
   if (!top.length) {
-    h += '<div style="padding:18px;text-align:center;font-size:12px;color:var(--muted)">No swaps clear the +'+_rosSugMinNet.toFixed(2)+' threshold for this filter. Try lowering Min Net or unchecking Protect top performers.</div>';
+    var emptyLabel = (_rosSugSortCat === 'TOTAL') ? 'Net' : (_rosSugSortCat + ' Net');
+    h += '<div style="padding:18px;text-align:center;font-size:12px;color:var(--muted)">No swaps clear the +'+_rosSugMinNet.toFixed(2)+' '+emptyLabel+' threshold for this filter. Try lowering Min Net, switching Sort by, or unchecking Protect top performers.</div>';
     h += '</div>';
     return h;
   }
@@ -4944,7 +5059,7 @@ function _rosBuildSuggestedMovesHtml() {
   // Rows
   h += '<div style="display:flex;flex-direction:column;gap:7px">';
   top.forEach(function(p, i) {
-    var v = verdictFor(p.net);
+    var v = verdictFor(p.score);
     var addP = p.addP, dropR = p.dropR;
     var dropRank = rosterRankMap[dropR._key] || '?';
 
@@ -4962,7 +5077,18 @@ function _rosBuildSuggestedMovesHtml() {
       if (a.priority !== b.priority) return b.priority - a.priority;
       return b.gain - a.gain;
     });
-    var topChips = catScored.slice(0,2);
+    // When sorting by a category, that cat must be the FIRST/prominent chip
+    var topChips;
+    if (_rosSugSortCat !== 'TOTAL') {
+      var activeGain = (p.catDelta && p.catDelta[_rosSugSortCat] != null) ? p.catDelta[_rosSugSortCat] : 0;
+      var activeRank = ranks[_rosSugSortCat];
+      var activeTier = tier(activeRank);
+      var primaryChip = { cat:_rosSugSortCat, gain:activeGain, tier:activeTier, primary:true };
+      var secondary = catScored.filter(function(x){ return x.cat !== _rosSugSortCat; }).slice(0,1);
+      topChips = [primaryChip].concat(secondary);
+    } else {
+      topChips = catScored.slice(0,2);
+    }
 
     function avatarHtml(hs) {
       return hs
@@ -5008,16 +5134,21 @@ function _rosBuildSuggestedMovesHtml() {
       h += '<div style="display:flex;gap:3px;margin-top:3px;flex-wrap:wrap">';
       topChips.forEach(function(ch){
         var col = chipColors(ch.tier);
-        h += '<span style="font-size:9px;color:'+col.text+';background:'+col.bg+';border:0.5px solid '+col.border+';border-radius:8px;padding:0 6px;white-space:nowrap">+'+ch.gain.toFixed(2)+' '+ch.cat+'</span>';
+        if (ch.primary) {
+          h += '<span style="font-size:10px;font-weight:500;color:'+col.text+';background:'+col.bg+';border:0.5px solid '+col.border+';border-radius:8px;padding:1px 7px;white-space:nowrap">'+(ch.gain>=0?'+':'')+ch.gain.toFixed(2)+' '+ch.cat+'</span>';
+        } else {
+          h += '<span style="font-size:9px;color:'+col.text+';background:'+col.bg+';border:0.5px solid '+col.border+';border-radius:8px;padding:0 6px;white-space:nowrap">'+(ch.gain>=0?'+':'')+ch.gain.toFixed(2)+' '+ch.cat+'</span>';
+        }
       });
       h += '</div>';
     }
     h += '</div></div>';
 
     // Net + verdict
+    var netLabel = (_rosSugSortCat === 'TOTAL') ? 'Net' : (_rosSugSortCat + ' Net');
     h += '<div style="text-align:center">';
-    h += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">Net</div>';
-    h += '<div style="font-size:18px;font-weight:600;color:'+v.text+';line-height:1.1">+'+p.net.toFixed(2)+'</div>';
+    h += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">'+netLabel+'</div>';
+    h += '<div style="font-size:18px;font-weight:600;color:'+v.text+';line-height:1.1">'+(p.score>=0?'+':'')+p.score.toFixed(2)+'</div>';
     h += '<div style="font-size:9px;font-weight:500;color:'+v.text+';text-transform:uppercase;letter-spacing:0.04em;margin-top:1px;padding:1px 6px;background:'+v.bg+';border-radius:8px;display:inline-block">'+v.label+'</div>';
     h += '</div>';
 
@@ -5038,7 +5169,11 @@ function _rosBuildSuggestedMovesHtml() {
 
   // Footer note
   h += '<div style="margin-top:11px;padding:8px 12px;background:var(--bg);border-radius:6px;font-size:10px;color:var(--muted);line-height:1.5">';
-  h += 'Pairs ranked by need-weighted Net SGP. Drop pool limited to bottom-half rostered players within position group. \u0394 chips show the largest individual category gains; red = high-need, amber = below avg.';
+  if (_rosSugSortCat === 'TOTAL') {
+    h += 'Pairs ranked by need-weighted Net SGP. Drop pool limited to bottom-half rostered players within position group. \u0394 chips show the largest individual category gains; red = high-need, amber = below avg.';
+  } else {
+    h += 'Pairs ranked by <strong>'+_rosSugSortCat+'</strong> Net SGP. The primary chip and Net column reflect the active sort category. Min Net is applied to <strong>'+_rosSugSortCat+'</strong> Net.';
+  }
   h += '</div>';
 
   h += '</div>';
@@ -5052,6 +5187,11 @@ window.rosSugSetPos = function(pos) {
 };
 window.rosSugSetStatus = function(status) {
   _rosSugStatus = status;
+  var sugDiv = document.getElementById('ros-sug-card');
+  if (sugDiv) sugDiv.innerHTML = _rosBuildSuggestedMovesHtml();
+};
+window.rosSugSetSortCat = function(cat) {
+  _rosSugSortCat = cat;
   var sugDiv = document.getElementById('ros-sug-card');
   if (sugDiv) sugDiv.innerHTML = _rosBuildSuggestedMovesHtml();
 };
