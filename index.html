@@ -4929,7 +4929,7 @@ function _rosAdRenderStats() {
       ? '<img src="'+url+'" style="width:22px;height:22px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">'
       : '<div style="width:22px;height:22px;border-radius:50%;background:var(--bg);border:0.5px solid var(--border);flex-shrink:0"></div>';
   }
-  function wc(inner, bg){ return '<div style="display:flex;align-items:center;justify-content:center;height:100%;background:'+(bg||'transparent')+'">'+inner+'</div>'; }
+  function wc(inner, bg){ return '<div style="display:flex;align-items:center;justify-content:center;height:100%;padding:0 3px;overflow:hidden;background:'+(bg||'transparent')+'">'+inner+'</div>'; }
 
   function currSGP_cat(cs, cat) {
     if (!cs) return null;
@@ -4982,14 +4982,14 @@ function _rosAdRenderStats() {
   var uid='radarAdDrop_'+Date.now();
 
   // Grid: cat | ROS stat | Curr SGP | Curr Rtg% | ROS SGP | ROS Rtg% | gap | ROS stat | Curr SGP | Curr Rtg% | ROS SGP | ROS Rtg% | Δ
-  var grid='30px 46px 36px 34px 36px 34px 6px 46px 36px 34px 36px 34px 42px';
+  var grid='30px 52px 48px 40px 48px 40px 6px 52px 48px 40px 48px 40px 52px';
   var colsAdd=5, colsDrop=5;
 
   var h='';
   h+='<div style="display:grid;grid-template-columns:3fr 2fr;gap:16px;align-items:start">';
 
   // ── TABLE ────────────────────────────────────────────────────────────────
-  h+='<div class="ros-stat-scroll" style="overflow-x:auto"><div style="min-width:580px">';
+  h+='<div class="ros-stat-scroll" style="overflow-x:auto"><div style="min-width:700px">';
 
   // Player headers
   h+='<div style="display:grid;grid-template-columns:'+grid+';margin-bottom:0;align-items:end">';
