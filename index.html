@@ -5360,25 +5360,7 @@ window.rosAdSelect = function(side, idx) {
     document.getElementById('ros-drop-curr').innerHTML='<span style="color:'+_rosAdCol(r._currSGP)+'">'+_rosAdFmt(r._currSGP)+'</span>';
     var rawDropEl = document.getElementById('ros-drop-raw');
     if (rawDropEl) {
-      var rawDropSGP = (function(cs, isHit) {
-      var D2 = (typeof SGP_D!=='undefined')?SGP_D:{r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
-      var total = 0;
-      if (isHit) {
-        if(cs.R!=null)  total+=cs.R/D2.r;
-        if(cs.HR!=null) total+=cs.HR/D2.hr;
-        if(cs.RBI!=null)total+=cs.RBI/D2.rbi;
-        if(cs.SB!=null) total+=cs.SB/D2.sb;
-        // AVG raw: player's own delta vs .260 baseline, not team context
-        if(cs.AVG!=null&&cs.AB>0) total+=((cs.AVG-0.260)/D2.avg)*(cs.AB/500);
-      } else {
-        if(cs.W!=null)   total+=cs.W/D2.w;
-        if(cs.K!=null)   total+=cs.K/D2.k;
-        if(cs.SVH3!=null)total+=cs.SVH3/D2.svh3;
-        if(cs.ERA!=null&&cs.IP>0) total+=((4.00-cs.ERA)/D2.era)*(cs.IP/150);
-        if(cs.WHIP!=null&&cs.IP>0)total+=((1.25-cs.WHIP)/D2.whip)*(cs.IP/150);
-      }
-      return total;
-    })(r._cs, r.isHit);
+      var rawDropSGP = (r._rosSGP != null) ? r._rosSGP : 0;
       rawDropEl.innerHTML='<span style="color:'+_rosAdCol(rawDropSGP)+'">'+_rosAdFmt(rawDropSGP)+'</span>';
     }
   }
