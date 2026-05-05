@@ -4741,6 +4741,7 @@ var _rosSugPos = 'ALL';
 var _rosSugMinNet = 0.25;
 var _rosSugProtect = true;
 var _rosSugMode = 'pairs';
+var _rosSugStatus = 'FA';
 var _rosSugHidden = {};
 
 function _rosSugPosOverlap(addPos, dropPos) {
@@ -4826,9 +4827,16 @@ function _rosBuildSuggestedMovesHtml() {
   faList.forEach(function(addP) {
     var isHit = !!addP.isHit;
     if (!_rosSugPosMatchesFilter(addP._pos, _rosSugPos)) return;
-    // Skip players rostered on ANY team — Add pool is FAs only.
+    // Status filter: 'FA' = unrostered only; 'Rostered' = rostered on another team only;
+    // 'ALL' = both. Always exclude players on the user's own selected team.
     var addLookupKey = normSugName(addP._displayName||'');
-    if (rosterLookup2[addLookupKey] && rosterLookup2[addLookupKey].teamId) return;
+    var addRoster = rosterLookup2[addLookupKey];
+    var isOnSelectedTeam = !!(addRoster && addRoster.teamId && addRoster.teamId === _rosSelectedTeam);
+    var isRosteredElsewhere = !!(addRoster && addRoster.teamId && addRoster.teamId !== _rosSelectedTeam);
+    var isFreeAgent = !addRoster || !addRoster.teamId;
+    if (isOnSelectedTeam) return;
+    if (_rosSugStatus === 'FA' && !isFreeAgent) return;
+    if (_rosSugStatus === 'Rostered' && !isRosteredElsewhere) return;
     var addSGP = (typeof _rosAdPlayerSGP === 'function') ? _rosAdPlayerSGP(addP, isHit) : (addP._teamSGP||0);
     if (!isFinite(addSGP)) return;
     var pool = isHit ? rosterByPos.hit : rosterByPos.pit;
@@ -4896,6 +4904,21 @@ function _rosBuildSuggestedMovesHtml() {
       ? 'padding:2px 7px;font-size:10px;border:0.5px solid transparent;border-radius:14px;background:#2d5a3d;color:#fff;cursor:pointer;font-family:inherit'
       : 'padding:2px 7px;font-size:10px;border:0.5px solid var(--border);border-radius:14px;background:var(--card);color:#5a594f;cursor:pointer;font-family:inherit';
     h += '<button onclick="rosSugSetPos(\''+pos+'\')" style="'+style+'">'+pos+'</button>';
+  });
+  h += '<div style="width:1px;height:18px;background:var(--border);margin:0 6px"></div>';
+  // Status pills
+  h += '<span style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-right:4px">Status</span>';
+  var statusPills = [
+    {key:'FA',       label:'Free Agent'},
+    {key:'Rostered', label:'Rostered'},
+    {key:'ALL',      label:'All'}
+  ];
+  statusPills.forEach(function(s) {
+    var active = (_rosSugStatus === s.key);
+    var style = active
+      ? 'padding:2px 7px;font-size:10px;border:0.5px solid transparent;border-radius:14px;background:#2d5a3d;color:#fff;cursor:pointer;font-family:inherit'
+      : 'padding:2px 7px;font-size:10px;border:0.5px solid var(--border);border-radius:14px;background:var(--card);color:#5a594f;cursor:pointer;font-family:inherit';
+    h += '<button onclick="rosSugSetStatus(\''+s.key+'\')" style="'+style+'">'+s.label+'</button>';
   });
   h += '<div style="width:1px;height:18px;background:var(--border);margin:0 6px"></div>';
   h += '<span style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-right:4px">Min Net</span>';
@@ -5024,6 +5047,11 @@ function _rosBuildSuggestedMovesHtml() {
 
 window.rosSugSetPos = function(pos) {
   _rosSugPos = pos;
+  var sugDiv = document.getElementById('ros-sug-card');
+  if (sugDiv) sugDiv.innerHTML = _rosBuildSuggestedMovesHtml();
+};
+window.rosSugSetStatus = function(status) {
+  _rosSugStatus = status;
   var sugDiv = document.getElementById('ros-sug-card');
   if (sugDiv) sugDiv.innerHTML = _rosBuildSuggestedMovesHtml();
 };
@@ -5935,7 +5963,15 @@ window.rosAdSelect = function(side, idx) {
     document.getElementById('ros-add-hs').src = p.hs||'';
     document.getElementById('ros-add-hs').style.display = p.hs?'block':'none';
     document.getElementById('ros-add-name').textContent = p._displayName;
-    document.getElementById('ros-add-meta').textContent = p._pos+' · '+(p._team||'')+' · FA · '+(p.isHit?(Math.round(p.AB||0)+' AB'):(parseFloat(p.IP||0).toFixed(0)+' IP'));
+    var addMetaName = (p._displayName||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+    var addMetaRoster = (window._rosRosterLookup||{})[addMetaName];
+    var addMetaStatus;
+    if (addMetaRoster && addMetaRoster.teamId) {
+      addMetaStatus = (addMetaRoster.teamId === _rosSelectedTeam) ? 'On your team' : (addMetaRoster.teamName||'Rostered');
+    } else {
+      addMetaStatus = 'FA';
+    }
+    document.getElementById('ros-add-meta').textContent = p._pos+' · '+(p._team||'')+' · '+addMetaStatus+' · '+(p.isHit?(Math.round(p.AB||0)+' AB'):(parseFloat(p.IP||0).toFixed(0)+' IP'));
     var rawSGP = 0;
     var D2=(typeof SGP_D!=='undefined')?SGP_D:{r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
     if(p.isHit) rawSGP=((p.R||0)/D2.r)+((p.HR||0)/D2.hr)+((p.RBI||0)/D2.rbi)+((p.SB||0)/D2.sb);
