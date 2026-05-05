@@ -5345,6 +5345,112 @@ function _rosBuildTeamNeedHtml() {
   h += '</div>';
   h += '</div>';
 
+  // ── Positional Strength row ───────────────────────────────────────
+  // For each fine position, compute the selected team's raw Team ROS SGP
+  // (no need-weights) and compare against the league average per position.
+  var FINE_POS = ['C','1B','2B','3B','SS','OF','SP','RP'];
+  function _tnNormName(n){ return (n||'').replace(/\s*\([^)]*\).*$/, '').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function _tnExpandPos(posStr) {
+    var parts = (posStr||'').toUpperCase().split(',').map(function(x){return x.trim();});
+    var out = {};
+    parts.forEach(function(t){
+      if (t === 'LF' || t === 'CF' || t === 'RF' || t === 'OF') { out['OF']=1; }
+      else if (FINE_POS.indexOf(t) !== -1) out[t] = 1;
+    });
+    return Object.keys(out);
+  }
+  // Raw player Team ROS SGP for any team (mults = 1, but uses team rate-stat context)
+  function _tnRawSGP(p, isHit, teamId) {
+    var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
+    var ts = (window._rosTeamStats||{})[teamId] || {R:0,HR:0,RBI:0,SB:0,AVG:null,AB:0,K:0,W:0,SVH3:0,ERA:null,WHIP:null,IP:0};
+    var total = 0;
+    if (isHit) {
+      total += ((p.R||0)/D2.r) + ((p.HR||0)/D2.hr) + ((p.RBI||0)/D2.rbi) + ((p.SB||0)/D2.sb);
+      var rH=(p.H>0?p.H:(p.AVG&&p.AB?p.AVG*p.AB:null));
+      if(rH&&p.AB>0&&ts.AVG!=null&&ts.AB>0){
+        var cH=(ts.AVG||0)*(ts.AB||0),nH=cH+rH,nAB=(ts.AB||0)+(p.AB||0);
+        total += (nAB>0?((nH/nAB)-(ts.AVG||0)):0)/D2.avg;
+      }
+    } else {
+      total += ((p.W||0)/D2.w) + ((p.K||0)/D2.k) + ((p.SV||0)/D2.svh3);
+      if(p.ERA!=null&&p.IP>0&&ts.ERA!=null&&ts.IP>0){
+        var tER=(ts.ERA||0)*(ts.IP||0)/9,pER=p.ERA*(p.IP||0)/9,nIP=(ts.IP||0)+(p.IP||0);
+        total += (nIP>0?((ts.ERA||0)-(tER+pER)/nIP*9):0)/D2.era;
+      }
+      if(p.WHIP!=null&&p.IP>0&&ts.WHIP!=null&&ts.IP>0){
+        var tBR=(ts.WHIP||0)*(ts.IP||0),pBR=p.WHIP*(p.IP||0),nIP2=(ts.IP||0)+(p.IP||0);
+        total += (nIP2>0?((ts.WHIP||0)-(tBR+pBR)/nIP2):0)/D2.whip;
+      }
+    }
+    var trust = isHit ? Math.min(1,(p.AB||0)/250) : ((p.pos||'').toUpperCase().indexOf('SP')!==-1?Math.min(1,(p.IP||0)/60):Math.min(1,(p.IP||0)/30));
+    return total * trust;
+  }
+  // Aggregate by team × fine pos
+  var hitData = (typeof _rosHitData !== 'undefined' && _rosHitData) ? _rosHitData : [];
+  var pitData = (typeof _rosPitData !== 'undefined' && _rosPitData) ? _rosPitData : [];
+  var rosterLookup = window._rosRosterLookup || {};
+  var byTeamPos = {}; // teamId → fp → sum
+  function processPlayer(p, isHit) {
+    var k = _tnNormName(p.name);
+    var ri = rosterLookup[k];
+    if (!ri || !ri.teamId) return;
+    var fines = _tnExpandPos(p.pos);
+    if (!fines.length) return;
+    if (!byTeamPos[ri.teamId]) byTeamPos[ri.teamId] = {};
+    var sgp = _tnRawSGP(p, isHit, ri.teamId);
+    if (!isFinite(sgp)) return;
+    fines.forEach(function(fp) {
+      byTeamPos[ri.teamId][fp] = (byTeamPos[ri.teamId][fp] || 0) + sgp;
+    });
+  }
+  hitData.forEach(function(p){ processPlayer(p, true); });
+  pitData.forEach(function(p){ processPlayer(p, false); });
+
+  // League average per fp
+  var leagueAvg = {};
+  FINE_POS.forEach(function(fp) {
+    var vals = [];
+    Object.keys(byTeamPos).forEach(function(tid){ if (byTeamPos[tid][fp] != null) vals.push(byTeamPos[tid][fp]); });
+    leagueAvg[fp] = vals.length ? vals.reduce(function(s,v){return s+v;},0) / vals.length : 0;
+  });
+
+  // Tier color based on Δ vs league average — same 5-tier palette as the category tiles
+  function _tnPosTier(delta) {
+    if (delta == null) return 'na';
+    if (delta <= -1.5) return 'high';
+    if (delta <= -0.5) return 'below';
+    if (delta <  0.5) return 'avg';
+    if (delta <  1.5) return 'above';
+    return 'strong';
+  }
+
+  // Sub-header
+  h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Positional Strength &middot; vs league average</div>';
+
+  // Position tiles row
+  h += '<div style="display:grid;grid-template-columns:repeat('+FINE_POS.length+',minmax(0,1fr));gap:6px;margin-bottom:14px">';
+  var teamPos = byTeamPos[_rosSelectedTeam] || {};
+  FINE_POS.forEach(function(fp) {
+    var raw = teamPos[fp];
+    var lg = leagueAvg[fp] || 0;
+    var delta = (raw != null) ? (raw - lg) : null;
+    var tt = _tnPosTier(delta);
+    var t = TIER[tt];
+    var deltaStr, rawStr;
+    if (raw == null) { deltaStr = '—'; rawStr = '—'; }
+    else { deltaStr = (delta>=0?'+':'') + delta.toFixed(1); rawStr = (raw>=0?'+':'') + raw.toFixed(1); }
+    h += '<div style="background:'+t.bg+';border:0.5px solid '+t.border+';border-radius:6px;padding:7px 4px;text-align:center">';
+    h += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px">'+fp+'</div>';
+    h += '<div style="font-size:13px;font-weight:600;color:'+t.text+'">'+deltaStr+'</div>';
+    h += '<div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-top:1px">vs LG</div>';
+    h += '<div style="font-size:9px;color:'+t.text+';font-weight:500;margin-top:3px;background:'+t.chipBg+';border-radius:3px;padding:1px 0">'+rawStr+'</div>';
+    h += '</div>';
+  });
+  h += '</div>';
+
+  // Sub-header for category tiles
+  h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Category Needs &middot; drives simulator multipliers</div>';
+
   // Tile grid
   h += '<div style="display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px;margin-bottom:14px">';
   sorted.forEach(function(cat) {
@@ -5362,7 +5468,18 @@ function _rosBuildTeamNeedHtml() {
 
   // Top targets strip — top 4 high/below-need cats
   var targets = sorted.filter(function(cat){ var t=tier(ranks[cat]); return t==='high'||t==='below'; }).slice(0,4);
-  if (targets.length) {
+  // Also collect weak positions (delta vs lg <= -0.5) — top 3 most-deficient
+  var POS_HINTS = { C:'Find a backstop', '1B':'Power at corner', '2B':'Bat at the keystone', '3B':'Hot-corner help', SS:'Up-the-middle bat', OF:'Fill outfield', SP:'Rotation help', RP:'Bullpen depth' };
+  var posTargets = FINE_POS.map(function(fp) {
+    var raw = teamPos[fp];
+    if (raw == null) return null;
+    var delta = raw - (leagueAvg[fp]||0);
+    return { fp:fp, delta:delta, tier:_tnPosTier(delta) };
+  }).filter(function(x){ return x && (x.tier==='high' || x.tier==='below'); });
+  posTargets.sort(function(a,b){ return a.delta - b.delta; });
+  posTargets = posTargets.slice(0, 3);
+
+  if (targets.length || posTargets.length) {
     h += '<div style="display:flex;gap:8px;align-items:flex-start;background:var(--bg);border-radius:6px;padding:9px 12px">';
     h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);min-width:74px;padding-top:1px">Top targets</div>';
     h += '<div style="display:flex;flex-wrap:wrap;gap:5px;flex:1">';
@@ -5370,6 +5487,14 @@ function _rosBuildTeamNeedHtml() {
       var t = TIER[tier(ranks[cat])];
       var darkText = tier(ranks[cat]) === 'high' ? '#791f1f' : '#854f0b';
       h += '<span style="font-size:10px;color:'+darkText+';background:'+t.bg+';border:0.5px solid '+t.border+';border-radius:10px;padding:2px 8px;font-weight:500">'+cat+' · '+(HINTS[cat]||cat)+'</span>';
+    });
+    if (targets.length && posTargets.length) {
+      h += '<span style="display:inline-block;width:0.5px;height:14px;background:var(--border);align-self:center;margin:0 3px"></span>';
+    }
+    posTargets.forEach(function(pt) {
+      var t = TIER[pt.tier];
+      var darkText = pt.tier === 'high' ? '#791f1f' : '#854f0b';
+      h += '<span style="font-size:10px;color:'+darkText+';background:'+t.bg+';border:0.5px solid '+t.border+';border-radius:10px;padding:2px 8px;font-weight:500">'+pt.fp+' · '+(POS_HINTS[pt.fp]||pt.fp)+'</span>';
     });
     h += '</div></div>';
   }
