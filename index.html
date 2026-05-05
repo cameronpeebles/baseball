@@ -15395,7 +15395,7 @@ function drawTargetsTable() {
   }
   if (window._targetPlayerHighlight) {
     html += '<span style="font-size:12px;color:var(--accent);font-weight:500">Chart: ' + window._targetPlayerHighlight + '</span>';
-    html += '<button onclick="window._targetPlayerHighlight=null;redrawQuadrantChart()" '
+    html += '<button onclick="window._targetPlayerHighlight=null;redrawQuadrantChart();redrawFwarRatingChart()" '
           + 'style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--muted);font-size:12px;cursor:pointer">&#x2715; Show all</button>';
   }
   html += '</div>';
@@ -15474,7 +15474,7 @@ function drawTargetsTable() {
     html += '<td class="left" style="white-space:nowrap"><div class="team-cell">';
     if (ri && ri.hs) html += '<img class="player-hs" src="' + ri.hs + '" alt="" onerror="this.style.display=\'none\'">';
     html += '<div><div style="font-size:13px;font-weight:500;color:var(--accent);cursor:pointer;text-decoration:underline" '
-          + 'onclick="window._targetPlayerHighlight=(window._targetPlayerHighlight===\'' + t.name.replace(/'/g,"\\'") + '\'?null:\'' + t.name.replace(/'/g,"\\'") + '\');redrawQuadrantChart();drawTargetsTable()">'
+          + 'onclick="window._targetPlayerHighlight=(window._targetPlayerHighlight===\'' + t.name.replace(/'/g,"\\'") + '\'?null:\'' + t.name.replace(/'/g,"\\'") + '\');redrawQuadrantChart();redrawFwarRatingChart();drawTargetsTable()">'
           + t.name + '</div>';
     if (ri) html += '<div style="font-size:10px;color:var(--muted)">' + (ri.pos||'') + '</div>';
     html += '</div></div></td>';
@@ -15596,7 +15596,7 @@ window.redrawQuadrantChart = function() {
   var statMin = statVals.length ? Math.min.apply(null,statVals) : 0;
   var statMax = statVals.length ? Math.max.apply(null,statVals) : 1;
 
-  var svg = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:720px;height:auto;display:block;margin:0 auto">';
+  var svg = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">';
 
   // Quadrant backgrounds
   svg += '<rect x="'+PL+'" y="'+PT+'" width="'+(x0-PL)+'" height="'+(y0-PT)+'" fill="#fce8e8" opacity="0.35"/>';
@@ -15806,11 +15806,16 @@ window.redrawFwarRatingChart = function() {
   points.forEach(function(p){
     var cx=px(p.x), cy=py(p.y);
     var col = (p.x>=50&&p.y>=50)?'#2d5a3d':(p.x<50&&p.y>=50)?'#c0392b':(p.x>=50&&p.y<50)?'#2980b9':'#888';
+    var hl = window._hitQuadrantHighlight;
+    var playerHl = window._targetPlayerHighlight;
+    var tname = p.ti ? (p.ti.shortName||p.ti.name||'FA') : 'FA';
+    var dimmed = (playerHl && p.name !== playerHl) || (!playerHl && hl && tname !== hl);
+    var opacity = dimmed ? '0.08' : (p.isFA ? '0.75' : '0.82');
     var tip = p.name+'&#10;fWAR%: '+Math.round(p.x)+'&#10;Lg Rating: '+Math.round(p.y)+(p.ti?'&#10;'+(p.ti.shortName||p.ti.name):'&#10;FA');
     if(p.isFA){
-      svg+='<rect x="'+(cx-5)+'" y="'+(cy-5)+'" width="11" height="11" fill="'+col+'" opacity="0.75" rx="1"><title>'+tip+'</title></rect>';
+      svg+='<rect x="'+(cx-5)+'" y="'+(cy-5)+'" width="11" height="11" fill="'+col+'" opacity="'+opacity+'" rx="1" stroke="white" stroke-width="1.5"><title>'+tip+'</title></rect>';
     } else {
-      svg+='<circle cx="'+cx+'" cy="'+cy+'" r="6" fill="'+col+'" opacity="0.82"><title>'+tip+'</title></circle>';
+      svg+='<circle cx="'+cx+'" cy="'+cy+'" r="6" fill="'+col+'" opacity="'+opacity+'" stroke="white" stroke-width="1.5"><title>'+tip+'</title></circle>';
     }
   });
 
@@ -15964,6 +15969,7 @@ function drawPitcherTargetsTable() {
     html += '<option value="babip_2026">BABIP 2026</option>';
     html += '<option value="velo_2026">Velo 2026</option>';
     html += '</select></div></div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;align-items:start">';
     html += '<div style="padding:16px;position:relative" id="pit-quadrant-chart-wrap">';
     try {
       var r0 = buildPitQuadrantSVG(pitPlotData, 'quadrant');
@@ -15971,6 +15977,8 @@ function drawPitcherTargetsTable() {
     } catch(e) {
       html += '<div style="color:var(--muted);font-size:12px">Chart unavailable</div>';
     }
+    html += '</div>';
+    html += '<div style="padding:16px;border-left:0.5px solid var(--border)" id="pit-fwar-rating-chart-wrap"></div>';
     html += '</div>';
     html += '</div>';
   } else {
@@ -16063,7 +16071,7 @@ function drawPitcherTargetsTable() {
     html += '<td class="left" style="white-space:nowrap"><div class="team-cell">';
     if (ri&&ri.hs) html += '<img class="player-hs" src="'+ri.hs+'" alt="" onerror="this.style.display=\'none\'">';
     html += '<div><div style="font-size:13px;font-weight:500;color:var(--accent);cursor:pointer;text-decoration:underline" '
-          + 'onclick="window._targetPitHighlight=(window._targetPitHighlight===\''+t.name.replace(/'/g,"\\'")+'\' ? null : \''+t.name.replace(/'/g,"\\'")+'\'  );redrawPitQuadrantChart();drawPitcherTargetsTable()">'+t.name+'</div>';
+          + 'onclick="window._targetPitHighlight=(window._targetPitHighlight===\''+t.name.replace(/'/g,"\\'")+'\' ? null : \''+t.name.replace(/'/g,"\\'")+'\'  );redrawPitQuadrantChart();redrawPitFwarRatingChart();drawPitcherTargetsTable()">'+t.name+'</div>';
     if (ri) html += '<div style="font-size:10px;color:var(--muted)">'+(ri.pos||'')+'</div>';
     html += '</div></div></td>';
 
@@ -16125,6 +16133,8 @@ function drawPitcherTargetsTable() {
     var si2 = document.getElementById('pit-targets-player-search');
     if (si2) { var len2 = si2.value.length; si2.focus(); si2.setSelectionRange(len2, len2); }
   }
+  // Render the fWAR%/Lg Rating companion chart
+  if (typeof redrawPitFwarRatingChart === 'function') redrawPitFwarRatingChart();
 }
 
 window.setPitTargetsFilter = function(type, val, btn) {
@@ -16156,6 +16166,111 @@ window.redrawPitQuadrantChart = function() {
   } catch(e) {
     console.error('Pitcher quadrant chart error:', e);
   }
+};
+
+window.redrawPitFwarRatingChart = function() {
+  var wrap = document.getElementById('pit-fwar-rating-chart-wrap');
+  if (!wrap) return;
+  var plotData = window._pitTargetPlotData || [];
+  if (!plotData.length) { wrap.innerHTML = ''; return; }
+
+  function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  var fwPit = window._fwarPctLookupPit || {};
+  var lgRat = window._lgRatingLookup || {};
+
+  var points = [];
+  plotData.forEach(function(e) {
+    var k = normN(e.t.name);
+    var fp = fwPit[k];
+    var lr = lgRat[k];
+    if (fp != null && lr != null) {
+      points.push({ name: e.t.name, x: fp, y: lr * 100, isFA: !e.ri, ti: e.ti });
+    }
+  });
+  if (!points.length) { wrap.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:12px">Run Refresh all data to load fWAR data.</div>'; return; }
+
+  var W=700, H=500, PL=62, PR=140, PT=40, PB=52;
+  var cW=W-PL-PR, cH=H-PT-PB;
+  var xMin=0, xMax=100, yMin=0, yMax=100;
+  var xRange=xMax-xMin, yRange=yMax-yMin;
+
+  function px(v){ return PL+(v-xMin)/xRange*cW; }
+  function py(v){ return PT+(1-(v-yMin)/yRange)*cH; }
+  var x0=px(50), y0=py(50);
+
+  var svg = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block" xmlns="http://www.w3.org/2000/svg">';
+
+  // Quadrant backgrounds
+  svg+='<rect x="'+PL+'" y="'+PT+'" width="'+(x0-PL)+'" height="'+(y0-PT)+'" fill="#fce8e8" opacity="0.35"/>';
+  svg+='<rect x="'+x0+'" y="'+PT+'" width="'+(W-PR-x0)+'" height="'+(y0-PT)+'" fill="#e8f0eb" opacity="0.35"/>';
+  svg+='<rect x="'+PL+'" y="'+y0+'" width="'+(x0-PL)+'" height="'+(H-PB-y0)+'" fill="#e8e8e8" opacity="0.35"/>';
+  svg+='<rect x="'+x0+'" y="'+y0+'" width="'+(W-PR-x0)+'" height="'+(H-PB-y0)+'" fill="#e8f4fd" opacity="0.35"/>';
+
+  // Grid lines
+  for(var xv=0; xv<=100; xv+=10){
+    var xpx=px(xv);
+    svg+='<line x1="'+xpx+'" y1="'+PT+'" x2="'+xpx+'" y2="'+(H-PB)+'" stroke="'+(xv===50?'var(--text)':'var(--border)')+'" stroke-width="'+(xv===50?'1.5':'0.5')+'" '+(xv===50?'':'stroke-dasharray="2,3"')+'opacity="'+(xv===50?'0.5':'0.4')+'"/>';
+  }
+  for(var yv=0; yv<=100; yv+=10){
+    var ypx=py(yv);
+    svg+='<line x1="'+PL+'" y1="'+ypx+'" x2="'+(W-PR)+'" y2="'+ypx+'" stroke="'+(yv===50?'var(--text)':'var(--border)')+'" stroke-width="'+(yv===50?'1.5':'0.5')+'" '+(yv===50?'':'stroke-dasharray="2,3"')+'opacity="'+(yv===50?'0.5':'0.4')+'"/>';
+  }
+
+  // Axes
+  svg+='<line x1="'+PL+'" y1="'+(H-PB)+'" x2="'+(W-PR)+'" y2="'+(H-PB)+'" stroke="var(--text)" stroke-width="1.5" opacity="0.3"/>';
+  svg+='<line x1="'+PL+'" y1="'+PT+'" x2="'+PL+'" y2="'+(H-PB)+'" stroke="var(--text)" stroke-width="1.5" opacity="0.3"/>';
+
+  // Zero crosshairs
+  svg+='<line x1="'+x0+'" y1="'+PT+'" x2="'+x0+'" y2="'+(H-PB)+'" stroke="var(--text)" stroke-width="1.5"/>';
+  svg+='<line x1="'+PL+'" y1="'+y0+'" x2="'+(W-PR)+'" y2="'+y0+'" stroke="var(--text)" stroke-width="1.5"/>';
+
+  // X axis ticks and labels
+  for(var xv2=0; xv2<=100; xv2+=20){
+    var xpx2=px(xv2);
+    svg+='<text x="'+xpx2+'" y="'+(H-PB+16)+'" text-anchor="middle" font-size="10" fill="var(--muted)">'+xv2+'</text>';
+  }
+  for(var yv2=0; yv2<=100; yv2+=20){
+    var ypx2=py(yv2);
+    svg+='<text x="'+(PL-6)+'" y="'+(ypx2+4)+'" text-anchor="end" font-size="10" fill="var(--muted)">'+yv2+'</text>';
+  }
+
+  // Quadrant labels
+  [{x:PL+8,y:PT+18,t:'Underperforming',c:'#c0392b',a:'start'},
+   {x:W-PR-8,y:PT+18,t:'Stars',c:'#1e6b3a',a:'end'},
+   {x:PL+8,y:H-PB-10,t:'Drop / Avoid',c:'#888',a:'start'},
+   {x:W-PR-8,y:H-PB-10,t:'Overperforming',c:'#2980b9',a:'end'}
+  ].forEach(function(q){svg+='<text x="'+q.x+'" y="'+q.y+'" text-anchor="'+q.a+'" font-size="11" font-weight="700" fill="'+q.c+'" opacity="0.7">'+q.t+'</text>';});
+
+  // Axis labels
+  svg+='<text x="'+(W/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="11" fill="var(--muted)">fWAR% (higher = better fantasy production)</text>';
+  svg+='<text x="14" y="'+(PT+cH/2)+'" text-anchor="middle" font-size="11" fill="var(--muted)" transform="rotate(-90,14,'+(PT+cH/2)+')">League rating</text>';
+
+  // Dots
+  points.forEach(function(p){
+    var cx=px(p.x), cy=py(p.y);
+    var col = (p.x>=50&&p.y>=50)?'#2d5a3d':(p.x<50&&p.y>=50)?'#c0392b':(p.x>=50&&p.y<50)?'#2980b9':'#888';
+    var hl = window._pitQuadrantHighlight;
+    var playerHl = window._targetPitHighlight;
+    var tname = p.ti ? (p.ti.shortName||p.ti.name||'FA') : 'FA';
+    var dimmed = (playerHl && p.name !== playerHl) || (!playerHl && hl && tname !== hl);
+    var opacity = dimmed ? '0.08' : (p.isFA ? '0.75' : '0.82');
+    var tip = p.name+'&#10;fWAR%: '+Math.round(p.x)+'&#10;Lg Rating: '+Math.round(p.y)+(p.ti?'&#10;'+(p.ti.shortName||p.ti.name):'&#10;FA');
+    if(p.isFA){
+      svg+='<rect x="'+(cx-5)+'" y="'+(cy-5)+'" width="11" height="11" fill="'+col+'" opacity="'+opacity+'" rx="1" stroke="white" stroke-width="1.5"><title>'+tip+'</title></rect>';
+    } else {
+      svg+='<circle cx="'+cx+'" cy="'+cy+'" r="6" fill="'+col+'" opacity="'+opacity+'" stroke="white" stroke-width="1.5"><title>'+tip+'</title></circle>';
+    }
+  });
+
+  // Legend
+  var lx=W-PR+16, ly=PT+10;
+  svg+='<circle cx="'+(lx+7)+'" cy="'+(ly+5)+'" r="5" fill="#1e6b3a" opacity="0.82"/>';
+  svg+='<text x="'+(lx+16)+'" y="'+(ly+9)+'" font-size="9" fill="var(--muted)">Rostered</text>';
+  svg+='<rect x="'+lx+'" y="'+(ly+18)+'" width="11" height="11" fill="#888" opacity="0.75" rx="1"/>';
+  svg+='<text x="'+(lx+16)+'" y="'+(ly+28)+'" font-size="9" fill="var(--muted)">Free Agent</text>';
+
+  svg += '</svg>';
+  wrap.innerHTML = svg;
 };
 
 function buildPitQuadrantSVG(plotData, colorBy) {
@@ -16190,7 +16305,7 @@ function buildPitQuadrantSVG(plotData, colorBy) {
   plotData.forEach(function(e){var tn=e.ti?(e.ti.shortName||e.ti.name||'FA'):'FA'; if(tn!=='FA'&&teamList.indexOf(tn)===-1)teamList.push(tn);});
   teamList.sort(); teamList.forEach(function(t,i){teamColorMap[t]=TEAM_COLORS[i%TEAM_COLORS.length];}); teamColorMap['FA']='#aaa';
 
-  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:720px;height:auto;display:block;margin:0 auto">';
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">';
 
   // Quadrant backgrounds - positive delta = underperforming (right), negative = overperforming (left)
   svg+='<rect x="'+PL+'" y="'+PT+'" width="'+(x0-PL)+'" height="'+(y0-PT)+'" fill="#fce8e8" opacity="0.35"/>';   // top-left: Sell High (red)
