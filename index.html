@@ -4806,9 +4806,14 @@ function _rosBuildSuggestedMovesHtml() {
   // Score every FA × eligible-drop pair
   var pairs = [];
   var faList = _rosAdFAList || [];
+  var rosterLookup2 = window._rosRosterLookup || {};
+  function normSugName(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
   faList.forEach(function(addP) {
     var isHit = !!addP.isHit;
     if (!_rosSugPosMatchesFilter(addP._pos, _rosSugPos)) return;
+    // Skip players rostered on ANY team — Add pool is FAs only.
+    var addLookupKey = normSugName(addP._displayName||'');
+    if (rosterLookup2[addLookupKey] && rosterLookup2[addLookupKey].teamId) return;
     var addSGP = (typeof _rosAdPlayerSGP === 'function') ? _rosAdPlayerSGP(addP, isHit) : (addP._teamSGP||0);
     if (!isFinite(addSGP)) return;
     var pool = isHit ? rosterByPos.hit : rosterByPos.pit;
@@ -4931,25 +4936,7 @@ function _rosBuildSuggestedMovesHtml() {
     h += '<div style="display:grid;grid-template-columns:24px minmax(0,1fr) 28px minmax(0,1fr) 84px 78px;gap:10px;align-items:center;padding:9px 12px;background:'+v.cardBg+';border:0.5px solid '+v.cardBorder+';border-radius:8px">';
     h += '<div style="font-size:11px;font-weight:'+rankWeight+';color:'+rankColor+';text-align:center">#'+(i+1)+'</div>';
 
-    // Add cell
-    h += '<div style="display:flex;align-items:center;gap:8px;min-width:0">';
-    h += avatarHtml(addP.hs);
-    h += '<div style="min-width:0">';
-    h += '<div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(addP._displayName||'')+'</div>';
-    h += '<div style="font-size:10px;color:var(--muted)">'+(addP._pos||'')+' \u00b7 '+(addP._team||'')+' \u00b7 FA</div>';
-    if (topChips.length) {
-      h += '<div style="display:flex;gap:3px;margin-top:3px;flex-wrap:wrap">';
-      topChips.forEach(function(ch){
-        var col = chipColors(ch.tier);
-        h += '<span style="font-size:9px;color:'+col.text+';background:'+col.bg+';border:0.5px solid '+col.border+';border-radius:8px;padding:0 6px;white-space:nowrap">+'+ch.gain.toFixed(2)+' '+ch.cat+'</span>';
-      });
-      h += '</div>';
-    }
-    h += '</div></div>';
-
-    h += '<div style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px">&#8644;</div>';
-
-    // Drop cell
+    // Drop cell (left — user's selected team)
     h += '<div style="display:flex;align-items:center;gap:8px;min-width:0">';
     h += avatarHtml(dropR.hs);
     h += '<div style="min-width:0">';
@@ -4958,6 +4945,33 @@ function _rosBuildSuggestedMovesHtml() {
     var dropCol = (dropR._rosSGP != null && dropR._rosSGP > 0) ? '#4a9a68' : '#888780';
     var dropStr = (dropR._rosSGP != null) ? ((dropR._rosSGP>=0?'+':'')+dropR._rosSGP.toFixed(2)) : '\u2014';
     h += '<div style="font-size:10px;color:var(--muted);margin-top:3px">ROS SGP <span style="color:'+dropCol+';font-weight:500">'+dropStr+'</span></div>';
+    h += '</div></div>';
+
+    h += '<div style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px">&#8644;</div>';
+
+    // Add cell (right — pickup candidate)
+    h += '<div style="display:flex;align-items:center;gap:8px;min-width:0">';
+    h += avatarHtml(addP.hs);
+    h += '<div style="min-width:0">';
+    h += '<div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(addP._displayName||'')+'</div>';
+    // Status line: FA, or rostered on team X, or selected team
+    var addLookupKey2 = normSugName(addP._displayName||'');
+    var addRoster = rosterLookup2[addLookupKey2] || null;
+    var statusLabel;
+    if (addRoster && addRoster.teamId) {
+      statusLabel = (addRoster.teamId === _rosSelectedTeam) ? 'On your team' : (addRoster.teamName||'Rostered');
+    } else {
+      statusLabel = 'FA';
+    }
+    h += '<div style="font-size:10px;color:var(--muted)">'+(addP._pos||'')+' \u00b7 '+(addP._team||'')+' \u00b7 '+statusLabel+'</div>';
+    if (topChips.length) {
+      h += '<div style="display:flex;gap:3px;margin-top:3px;flex-wrap:wrap">';
+      topChips.forEach(function(ch){
+        var col = chipColors(ch.tier);
+        h += '<span style="font-size:9px;color:'+col.text+';background:'+col.bg+';border:0.5px solid '+col.border+';border-radius:8px;padding:0 6px;white-space:nowrap">+'+ch.gain.toFixed(2)+' '+ch.cat+'</span>';
+      });
+      h += '</div>';
+    }
     h += '</div></div>';
 
     // Net + verdict
