@@ -4982,14 +4982,14 @@ function _rosAdRenderStats() {
   var uid='radarAdDrop_'+Date.now();
 
   // Grid: cat | ROS stat | Curr SGP | Curr Rtg% | ROS SGP | ROS Rtg% | gap | ROS stat | Curr SGP | Curr Rtg% | ROS SGP | ROS Rtg% | Δ
-  var grid='30px 52px 48px 40px 48px 40px 6px 52px 48px 40px 48px 40px 52px';
+  var grid='30px minmax(52px,1fr) minmax(48px,1fr) minmax(40px,1fr) minmax(48px,1fr) minmax(40px,1fr) 6px minmax(52px,1fr) minmax(48px,1fr) minmax(40px,1fr) minmax(48px,1fr) minmax(40px,1fr) minmax(52px,0.9fr)';
   var colsAdd=5, colsDrop=5;
 
   var h='';
   h+='<div style="display:grid;grid-template-columns:3fr 2fr;gap:16px;align-items:start">';
 
   // ── TABLE ────────────────────────────────────────────────────────────────
-  h+='<div class="ros-stat-scroll" style="overflow-x:auto"><div style="min-width:700px">';
+  h+='<div class="ros-stat-scroll" style="overflow-x:auto"><div style="width:100%;min-width:580px">';
 
   // Player headers
   h+='<div style="display:grid;grid-template-columns:'+grid+';margin-bottom:0;align-items:end">';
@@ -5087,6 +5087,7 @@ function _rosAdRenderStats() {
   h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:600;color:'+rc(avgACR)+'">'+avgACR+'</span></div>';
   h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:700;color:'+sc(sumARS)+'">'+(sumARS>=0?'+':'')+sumARS.toFixed(2)+'</span></div>';
   h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:700;color:'+rc(avgARR)+'">'+avgARR+'</span></div>';
+  h+='<div></div>';
   h+='<div></div>';
   h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:600;color:'+sc(sumDCS)+'">'+(sumDCS>=0?'+':'')+sumDCS.toFixed(2)+'</span></div>';
   h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:600;color:'+rc(avgDCR)+'">'+avgDCR+'</span></div>';
