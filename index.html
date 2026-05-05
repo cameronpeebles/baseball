@@ -4597,8 +4597,23 @@ window.showROSTab = function(tab, btn) {
   _rosCurrentTab = tab;
   _rosPosFilter = 'ALL';
   _rosRostFilter = 'ALL';
+  // Reset Add/Drop and Suggested Moves state since hitters and pitchers are disjoint pools
+  _rosAdSelected = null;
+  _rosDropSelected = null;
+  _rosAdPosPill = 'ALL';
+  _rosDropPos = null;
+  _rosSugPos = 'ALL';
+  _rosAdRosterList = [];
+  _rosAdFAList = [];
+  _rosAdFAFiltered = [];
+  _rosAdRostFiltered = [];
   document.querySelectorAll('#ros-tabs .trade-tab').forEach(function(b){ b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
+  // Rebuild the Add/Drop + Suggested Moves panel for the new tab
+  var panelDiv = document.getElementById('ros-addrop-panel');
+  if (panelDiv && panelDiv.style.display !== 'none') {
+    panelDiv.innerHTML = _rosAdBuildPanelHtml();
+  }
   buildROSTable();
 };
 
@@ -4870,7 +4885,9 @@ function _rosBuildSuggestedMovesHtml() {
   h += '</div>';
 
   // Filter bar
-  var posPills = ['ALL','C','1B','2B','3B','SS','OF','DH','SP','RP'];
+  var posPills = (_rosCurrentTab === 'hitters')
+    ? ['ALL','C','1B','2B','3B','SS','OF','DH']
+    : ['ALL','SP','RP'];
   h += '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px;padding-bottom:11px;border-bottom:0.5px solid var(--border)">';
   h += '<span style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-right:4px">Position</span>';
   posPills.forEach(function(pos) {
@@ -5236,8 +5253,10 @@ function _rosAdBuildPanelHtml() {
   // RIGHT: Add (All Players)
   h += '<div>';
   h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px">Add Player</div>';
-  // Position pills
-  var addPills = ['ALL','C','1B','2B','3B','SS','OF','DH','SP','RP'];
+  // Position pills (filtered by current tab)
+  var addPills = (_rosCurrentTab === 'hitters')
+    ? ['ALL','C','1B','2B','3B','SS','OF','DH']
+    : ['ALL','SP','RP'];
   h += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">';
   addPills.forEach(function(pos){
     var active = (_rosAdPosPill===pos) ? 'active' : '';
