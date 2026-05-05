@@ -5049,7 +5049,7 @@ function _rosAdRenderStats() {
     var aStatFmt=aROSV!=null&&aROSV>0?c.fmt(aROSV):'—';
     var dStatFmt=dROSV!=null&&dROSV>0?c.fmt(dROSV):'—';
 
-    function sgpC(v,bold){ if(v==null) return '<span style="color:var(--muted)">—</span>'; return '<span style="font-size:10px;font-weight:'+(bold?'700':'500')+';color:'+sc(v)+'">'+(v>=0?'+':'')+v+'</span>'; }
+    function sgpC(v,bold){ if(v==null) return '<span style="color:var(--muted)">—</span>'; var n=Number(v).toFixed(2); var s=parseFloat(n)>=0?'+':''; return '<span style="font-size:10px;font-weight:'+(bold?'700':'500')+';color:'+sc(v)+'">'+s+n+'</span>'; }
     function rtgC(v,bold){ if(v==null) return '<span style="color:var(--muted)">—</span>'; return '<span style="font-size:10px;font-weight:'+(bold?'700':'500')+';color:'+rc(v)+'">'+v+'</span>'; }
 
     h+='<div style="display:grid;grid-template-columns:'+grid+';background:'+bg+';border-bottom:0.5px solid var(--border)">';
