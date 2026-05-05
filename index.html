@@ -5575,26 +5575,26 @@ function _rosAdRenderStats() {
   // ── TABLE ────────────────────────────────────────────────────────────────
   h+='<div class="ros-stat-scroll" style="overflow-x:auto"><div style="width:100%;min-width:580px">';
 
-  // Player headers
+  // Player headers — Drop on the left, Add on the right
   h+='<div style="display:grid;grid-template-columns:'+grid+';margin-bottom:0;align-items:end">';
   h+='<div></div>';
   h+='<div style="grid-column:2/7;display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--bg);border-radius:6px 6px 0 0;margin-right:2px">';
-  h+=hsImg(addHs)+'<div><div style="font-size:10px;font-weight:500;color:var(--text)">'+addName+'</div><div style="font-size:8px;color:#1D9E75;font-weight:500;text-transform:uppercase">ADD</div></div></div>';
+  h+=hsImg(dropHs)+'<div><div style="font-size:10px;font-weight:500;color:var(--text)">'+dropName+'</div><div style="font-size:8px;color:var(--muted);font-weight:500;text-transform:uppercase">DROP</div></div></div>';
   h+='<div></div>';
   h+='<div style="grid-column:8/13;display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--bg);border-radius:6px 6px 0 0;margin-left:2px">';
-  h+=hsImg(dropHs)+'<div><div style="font-size:10px;font-weight:500;color:var(--text)">'+dropName+'</div><div style="font-size:8px;color:var(--muted);font-weight:500;text-transform:uppercase">DROP</div></div></div>';
+  h+=hsImg(addHs)+'<div><div style="font-size:10px;font-weight:500;color:var(--text)">'+addName+'</div><div style="font-size:8px;color:#1D9E75;font-weight:500;text-transform:uppercase">ADD</div></div></div>';
   h+='<div></div></div>';
 
-  // Sub-headers
+  // Sub-headers — Drop on the left, Add on the right
   h+='<div style="display:grid;grid-template-columns:'+grid+';font-size:8px;color:var(--muted);padding-bottom:3px;border-bottom:1px solid var(--border)">';
   h+='<div></div>';
   h+='<div style="text-align:center">Stat</div>';
   h+='<div style="text-align:center">Curr SGP</div><div style="text-align:center">Curr Rtg%</div>';
-  h+='<div style="text-align:center;color:#1D9E75;font-weight:500">ROS SGP</div><div style="text-align:center;color:#1D9E75;font-weight:500">ROS Rtg%</div>';
+  h+='<div style="text-align:center;color:#888780;font-weight:500">ROS SGP</div><div style="text-align:center;color:#888780;font-weight:500">ROS Rtg%</div>';
   h+='<div></div>';
   h+='<div style="text-align:center">Stat</div>';
   h+='<div style="text-align:center">Curr SGP</div><div style="text-align:center">Curr Rtg%</div>';
-  h+='<div style="text-align:center;color:#888780;font-weight:500">ROS SGP</div><div style="text-align:center;color:#888780;font-weight:500">ROS Rtg%</div>';
+  h+='<div style="text-align:center;color:#1D9E75;font-weight:500">ROS SGP</div><div style="text-align:center;color:#1D9E75;font-weight:500">ROS Rtg%</div>';
   h+='<div style="text-align:center">&Delta; ROS</div></div>';
 
   var spiderLabels=[],spiderAdd=[],spiderDrop=[];
@@ -5638,21 +5638,21 @@ function _rosAdRenderStats() {
 
     h+='<div style="display:grid;grid-template-columns:'+grid+';background:'+bg+';border-bottom:0.5px solid var(--border)">';
     h+='<div style="display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--muted)">'+c.k+'</div>';
-    // Add ROS stat
-    h+='<div style="display:flex;align-items:center;justify-content:center;padding:4px 2px"><span style="font-size:11px;font-weight:500;color:'+aStatC+'">'+aStatFmt+'</span></div>';
-    // Add Curr SGP, Curr Rtg%, ROS SGP, ROS Rtg%
-    h+=wc(sgpC(aCurrSGP,false),sbg(aCurrSGP||0));
-    h+=wc(rtgC(aCurrRtg,false),rbg(aCurrRtg));
-    h+=wc(sgpC(aRosSGP,true), sbg(aRosSGP||0));
-    h+=wc(rtgC(aRosRtg,true), rbg(aRosRtg));
-    h+='<div></div>';
-    // Drop ROS stat
+    // Drop ROS stat (left)
     h+='<div style="display:flex;align-items:center;justify-content:center;padding:4px 2px"><span style="font-size:11px;font-weight:500;color:'+dStatC+'">'+dStatFmt+'</span></div>';
+    // Drop Curr SGP, Curr Rtg%, ROS SGP, ROS Rtg%
     h+=wc(sgpC(dCurrSGP,false),sbg(dCurrSGP||0));
     h+=wc(rtgC(dCurrRtg,false),rbg(dCurrRtg));
     h+=wc(sgpC(dRosSGP,true), sbg(dRosSGP||0));
     h+=wc(rtgC(dRosRtg,true), rbg(dRosRtg));
-    // Delta
+    h+='<div></div>';
+    // Add ROS stat (right)
+    h+='<div style="display:flex;align-items:center;justify-content:center;padding:4px 2px"><span style="font-size:11px;font-weight:500;color:'+aStatC+'">'+aStatFmt+'</span></div>';
+    h+=wc(sgpC(aCurrSGP,false),sbg(aCurrSGP||0));
+    h+=wc(rtgC(aCurrRtg,false),rbg(aCurrRtg));
+    h+=wc(sgpC(aRosSGP,true), sbg(aRosSGP||0));
+    h+=wc(rtgC(aRosRtg,true), rbg(aRosRtg));
+    // Delta (still Add - Drop, positive = upgrade)
     h+='<div style="display:flex;align-items:center;justify-content:center;border-left:1px solid var(--border)">';
     if(net!=null) h+='<div style="font-size:10px;font-weight:500;color:'+dc(net)+';background:'+dcbg(net)+';border-radius:3px;padding:1px 5px">'+(net>=0?'+':'')+net+'</div>';
     else h+='<span style="color:var(--muted)">—</span>';
@@ -5667,16 +5667,18 @@ function _rosAdRenderStats() {
   h+='<div style="display:grid;grid-template-columns:'+grid+';border-top:1.5px solid var(--border);background:var(--bg);padding:3px 0">';
   h+='<div style="display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">Total</div>';
   h+='<div></div>';
-  h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:600;color:'+sc(sumACS)+'">'+(sumACS>=0?'+':'')+sumACS.toFixed(2)+'</span></div>';
-  h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:600;color:'+rc(avgACR)+'">'+avgACR+'</span></div>';
-  h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:700;color:'+sc(sumARS)+'">'+(sumARS>=0?'+':'')+sumARS.toFixed(2)+'</span></div>';
-  h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:700;color:'+rc(avgARR)+'">'+avgARR+'</span></div>';
-  h+='<div></div>';
-  h+='<div></div>';
+  // Drop totals (left)
   h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:600;color:'+sc(sumDCS)+'">'+(sumDCS>=0?'+':'')+sumDCS.toFixed(2)+'</span></div>';
   h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:600;color:'+rc(avgDCR)+'">'+avgDCR+'</span></div>';
   h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:700;color:'+sc(sumDRS)+'">'+(sumDRS>=0?'+':'')+sumDRS.toFixed(2)+'</span></div>';
   h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:700;color:'+rc(avgDRR)+'">'+avgDRR+'</span></div>';
+  h+='<div></div>';
+  h+='<div></div>';
+  // Add totals (right)
+  h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:600;color:'+sc(sumACS)+'">'+(sumACS>=0?'+':'')+sumACS.toFixed(2)+'</span></div>';
+  h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:600;color:'+rc(avgACR)+'">'+avgACR+'</span></div>';
+  h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:700;color:'+sc(sumARS)+'">'+(sumARS>=0?'+':'')+sumARS.toFixed(2)+'</span></div>';
+  h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:700;color:'+rc(avgARR)+'">'+avgARR+'</span></div>';
   h+='<div style="display:flex;align-items:center;justify-content:center;border-left:1px solid var(--border)"><div style="font-size:12px;font-weight:700;color:'+dc(nT)+';background:'+dcbg(nT)+';border-radius:3px;padding:2px 6px">'+(nT>=0?'+':'')+nT.toFixed(2)+'</div></div>';
   h+='</div>';
 
@@ -5686,8 +5688,8 @@ function _rosAdRenderStats() {
   h+='<div>';
   h+='<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">ROS Rating % by category</div>';
   h+='<div style="display:flex;gap:12px;font-size:10px;color:var(--muted);margin-bottom:6px">';
-  h+='<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#1D9E75;display:inline-block"></span>'+addName+'</span>';
   h+='<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#B4B2A9;display:inline-block"></span>'+dropName+'</span>';
+  h+='<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#1D9E75;display:inline-block"></span>'+addName+'</span>';
   h+='</div>';
   h+='<div style="position:relative;width:100%;height:240px"><canvas id="'+uid+'" role="img" aria-label="Radar chart of ROS Rating % by category">'+addName+': '+spiderLabels.map(function(l,i){return l+' '+spiderAdd[i];}).join(', ')+'. '+dropName+': '+spiderLabels.map(function(l,i){return l+' '+spiderDrop[i];}).join(', ')+'.</canvas></div>';
   h+='</div>';
