@@ -16592,6 +16592,12 @@ function buildPitQuadrantSVG(plotData, colorBy) {
 // Forward-looking trade and pickup analysis. Uses FanGraphs ROS projections
 // and per-team category-need multipliers.
 
+// Universal player-name key. Strips "(MLB - POS)" suffix, lowercases, strips punctuation.
+// FP data names have the suffix; S.hitRows / TA.players names do not.
+function _tlKey(name) {
+  return (name||'').replace(/\s*\([^)]*\).*$/, '').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+}
+
 var _tlState = {
   rendered: false,
   teamA: '',
@@ -16706,7 +16712,7 @@ function _tlBuildHeatmap() {
   var pitData = _rosPitData || [];
   if (!hitData.length && !pitData.length) return { heatmap:heatmap, teams:teams, FINE_POS:FINE_POS };
 
-  function normN(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function normN(n){ return (n||'').replace(/\s*\([^)]*\).*$/, '').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
   var rosterLookup = window._rosRosterLookup || {};
 
   function processPlayer(p, isHit) {
@@ -16743,7 +16749,7 @@ function _tlBuildHeatmap() {
 function _tlBuildPlayerCard(p, isHit, teamId) {
   // Returns { name, pos, mlb, hs, sgp, currRating, rosRating } for a roster player
   // currRating uses the existing TA.players cache when available
-  var key = (p._displayName || p.name || '').toLowerCase();
+  var key = _tlKey(p._displayName || p.name || '');
   var taPlayer = null;
   if (typeof TA !== 'undefined' && TA.players) {
     taPlayer = TA.players.find(function(tp){ return (tp.name||'').toLowerCase() === key; });
@@ -16813,7 +16819,7 @@ function renderROSTradeLab() {
     if (!S.hitRows || !S.pitRows) return;
     window._rosRosterLookup = {};
     window._rosCurrentStats = window._rosCurrentStats || {};
-    function normN(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+    function normN(n){ return (n||'').replace(/\s*\([^)]*\).*$/, '').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
     var allRows = (S.hitRows||[]).concat(S.pitRows||[]);
     allRows.forEach(function(row) {
       var sc = row.scorer||{};
@@ -16966,7 +16972,7 @@ function _tlRenderSuggestTab() {
 
 function _tlGetRosterForTeam(teamId) {
   // Returns array of { p, isHit } for rostered players on this team that have ROS data
-  function normN(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function normN(n){ return (n||'').replace(/\s*\([^)]*\).*$/, '').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
   var rosterLookup = window._rosRosterLookup || {};
   var hitData = _rosHitData || [];
   var pitData = _rosPitData || [];
@@ -16998,10 +17004,10 @@ function _tlRenderRoster(side, teamId) {
   h += '<div style="display:flex;flex-direction:column;gap:4px;max-height:280px;overflow-y:auto">';
   roster.forEach(function(r) {
     var name = r.p.name || r.p._displayName || '';
-    var key = name.toLowerCase();
+    var key = _tlKey(name);
     var isSel = selected.indexOf(key) !== -1;
-    // Current rating from TA.players if available
-    var taP = (typeof TA !== 'undefined' && TA.players) ? TA.players.find(function(tp){ return (tp.name||'').toLowerCase() === key; }) : null;
+    // Current rating from TA.players if available (TA names are clean, no paren suffix)
+    var taP = (typeof TA !== 'undefined' && TA.players) ? TA.players.find(function(tp){ return _tlKey(tp.name||'') === key; }) : null;
     var curr = taP ? Math.round(taP.overallRating * 100) : null;
     var sgpStr = (r.sgp >= 0 ? '+' : '') + r.sgp.toFixed(2);
     var sgpCol = r.sgp >= 0.5 ? '#1e6b3a' : r.sgp >= 0 ? '#888780' : '#c0392b';
@@ -17057,7 +17063,7 @@ function _tlRenderVerdict() {
   var rosterA = _tlGetRosterForTeam(teamA);
   var rosterB = _tlGetRosterForTeam(teamB);
   function findRP(roster, key) {
-    return roster.find(function(r){ return (r.p.name||'').toLowerCase() === key; });
+    return roster.find(function(r){ return _tlKey(r.p.name||'') === key; });
   }
   var sendByA = selA.map(function(k){ return findRP(rosterA,k); }).filter(Boolean);
   var sendByB = selB.map(function(k){ return findRP(rosterB,k); }).filter(Boolean);
@@ -17134,13 +17140,13 @@ function _tlRenderVerdict() {
   function regressionFlags(receives, isReceiverA) {
     var flags = [];
     receives.forEach(function(r) {
-      var key = (r.p.name||'').toLowerCase();
-      var taP = (typeof TA !== 'undefined' && TA.players) ? TA.players.find(function(tp){ return (tp.name||'').toLowerCase() === key; }) : null;
+      var key = _tlKey(r.p.name||'');
+      var taP = (typeof TA !== 'undefined' && TA.players) ? TA.players.find(function(tp){ return _tlKey(tp.name||'') === key; }) : null;
       if (!taP) return;
       var curr = Math.round(taP.overallRating * 100);
       // Approximate ROS rating using player's Team SGP percentile vs all rostered players in same isHit pool
       var pool = (r.isHit ? ((_rosHitData||[])) : ((_rosPitData||[]))).filter(function(q){
-        var k = (q.name||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+        var k = _tlKey(q.name||'');
         var ri = (window._rosRosterLookup||{})[k];
         return ri && ri.teamId;
       });
