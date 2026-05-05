@@ -260,6 +260,7 @@ td.neg { color: #c0392b; font-weight: 500; }
   <button onclick="showPage('joe',this)">JOE Factor</button>
   <button onclick="showPage('teamroster',this)">Team Roster</button>
   <button onclick="showPage('ros',this)">ROS</button>
+  <button onclick="showPage('tradelab',this)">ROS Trade Lab</button>
   <button onclick="showPage('trade',this)">Player Trade &amp; Market</button>
   <button onclick="showPage('fwar',this)">Player Data</button>
   <button onclick="showPage('targets',this)">Trade Waiver Wire Targets</button>
@@ -606,6 +607,12 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div class="page-title">Match Predictions</div>
     <div class="page-subtitle">Predicted outcomes for every scoring period based on each team's cumulative average weekly stats.</div>
     <div id="matchup-body"><div class="loading">Loading...</div></div>
+  </div>
+
+  <div class="page" id="page-tradelab">
+    <div class="page-title">ROS Trade Lab</div>
+    <div class="page-subtitle">Forward-looking trade and pickup analysis. Heatmap, verdicts, and recommendations all use FanGraphs ROS projections weighted by team category needs. Current-season data is shown only as a regression-risk check.</div>
+    <div id="tradelab-body"><div class="loading">Loading...</div></div>
   </div>
 
   <div class="page" id="page-trade">
@@ -2342,6 +2349,7 @@ function showPage(name, btn) {
   if (name === 'fwar') renderFWARPage();
   if (name === 'models') renderFWARPage();
   if (name === 'trade') renderTradeAnalyzer();
+  if (name === 'tradelab') renderROSTradeLab();
   if (name === 'historic') renderHistoricPage();
   if (name === 'leaders') renderLeadersPage();
   if (name === 'targets') renderTargetsPage();
@@ -2349,7 +2357,7 @@ function showPage(name, btn) {
   if (name === 'teamroster') buildTeamRosterSelector();
   if (name === 'guide') {} // static content, no render needed
   // Expand main to full width for wide-table pages
-  document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'models' || name === 'rosters' || name === 'teamroster' || name === 'historic' || name === 'targets' || name === 'sgp') ? 'none' : '';
+  document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'models' || name === 'rosters' || name === 'teamroster' || name === 'historic' || name === 'targets' || name === 'sgp' || name === 'tradelab') ? 'none' : '';
   if (name === 'trade' && (TA.activeTab === 'sgp-hit' || TA.activeTab === 'sgp-pit')) {
     document.querySelector('main').style.maxWidth = 'none';
   }
@@ -16578,6 +16586,522 @@ function buildPitQuadrantSVG(plotData, colorBy) {
 
   svg+='</svg>';
   return { svg: svg, legend: legendHtml };
+}
+
+// ── ROS Trade Lab ─────────────────────────────────────────────────────────
+// Forward-looking trade and pickup analysis. Uses FanGraphs ROS projections
+// and per-team category-need multipliers.
+
+var _tlState = {
+  rendered: false,
+  teamA: '',
+  teamB: '',
+  selectedA: [], // arrays of player display-name keys
+  selectedB: []
+};
+
+// Compute category multipliers for any team, derived the same way as the
+// ROS page (rank by Z-score → ladder).
+function _tlMultipliersFor(teamId) {
+  if (!S.zData || !S.zData.length || !teamId) return {};
+  var BAT = ['R','HR','RBI','SB','AVG'];
+  var PIT = ['W','K','SVH3','ERA','WHIP'];
+  var all = BAT.concat(PIT);
+  function ladder(rank) {
+    if (rank == null) return 1.0;
+    if (rank <= 2) return 0.5;
+    if (rank <= 4) return 0.8;
+    if (rank <= 6) return 1.0;
+    if (rank <= 8) return 1.4;
+    return 1.8;
+  }
+  var mults = {};
+  all.forEach(function(cat) {
+    var isBat = BAT.indexOf(cat) !== -1;
+    var zKey = isBat ? 'batZ' : 'pitZ';
+    var arr = S.zData.map(function(d){ return { id:d.teamId, z:(d[zKey]&&d[zKey][cat]!=null)?d[zKey][cat]:0 }; });
+    arr.sort(function(a,b){ return b.z - a.z; }); // higher Z = better (already strong)
+    var pos = arr.findIndex(function(s){ return s.id === teamId; });
+    mults[cat] = ladder(pos >= 0 ? pos + 1 : null);
+  });
+  return mults;
+}
+
+// Standalone player SGP that accepts team context as an argument
+// (vs _rosAdPlayerSGP which reads globals). Returns the player's
+// Team ROS SGP for the given team's needs.
+function _tlPlayerSGP(p, isHit, teamId) {
+  if (!p || !teamId) return 0;
+  var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
+  var ts = (window._rosTeamStats||{})[teamId] || {R:0,HR:0,RBI:0,SB:0,AVG:null,AB:0,K:0,W:0,SVH3:0,ERA:null,WHIP:null,IP:0};
+  var mults = _tlMultipliersFor(teamId);
+  var total = 0;
+  if (isHit) {
+    total += ((p.R||0)/D2.r) * (mults.R||1);
+    total += ((p.HR||0)/D2.hr) * (mults.HR||1);
+    total += ((p.RBI||0)/D2.rbi) * (mults.RBI||1);
+    total += ((p.SB||0)/D2.sb) * (mults.SB||1);
+    var rH = (p.H > 0 ? p.H : (p.AVG && p.AB ? p.AVG * p.AB : null));
+    if (rH && p.AB > 0 && ts.AVG != null && ts.AB > 0) {
+      var cH = (ts.AVG||0)*(ts.AB||0), nH = cH + rH, nAB = (ts.AB||0) + (p.AB||0);
+      total += (nAB > 0 ? ((nH/nAB) - (ts.AVG||0)) : 0) / D2.avg * (mults.AVG||1);
+    }
+  } else {
+    total += ((p.W||0)/D2.w) * (mults.W||1);
+    total += ((p.K||0)/D2.k) * (mults.K||1);
+    total += ((p.SV||0)/D2.svh3) * (mults.SVH3||1);
+    if (p.ERA != null && p.IP > 0 && ts.ERA != null && ts.IP > 0) {
+      var tER=(ts.ERA||0)*(ts.IP||0)/9, pER=p.ERA*(p.IP||0)/9, nIP=(ts.IP||0)+(p.IP||0);
+      total += (nIP>0?((ts.ERA||0)-(tER+pER)/nIP*9):0) / D2.era * (mults.ERA||1);
+    }
+    if (p.WHIP != null && p.IP > 0 && ts.WHIP != null && ts.IP > 0) {
+      var tBR=(ts.WHIP||0)*(ts.IP||0), pBR=p.WHIP*(p.IP||0), nIP2=(ts.IP||0)+(p.IP||0);
+      total += (nIP2>0?((ts.WHIP||0)-(tBR+pBR)/nIP2):0) / D2.whip * (mults.WHIP||1);
+    }
+  }
+  var trust = isHit
+    ? Math.min(1, (p.AB||0)/250)
+    : ((p.pos||'').toUpperCase().indexOf('SP') !== -1 ? Math.min(1, (p.IP||0)/60) : Math.min(1, (p.IP||0)/30));
+  return total * trust;
+}
+
+// Build a heatmap cell color/text for a given Team ROS SGP value.
+// Uses a fixed scale: |x| < 0.3 = neutral, increases through tiers.
+function _tlHeatmapCell(value) {
+  if (value == null || isNaN(value)) {
+    return { bg:'rgba(136,135,128,0.05)', text:'#8a8479', label:'—' };
+  }
+  var abs = Math.abs(value);
+  var sign = value >= 0 ? 1 : -1;
+  var label = (value >= 0 ? '+' : '') + value.toFixed(1);
+  if (abs < 0.3)      return { bg:'rgba(136,135,128,0.18)', text:'#5a594f', label:label };
+  if (abs < 0.8)      return sign > 0
+    ? { bg:'rgba(74,154,104,0.30)', text:'#1e4a28', label:label }
+    : { bg:'rgba(186,117,23,0.30)', text:'#854f0b', label:label };
+  if (abs < 1.5)      return sign > 0
+    ? { bg:'rgba(30,107,58,0.45)', text:'#fff', label:label }
+    : { bg:'rgba(226,75,74,0.40)', text:'#fff', label:label };
+  return sign > 0
+    ? { bg:'rgba(30,107,58,0.65)', text:'#fff', label:label }
+    : { bg:'rgba(226,75,74,0.60)', text:'#fff', label:label };
+}
+
+// Build the heatmap data: for each team, sum Team ROS SGP across players
+// whose bestFinePos falls in each fine position group.
+function _tlBuildHeatmap() {
+  var FINE_POS = ['C','1B','2B','3B','SS','OF','SP','RP'];
+  var teams = Object.keys(S.teamInfo || {}).filter(function(id){
+    return id && (S.teamInfo[id]||{}).name;
+  });
+  // Build per-team, per-fine-position aggregated SGP
+  var heatmap = {};
+  teams.forEach(function(tid) {
+    heatmap[tid] = {};
+    FINE_POS.forEach(function(fp){ heatmap[tid][fp] = null; });
+  });
+
+  // Need ROS player data — same source as the simulator's roster list
+  // Use the existing _rosHitData / _rosPitData if loaded, else bail.
+  var hitData = window._rosHitData || [];
+  var pitData = window._rosPitData || [];
+  if (!hitData.length && !pitData.length) return { heatmap:heatmap, teams:teams, FINE_POS:FINE_POS };
+
+  function normN(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  var rosterLookup = window._rosRosterLookup || {};
+
+  function processPlayer(p, isHit) {
+    var key = normN(p.name||p._displayName||'');
+    var ri = rosterLookup[key];
+    if (!ri || !ri.teamId) return; // FAs not in heatmap (we only count rostered)
+    var teamId = ri.teamId;
+    if (!heatmap[teamId]) return;
+    var sgp = _tlPlayerSGP(p, isHit, teamId);
+    if (!isFinite(sgp)) return;
+    // Determine fine positions this player is eligible at
+    var posStr = (p.pos||p._pos||'').toUpperCase();
+    var parts = posStr.split(',').map(function(x){ return x.trim(); });
+    var fines = [];
+    parts.forEach(function(t){
+      if (t === 'LF' || t === 'CF' || t === 'RF' || t === 'OF') { if (fines.indexOf('OF')<0) fines.push('OF'); }
+      else if (FINE_POS.indexOf(t) !== -1) fines.push(t);
+    });
+    if (!fines.length) return;
+    // Player counts for their best fine pos: sum SGP at every fine pos they're eligible at
+    // (split equally to avoid double-counting starters who play multiple)
+    var share = 1; // could divide by fines.length, but full credit is fine for "could play here"
+    fines.forEach(function(fp) {
+      heatmap[teamId][fp] = (heatmap[teamId][fp] || 0) + sgp * share;
+    });
+  }
+
+  hitData.forEach(function(p){ processPlayer(p, true); });
+  pitData.forEach(function(p){ processPlayer(p, false); });
+
+  return { heatmap:heatmap, teams:teams, FINE_POS:FINE_POS };
+}
+
+function _tlBuildPlayerCard(p, isHit, teamId) {
+  // Returns { name, pos, mlb, hs, sgp, currRating, rosRating } for a roster player
+  // currRating uses the existing TA.players cache when available
+  var key = (p._displayName || p.name || '').toLowerCase();
+  var taPlayer = null;
+  if (typeof TA !== 'undefined' && TA.players) {
+    taPlayer = TA.players.find(function(tp){ return (tp.name||'').toLowerCase() === key; });
+  }
+  var currRating = taPlayer ? Math.round(taPlayer.overallRating * 100) : null;
+  var sgp = _tlPlayerSGP(p, isHit, teamId);
+  // ROS rating: percentile of this player's ROS-projected Team ROS SGP within their fine position group
+  // For simplicity, use a proxy: rank within all rostered players of same isHit
+  // (a more precise version would per-fine-position; v1 keeps it simple)
+  return {
+    name: p._displayName || p.name || '',
+    pos: p._pos || p.pos || '',
+    mlb: p._team || p.mlb || '',
+    hs: p.hs || '',
+    sgp: sgp,
+    currRating: currRating,
+    rosRating: null // computed later in batch
+  };
+}
+
+function renderROSTradeLab() {
+  if (_tlState.rendered) {
+    // Just refresh body
+    _tlRender();
+    return;
+  }
+  _tlState.rendered = true;
+  function tryBuild() {
+    if (S.hitRows.length && S.pitRows.length && window._rosHitData && window._rosPitData) {
+      _tlRender();
+    } else {
+      setTimeout(tryBuild, 300);
+    }
+  }
+  tryBuild();
+}
+
+function _tlRender() {
+  var el = document.getElementById('tradelab-body');
+  if (!el) return;
+
+  // ── HEATMAP ─────────────────────────────────────────────────────────
+  var hm = _tlBuildHeatmap();
+
+  var html = '';
+  html += '<div class="card" style="padding:14px 16px;margin-bottom:12px">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:10px;flex-wrap:wrap">';
+  html += '<div>';
+  html += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Positional Strength · Rest of Season</div>';
+  html += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Each cell = sum of Team ROS SGP at that fine position, weighted by team category needs.</div>';
+  html += '</div>';
+  html += '<div style="font-size:10px;color:var(--muted);display:flex;align-items:center;gap:10px;flex-wrap:wrap">';
+  html += '<span style="display:flex;align-items:center;gap:4px"><span style="width:9px;height:9px;background:#791f1f;border-radius:2px;opacity:0.55"></span>Weakness</span>';
+  html += '<span style="display:flex;align-items:center;gap:4px"><span style="width:9px;height:9px;background:#888780;border-radius:2px;opacity:0.30"></span>Avg</span>';
+  html += '<span style="display:flex;align-items:center;gap:4px"><span style="width:9px;height:9px;background:#1e6b3a;border-radius:2px;opacity:0.55"></span>Strength</span>';
+  html += '</div>';
+  html += '</div>';
+
+  if (!hm.teams.length) {
+    html += '<div style="padding:18px;text-align:center;color:var(--muted);font-size:12px">No team data available. Refresh league data first.</div>';
+  } else {
+    html += '<div style="display:grid;grid-template-columns:90px repeat(8,minmax(0,1fr));gap:2px;font-size:10px">';
+    html += '<div></div>';
+    hm.FINE_POS.forEach(function(fp) {
+      html += '<div style="text-align:center;color:var(--muted);font-weight:500;padding-bottom:4px">'+fp+'</div>';
+    });
+    hm.teams.forEach(function(tid) {
+      var ti = S.teamInfo[tid] || {};
+      var name = ti.shortName || ti.name || tid;
+      html += '<div style="font-size:11px;font-weight:500;padding:5px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+name+'</div>';
+      hm.FINE_POS.forEach(function(fp) {
+        var v = hm.heatmap[tid][fp];
+        var c = _tlHeatmapCell(v);
+        html += '<div style="background:'+c.bg+';text-align:center;padding:6px 0;border-radius:3px;color:'+c.text+';font-weight:500">'+c.label+'</div>';
+      });
+    });
+    html += '</div>';
+  }
+  html += '</div>'; // heatmap card
+
+  // ── TABS ────────────────────────────────────────────────────────────
+  html += '<div class="card" style="padding:14px 16px">';
+  html += '<div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:0.5px solid var(--border);flex-wrap:wrap">';
+  html += '<button class="tl-tab tl-active" data-tab="suggest" onclick="_tlSetTab(\'suggest\')" style="padding:8px 14px;font-size:12px;font-weight:500;background:none;border:none;border-bottom:2px solid #2d5a3d;color:var(--text);cursor:pointer;font-family:inherit">Trade Suggestions</button>';
+  html += '<button class="tl-tab" data-tab="analyzer" onclick="_tlSetTab(\'analyzer\')" style="padding:8px 14px;font-size:12px;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;font-family:inherit">Trade Analyzer</button>';
+  html += '<button class="tl-tab" data-tab="fa" onclick="_tlSetTab(\'fa\')" style="padding:8px 14px;font-size:12px;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;font-family:inherit">FA Recommendations</button>';
+  html += '</div>';
+
+  html += '<div id="tl-tab-body">' + _tlRenderSuggestTab() + '</div>';
+  html += '</div>'; // tab card
+
+  el.innerHTML = html;
+}
+
+window._tlSetTab = function(tab) {
+  document.querySelectorAll('.tl-tab').forEach(function(b){
+    var isActive = b.getAttribute('data-tab') === tab;
+    b.style.borderBottom = isActive ? '2px solid #2d5a3d' : '2px solid transparent';
+    b.style.color = isActive ? 'var(--text)' : 'var(--muted)';
+    b.style.fontWeight = isActive ? '500' : '400';
+  });
+  var body = document.getElementById('tl-tab-body');
+  if (!body) return;
+  if (tab === 'suggest') body.innerHTML = _tlRenderSuggestTab();
+  else if (tab === 'analyzer') body.innerHTML = _tlRenderComingSoon('Trade Analyzer', 'One-team auto-scan that finds mutually beneficial trades by ROS Net SGP. Coming next.');
+  else if (tab === 'fa') body.innerHTML = _tlRenderComingSoon('FA Recommendations', 'Free agents ranked by Team ROS SGP for the selected team, surfaced by category need. Coming next.');
+};
+
+function _tlRenderComingSoon(title, sub) {
+  var h = '<div style="padding:30px 20px;text-align:center;color:var(--muted);font-size:13px">';
+  h += '<div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:6px">'+title+'</div>';
+  h += '<div>'+sub+'</div>';
+  h += '</div>';
+  return h;
+}
+
+function _tlRenderSuggestTab() {
+  var teams = Object.keys(S.teamInfo || {}).filter(function(id){
+    return id && (S.teamInfo[id]||{}).name;
+  });
+
+  var h = '';
+  h += '<div class="joe-info" style="margin-bottom:16px;font-size:12px">';
+  h += '<strong>How it works:</strong> Select two teams and pick up to 2 players from each. Each side\'s ROS Net SGP is computed using their own category-need multipliers. Mutual benefit means both sides project to gain standings points.';
+  h += '</div>';
+
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">';
+  ['a','b'].forEach(function(side) {
+    var label = side === 'a' ? 'Team A' : 'Team B';
+    var teamId = side === 'a' ? _tlState.teamA : _tlState.teamB;
+    h += '<div style="border:0.5px solid var(--border);border-radius:8px;padding:11px 12px">';
+    h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">'+label+'</div>';
+    h += '<select onchange="_tlSelectTeam(\''+side+'\', this.value)" style="width:100%;padding:6px 10px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font-size:12px;margin-bottom:10px;font-family:inherit">';
+    h += '<option value="">— Select team —</option>';
+    teams.forEach(function(id) {
+      var t = S.teamInfo[id];
+      var sel = (id === teamId) ? ' selected' : '';
+      h += '<option value="'+id+'"'+sel+'>'+(t.shortName||t.name||id)+'</option>';
+    });
+    h += '</select>';
+    h += '<div id="tl-roster-'+side+'">';
+    h += teamId ? _tlRenderRoster(side, teamId) : '<div style="font-size:11px;color:var(--muted);padding:10px 0">Select a team to see its roster.</div>';
+    h += '</div>';
+    h += '</div>';
+  });
+  h += '</div>';
+
+  // Verdict
+  h += '<div id="tl-verdict">' + _tlRenderVerdict() + '</div>';
+
+  return h;
+}
+
+function _tlGetRosterForTeam(teamId) {
+  // Returns array of { p, isHit } for rostered players on this team that have ROS data
+  function normN(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  var rosterLookup = window._rosRosterLookup || {};
+  var hitData = window._rosHitData || [];
+  var pitData = window._rosPitData || [];
+  var roster = [];
+  hitData.forEach(function(p) {
+    var k = normN(p.name);
+    var ri = rosterLookup[k];
+    if (ri && ri.teamId === teamId) roster.push({ p:p, isHit:true });
+  });
+  pitData.forEach(function(p) {
+    var k = normN(p.name);
+    var ri = rosterLookup[k];
+    if (ri && ri.teamId === teamId) roster.push({ p:p, isHit:false });
+  });
+  return roster;
+}
+
+function _tlRenderRoster(side, teamId) {
+  if (!teamId) return '';
+  var roster = _tlGetRosterForTeam(teamId);
+  if (!roster.length) return '<div style="font-size:11px;color:var(--muted);padding:10px 0">No roster data for this team.</div>';
+  // Sort by Team ROS SGP descending
+  roster.forEach(function(r){ r.sgp = _tlPlayerSGP(r.p, r.isHit, teamId); });
+  roster.sort(function(a,b){ return b.sgp - a.sgp; });
+  var selected = (side === 'a') ? _tlState.selectedA : _tlState.selectedB;
+
+  var h = '';
+  h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">'+selected.length+' selected · click a player to add/remove (max 2)</div>';
+  h += '<div style="display:flex;flex-direction:column;gap:4px;max-height:280px;overflow-y:auto">';
+  roster.forEach(function(r) {
+    var name = r.p.name || r.p._displayName || '';
+    var key = name.toLowerCase();
+    var isSel = selected.indexOf(key) !== -1;
+    // Current rating from TA.players if available
+    var taP = (typeof TA !== 'undefined' && TA.players) ? TA.players.find(function(tp){ return (tp.name||'').toLowerCase() === key; }) : null;
+    var curr = taP ? Math.round(taP.overallRating * 100) : null;
+    var sgpStr = (r.sgp >= 0 ? '+' : '') + r.sgp.toFixed(2);
+    var sgpCol = r.sgp >= 0.5 ? '#1e6b3a' : r.sgp >= 0 ? '#888780' : '#c0392b';
+    var bg = isSel ? 'rgba(29,158,117,0.06)' : 'transparent';
+    var border = isSel ? '0.5px solid rgba(29,158,117,0.30)' : '0.5px solid transparent';
+    var pos = (r.p.pos||r.p._pos||'').replace(/,/g,', ');
+    var mlb = r.p.team || r.p._team || '';
+    h += '<div onclick="_tlTogglePlayer(\''+side+'\', \''+key.replace(/'/g,"\\\\'")+'\')" '
+       + 'style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:'+bg+';border:'+border+';border-radius:6px;cursor:pointer">'
+       + '<div style="width:20px;height:20px;border-radius:50%;background:var(--bg);border:0.5px solid var(--border);flex-shrink:0;'+(r.p.hs?'background-image:url('+r.p.hs+');background-size:cover;background-position:center':'')+'"></div>'
+       + '<div style="flex:1;min-width:0">'
+       + '<div style="font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+name+'</div>'
+       + '<div style="font-size:9px;color:var(--muted)">'+pos+(mlb?' · '+mlb:'')+'</div>'
+       + '</div>'
+       + '<div style="text-align:right">'
+       + (curr != null ? '<div style="font-size:9px;color:var(--muted)">Curr ' + curr + '</div>' : '')
+       + '<div style="font-size:11px;font-weight:500;color:'+sgpCol+'">'+sgpStr+'</div>'
+       + '</div>'
+       + '</div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+window._tlSelectTeam = function(side, teamId) {
+  if (side === 'a') { _tlState.teamA = teamId; _tlState.selectedA = []; }
+  else              { _tlState.teamB = teamId; _tlState.selectedB = []; }
+  var rEl = document.getElementById('tl-roster-' + side);
+  if (rEl) rEl.innerHTML = teamId ? _tlRenderRoster(side, teamId) : '<div style="font-size:11px;color:var(--muted);padding:10px 0">Select a team to see its roster.</div>';
+  var vEl = document.getElementById('tl-verdict');
+  if (vEl) vEl.innerHTML = _tlRenderVerdict();
+};
+
+window._tlTogglePlayer = function(side, key) {
+  var arr = (side === 'a') ? _tlState.selectedA : _tlState.selectedB;
+  var idx = arr.indexOf(key);
+  if (idx >= 0) arr.splice(idx, 1);
+  else if (arr.length < 2) arr.push(key);
+  // Re-render the roster panel and verdict
+  var teamId = (side === 'a') ? _tlState.teamA : _tlState.teamB;
+  var rEl = document.getElementById('tl-roster-' + side);
+  if (rEl) rEl.innerHTML = _tlRenderRoster(side, teamId);
+  var vEl = document.getElementById('tl-verdict');
+  if (vEl) vEl.innerHTML = _tlRenderVerdict();
+};
+
+function _tlRenderVerdict() {
+  var teamA = _tlState.teamA, teamB = _tlState.teamB;
+  var selA = _tlState.selectedA, selB = _tlState.selectedB;
+  if (!teamA || !teamB || !selA.length || !selB.length) {
+    return '<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px;border:0.5px dashed var(--border);border-radius:8px">Select players from both teams to see a verdict.</div>';
+  }
+  var rosterA = _tlGetRosterForTeam(teamA);
+  var rosterB = _tlGetRosterForTeam(teamB);
+  function findRP(roster, key) {
+    return roster.find(function(r){ return (r.p.name||'').toLowerCase() === key; });
+  }
+  var sendByA = selA.map(function(k){ return findRP(rosterA,k); }).filter(Boolean);
+  var sendByB = selB.map(function(k){ return findRP(rosterB,k); }).filter(Boolean);
+  if (!sendByA.length || !sendByB.length) {
+    return '<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px;border:0.5px dashed var(--border);border-radius:8px">Player data missing — try reselecting.</div>';
+  }
+  // Team A receives players from B, evaluated in A's context.
+  var aReceivesSGP = sendByB.reduce(function(s, r){ return s + _tlPlayerSGP(r.p, r.isHit, teamA); }, 0);
+  // Team A loses players, also evaluated in A's context.
+  var aLosesSGP = sendByA.reduce(function(s, r){ return s + _tlPlayerSGP(r.p, r.isHit, teamA); }, 0);
+  var aNet = aReceivesSGP - aLosesSGP;
+  // Same for Team B
+  var bReceivesSGP = sendByA.reduce(function(s, r){ return s + _tlPlayerSGP(r.p, r.isHit, teamB); }, 0);
+  var bLosesSGP = sendByB.reduce(function(s, r){ return s + _tlPlayerSGP(r.p, r.isHit, teamB); }, 0);
+  var bNet = bReceivesSGP - bLosesSGP;
+
+  var bothPositive = aNet > 0 && bNet > 0;
+  var verdictLabel, verdictCol, verdictDesc;
+  if (aNet > 0.1 && bNet > 0.1)        { verdictLabel='Mutual ROS Benefit'; verdictCol='#1e6b3a'; verdictDesc='Both teams project to gain standings points.'; }
+  else if (bothPositive)                { verdictLabel='Marginal Mutual';   verdictCol='#1D9E75'; verdictDesc='Both teams gain a small amount.'; }
+  else if (aNet > 0 || bNet > 0)        { verdictLabel='Lopsided';          verdictCol='#854f0b'; verdictDesc='Only one team benefits significantly.'; }
+  else                                  { verdictLabel='No Benefit';        verdictCol='#c0392b'; verdictDesc='Neither team gains projected SGP.'; }
+
+  var aName = (S.teamInfo[teamA]||{}).shortName || teamA;
+  var bName = (S.teamInfo[teamB]||{}).shortName || teamB;
+
+  // Verdict card
+  var h = '';
+  var bg = bothPositive ? 'rgba(29,158,117,0.04)' : 'rgba(186,117,23,0.05)';
+  var bord = bothPositive ? 'rgba(29,158,117,0.30)' : 'rgba(186,117,23,0.30)';
+  h += '<div style="border:0.5px solid '+bord+';border-radius:8px;padding:14px 16px;background:'+bg+'">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:8px">';
+  h += '<div>';
+  h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:2px">Verdict</div>';
+  h += '<div style="font-size:15px;font-weight:600;color:'+verdictCol+'">'+verdictLabel+'</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+verdictDesc+'</div>';
+  h += '</div>';
+  h += '</div>';
+
+  function sideCard(name, receives, net, sentBy) {
+    var nv = net.toFixed(2), nsign = net>=0?'+':'';
+    var nc = net>=0.5?'#1e6b3a':net>=0.1?'#1D9E75':net>-0.1?'#5a594f':'#c0392b';
+    var nl = net>=1.0?'Big upgrade':net>=0.5?'Strong gain':net>=0.1?'Modest gain':net>-0.1?'Wash':net>-0.5?'Slight loss':'Downgrade';
+    var s = '';
+    s += '<div style="background:var(--card);border:0.5px solid var(--border);border-radius:6px;padding:11px 12px">';
+    s += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">'+name+' receives</div>';
+    s += '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px;gap:10px">';
+    s += '<div><div style="font-size:9px;color:var(--muted);text-transform:uppercase">ROS Net SGP</div>';
+    s += '<div style="font-size:18px;font-weight:600;color:'+nc+';line-height:1.1">'+nsign+nv+'</div>';
+    s += '<div style="font-size:9px;color:'+nc+';font-weight:500">'+nl+'</div></div></div>';
+    s += '<div style="display:flex;flex-direction:column;gap:3px;font-size:10px;color:#5a594f;padding-top:8px;border-top:0.5px solid var(--border)">';
+    s += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Incoming</div>';
+    receives.forEach(function(r) {
+      var pSGP = _tlPlayerSGP(r.p, r.isHit, name === aName ? teamA : teamB);
+      var col = pSGP >= 0.5 ? '#1e6b3a' : pSGP >= 0 ? '#888780' : '#c0392b';
+      s += '<div style="display:flex;justify-content:space-between"><span>'+(r.p.name||'')+'</span><span style="color:'+col+'">'+(pSGP>=0?'+':'')+pSGP.toFixed(2)+'</span></div>';
+    });
+    s += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-top:6px;margin-bottom:2px">Outgoing</div>';
+    sentBy.forEach(function(r) {
+      var pSGP = _tlPlayerSGP(r.p, r.isHit, name === aName ? teamA : teamB);
+      var col = pSGP >= 0.5 ? '#888780' : '#5a594f';
+      s += '<div style="display:flex;justify-content:space-between;color:var(--muted)"><span>'+(r.p.name||'')+'</span><span>−'+pSGP.toFixed(2)+'</span></div>';
+    });
+    s += '</div></div>';
+    return s;
+  }
+
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
+  h += sideCard(aName, sendByB, aNet, sendByA);
+  h += sideCard(bName, sendByA, bNet, sendByB);
+  h += '</div>';
+
+  // Regression risk callout — find any incoming player whose Curr rating significantly exceeds ROS rating
+  function regressionFlags(receives, isReceiverA) {
+    var flags = [];
+    receives.forEach(function(r) {
+      var key = (r.p.name||'').toLowerCase();
+      var taP = (typeof TA !== 'undefined' && TA.players) ? TA.players.find(function(tp){ return (tp.name||'').toLowerCase() === key; }) : null;
+      if (!taP) return;
+      var curr = Math.round(taP.overallRating * 100);
+      // Approximate ROS rating using player's Team SGP percentile vs all rostered players in same isHit pool
+      var pool = (r.isHit ? (window._rosHitData||[]) : (window._rosPitData||[])).filter(function(q){
+        var k = (q.name||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+        var ri = (window._rosRosterLookup||{})[k];
+        return ri && ri.teamId;
+      });
+      var thisSGP = _tlPlayerSGP(r.p, r.isHit, isReceiverA ? teamA : teamB);
+      var below = pool.filter(function(q){ return _tlPlayerSGP(q, r.isHit, isReceiverA ? teamA : teamB) < thisSGP; }).length;
+      var rosPct = pool.length > 1 ? Math.round(below / pool.length * 100) : 50;
+      if (curr - rosPct >= 8) {
+        flags.push({ name: r.p.name, curr: curr, ros: rosPct });
+      }
+    });
+    return flags;
+  }
+  var flagsA = regressionFlags(sendByB, true);
+  var flagsB = regressionFlags(sendByA, false);
+  var allFlags = flagsA.concat(flagsB);
+  if (allFlags.length) {
+    h += '<div style="margin-top:12px;padding:9px 12px;background:rgba(186,117,23,0.06);border:0.5px solid rgba(186,117,23,0.20);border-radius:6px;font-size:10px;color:#5a594f;display:flex;gap:8px;align-items:flex-start">';
+    h += '<span style="color:#854f0b;font-weight:600;flex-shrink:0">⚠</span><div>';
+    allFlags.forEach(function(f, i) {
+      if (i > 0) h += ' ';
+      h += '<strong style="color:#854f0b">Regression risk on '+f.name+'.</strong> Current rating <strong>'+f.curr+'</strong> exceeds ROS rating <strong>'+f.ros+'</strong>. ';
+    });
+    h += 'Receiving team may get less than current numbers suggest.</div>';
+    h += '</div>';
+  }
+
+  h += '</div>'; // verdict card
+  return h;
 }
 
 init();
