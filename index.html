@@ -2110,10 +2110,103 @@ td.neg { color: #c0392b; font-weight: 500; }
 
         </div>
       </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Add / Drop Simulator — How ROS SGP is calculated</span></div>
+        <div class="card-body" style="padding:20px">
+
+          <p style="font-size:13px;line-height:1.7;margin-bottom:16px">The Add / Drop Simulator on the ROS Predictions page lets you compare any two players head-to-head and see the net swing for the selected team. The headline number on each card and in the comparison table is <strong>Team ROS SGP</strong> — an estimate of how many standings points that player will contribute to <em>your</em> team over the rest of the season. Same player, different team, different number.</p>
+
+          <p style="font-size:13px;line-height:1.7;margin-bottom:16px">The pipeline has four layers: per-category SGP &rarr; need-weight multiplier &rarr; sum across categories &rarr; trust factor.</p>
+
+          <!-- Layer 1 -->
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Layer 1 — Per-category Raw SGP</div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:10px">
+            For each scoring category, the player's projected stat is divided by the SGP denominator (how much of that stat moves you one standings spot). For rate stats (AVG, ERA, WHIP), the math instead asks &ldquo;how does adding this player's volume to my team's existing rate stat shift it?&rdquo; — so it uses your team's running totals.
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+              <div style="font-weight:500;margin-bottom:6px;color:var(--text)">Counting stats (R, HR, RBI, SB, W, K, SVH3)</div>
+              <div style="font-family:monospace;background:var(--surface);padding:6px 8px;border-radius:5px;font-size:11px">catSGP = projectedStat / SGP_D[cat]</div>
+              <div style="color:var(--muted);margin-top:6px;font-size:11px">70 projected ROS runs &divide; 65.4 = +1.07 SGP in R</div>
+            </div>
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+              <div style="font-weight:500;margin-bottom:6px;color:var(--text)">Rate stats (AVG / ERA / WHIP)</div>
+              <div style="font-family:monospace;background:var(--surface);padding:6px 8px;border-radius:5px;font-size:11px;line-height:1.7">newH = teamAVG &times; teamAB + projHits<br>newAB = teamAB + projAB<br>catSGP = ((newH/newAB) &minus; teamAVG) / SGP_D.avg</div>
+              <div style="color:var(--muted);margin-top:6px;font-size:11px">ERA / WHIP follow the same shape using IP and team rate stats.</div>
+            </div>
+          </div>
+
+          <!-- Layer 2 -->
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Layer 2 — Need-weight Multiplier</div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:10px">
+            Each category SGP is multiplied by a team-specific weight. Weak categories get multipliers above 1, strong ones get less. Same +1.07 R for a team already top-1 in runs gets discounted; for a team starving for runs it gets inflated.
+          </div>
+          <div style="font-family:monospace;background:var(--surface);padding:10px 12px;border-radius:6px;font-size:12px;margin-bottom:10px">
+            weighted = catSGP &times; (mults[cat] || 1)
+          </div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:20px">This is the value that fills each cell of the comparison table's <strong>ROS SGP</strong> column. The same multipliers used by the ROS Predictions table (see the previous card for the rank &rarr; multiplier mapping) are applied here.</div>
+
+          <!-- Layer 3 -->
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Layer 3 — Sum Across Categories</div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:10px">
+            Sum the weighted category SGPs. Hitters: R, HR, RBI, SB, AVG. Pitchers: W, K, SVH3, ERA, WHIP.
+          </div>
+          <div style="font-family:monospace;background:var(--surface);padding:10px 12px;border-radius:6px;font-size:12px;margin-bottom:20px">
+            total = &Sigma; weighted catSGP
+          </div>
+
+          <!-- Layer 4 -->
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Layer 4 — Trust Factor</div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:10px">
+            The total is multiplied by a sample-size confidence factor capped at 1.0. Players with limited projected playing time are discounted accordingly.
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+              <div style="font-weight:500;margin-bottom:6px;color:#185fa5">Hitters</div>
+              <div style="font-family:monospace;background:var(--surface);padding:6px 8px;border-radius:5px;font-size:11px">trust = min(1, AB / 250)</div>
+              <div style="color:var(--muted);margin-top:6px;font-size:11px">100 AB &rarr; &times;0.40</div>
+            </div>
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+              <div style="font-weight:500;margin-bottom:6px;color:#2d5a3d">Starting Pitchers</div>
+              <div style="font-family:monospace;background:var(--surface);padding:6px 8px;border-radius:5px;font-size:11px">trust = min(1, IP / 60)</div>
+              <div style="color:var(--muted);margin-top:6px;font-size:11px">60+ IP &rarr; &times;1.00</div>
+            </div>
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+              <div style="font-weight:500;margin-bottom:6px;color:#854f0b">Relievers</div>
+              <div style="font-family:monospace;background:var(--surface);padding:6px 8px;border-radius:5px;font-size:11px">trust = min(1, IP / 30)</div>
+              <div style="color:var(--muted);margin-top:6px;font-size:11px">30+ IP &rarr; &times;1.00</div>
+            </div>
+          </div>
+
+          <!-- Final formula -->
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Final Formula</div>
+          <div style="padding:12px 16px;background:#e8f0eb;border-radius:8px;font-size:13px;font-family:monospace;color:#1e4a28;line-height:1.8;margin-bottom:16px">
+            ROS_SGP = &Sigma; (catSGP &times; need_multiplier) &times; trust
+          </div>
+
+          <!-- Two flavors note -->
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Two flavors of &ldquo;ROS SGP&rdquo; in the simulator</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.7">
+              <div style="font-weight:500;margin-bottom:4px;color:var(--text)">Raw ROS SGP</div>
+              <div style="color:var(--muted);font-size:11px">Same math, but multipliers set to 1 — pure projection value, no team context. Shown only on the Add card.</div>
+            </div>
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.7">
+              <div style="font-weight:500;margin-bottom:4px;color:var(--text)">Team ROS SGP</div>
+              <div style="color:var(--muted);font-size:11px">The full pipeline above. Shown on both player cards, every cell of the comparison table, the &Sigma; row, and feeds into the Net (Add &minus; Drop).</div>
+            </div>
+          </div>
+
+          <div style="font-size:12px;color:var(--muted);line-height:1.7">The Net card always equals <strong>Add Team ROS SGP &minus; Drop Team ROS SGP</strong>. A positive Net means the swap projects to gain you standings points; a negative Net means it loses them, given your team's current category needs.</div>
+
+        </div>
+      </div>
     </div>
   </div>
 
 </main>
+
 
 <script>
 // Safe fallbacks in case joe-factor.js hasn't defined these yet
@@ -4628,10 +4721,145 @@ function renderROSPage() {
 
 
 
-function _rosAdBuildPanelHtml() {
+function _rosBuildTeamNeedHtml() {
+  if (!_rosSelectedTeam || !S.zData || !S.zData.length) return '';
+  var teamName = (S.teamInfo[_rosSelectedTeam]||{}).shortName || (S.teamInfo[_rosSelectedTeam]||{}).name || '';
+  var myZ = S.zData.find(function(d){ return d.teamId === _rosSelectedTeam; });
+  if (!myZ) return '';
+
+  var BAT_Z_CATS = ['R','HR','RBI','SB','AVG'];
+  var PIT_Z_CATS = ['W','K','SVH3','ERA','WHIP'];
+  var allCats = BAT_Z_CATS.concat(PIT_Z_CATS);
+
+  // Compute rank for each cat (1 = highest need, 10 = least need)
+  var ranks = {};
+  allCats.forEach(function(cat) {
+    var isBat = BAT_Z_CATS.indexOf(cat) !== -1;
+    var zKey = isBat ? 'batZ' : 'pitZ';
+    var scores = S.zData.map(function(d){
+      return { teamId: d.teamId, z: (d[zKey] && d[zKey][cat] != null) ? d[zKey][cat] : 0 };
+    });
+    // Higher Z = better for counting stats; for ERA/WHIP higher Z = worse (per how Z is computed)
+    // Sort so position 0 = best in cat. For ERA/WHIP, best = lowest Z; for counting, best = highest Z.
+    var isLow = (cat === 'ERA' || cat === 'WHIP');
+    scores.sort(function(a,b){ return isLow ? a.z - b.z : b.z - a.z; });
+    var pos = scores.findIndex(function(s){ return s.teamId === _rosSelectedTeam; });
+    ranks[cat] = pos >= 0 ? pos + 1 : null;
+  });
+
+  function needMult(rank) {
+    if (rank == null) return 1.0;
+    if (rank <= 2) return 0.5;
+    if (rank <= 4) return 0.8;
+    if (rank <= 6) return 1.0;
+    if (rank <= 8) return 1.4;
+    return 1.8;
+  }
+
+  function tier(rank) {
+    if (rank == null) return 'na';
+    if (rank >= 9) return 'high';
+    if (rank >= 7) return 'below';
+    if (rank >= 5) return 'avg';
+    if (rank >= 3) return 'above';
+    return 'strong';
+  }
+
+  // Tier styling
+  var TIER = {
+    high:   { bg:'rgba(226,75,74,0.10)', border:'rgba(226,75,74,0.35)', text:'#c0392b', chipBg:'rgba(226,75,74,0.18)' },
+    below:  { bg:'rgba(186,117,23,0.10)', border:'rgba(186,117,23,0.35)', text:'#854f0b', chipBg:'rgba(186,117,23,0.16)' },
+    avg:    { bg:'rgba(136,135,128,0.07)', border:'var(--border)', text:'#5a594f', chipBg:'rgba(136,135,128,0.16)' },
+    above:  { bg:'rgba(74,154,104,0.08)', border:'rgba(74,154,104,0.30)', text:'#4a9a68', chipBg:'rgba(74,154,104,0.18)' },
+    strong: { bg:'rgba(30,107,58,0.08)', border:'rgba(30,107,58,0.35)', text:'#1e6b3a', chipBg:'rgba(30,107,58,0.18)' },
+    na:     { bg:'var(--bg)', border:'var(--border)', text:'var(--muted)', chipBg:'var(--bg)' }
+  };
+
+  // Plain-language hint per category
+  var HINTS = {
+    R:'Run scorers', HR:'Power bats', RBI:'Run producers', SB:'Speed', AVG:'High-AVG bats',
+    W:'Win volume', K:'Strikeout arms', SVH3:'Closers / setup', ERA:'Strong starters', WHIP:'Command arms'
+  };
+
+  // Sort cats by rank descending (highest rank = most need = leftmost)
+  var sorted = allCats.slice().sort(function(a,b){
+    var ra = ranks[a] == null ? -1 : ranks[a];
+    var rb = ranks[b] == null ? -1 : ranks[b];
+    return rb - ra;
+  });
+
+  var totalZ = (myZ.totalZ != null) ? myZ.totalZ : ((myZ.totalBatZ||0) + (myZ.totalPitZ||0));
+  // Team rank by totalZ
+  var teamScores = S.zData.map(function(d){
+    return { teamId:d.teamId, z:(d.totalZ != null ? d.totalZ : ((d.totalBatZ||0)+(d.totalPitZ||0))) };
+  });
+  teamScores.sort(function(a,b){ return b.z - a.z; });
+  var teamRank = teamScores.findIndex(function(s){ return s.teamId === _rosSelectedTeam; }) + 1;
+  var totalCol = totalZ >= 3 ? '#1e6b3a' : totalZ >= 0 ? '#4a9a68' : totalZ > -3 ? '#854f0b' : '#c0392b';
+  var totalStr = (totalZ >= 0 ? '+' : '') + totalZ.toFixed(1);
+
   var h = '<div class="card" style="padding:14px 16px;margin-bottom:14px;overflow:visible">';
+
+  // Header row
+  h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:12px">';
+  h += '<div>';
+  h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Team Need · ' + teamName + '</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Drives the need-weight multiplier in the simulator below.</div>';
+  h += '</div>';
+  h += '<div style="display:flex;gap:6px;align-items:center;flex-shrink:0">';
+  h += '<div style="text-align:right"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">Total Z</div><div style="font-size:14px;font-weight:600;color:'+totalCol+'">'+totalStr+'</div></div>';
+  h += '<div style="width:1px;height:28px;background:var(--border);margin:0 6px"></div>';
+  h += '<div style="text-align:right"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">Rank</div><div style="font-size:14px;font-weight:600">'+(teamRank||'—')+'<span style="font-size:10px;color:var(--muted);font-weight:400">/'+S.zData.length+'</span></div></div>';
+  h += '</div>';
+  h += '</div>';
+
+  // Tile grid
+  h += '<div style="display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px;margin-bottom:14px">';
+  sorted.forEach(function(cat) {
+    var rank = ranks[cat];
+    var t = TIER[tier(rank)];
+    var mult = needMult(rank);
+    h += '<div style="background:'+t.bg+';border:0.5px solid '+t.border+';border-radius:6px;padding:7px 4px;text-align:center">';
+    h += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px">'+cat+'</div>';
+    h += '<div style="font-size:13px;font-weight:600;color:'+t.text+'">'+(rank||'—')+'</div>';
+    h += '<div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-top:1px">Rank</div>';
+    h += '<div style="font-size:9px;color:'+t.text+';font-weight:500;margin-top:3px;background:'+t.chipBg+';border-radius:3px;padding:1px 0">×'+mult.toFixed(1)+'</div>';
+    h += '</div>';
+  });
+  h += '</div>';
+
+  // Top targets strip — top 4 high/below-need cats
+  var targets = sorted.filter(function(cat){ var t=tier(ranks[cat]); return t==='high'||t==='below'; }).slice(0,4);
+  if (targets.length) {
+    h += '<div style="display:flex;gap:8px;align-items:flex-start;background:var(--bg);border-radius:6px;padding:9px 12px">';
+    h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);min-width:74px;padding-top:1px">Top targets</div>';
+    h += '<div style="display:flex;flex-wrap:wrap;gap:5px;flex:1">';
+    targets.forEach(function(cat) {
+      var t = TIER[tier(ranks[cat])];
+      var darkText = tier(ranks[cat]) === 'high' ? '#791f1f' : '#854f0b';
+      h += '<span style="font-size:10px;color:'+darkText+';background:'+t.bg+';border:0.5px solid '+t.border+';border-radius:10px;padding:2px 8px;font-weight:500">'+cat+' · '+(HINTS[cat]||cat)+'</span>';
+    });
+    h += '</div></div>';
+  }
+
+  // Legend
+  h += '<div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:10px;color:var(--muted)">';
+  h += '<div style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(226,75,74,0.40)"></span>High need (9–10)</div>';
+  h += '<div style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(186,117,23,0.40)"></span>Below avg (7–8)</div>';
+  h += '<div style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(136,135,128,0.40)"></span>Average (5–6)</div>';
+  h += '<div style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(74,154,104,0.40)"></span>Above avg (3–4)</div>';
+  h += '<div style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(30,107,58,0.50)"></span>Already strong (1–2)</div>';
+  h += '</div>';
+
+  h += '</div>';
+  return h;
+}
+
+function _rosAdBuildPanelHtml() {
+  var h = _rosBuildTeamNeedHtml();
+  h += '<div class="card" style="padding:14px 16px;margin-bottom:14px;overflow:visible">';
   h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:10px">Add / Drop Simulator</div>';
-  h += '<div style="display:grid;grid-template-columns:1fr 90px 1fr;gap:12px;align-items:start;overflow:visible">';
+  h += '<div style="display:grid;grid-template-columns:1fr 160px 1fr;gap:14px;align-items:start;overflow:visible">';
 
   var listStyle = 'display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #d0cec8;border-radius:6px;z-index:1000;max-height:220px;overflow-y:auto;margin-top:3px;box-shadow:0 6px 20px rgba(0,0,0,0.18)';
   var inputStyle = 'width:100%;box-sizing:border-box;padding:6px 10px;font-size:12px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--text)';
@@ -4657,11 +4885,12 @@ function _rosAdBuildPanelHtml() {
   h += '</div></div></div></div></div>';
 
   // CENTER
-  h += '<div style="display:flex;flex-direction:column;align-items:center;padding-top:20px;gap:8px">';
-  h += '<div style="font-size:20px;color:var(--muted)">&#8644;</div>';
-  h += '<div id="ros-net-card" style="display:none;background:var(--bg);border-radius:6px;padding:6px 8px;text-align:center">';
-  h += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">Net</div>';
-  h += '<div id="ros-net-val" style="font-size:14px;font-weight:500"></div>';
+  h += '<div style="display:flex;flex-direction:column;align-items:center;padding-top:18px;gap:6px">';
+  h += '<button id="ros-swap-btn" onclick="rosAdSwap()" title="Swap Add and Drop" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:var(--card);border:0.5px solid #d0cec8;cursor:pointer;color:#5a594f;font-size:14px;line-height:1">&#8644;</button>';
+  h += '<div id="ros-net-card" style="display:none;width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 8px 11px;text-align:center;margin-top:2px">';
+  h += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px">Net SGP</div>';
+  h += '<div id="ros-net-val" style="font-size:30px;font-weight:600;line-height:1"></div>';
+  h += '<div id="ros-net-verdict" style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;margin-top:6px;padding:3px 8px;border-radius:10px;display:inline-block"></div>';
   h += '</div></div>';
 
   // RIGHT: Add (All Players)
@@ -4868,7 +5097,24 @@ function _rosAdRenderBars() {
   if (netCard) {
     netCard.style.display='block';
     document.getElementById('ros-net-val').textContent=(net>=0?'+':'')+net.toFixed(2);
-    document.getElementById('ros-net-val').style.color=net>=0?'#1e6b3a':'#c0392b';
+    // Verdict tiers
+    var verdict, vCol, vBg, cardBg, cardBorder;
+    if (net >= 1.0)        { verdict='Big Upgrade';   vCol='#1e6b3a'; vBg='rgba(30,107,58,0.18)';  cardBg='rgba(29,158,117,0.12)';  cardBorder='rgba(29,158,117,0.40)'; }
+    else if (net >= 0.5)   { verdict='Strong Gain';   vCol='#1e6b3a'; vBg='rgba(30,107,58,0.16)';  cardBg='rgba(29,158,117,0.10)';  cardBorder='rgba(29,158,117,0.35)'; }
+    else if (net >= 0.1)   { verdict='Modest Gain';   vCol='#1D9E75'; vBg='rgba(29,158,117,0.18)'; cardBg='rgba(29,158,117,0.08)';  cardBorder='rgba(29,158,117,0.30)'; }
+    else if (net > -0.1)   { verdict='Wash';          vCol='#5a594f'; vBg='rgba(136,135,128,0.18)';cardBg='var(--bg)';              cardBorder='var(--border)'; }
+    else if (net > -0.5)   { verdict='Slight Loss';   vCol='#854f0b'; vBg='rgba(186,117,23,0.18)'; cardBg='rgba(186,117,23,0.08)';  cardBorder='rgba(186,117,23,0.30)'; }
+    else if (net > -1.0)   { verdict='Downgrade';     vCol='#c0392b'; vBg='rgba(192,57,43,0.16)';  cardBg='rgba(226,75,74,0.10)';   cardBorder='rgba(226,75,74,0.35)'; }
+    else                    { verdict='Big Downgrade';vCol='#c0392b'; vBg='rgba(192,57,43,0.20)';  cardBg='rgba(226,75,74,0.12)';   cardBorder='rgba(226,75,74,0.40)'; }
+    document.getElementById('ros-net-val').style.color = vCol;
+    var verdictEl = document.getElementById('ros-net-verdict');
+    if (verdictEl) {
+      verdictEl.textContent = verdict;
+      verdictEl.style.color = vCol;
+      verdictEl.style.background = vBg;
+    }
+    netCard.style.background = cardBg;
+    netCard.style.borderColor = cardBorder;
   }
 
   _rosAdRenderStats();
@@ -4903,8 +5149,7 @@ function _rosAdRenderStats() {
        {k:'AVG',fmt:function(v){return parseFloat(v).toFixed(3);}, sgpFn:function(v,ab){
          if(!ab) return null;
          var h2=parseFloat(v||0)*ab,nA=(0.260*4000+h2)/(4000+ab); return +((nA-0.260)/D2.avg).toFixed(2);
-       }, better:'high', needsAB:true},
-       {k:'AB', fmt:function(v){return Math.round(v);},            sgpFn:null, better:null}]
+       }, better:'high', needsAB:true}]
     : [{k:'W',   fmt:function(v){return Math.round(v);},            sgpFn:function(v){return +(v/D2.w).toFixed(2);},  better:'high'},
        {k:'K',   fmt:function(v){return Math.round(v);},            sgpFn:function(v){return +(v/D2.k).toFixed(2);},  better:'high'},
        {k:'SV',  fmt:function(v){return Math.round(v);},            sgpFn:function(v){return +(v/D2.svh3).toFixed(2);},better:'high'},
@@ -4915,8 +5160,7 @@ function _rosAdRenderStats() {
        {k:'WHIP',fmt:function(v){return parseFloat(v).toFixed(2);}, sgpFn:function(v,ip){
          if(!ip) return null;
          var nW=(1.25*900+parseFloat(v)*ip)/(900+ip); return +((1.25-nW)/D2.whip).toFixed(2);
-       }, better:'low', needsIP:true},
-       {k:'IP',  fmt:function(v){return parseFloat(v).toFixed(0);}, sgpFn:null, better:null}];
+       }, better:'low', needsIP:true}];
 
   function sc(v){ return v>0.5?'#1e6b3a':v>0.1?'#4a9a68':v>0?'#7ab893':v<-0.1?'#c0392b':v<0?'#d9847a':'#888780'; }
   function sbg(v){ return v>0.5?'rgba(30,107,58,0.09)':v>0.1?'rgba(74,154,104,0.09)':v>0?'rgba(122,184,147,0.06)':v<-0.1?'rgba(192,57,43,0.09)':v<0?'rgba(217,132,122,0.07)':'transparent'; }
@@ -5081,7 +5325,7 @@ function _rosAdRenderStats() {
   var avgDCR=nDCR?Math.round(sumDCR/nDCR):null, avgDRR=nDRR?Math.round(sumDRR/nDRR):null;
 
   h+='<div style="display:grid;grid-template-columns:'+grid+';border-top:1.5px solid var(--border);background:var(--bg);padding:3px 0">';
-  h+='<div style="display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted)">&Sigma;</div>';
+  h+='<div style="display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">Total</div>';
   h+='<div></div>';
   h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:600;color:'+sc(sumACS)+'">'+(sumACS>=0?'+':'')+sumACS.toFixed(2)+'</span></div>';
   h+='<div style="display:flex;align-items:center;justify-content:center"><span style="font-size:11px;font-weight:600;color:'+rc(avgACR)+'">'+avgACR+'</span></div>';
@@ -5245,6 +5489,89 @@ window.rosAdHide = function(side) {
     if (listEl) listEl.style.display = 'none';
   }, 200);
 };
+window.rosAdSwap = function() {
+  if (!_rosAdSelected || !_rosDropSelected) return;
+  // Swap is only meaningful when the current Add player is also on the selected team's roster
+  // (so it can be Dropped). Look it up in the roster list.
+  function normN(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  var addName = _rosAdSelected._displayName || '';
+  var addKey = normN(addName);
+  _rosAdBuildLists();
+  var addOnRoster = _rosAdRosterList.find(function(r){ return r._key === addKey; });
+  if (!addOnRoster) {
+    alert('Swap only works when both players are on this team\u2019s roster. The current Add player is a free agent.');
+    return;
+  }
+  // Build an FA-style add candidate from the current drop player's _fp data
+  var dropRos = _rosAdRosterList.find(function(r){ return r._key === _rosDropSelected; });
+  if (!dropRos || !dropRos._fp) {
+    alert('Swap unavailable \u2014 the Drop player is missing projection data.');
+    return;
+  }
+  var newAdd = dropRos._fp;
+  newAdd._displayName = dropRos._displayName;
+  newAdd._pos = dropRos._pos;
+  newAdd._team = dropRos._team;
+  newAdd.isHit = dropRos.isHit;
+  newAdd.hs = dropRos.hs;
+  // Recompute team SGP for the new add
+  var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
+  var mults = window._rosCatMultipliers || {};
+  var ts = (window._rosTeamStats||{})[_rosSelectedTeam] || {};
+  var teamSGP = 0;
+  if (newAdd.isHit) {
+    teamSGP += ((newAdd.R||0)/D2.r)*(mults.R||1)+((newAdd.HR||0)/D2.hr)*(mults.HR||1)+((newAdd.RBI||0)/D2.rbi)*(mults.RBI||1)+((newAdd.SB||0)/D2.sb)*(mults.SB||1);
+    var rH=newAdd.H>0?newAdd.H:(newAdd.AVG&&newAdd.AB?newAdd.AVG*newAdd.AB:null);
+    if(rH&&newAdd.AB>0&&ts.AVG!=null&&ts.AB>0){var nH=(ts.AVG||0)*(ts.AB||0)+rH,nAB=(ts.AB||0)+(newAdd.AB||0);teamSGP+=(nAB>0?((nH/nAB)-(ts.AVG||0)):0)/D2.avg*(mults.AVG||1);}
+    teamSGP *= Math.min(1,(newAdd.AB||0)/250);
+  } else {
+    teamSGP += ((newAdd.W||0)/D2.w)*(mults.W||1)+((newAdd.K||0)/D2.k)*(mults.K||1)+((newAdd.SV||0)/D2.svh3)*(mults.SVH3||1);
+    var isSP=(newAdd.pos||'').toUpperCase().indexOf('SP')!==-1&&(newAdd.pos||'').toUpperCase().indexOf('RP')===-1;
+    teamSGP *= isSP?Math.min(1,(newAdd.IP||0)/60):Math.min(1,(newAdd.IP||0)/30);
+  }
+  newAdd._teamSGP = teamSGP;
+  // Apply the swap
+  _rosAdSelected = newAdd;
+  _rosDropSelected = addKey;
+  window._rosDropPlayerObj = addOnRoster;
+  _rosDropPos = addOnRoster._pos || null;
+  // Update the visible cards by replaying selection logic
+  // Add card
+  var addEl = document.getElementById('ros-add-card');
+  if (addEl) {
+    addEl.style.display='block';
+    document.getElementById('ros-add-search').value = newAdd._displayName;
+    document.getElementById('ros-add-hs').src = newAdd.hs||'';
+    document.getElementById('ros-add-hs').style.display = newAdd.hs?'block':'none';
+    document.getElementById('ros-add-name').textContent = newAdd._displayName;
+    document.getElementById('ros-add-meta').textContent = (newAdd._pos||'')+' \u00b7 '+(newAdd._team||'')+' \u00b7 Rostered \u00b7 '+(newAdd.isHit?(Math.round(newAdd.AB||0)+' AB'):(parseFloat(newAdd.IP||0).toFixed(0)+' IP'));
+    var rawSGP = 0;
+    if(newAdd.isHit) rawSGP=((newAdd.R||0)/D2.r)+((newAdd.HR||0)/D2.hr)+((newAdd.RBI||0)/D2.rbi)+((newAdd.SB||0)/D2.sb);
+    else rawSGP=((newAdd.W||0)/D2.w)+((newAdd.K||0)/D2.k)+((newAdd.SV||0)/D2.svh3);
+    document.getElementById('ros-add-raw').innerHTML='<span style="color:'+_rosAdCol(rawSGP)+'">'+_rosAdFmt(rawSGP)+'</span>';
+    document.getElementById('ros-add-team').innerHTML='<span style="color:'+_rosAdCol(newAdd._teamSGP)+'">'+_rosAdFmt(newAdd._teamSGP)+'</span>';
+  }
+  // Drop card
+  var dropEl = document.getElementById('ros-drop-card');
+  if (dropEl) {
+    dropEl.style.display='block';
+    document.getElementById('ros-drop-search').value = addOnRoster._displayName;
+    document.getElementById('ros-drop-hs').src = addOnRoster.hs||'';
+    document.getElementById('ros-drop-hs').style.display = addOnRoster.hs?'block':'none';
+    document.getElementById('ros-drop-name').textContent = addOnRoster._displayName;
+    var dropAB = (addOnRoster._cs && addOnRoster._cs.AB) ? Math.round(parseFloat(addOnRoster._cs.AB)) : null;
+    var dropIP = (addOnRoster._cs && addOnRoster._cs.IP) ? parseFloat(addOnRoster._cs.IP).toFixed(0) : null;
+    var sample = addOnRoster.isHit ? (dropAB!=null?(dropAB+' AB'):'') : (dropIP!=null?(dropIP+' IP'):'');
+    document.getElementById('ros-drop-meta').textContent = (addOnRoster._pos||'')+' \u00b7 '+(addOnRoster._team||'')+' \u00b7 Rostered'+(sample?' \u00b7 '+sample:'');
+    document.getElementById('ros-drop-curr').innerHTML='<span style="color:'+_rosAdCol(addOnRoster._currSGP)+'">'+_rosAdFmt(addOnRoster._currSGP)+'</span>';
+    var rawDropEl = document.getElementById('ros-drop-raw');
+    if (rawDropEl) {
+      var rosV = (addOnRoster._rosSGP != null) ? addOnRoster._rosSGP : 0;
+      rawDropEl.innerHTML='<span style="color:'+_rosAdCol(rosV)+'">'+_rosAdFmt(rosV)+'</span>';
+    }
+  }
+  _rosAdRenderBars();
+};
 window.rosAdClear = function(side) {
   if (side === 'add') {
     _rosAdSelected = null;
@@ -5330,7 +5657,7 @@ window.rosAdSelect = function(side, idx) {
     document.getElementById('ros-add-hs').src = p.hs||'';
     document.getElementById('ros-add-hs').style.display = p.hs?'block':'none';
     document.getElementById('ros-add-name').textContent = p._displayName;
-    document.getElementById('ros-add-meta').textContent = p._pos+' · '+(p._team||'')+' · FA';
+    document.getElementById('ros-add-meta').textContent = p._pos+' · '+(p._team||'')+' · FA · '+(p.isHit?(Math.round(p.AB||0)+' AB'):(parseFloat(p.IP||0).toFixed(0)+' IP'));
     var rawSGP = 0;
     var D2=(typeof SGP_D!=='undefined')?SGP_D:{r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
     if(p.isHit) rawSGP=((p.R||0)/D2.r)+((p.HR||0)/D2.hr)+((p.RBI||0)/D2.rbi)+((p.SB||0)/D2.sb);
@@ -5356,7 +5683,10 @@ window.rosAdSelect = function(side, idx) {
     document.getElementById('ros-drop-hs').src = r.hs||'';
     document.getElementById('ros-drop-hs').style.display = r.hs?'block':'none';
     document.getElementById('ros-drop-name').textContent = r._displayName;
-    document.getElementById('ros-drop-meta').textContent = r._pos+' · '+(r._team||'')+' · Rostered';
+    var dropAB = (r._cs && r._cs.AB) ? Math.round(parseFloat(r._cs.AB)) : null;
+    var dropIP = (r._cs && r._cs.IP) ? parseFloat(r._cs.IP).toFixed(0) : null;
+    var dropSample = r.isHit ? (dropAB!=null?(dropAB+' AB'):'') : (dropIP!=null?(dropIP+' IP'):'');
+    document.getElementById('ros-drop-meta').textContent = r._pos+' · '+(r._team||'')+' · Rostered'+(dropSample?' · '+dropSample:'');
     document.getElementById('ros-drop-curr').innerHTML='<span style="color:'+_rosAdCol(r._currSGP)+'">'+_rosAdFmt(r._currSGP)+'</span>';
     var rawDropEl = document.getElementById('ros-drop-raw');
     if (rawDropEl) {
