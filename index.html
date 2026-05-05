@@ -16702,8 +16702,8 @@ function _tlBuildHeatmap() {
 
   // Need ROS player data — same source as the simulator's roster list
   // Use the existing _rosHitData / _rosPitData if loaded, else bail.
-  var hitData = window._rosHitData || [];
-  var pitData = window._rosPitData || [];
+  var hitData = _rosHitData || [];
+  var pitData = _rosPitData || [];
   if (!hitData.length && !pitData.length) return { heatmap:heatmap, teams:teams, FINE_POS:FINE_POS };
 
   function normN(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
@@ -16765,18 +16765,85 @@ function _tlBuildPlayerCard(p, isHit, teamId) {
 }
 
 function renderROSTradeLab() {
-  if (_tlState.rendered) {
-    // Just refresh body
+  var el = document.getElementById('tradelab-body');
+  if (!el) return;
+
+  // Step 1: Make sure the Player Trade & Market engine has been built (gives us TA.players for current ratings).
+  // If TA.players is missing, trigger a background build by calling renderTradeAnalyzer().
+  // It only computes once (uses tradeRendered flag) and doesn't render any visible UI on a different page.
+  if (typeof TA === 'undefined' || !TA.players || !TA.players.length) {
+    if (typeof renderTradeAnalyzer === 'function') {
+      try { renderTradeAnalyzer(); } catch (e) { /* ignore */ }
+    }
+  }
+
+  // If we've already rendered once and have all data, just re-render in place (no loading flash)
+  var dataReady = _rosHitData && _rosPitData && S.hitRows.length && S.pitRows.length;
+  if (_tlState.rendered && dataReady) {
     _tlRender();
     return;
   }
-  _tlState.rendered = true;
-  function tryBuild() {
-    if (S.hitRows.length && S.pitRows.length && window._rosHitData && window._rosPitData) {
-      _tlRender();
-    } else {
-      setTimeout(tryBuild, 300);
+  if (!_tlState.rendered) {
+    el.innerHTML = '<div class="loading">Loading data...</div>';
+  }
+
+  // Step 2: Make sure ROS projection data is loaded. If not, trigger the loaders ourselves.
+  function loadIfNeeded(cb) {
+    var needHit = !_rosHitData;
+    var needPit = !_rosPitData;
+    if (!needHit && !needPit) { cb(); return; }
+    var pending = (needHit ? 1 : 0) + (needPit ? 1 : 0);
+    function done() { pending--; if (pending <= 0) cb(); }
+    if (needHit) {
+      loadJSON('fantasypros_hitters.json')
+        .then(function(d){ _rosHitData = d || []; done(); })
+        .catch(function(){ _rosHitData = []; done(); });
     }
+    if (needPit) {
+      loadJSON('fantasypros_pitchers.json')
+        .then(function(d){ _rosPitData = d || []; done(); })
+        .catch(function(){ _rosPitData = []; done(); });
+    }
+  }
+
+  // Step 3: Make sure roster lookup is built. The ROS page builds this inside renderROSPage()'s
+  // tryRender() — replicate the same logic here so we don't depend on the user visiting that page.
+  function ensureRosterLookup() {
+    if (window._rosRosterLookup && Object.keys(window._rosRosterLookup).length) return;
+    if (!S.hitRows || !S.pitRows) return;
+    window._rosRosterLookup = {};
+    window._rosCurrentStats = window._rosCurrentStats || {};
+    function normN(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+    var allRows = (S.hitRows||[]).concat(S.pitRows||[]);
+    allRows.forEach(function(row) {
+      var sc = row.scorer||{};
+      var name = sc.name||''; if (!name) return;
+      var cells = row.cells||[];
+      var teamId = (cells[1]&&cells[1].teamId)||'';
+      var teamName = teamId ? ((S.teamInfo[teamId]||{}).shortName||(S.teamInfo[teamId]||{}).name||'') : '';
+      var key = normN(name);
+      window._rosRosterLookup[key] = { teamId:teamId, teamName:teamName };
+    });
+  }
+
+  // Step 4: Make sure team stats are built (for SGP rate-stat math).
+  function ensureTeamStats() {
+    if (!window._rosTeamStats && S.seasonData && typeof buildRosTeamStats === 'function') {
+      try { window._rosTeamStats = buildRosTeamStats(S.seasonData); } catch (e) {}
+    }
+  }
+
+  function tryBuild() {
+    if (!S.hitRows.length || !S.pitRows.length) {
+      setTimeout(tryBuild, 300);
+      return;
+    }
+    loadIfNeeded(function() {
+      ensureRosterLookup();
+      ensureTeamStats();
+      _tlState.rendered = true;
+      _tlRender();
+    });
   }
   tryBuild();
 }
@@ -16901,8 +16968,8 @@ function _tlGetRosterForTeam(teamId) {
   // Returns array of { p, isHit } for rostered players on this team that have ROS data
   function normN(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
   var rosterLookup = window._rosRosterLookup || {};
-  var hitData = window._rosHitData || [];
-  var pitData = window._rosPitData || [];
+  var hitData = _rosHitData || [];
+  var pitData = _rosPitData || [];
   var roster = [];
   hitData.forEach(function(p) {
     var k = normN(p.name);
@@ -17072,7 +17139,7 @@ function _tlRenderVerdict() {
       if (!taP) return;
       var curr = Math.round(taP.overallRating * 100);
       // Approximate ROS rating using player's Team SGP percentile vs all rostered players in same isHit pool
-      var pool = (r.isHit ? (window._rosHitData||[]) : (window._rosPitData||[])).filter(function(q){
+      var pool = (r.isHit ? ((_rosHitData||[])) : ((_rosPitData||[]))).filter(function(q){
         var k = (q.name||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
         var ri = (window._rosRosterLookup||{})[k];
         return ri && ri.teamId;
