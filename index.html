@@ -4721,6 +4721,331 @@ function renderROSPage() {
 
 
 
+// ── Suggested Moves ───────────────────────────────────────────────────────
+var _rosSugPos = 'ALL';
+var _rosSugMinNet = 0.25;
+var _rosSugProtect = true;
+var _rosSugMode = 'pairs';
+var _rosSugHidden = {};
+
+function _rosSugPosOverlap(addPos, dropPos) {
+  if (!addPos || !dropPos) return false;
+  function expand(p) {
+    var parts = (p||'').toUpperCase().split(',').map(function(x){return x.trim();});
+    var out = {};
+    parts.forEach(function(t){
+      out[t] = 1;
+      if (t==='LF'||t==='CF'||t==='RF') out['OF']=1;
+      if (t==='OF') { out['LF']=1; out['CF']=1; out['RF']=1; }
+    });
+    return out;
+  }
+  var a = expand(addPos), d = expand(dropPos);
+  for (var k in a) { if (d[k]) return true; }
+  return false;
+}
+
+function _rosSugPosMatchesFilter(pos, filter) {
+  if (!filter || filter === 'ALL') return true;
+  var parts = (pos||'').toUpperCase().split(',').map(function(x){return x.trim();});
+  if (filter === 'OF') return parts.some(function(p){return p==='LF'||p==='CF'||p==='RF'||p==='OF';});
+  return parts.indexOf(filter.toUpperCase()) !== -1;
+}
+
+function _rosBuildSuggestedMovesHtml() {
+  if (!_rosSelectedTeam) return '';
+  // Make sure lists are fresh
+  if (typeof _rosAdBuildLists === 'function') {
+    try { _rosAdBuildLists(); } catch (e) { return ''; }
+  }
+  if (!_rosAdRosterList || !_rosAdRosterList.length) return '';
+
+  var teamName = (S.teamInfo[_rosSelectedTeam]||{}).shortName || (S.teamInfo[_rosSelectedTeam]||{}).name || '';
+  var ranks = window._rosCatRanks || {};
+  var mults = window._rosCatMultipliers || {};
+
+  var BAT_CATS = ['R','HR','RBI','SB','AVG'];
+  var PIT_CATS = ['W','K','SVH3','ERA','WHIP'];
+
+  function tier(rank) {
+    if (rank == null || rank === '-') return 'na';
+    if (rank >= 9) return 'high';
+    if (rank >= 7) return 'below';
+    if (rank >= 5) return 'avg';
+    if (rank >= 3) return 'above';
+    return 'strong';
+  }
+  function chipColors(t) {
+    if (t==='high')  return { bg:'rgba(226,75,74,0.14)', border:'rgba(226,75,74,0.30)', text:'#791f1f' };
+    if (t==='below') return { bg:'rgba(186,117,23,0.14)', border:'rgba(186,117,23,0.30)', text:'#854f0b' };
+    return { bg:'rgba(136,135,128,0.10)', border:'rgba(136,135,128,0.30)', text:'#5a594f' };
+  }
+
+  // Compute per-cat SGP gain (add cat SGP - drop cat SGP), used for "reason chips"
+  function catSGPGain(addP, dropP, cat, isHit) {
+    if (typeof _rosAdCatSGP !== 'function') return 0;
+    var aS = _rosAdCatSGP(addP, cat==='SVH3'?'SV':cat, isHit);
+    var dS = dropP ? _rosAdCatSGP(dropP, cat==='SVH3'?'SV':cat, isHit) : 0;
+    return (aS||0) - (dS||0);
+  }
+
+  // Build droppable roster pool. Protect top performers if enabled.
+  var rosterByPos = { hit: [], pit: [] };
+  _rosAdRosterList.forEach(function(r) {
+    (r.isHit ? rosterByPos.hit : rosterByPos.pit).push(r);
+  });
+  ['hit','pit'].forEach(function(grp) {
+    rosterByPos[grp].sort(function(a,b){ return (a._rosSGP||a._currSGP||0) - (b._rosSGP||b._currSGP||0); });
+    if (_rosSugProtect) {
+      // keep bottom half (rounded up)
+      var keep = Math.max(3, Math.ceil(rosterByPos[grp].length / 2));
+      rosterByPos[grp] = rosterByPos[grp].slice(0, keep);
+    }
+  });
+
+  // Score every FA × eligible-drop pair
+  var pairs = [];
+  var faList = _rosAdFAList || [];
+  faList.forEach(function(addP) {
+    var isHit = !!addP.isHit;
+    if (!_rosSugPosMatchesFilter(addP._pos, _rosSugPos)) return;
+    var addSGP = (typeof _rosAdPlayerSGP === 'function') ? _rosAdPlayerSGP(addP, isHit) : (addP._teamSGP||0);
+    if (!isFinite(addSGP)) return;
+    var pool = isHit ? rosterByPos.hit : rosterByPos.pit;
+    pool.forEach(function(dropR) {
+      if (!dropR._fp) return;
+      if (!_rosSugPosOverlap(addP._pos, dropR._pos)) return;
+      var addKey2 = (addP._displayName||'').toLowerCase();
+      var dropKey2 = (dropR._displayName||'').toLowerCase();
+      // Don't suggest a player vs themselves (rostered FA case)
+      if (addKey2 === dropKey2) return;
+      var hideKey = addKey2 + '|' + dropKey2;
+      if (_rosSugHidden[hideKey]) return;
+      var dropSGP = (dropR._rosSGP != null) ? dropR._rosSGP : 0;
+      var net = addSGP - dropSGP;
+      if (net < _rosSugMinNet) return;
+      pairs.push({ addP:addP, dropR:dropR, net:net, addSGP:addSGP, dropSGP:dropSGP, isHit:isHit });
+    });
+  });
+
+  pairs.sort(function(a,b){ return b.net - a.net; });
+  // Dedupe: keep only the best drop-pairing per add player
+  var seenAdd = {};
+  pairs = pairs.filter(function(p) {
+    var k = (p.addP._displayName||'').toLowerCase();
+    if (seenAdd[k]) return false;
+    seenAdd[k] = 1;
+    return true;
+  });
+  var top = pairs.slice(0, 5);
+
+  // Verdict per net
+  function verdictFor(net) {
+    if (net >= 1.0) return { label:'Big Upgrade',  bg:'rgba(30,107,58,0.18)',  text:'#1e6b3a', cardBg:'rgba(29,158,117,0.06)', cardBorder:'rgba(29,158,117,0.22)' };
+    if (net >= 0.5) return { label:'Strong Gain',  bg:'rgba(30,107,58,0.14)',  text:'#1e6b3a', cardBg:'#fff',                   cardBorder:'var(--border)' };
+    if (net >= 0.1) return { label:'Modest Gain',  bg:'rgba(29,158,117,0.16)', text:'#1D9E75', cardBg:'#fff',                   cardBorder:'var(--border)' };
+    return                  { label:'Wash',         bg:'rgba(136,135,128,0.16)',text:'#5a594f', cardBg:'#fff',                   cardBorder:'var(--border)' };
+  }
+
+  // Roster ranks for drop labels
+  var rosterRanked = _rosAdRosterList.slice().sort(function(a,b){ return (b._rosSGP||b._currSGP||0) - (a._rosSGP||a._currSGP||0); });
+  var rosterRankMap = {};
+  rosterRanked.forEach(function(r,i){ rosterRankMap[r._key] = i+1; });
+
+  // Card open
+  var h = '<div class="card" style="padding:14px 16px;margin-bottom:14px;overflow:visible">';
+
+  // Header
+  h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:12px;flex-wrap:wrap">';
+  h += '<div>';
+  h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Suggested Moves</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Top swaps for '+teamName+' ranked by Net SGP, weighted by category need.</div>';
+  h += '</div>';
+  // (Mode toggle reserved for v2 — only Swap pairs is implemented for now)
+  h += '</div>';
+
+  // Filter bar
+  var posPills = ['ALL','C','1B','2B','3B','SS','OF','DH','SP','RP'];
+  h += '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px;padding-bottom:11px;border-bottom:0.5px solid var(--border)">';
+  h += '<span style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-right:4px">Position</span>';
+  posPills.forEach(function(pos) {
+    var active = (_rosSugPos === pos);
+    var style = active
+      ? 'padding:2px 7px;font-size:10px;border:0.5px solid transparent;border-radius:14px;background:#2d5a3d;color:#fff;cursor:pointer;font-family:inherit'
+      : 'padding:2px 7px;font-size:10px;border:0.5px solid var(--border);border-radius:14px;background:var(--card);color:#5a594f;cursor:pointer;font-family:inherit';
+    h += '<button onclick="rosSugSetPos(\''+pos+'\')" style="'+style+'">'+pos+'</button>';
+  });
+  h += '<div style="width:1px;height:18px;background:var(--border);margin:0 6px"></div>';
+  h += '<span style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-right:4px">Min Net</span>';
+  h += '<select onchange="rosSugSetMinNet(this.value)" style="padding:3px 6px;font-size:11px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font-family:inherit">';
+  ['0.10','0.25','0.50','1.00'].forEach(function(v){
+    var sel = (parseFloat(v) === _rosSugMinNet) ? ' selected' : '';
+    h += '<option value="'+v+'"'+sel+'>+'+v+'</option>';
+  });
+  h += '</select>';
+  h += '<div style="width:1px;height:18px;background:var(--border);margin:0 6px"></div>';
+  var protectChecked = _rosSugProtect ? ' checked' : '';
+  h += '<label style="display:flex;align-items:center;gap:5px;font-size:10px;color:#5a594f;cursor:pointer">';
+  h += '<input type="checkbox" onchange="rosSugSetProtect(this.checked)"'+protectChecked+' style="width:11px;height:11px;cursor:pointer">';
+  h += '<span>Protect top performers</span></label>';
+  h += '</div>';
+
+  if (!top.length) {
+    h += '<div style="padding:18px;text-align:center;font-size:12px;color:var(--muted)">No swaps clear the +'+_rosSugMinNet.toFixed(2)+' threshold for this filter. Try lowering Min Net or unchecking Protect top performers.</div>';
+    h += '</div>';
+    return h;
+  }
+
+  // Rows
+  h += '<div style="display:flex;flex-direction:column;gap:7px">';
+  top.forEach(function(p, i) {
+    var v = verdictFor(p.net);
+    var addP = p.addP, dropR = p.dropR;
+    var dropRank = rosterRankMap[dropR._key] || '?';
+
+    // Top reason chips: top 2 cats by SGP gain, in high/below need cats first
+    var allCats = p.isHit ? BAT_CATS : PIT_CATS;
+    var catScored = allCats.map(function(c){
+      var gain = catSGPGain(addP, dropR._fp, c, p.isHit);
+      var rank = ranks[c];
+      var t = tier(rank);
+      // priority: high need >> below need >> avg, then by gain magnitude
+      var priority = t==='high' ? 3 : t==='below' ? 2 : 1;
+      return { cat:c, gain:gain, tier:t, priority:priority };
+    }).filter(function(x){ return x.gain > 0.05; });
+    catScored.sort(function(a,b){
+      if (a.priority !== b.priority) return b.priority - a.priority;
+      return b.gain - a.gain;
+    });
+    var topChips = catScored.slice(0,2);
+
+    function avatarHtml(hs) {
+      return hs
+        ? '<img src="'+hs+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=\'none\'">'
+        : '<div style="width:32px;height:32px;border-radius:50%;background:var(--bg);border:0.5px solid var(--border);flex-shrink:0"></div>';
+    }
+
+    var rankColor = i===0 ? '#1D9E75' : '#5a594f';
+    var rankWeight = i===0 ? '600' : '500';
+
+    h += '<div style="display:grid;grid-template-columns:24px minmax(0,1fr) 28px minmax(0,1fr) 84px 78px;gap:10px;align-items:center;padding:9px 12px;background:'+v.cardBg+';border:0.5px solid '+v.cardBorder+';border-radius:8px">';
+    h += '<div style="font-size:11px;font-weight:'+rankWeight+';color:'+rankColor+';text-align:center">#'+(i+1)+'</div>';
+
+    // Add cell
+    h += '<div style="display:flex;align-items:center;gap:8px;min-width:0">';
+    h += avatarHtml(addP.hs);
+    h += '<div style="min-width:0">';
+    h += '<div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(addP._displayName||'')+'</div>';
+    h += '<div style="font-size:10px;color:var(--muted)">'+(addP._pos||'')+' \u00b7 '+(addP._team||'')+' \u00b7 FA</div>';
+    if (topChips.length) {
+      h += '<div style="display:flex;gap:3px;margin-top:3px;flex-wrap:wrap">';
+      topChips.forEach(function(ch){
+        var col = chipColors(ch.tier);
+        h += '<span style="font-size:9px;color:'+col.text+';background:'+col.bg+';border:0.5px solid '+col.border+';border-radius:8px;padding:0 6px;white-space:nowrap">+'+ch.gain.toFixed(2)+' '+ch.cat+'</span>';
+      });
+      h += '</div>';
+    }
+    h += '</div></div>';
+
+    h += '<div style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px">&#8644;</div>';
+
+    // Drop cell
+    h += '<div style="display:flex;align-items:center;gap:8px;min-width:0">';
+    h += avatarHtml(dropR.hs);
+    h += '<div style="min-width:0">';
+    h += '<div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(dropR._displayName||'')+'</div>';
+    h += '<div style="font-size:10px;color:var(--muted)">'+(dropR._pos||'')+' \u00b7 roster #'+dropRank+'</div>';
+    var dropCol = (dropR._rosSGP != null && dropR._rosSGP > 0) ? '#4a9a68' : '#888780';
+    var dropStr = (dropR._rosSGP != null) ? ((dropR._rosSGP>=0?'+':'')+dropR._rosSGP.toFixed(2)) : '\u2014';
+    h += '<div style="font-size:10px;color:var(--muted);margin-top:3px">ROS SGP <span style="color:'+dropCol+';font-weight:500">'+dropStr+'</span></div>';
+    h += '</div></div>';
+
+    // Net + verdict
+    h += '<div style="text-align:center">';
+    h += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">Net</div>';
+    h += '<div style="font-size:18px;font-weight:600;color:'+v.text+';line-height:1.1">+'+p.net.toFixed(2)+'</div>';
+    h += '<div style="font-size:9px;font-weight:500;color:'+v.text+';text-transform:uppercase;letter-spacing:0.04em;margin-top:1px;padding:1px 6px;background:'+v.bg+';border-radius:8px;display:inline-block">'+v.label+'</div>';
+    h += '</div>';
+
+    // Actions
+    var addEnc = encodeURIComponent(addP._displayName||'');
+    var dropEnc = encodeURIComponent(dropR._key||'');
+    var primaryStyle = i===0
+      ? 'padding:4px 8px;font-size:10px;font-weight:500;border:0.5px solid #2d5a3d;border-radius:6px;background:#2d5a3d;color:#fff;cursor:pointer;font-family:inherit;white-space:nowrap'
+      : 'padding:4px 8px;font-size:10px;font-weight:500;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);cursor:pointer;font-family:inherit;white-space:nowrap';
+    h += '<div style="display:flex;flex-direction:column;gap:4px;align-items:stretch">';
+    h += '<button onclick="rosSugTryThis(\''+addEnc+'\',\''+dropEnc+'\')" style="'+primaryStyle+'">Try this \u2193</button>';
+    h += '<button onclick="rosSugHide(\''+addEnc+'\',\''+dropEnc+'\')" style="padding:3px 8px;font-size:10px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:#5a594f;cursor:pointer;font-family:inherit">Hide</button>';
+    h += '</div>';
+
+    h += '</div>';
+  });
+  h += '</div>';
+
+  // Footer note
+  h += '<div style="margin-top:11px;padding:8px 12px;background:var(--bg);border-radius:6px;font-size:10px;color:var(--muted);line-height:1.5">';
+  h += 'Pairs ranked by need-weighted Net SGP. Drop pool limited to bottom-half rostered players within position group. \u0394 chips show the largest individual category gains; red = high-need, amber = below avg.';
+  h += '</div>';
+
+  h += '</div>';
+  return h;
+}
+
+window.rosSugSetPos = function(pos) {
+  _rosSugPos = pos;
+  var sugDiv = document.getElementById('ros-sug-card');
+  if (sugDiv) sugDiv.innerHTML = _rosBuildSuggestedMovesHtml();
+};
+window.rosSugSetMinNet = function(v) {
+  _rosSugMinNet = parseFloat(v) || 0.25;
+  var sugDiv = document.getElementById('ros-sug-card');
+  if (sugDiv) sugDiv.innerHTML = _rosBuildSuggestedMovesHtml();
+};
+window.rosSugSetProtect = function(checked) {
+  _rosSugProtect = !!checked;
+  var sugDiv = document.getElementById('ros-sug-card');
+  if (sugDiv) sugDiv.innerHTML = _rosBuildSuggestedMovesHtml();
+};
+window.rosSugHide = function(addEnc, dropEnc) {
+  var addKey = decodeURIComponent(addEnc).toLowerCase();
+  var dropKey = decodeURIComponent(dropEnc).toLowerCase();
+  _rosSugHidden[addKey + '|' + dropKey] = 1;
+  var sugDiv = document.getElementById('ros-sug-card');
+  if (sugDiv) sugDiv.innerHTML = _rosBuildSuggestedMovesHtml();
+};
+window.rosSugTryThis = function(addEnc, dropEnc) {
+  var addName = decodeURIComponent(addEnc);
+  var dropKey = decodeURIComponent(dropEnc);
+  // Drop side first — rosAdSelect('drop') rebuilds lists from full roster
+  _rosAdBuildLists();
+  // Make sure the rostered drop player exists in the filtered list at a known index
+  _rosAdRostFiltered = _rosAdRosterList.slice();
+  var dropIdx = _rosAdRostFiltered.findIndex(function(r){ return r._key === dropKey; });
+  if (dropIdx < 0) {
+    alert('Could not load drop player into the simulator \u2014 not on this team\u2019s roster.');
+    return;
+  }
+  if (typeof rosAdSelect === 'function') {
+    rosAdSelect('drop', dropIdx);
+  }
+  // Now the position filter is set from the drop player. Rebuild add filter
+  // so addIdx is valid in _rosAdFAFiltered after the position constraint.
+  _rosAdFAFiltered = _rosAdFAList.slice();
+  var addIdx = _rosAdFAFiltered.findIndex(function(p){ return (p._displayName||'') === addName; });
+  if (addIdx < 0) {
+    alert('Could not load add player into the simulator \u2014 not in the projection pool.');
+    return;
+  }
+  if (typeof rosAdSelect === 'function') {
+    rosAdSelect('add', addIdx);
+  }
+  // Scroll the simulator into view
+  var simEl = document.getElementById('ros-add-search');
+  if (simEl && simEl.scrollIntoView) {
+    simEl.scrollIntoView({ behavior:'smooth', block:'center' });
+  }
+};
+
 function _rosBuildTeamNeedHtml() {
   if (!_rosSelectedTeam || !S.zData || !S.zData.length) return '';
   var teamName = (S.teamInfo[_rosSelectedTeam]||{}).shortName || (S.teamInfo[_rosSelectedTeam]||{}).name || '';
@@ -4857,6 +5182,7 @@ function _rosBuildTeamNeedHtml() {
 
 function _rosAdBuildPanelHtml() {
   var h = _rosBuildTeamNeedHtml();
+  h += '<div id="ros-sug-card">' + _rosBuildSuggestedMovesHtml() + '</div>';
   h += '<div class="card" style="padding:14px 16px;margin-bottom:14px;overflow:visible">';
   h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:10px">Add / Drop Simulator</div>';
   h += '<div style="display:grid;grid-template-columns:1fr 160px 1fr;gap:14px;align-items:start;overflow:visible">';
@@ -4886,7 +5212,7 @@ function _rosAdBuildPanelHtml() {
 
   // CENTER
   h += '<div style="display:flex;flex-direction:column;align-items:center;padding-top:18px;gap:6px">';
-  h += '<button id="ros-swap-btn" onclick="rosAdSwap()" title="Swap Add and Drop" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:var(--card);border:0.5px solid #d0cec8;cursor:pointer;color:#5a594f;font-size:14px;line-height:1">&#8644;</button>';
+  h += '<div style="font-size:18px;color:var(--muted);line-height:1">&#8644;</div>';
   h += '<div id="ros-net-card" style="display:none;width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 8px 11px;text-align:center;margin-top:2px">';
   h += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px">Net SGP</div>';
   h += '<div id="ros-net-val" style="font-size:30px;font-weight:600;line-height:1"></div>';
@@ -5488,89 +5814,6 @@ window.rosAdHide = function(side) {
     var listEl = document.getElementById('ros-'+side+'-list');
     if (listEl) listEl.style.display = 'none';
   }, 200);
-};
-window.rosAdSwap = function() {
-  if (!_rosAdSelected || !_rosDropSelected) return;
-  // Swap is only meaningful when the current Add player is also on the selected team's roster
-  // (so it can be Dropped). Look it up in the roster list.
-  function normN(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
-  var addName = _rosAdSelected._displayName || '';
-  var addKey = normN(addName);
-  _rosAdBuildLists();
-  var addOnRoster = _rosAdRosterList.find(function(r){ return r._key === addKey; });
-  if (!addOnRoster) {
-    alert('Swap only works when both players are on this team\u2019s roster. The current Add player is a free agent.');
-    return;
-  }
-  // Build an FA-style add candidate from the current drop player's _fp data
-  var dropRos = _rosAdRosterList.find(function(r){ return r._key === _rosDropSelected; });
-  if (!dropRos || !dropRos._fp) {
-    alert('Swap unavailable \u2014 the Drop player is missing projection data.');
-    return;
-  }
-  var newAdd = dropRos._fp;
-  newAdd._displayName = dropRos._displayName;
-  newAdd._pos = dropRos._pos;
-  newAdd._team = dropRos._team;
-  newAdd.isHit = dropRos.isHit;
-  newAdd.hs = dropRos.hs;
-  // Recompute team SGP for the new add
-  var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
-  var mults = window._rosCatMultipliers || {};
-  var ts = (window._rosTeamStats||{})[_rosSelectedTeam] || {};
-  var teamSGP = 0;
-  if (newAdd.isHit) {
-    teamSGP += ((newAdd.R||0)/D2.r)*(mults.R||1)+((newAdd.HR||0)/D2.hr)*(mults.HR||1)+((newAdd.RBI||0)/D2.rbi)*(mults.RBI||1)+((newAdd.SB||0)/D2.sb)*(mults.SB||1);
-    var rH=newAdd.H>0?newAdd.H:(newAdd.AVG&&newAdd.AB?newAdd.AVG*newAdd.AB:null);
-    if(rH&&newAdd.AB>0&&ts.AVG!=null&&ts.AB>0){var nH=(ts.AVG||0)*(ts.AB||0)+rH,nAB=(ts.AB||0)+(newAdd.AB||0);teamSGP+=(nAB>0?((nH/nAB)-(ts.AVG||0)):0)/D2.avg*(mults.AVG||1);}
-    teamSGP *= Math.min(1,(newAdd.AB||0)/250);
-  } else {
-    teamSGP += ((newAdd.W||0)/D2.w)*(mults.W||1)+((newAdd.K||0)/D2.k)*(mults.K||1)+((newAdd.SV||0)/D2.svh3)*(mults.SVH3||1);
-    var isSP=(newAdd.pos||'').toUpperCase().indexOf('SP')!==-1&&(newAdd.pos||'').toUpperCase().indexOf('RP')===-1;
-    teamSGP *= isSP?Math.min(1,(newAdd.IP||0)/60):Math.min(1,(newAdd.IP||0)/30);
-  }
-  newAdd._teamSGP = teamSGP;
-  // Apply the swap
-  _rosAdSelected = newAdd;
-  _rosDropSelected = addKey;
-  window._rosDropPlayerObj = addOnRoster;
-  _rosDropPos = addOnRoster._pos || null;
-  // Update the visible cards by replaying selection logic
-  // Add card
-  var addEl = document.getElementById('ros-add-card');
-  if (addEl) {
-    addEl.style.display='block';
-    document.getElementById('ros-add-search').value = newAdd._displayName;
-    document.getElementById('ros-add-hs').src = newAdd.hs||'';
-    document.getElementById('ros-add-hs').style.display = newAdd.hs?'block':'none';
-    document.getElementById('ros-add-name').textContent = newAdd._displayName;
-    document.getElementById('ros-add-meta').textContent = (newAdd._pos||'')+' \u00b7 '+(newAdd._team||'')+' \u00b7 Rostered \u00b7 '+(newAdd.isHit?(Math.round(newAdd.AB||0)+' AB'):(parseFloat(newAdd.IP||0).toFixed(0)+' IP'));
-    var rawSGP = 0;
-    if(newAdd.isHit) rawSGP=((newAdd.R||0)/D2.r)+((newAdd.HR||0)/D2.hr)+((newAdd.RBI||0)/D2.rbi)+((newAdd.SB||0)/D2.sb);
-    else rawSGP=((newAdd.W||0)/D2.w)+((newAdd.K||0)/D2.k)+((newAdd.SV||0)/D2.svh3);
-    document.getElementById('ros-add-raw').innerHTML='<span style="color:'+_rosAdCol(rawSGP)+'">'+_rosAdFmt(rawSGP)+'</span>';
-    document.getElementById('ros-add-team').innerHTML='<span style="color:'+_rosAdCol(newAdd._teamSGP)+'">'+_rosAdFmt(newAdd._teamSGP)+'</span>';
-  }
-  // Drop card
-  var dropEl = document.getElementById('ros-drop-card');
-  if (dropEl) {
-    dropEl.style.display='block';
-    document.getElementById('ros-drop-search').value = addOnRoster._displayName;
-    document.getElementById('ros-drop-hs').src = addOnRoster.hs||'';
-    document.getElementById('ros-drop-hs').style.display = addOnRoster.hs?'block':'none';
-    document.getElementById('ros-drop-name').textContent = addOnRoster._displayName;
-    var dropAB = (addOnRoster._cs && addOnRoster._cs.AB) ? Math.round(parseFloat(addOnRoster._cs.AB)) : null;
-    var dropIP = (addOnRoster._cs && addOnRoster._cs.IP) ? parseFloat(addOnRoster._cs.IP).toFixed(0) : null;
-    var sample = addOnRoster.isHit ? (dropAB!=null?(dropAB+' AB'):'') : (dropIP!=null?(dropIP+' IP'):'');
-    document.getElementById('ros-drop-meta').textContent = (addOnRoster._pos||'')+' \u00b7 '+(addOnRoster._team||'')+' \u00b7 Rostered'+(sample?' \u00b7 '+sample:'');
-    document.getElementById('ros-drop-curr').innerHTML='<span style="color:'+_rosAdCol(addOnRoster._currSGP)+'">'+_rosAdFmt(addOnRoster._currSGP)+'</span>';
-    var rawDropEl = document.getElementById('ros-drop-raw');
-    if (rawDropEl) {
-      var rosV = (addOnRoster._rosSGP != null) ? addOnRoster._rosSGP : 0;
-      rawDropEl.innerHTML='<span style="color:'+_rosAdCol(rosV)+'">'+_rosAdFmt(rosV)+'</span>';
-    }
-  }
-  _rosAdRenderBars();
 };
 window.rosAdClear = function(side) {
   if (side === 'add') {
