@@ -4739,10 +4739,10 @@ function _rosBuildTeamNeedHtml() {
     var scores = S.zData.map(function(d){
       return { teamId: d.teamId, z: (d[zKey] && d[zKey][cat] != null) ? d[zKey][cat] : 0 };
     });
-    // Higher Z = better for counting stats; for ERA/WHIP higher Z = worse (per how Z is computed)
-    // Sort so position 0 = best in cat. For ERA/WHIP, best = lowest Z; for counting, best = highest Z.
-    var isLow = (cat === 'ERA' || cat === 'WHIP');
-    scores.sort(function(a,b){ return isLow ? a.z - b.z : b.z - a.z; });
+    // Z-scores are computed on the point totals table (rotisserie points), not raw stats.
+    // In points form, higher = better for EVERY category (including ERA/WHIP). So no inversion.
+    // Sort descending: position 0 = highest Z = best in category = rank 1 (least need).
+    scores.sort(function(a,b){ return b.z - a.z; });
     var pos = scores.findIndex(function(s){ return s.teamId === _rosSelectedTeam; });
     ranks[cat] = pos >= 0 ? pos + 1 : null;
   });
