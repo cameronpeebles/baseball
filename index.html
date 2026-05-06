@@ -4695,6 +4695,7 @@ window.showROSTab = function(tab, btn) {
   _rosDropPos = null;
   _rosSugPos = 'ALL';
   _rosSugSortCat = 'TOTAL';
+  _rosSugActiveIdx = null;
   _rosAdRosterList = [];
   _rosAdFAList = [];
   _rosAdFAFiltered = [];
@@ -4716,6 +4717,7 @@ window.rosTeamChanged = function(sel) {
   _rosDropSelected = null;
   _rosAdPosPill = 'ALL';
   _rosDropPos = null;
+  _rosSugActiveIdx = null;
   _rosAdRosterList = [];
   _rosAdFAList = [];
   _rosAdFAFiltered = [];
@@ -4836,6 +4838,7 @@ var _rosSugMode = 'pairs';
 var _rosSugStatus = 'FA';
 var _rosSugSortCat = 'TOTAL';
 var _rosSugHidden = {};
+var _rosSugActiveIdx = null; // index of currently-loaded suggestion in the visible top list (null = Custom mode)
 
 function _rosSugPosOverlap(addPos, dropPos) {
   if (!addPos || !dropPos) return false;
@@ -5000,17 +5003,12 @@ function _rosBuildSuggestedMovesHtml() {
   var rosterRankMap = {};
   rosterRanked.forEach(function(r,i){ rosterRankMap[r._key] = i+1; });
 
-  // Card open
-  var h = '<div class="card" style="padding:14px 16px;margin-bottom:14px;overflow:visible">';
+  // No outer card wrapper — this is rendered inside the combined "Trade & Drop Workshop" card.
+  var h = '<div style="overflow:visible">';
 
-  // Header
-  h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:12px;flex-wrap:wrap">';
-  h += '<div>';
-  h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Suggested Moves</div>';
-  var subSort = (_rosSugSortCat === 'TOTAL') ? 'Net SGP' : (_rosSugSortCat + ' Net');
-  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Top swaps for '+teamName+' ranked by '+subSort+', weighted by category need.</div>';
-  h += '</div>';
-  // (Mode toggle reserved for v2 — only Swap pairs is implemented for now)
+  // Compact list label — replaces the old standalone-card header
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+  h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Top swaps · ranked by '+((_rosSugSortCat === 'TOTAL') ? 'Net SGP' : (_rosSugSortCat + ' Net'))+'</div>';
   h += '</div>';
 
   // Filter bar
@@ -5125,75 +5123,54 @@ function _rosBuildSuggestedMovesHtml() {
 
     function avatarHtml(hs) {
       return hs
-        ? '<img src="'+hs+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=\'none\'">'
-        : '<div style="width:32px;height:32px;border-radius:50%;background:var(--bg);border:0.5px solid var(--border);flex-shrink:0"></div>';
+        ? '<img src="'+hs+'" style="width:22px;height:22px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=\'none\'">'
+        : '<div style="width:22px;height:22px;border-radius:50%;background:var(--bg);border:0.5px solid var(--border);flex-shrink:0"></div>';
     }
 
-    var rankColor = i===0 ? '#1D9E75' : '#5a594f';
-    var rankWeight = i===0 ? '600' : '500';
+    var isActive = (_rosSugActiveIdx === i);
+    var rankColor = isActive ? '#1D9E75' : (i===0 ? '#1D9E75' : '#5a594f');
+    var rankWeight = (isActive || i===0) ? '600' : '500';
+    var rowBg = isActive ? '#fff' : '#fff';
+    var rowBorder = isActive ? '0.5px solid #2d5a3d' : '0.5px solid var(--border)';
+    var rowAccent = isActive ? 'border-left:3px solid #2d5a3d;' : '';
 
-    h += '<div style="display:grid;grid-template-columns:24px minmax(0,1fr) 28px minmax(0,1fr) 84px 78px;gap:10px;align-items:center;padding:9px 12px;background:'+v.cardBg+';border:0.5px solid '+v.cardBorder+';border-radius:8px">';
-    h += '<div style="font-size:11px;font-weight:'+rankWeight+';color:'+rankColor+';text-align:center">#'+(i+1)+'</div>';
+    var addEnc = encodeURIComponent(addP._displayName||'');
+    var dropEnc = encodeURIComponent(dropR._key||'');
 
-    // Drop cell (left — user's selected team)
-    h += '<div style="display:flex;align-items:center;gap:8px;min-width:0">';
+    h += '<div onclick="rosSugTryThis(\''+addEnc+'\',\''+dropEnc+'\','+i+')" style="position:relative;display:grid;grid-template-columns:18px minmax(0,1fr) 16px minmax(0,1fr) 56px;gap:6px;align-items:center;padding:7px 9px;background:'+rowBg+';border:'+rowBorder+';'+rowAccent+'border-radius:6px;cursor:pointer;transition:background 0.1s">';
+    // Rank
+    h += '<div style="font-size:10px;font-weight:'+rankWeight+';color:'+rankColor+';text-align:center">#'+(i+1)+'</div>';
+
+    // Drop cell
+    h += '<div style="display:flex;align-items:center;gap:6px;min-width:0">';
     h += avatarHtml(dropR.hs);
     h += '<div style="min-width:0">';
-    h += '<div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(dropR._displayName||'')+'</div>';
-    h += '<div style="font-size:10px;color:var(--muted)">'+(dropR._pos||'')+' \u00b7 roster #'+dropRank+'</div>';
-    var dropCol = (dropR._rosSGP != null && dropR._rosSGP > 0) ? '#4a9a68' : '#888780';
-    var dropStr = (dropR._rosSGP != null) ? ((dropR._rosSGP>=0?'+':'')+dropR._rosSGP.toFixed(2)) : '\u2014';
-    h += '<div style="font-size:10px;color:var(--muted);margin-top:3px">ROS SGP <span style="color:'+dropCol+';font-weight:500">'+dropStr+'</span></div>';
+    h += '<div style="font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(dropR._displayName||'')+'</div>';
+    h += '<div style="font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(dropR._pos||'')+' \u00b7 #'+dropRank+'</div>';
     h += '</div></div>';
 
-    h += '<div style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px">&#8644;</div>';
+    h += '<div style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px">&#8644;</div>';
 
-    // Add cell (right — pickup candidate)
-    h += '<div style="display:flex;align-items:center;gap:8px;min-width:0">';
+    // Add cell
+    h += '<div style="display:flex;align-items:center;gap:6px;min-width:0">';
     h += avatarHtml(addP.hs);
     h += '<div style="min-width:0">';
-    h += '<div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(addP._displayName||'')+'</div>';
-    // Status line: FA, or rostered on team X, or selected team
+    h += '<div style="font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(addP._displayName||'')+'</div>';
     var addLookupKey2 = normSugName(addP._displayName||'');
     var addRoster = rosterLookup2[addLookupKey2] || null;
     var statusLabel;
     if (addRoster && addRoster.teamId) {
-      statusLabel = (addRoster.teamId === _rosSelectedTeam) ? 'On your team' : (addRoster.teamName||'Rostered');
+      statusLabel = (addRoster.teamId === _rosSelectedTeam) ? 'You' : (addRoster.teamName||'Rostered');
     } else {
       statusLabel = 'FA';
     }
-    h += '<div style="font-size:10px;color:var(--muted)">'+(addP._pos||'')+' \u00b7 '+(addP._team||'')+' \u00b7 '+statusLabel+'</div>';
-    if (topChips.length) {
-      h += '<div style="display:flex;gap:3px;margin-top:3px;flex-wrap:wrap">';
-      topChips.forEach(function(ch){
-        var col = chipColors(ch.tier);
-        if (ch.primary) {
-          h += '<span style="font-size:10px;font-weight:500;color:'+col.text+';background:'+col.bg+';border:0.5px solid '+col.border+';border-radius:8px;padding:1px 7px;white-space:nowrap">'+(ch.gain>=0?'+':'')+ch.gain.toFixed(2)+' '+ch.cat+'</span>';
-        } else {
-          h += '<span style="font-size:9px;color:'+col.text+';background:'+col.bg+';border:0.5px solid '+col.border+';border-radius:8px;padding:0 6px;white-space:nowrap">'+(ch.gain>=0?'+':'')+ch.gain.toFixed(2)+' '+ch.cat+'</span>';
-        }
-      });
-      h += '</div>';
-    }
+    h += '<div style="font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(addP._pos||'')+' \u00b7 '+statusLabel+'</div>';
     h += '</div></div>';
 
-    // Net + verdict
-    var netLabel = (_rosSugSortCat === 'TOTAL') ? 'Net' : (_rosSugSortCat + ' Net');
-    h += '<div style="text-align:center">';
-    h += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">'+netLabel+'</div>';
-    h += '<div style="font-size:18px;font-weight:600;color:'+v.text+';line-height:1.1">'+(p.score>=0?'+':'')+p.score.toFixed(2)+'</div>';
-    h += '<div style="font-size:9px;font-weight:500;color:'+v.text+';text-transform:uppercase;letter-spacing:0.04em;margin-top:1px;padding:1px 6px;background:'+v.bg+';border-radius:8px;display:inline-block">'+v.label+'</div>';
-    h += '</div>';
-
-    // Actions
-    var addEnc = encodeURIComponent(addP._displayName||'');
-    var dropEnc = encodeURIComponent(dropR._key||'');
-    var primaryStyle = i===0
-      ? 'padding:4px 8px;font-size:10px;font-weight:500;border:0.5px solid #2d5a3d;border-radius:6px;background:#2d5a3d;color:#fff;cursor:pointer;font-family:inherit;white-space:nowrap'
-      : 'padding:4px 8px;font-size:10px;font-weight:500;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);cursor:pointer;font-family:inherit;white-space:nowrap';
-    h += '<div style="display:flex;flex-direction:column;gap:4px;align-items:stretch">';
-    h += '<button onclick="rosSugTryThis(\''+addEnc+'\',\''+dropEnc+'\')" style="'+primaryStyle+'">Try this \u2193</button>';
-    h += '<button onclick="rosSugHide(\''+addEnc+'\',\''+dropEnc+'\')" style="padding:3px 8px;font-size:10px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:#5a594f;cursor:pointer;font-family:inherit">Hide</button>';
+    // Net + verdict (compact)
+    h += '<div style="text-align:right">';
+    h += '<div style="font-size:13px;font-weight:600;color:'+v.text+';line-height:1">'+(p.score>=0?'+':'')+p.score.toFixed(2)+'</div>';
+    h += '<div style="font-size:8px;color:'+v.text+';font-weight:500;text-transform:uppercase;letter-spacing:0.04em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+v.label+'</div>';
     h += '</div>';
 
     h += '</div>';
@@ -5245,7 +5222,9 @@ window.rosSugHide = function(addEnc, dropEnc) {
   var sugDiv = document.getElementById('ros-sug-card');
   if (sugDiv) sugDiv.innerHTML = _rosBuildSuggestedMovesHtml();
 };
-window.rosSugTryThis = function(addEnc, dropEnc) {
+var _rosSugTryInProgress = false;
+window.rosSugTryThis = function(addEnc, dropEnc, idx) {
+  _rosSugTryInProgress = true;
   var addName = decodeURIComponent(addEnc);
   var dropKey = decodeURIComponent(dropEnc);
   // Drop side first — rosAdSelect('drop') rebuilds lists from full roster
@@ -5271,12 +5250,31 @@ window.rosSugTryThis = function(addEnc, dropEnc) {
   if (typeof rosAdSelect === 'function') {
     rosAdSelect('add', addIdx);
   }
-  // Scroll the simulator into view
-  var simEl = document.getElementById('ros-add-search');
-  if (simEl && simEl.scrollIntoView) {
-    simEl.scrollIntoView({ behavior:'smooth', block:'center' });
+  // Track which suggestion is loaded — drives row highlighting & mode pill
+  if (typeof idx === 'number') {
+    _rosSugActiveIdx = idx;
+    _rosUpdateModePill();
+    // Re-render list to show the new active highlight
+    var sugDiv = document.getElementById('ros-sug-card');
+    if (sugDiv) sugDiv.innerHTML = _rosBuildSuggestedMovesHtml();
   }
+  _rosSugTryInProgress = false;
 };
+
+// Update the mode pill above the simulator: "From suggestion #N" or "Custom swap"
+function _rosUpdateModePill() {
+  var pill = document.getElementById('ros-mode-pill');
+  if (!pill) return;
+  if (_rosSugActiveIdx != null) {
+    pill.textContent = 'From suggestion #'+(_rosSugActiveIdx+1);
+    pill.style.color = '#1e6b3a';
+    pill.style.background = 'rgba(29,158,117,0.12)';
+  } else {
+    pill.textContent = 'Custom swap';
+    pill.style.color = 'var(--muted)';
+    pill.style.background = 'rgba(136,135,128,0.10)';
+  }
+}
 
 function _rosBuildTeamNeedHtml() {
   if (!_rosSelectedTeam || !S.zData || !S.zData.length) return '';
@@ -5469,14 +5467,15 @@ function _rosBuildTeamNeedHtml() {
   h += '<div style="display:grid;grid-template-columns:repeat('+FINE_POS.length+',minmax(0,1fr));gap:6px;margin-bottom:14px">';
   var teamPos = byTeamPos[_rosSelectedTeam] || {};
   FINE_POS.forEach(function(fp) {
-    var raw = teamPos[fp];
+    // Empty cells (no rostered player has this as their primary fine position) are
+    // treated as 0.0 contribution rather than hidden — a positional gap IS a weakness.
+    var raw = (teamPos[fp] != null) ? teamPos[fp] : 0;
     var lg = leagueAvg[fp] || 0;
-    var delta = (raw != null) ? (raw - lg) : null;
+    var delta = raw - lg;
     var tt = _tnPosTier(delta);
     var t = TIER[tt];
-    var deltaStr, rawStr;
-    if (raw == null) { deltaStr = '—'; rawStr = '—'; }
-    else { deltaStr = (delta>=0?'+':'') + delta.toFixed(1); rawStr = (raw>=0?'+':'') + raw.toFixed(1); }
+    var deltaStr = (delta>=0?'+':'') + delta.toFixed(1);
+    var rawStr = (raw>=0?'+':'') + raw.toFixed(1);
     h += '<div style="background:'+t.bg+';border:0.5px solid '+t.border+';border-radius:6px;padding:7px 4px;text-align:center">';
     h += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px">'+fp+'</div>';
     h += '<div style="font-size:13px;font-weight:600;color:'+t.text+'">'+deltaStr+'</div>';
@@ -5509,8 +5508,7 @@ function _rosBuildTeamNeedHtml() {
   // Also collect weak positions (delta vs lg <= -0.5) — top 3 most-deficient
   var POS_HINTS = { C:'Find a backstop', '1B':'Power at corner', '2B':'Bat at the keystone', '3B':'Hot-corner help', SS:'Up-the-middle bat', OF:'Fill outfield', SP:'Rotation help', RP:'Bullpen depth' };
   var posTargets = FINE_POS.map(function(fp) {
-    var raw = teamPos[fp];
-    if (raw == null) return null;
+    var raw = (teamPos[fp] != null) ? teamPos[fp] : 0;
     var delta = raw - (leagueAvg[fp]||0);
     return { fp:fp, delta:delta, tier:_tnPosTier(delta) };
   }).filter(function(x){ return x && (x.tier==='high' || x.tier==='below'); });
@@ -5552,10 +5550,31 @@ function _rosBuildTeamNeedHtml() {
 
 function _rosAdBuildPanelHtml() {
   var h = _rosBuildTeamNeedHtml();
-  h += '<div id="ros-sug-card">' + _rosBuildSuggestedMovesHtml() + '</div>';
+
+  // ── Combined "Trade & Drop Workshop" card ───────────────────────────────
+  // Suggestions list (left, 340px) + Add/Drop Simulator (right, fluid).
   h += '<div class="card" style="padding:14px 16px;margin-bottom:14px;overflow:visible">';
-  h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:10px">Add / Drop Simulator</div>';
-  h += '<div style="display:grid;grid-template-columns:1fr 160px 1fr;gap:14px;align-items:start;overflow:visible">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:12px">';
+  h += '<div>';
+  h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Trade &amp; Drop Workshop</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Browse algorithmic suggestions on the left. Selected swap evaluates on the right. Type in the dropdowns to override either side.</div>';
+  h += '</div>';
+  h += '</div>';
+
+  // Master/Detail grid: list pane (340px) + simulator pane (1fr)
+  h += '<div style="display:grid;grid-template-columns:340px minmax(0,1fr);gap:14px;align-items:start;overflow:visible">';
+
+  // ── LEFT PANE: Suggestions list (filter pills + sort row + compact rows)
+  h += '<div id="ros-sug-card" style="overflow:visible">' + _rosBuildSuggestedMovesHtml() + '</div>';
+
+  // ── RIGHT PANE: Existing simulator
+  h += '<div style="overflow:visible">';
+  // Mode pill — "From suggestion #N" or "Custom"
+  h += '<div id="ros-mode-pill-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;min-height:22px">';
+  h += '<div id="ros-mode-pill" style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);background:rgba(136,135,128,0.10);padding:3px 8px;border-radius:10px">Custom swap</div>';
+  h += '<div></div>';
+  h += '</div>';
+  h += '<div style="display:grid;grid-template-columns:1fr 110px 1fr;gap:14px;align-items:start;overflow:visible">';
 
   var listStyle = 'display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #d0cec8;border-radius:6px;z-index:1000;max-height:220px;overflow-y:auto;margin-top:3px;box-shadow:0 6px 20px rgba(0,0,0,0.18)';
   var inputStyle = 'width:100%;box-sizing:border-box;padding:6px 10px;font-size:12px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--text)';
@@ -5626,7 +5645,10 @@ function _rosAdBuildPanelHtml() {
   h += '<div id="ros-ad-cats"></div>';
   h += '</div>';
   h += '<div id="ros-ad-stats" style="display:none;margin-top:12px;padding-top:10px;border-top:0.5px solid var(--border)"></div>';
-  h += '</div>';
+  h += '</div>'; // end inner 3-col grid (Drop / Net / Add)
+  h += '</div>'; // end right pane wrapper
+  h += '</div>'; // end master/detail grid
+  h += '</div>'; // end combined card
   return h;
 }
 
@@ -6199,6 +6221,13 @@ window.rosAdHide = function(side) {
   }, 200);
 };
 window.rosAdClear = function(side) {
+  // Manual clear → switch to Custom mode
+  if (_rosSugActiveIdx != null) {
+    _rosSugActiveIdx = null;
+    if (typeof _rosUpdateModePill === 'function') _rosUpdateModePill();
+    var _sd = document.getElementById('ros-sug-card');
+    if (_sd) _sd.innerHTML = _rosBuildSuggestedMovesHtml();
+  }
   if (side === 'add') {
     _rosAdSelected = null;
     var c = document.getElementById('ros-add-card'); if (c) c.style.display='none';
@@ -6270,6 +6299,13 @@ window.rosDropSearch = function(q) {
 };
 
 window.rosAdSelect = function(side, idx) {
+  // If this select didn't come from a suggestion-row click, switch to Custom mode
+  if (!_rosSugTryInProgress && _rosSugActiveIdx != null) {
+    _rosSugActiveIdx = null;
+    if (typeof _rosUpdateModePill === 'function') _rosUpdateModePill();
+    var sugDiv = document.getElementById('ros-sug-card');
+    if (sugDiv) sugDiv.innerHTML = _rosBuildSuggestedMovesHtml();
+  }
   var listEl = document.getElementById('ros-'+side+'-list');
   if(listEl) listEl.style.display='none';
   var searchEl = document.getElementById('ros-'+side+'-search');
