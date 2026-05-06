@@ -5394,7 +5394,16 @@ function _rosBuildTeamNeedHtml() {
     var k = _tnNormName(p.name);
     var ri = rosterLookup[k];
     if (!ri || !ri.teamId) return;
-    var fines = _tnExpandPos(p.pos);
+    // FP data has positions embedded in the name string like "Aaron Judge (NYY - OF)" — extract.
+    var posStr = p._pos || p.pos || '';
+    if (!posStr) {
+      var nm = (p.name||'').match(/\(([^)]+)\)/);
+      if (nm) {
+        var pts = nm[1].split(' - ');
+        if (pts.length >= 2) posStr = pts.slice(1).join(',');
+      }
+    }
+    var fines = _tnExpandPos(posStr);
     if (!fines.length) return;
     if (!byTeamPos[ri.teamId]) byTeamPos[ri.teamId] = {};
     var sgp = _tnRawSGP(p, isHit, ri.teamId);
