@@ -2158,6 +2158,9 @@ td.neg { color: #c0392b; font-weight: 500; }
               <div style="color:var(--muted);margin-top:6px;font-size:11px">30+ IP = 100% · 15 IP = 50%</div>
             </div>
           </div>
+          <div style="padding:10px 14px;background:rgba(186,117,23,0.06);border:0.5px solid rgba(186,117,23,0.30);border-radius:8px;font-size:11px;line-height:1.7;color:#5a594f;margin-bottom:10px">
+            <strong style="color:#854f0b">AVG sub-trust:</strong> The AVG component additionally applies <code>min(1, AB / 350)</code> on top of the standard 250-AB trust. Counting stats (R, HR, RBI, SB) are unaffected. Damping AVG harder for partial-season players prevents projection noise on a single rate stat from dominating Total SGP. See the simulator card below for full details.
+          </div>
 
           <!-- Final score -->
           <div style="font-weight:600;font-size:13px;margin:20px 0 8px">Final Score</div>
@@ -2219,7 +2222,7 @@ td.neg { color: #c0392b; font-weight: 500; }
           <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:10px">
             The total is multiplied by a sample-size confidence factor capped at 1.0. Players with limited projected playing time are discounted accordingly.
           </div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">
             <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px">
               <div style="font-weight:500;margin-bottom:6px;color:#185fa5">Hitters</div>
               <div style="font-family:monospace;background:var(--surface);padding:6px 8px;border-radius:5px;font-size:11px">trust = min(1, AB / 250)</div>
@@ -2234,6 +2237,20 @@ td.neg { color: #c0392b; font-weight: 500; }
               <div style="font-weight:500;margin-bottom:6px;color:#854f0b">Relievers</div>
               <div style="font-family:monospace;background:var(--surface);padding:6px 8px;border-radius:5px;font-size:11px">trust = min(1, IP / 30)</div>
               <div style="color:var(--muted);margin-top:6px;font-size:11px">30+ IP &rarr; &times;1.00</div>
+            </div>
+          </div>
+
+          <!-- AVG-specific trust callout -->
+          <div style="padding:11px 14px;background:rgba(186,117,23,0.06);border:0.5px solid rgba(186,117,23,0.30);border-radius:8px;font-size:12px;line-height:1.7;margin-bottom:20px">
+            <div style="font-weight:600;color:#854f0b;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px">AVG sub-trust &middot; 350-AB threshold</div>
+            <div style="color:#5a594f">The AVG component gets <strong>an additional sub-trust factor</strong> on top of the standard 250-AB trust above:</div>
+            <div style="font-family:monospace;background:var(--card);padding:6px 10px;border-radius:5px;font-size:11px;margin:6px 0">avgTrust = min(1, AB / 350)</div>
+            <div style="color:#5a594f">Applied <em>only</em> to the AVG SGP component &mdash; counting stats (R, HR, RBI, SB) keep their standard 250-AB trust unchanged. Reasoning: AVG is volume-weighted in team-context math (a player's AB pool gets blended into the team's AB total), and rate-stat projections are noisier than counting-stat projections. The 350-AB threshold dampens AVG's contribution harder for partial-season players.</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px;font-size:11px">
+              <div style="padding:6px 8px;background:var(--card);border-radius:5px;text-align:center"><div style="font-weight:500">350+ AB</div><div style="color:var(--muted);font-size:10px">no change</div></div>
+              <div style="padding:6px 8px;background:var(--card);border-radius:5px;text-align:center"><div style="font-weight:500">250 AB</div><div style="color:var(--muted);font-size:10px">&times;0.71</div></div>
+              <div style="padding:6px 8px;background:var(--card);border-radius:5px;text-align:center"><div style="font-weight:500">150 AB</div><div style="color:var(--muted);font-size:10px">&times;0.43</div></div>
+              <div style="padding:6px 8px;background:var(--card);border-radius:5px;text-align:center"><div style="font-weight:500">75 AB</div><div style="color:var(--muted);font-size:10px">&times;0.21</div></div>
             </div>
           </div>
 
@@ -2257,6 +2274,22 @@ td.neg { color: #c0392b; font-weight: 500; }
           </div>
 
           <div style="font-size:12px;color:var(--muted);line-height:1.7">The Net card always equals <strong>Add Team ROS SGP &minus; Drop Team ROS SGP</strong>. A positive Net means the swap projects to gain you standings points; a negative Net means it loses them, given your team's current category needs.</div>
+
+          <!-- Rate-stat warning chip -->
+          <div style="font-weight:600;font-size:13px;margin:20px 0 8px">Rate-stat warning chip</div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:10px">
+            When the Net SGP verdict is meaningful (<code>|Net| &ge; 0.5</code>) and a single rate stat is doing most of the work, the simulator surfaces an amber warning chip directly under the verdict. The chip identifies the dominant rate stat (AVG for hitters, ERA or WHIP for pitchers) and the percentage of the Net it accounts for.
+          </div>
+          <div style="font-family:monospace;background:var(--surface);padding:10px 12px;border-radius:6px;font-size:12px;line-height:1.7;margin-bottom:10px">
+            rateContribution = &Sigma; (addCatSGP &minus; dropCatSGP)<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;over rate cats: AVG (hitters) | ERA, WHIP (pitchers)<br>
+            <br>
+            warn if |rateContribution| &divide; |Net| &ge; 0.70
+          </div>
+          <div style="padding:11px 14px;background:rgba(186,117,23,0.06);border:0.5px solid rgba(186,117,23,0.30);border-radius:8px;font-size:11px;line-height:1.7;margin-bottom:10px">
+            <strong style="color:#854f0b">Example chip:</strong> <span style="color:#5a594f">&ldquo;&#9888; Rate-stat heavy. ~85% of this Net SGP comes from <strong>AVG</strong>. Rate-stat projections are noisier than counting stats &mdash; verify before acting.&rdquo;</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.7">Why this matters: AVG, ERA, and WHIP are amplified by the team-context math (a player's full projected AB or IP gets blended into your team's pool, leveraging small projection differences). Combined with high <strong>need-weight multipliers</strong> when the rate stat is a team weakness, a single 25-point AVG projection difference can produce a "Big Upgrade" verdict by itself. The warning gives you a chance to second-guess before pulling the trigger.</div>
 
         </div>
       </div>
@@ -5696,7 +5729,7 @@ function _rosAdBuildPanelHtml() {
   h += '<div id="ros-mode-pill" style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);background:rgba(136,135,128,0.10);padding:3px 8px;border-radius:10px">Custom swap</div>';
   h += '<div></div>';
   h += '</div>';
-  h += '<div style="display:grid;grid-template-columns:1fr 110px 1fr;gap:14px;align-items:start;overflow:visible">';
+  h += '<div style="display:grid;grid-template-columns:1fr 200px 1fr;gap:14px;align-items:start;overflow:visible">';
 
   var listStyle = 'display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #d0cec8;border-radius:6px;z-index:1000;max-height:220px;overflow-y:auto;margin-top:3px;box-shadow:0 6px 20px rgba(0,0,0,0.18)';
   var inputStyle = 'width:100%;box-sizing:border-box;padding:6px 10px;font-size:12px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--text)';
@@ -5728,6 +5761,7 @@ function _rosAdBuildPanelHtml() {
   h += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px">Net SGP</div>';
   h += '<div id="ros-net-val" style="font-size:30px;font-weight:600;line-height:1"></div>';
   h += '<div id="ros-net-verdict" style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;margin-top:6px;padding:3px 8px;border-radius:10px;display:inline-block"></div>';
+  h += '<div id="ros-net-breakdown" style="display:none;border-top:0.5px solid var(--border);padding-top:8px;margin-top:8px"></div>';
   h += '<div id="ros-net-warn" style="display:none;font-size:9px;color:#854f0b;background:rgba(186,117,23,0.10);border:0.5px solid rgba(186,117,23,0.30);border-radius:8px;padding:4px 8px;margin-top:8px;line-height:1.35;text-align:left"></div>';
   h += '</div></div>';
 
@@ -5965,6 +5999,73 @@ function _rosAdRenderBars() {
     netCard.style.background = cardBg;
     netCard.style.borderColor = cardBorder;
 
+    // ── Per-category breakdown row (Option G) ─────────────────────────────
+    // Show Net by category right below the verdict pill so users can see
+    // exactly what's driving the headline number.
+    var breakdownEl = document.getElementById('ros-net-breakdown');
+    if (breakdownEl) {
+      breakdownEl.style.display = 'none';
+      breakdownEl.innerHTML = '';
+      if (_rosAdSelected || _rosDropSelected) {
+        var allCats = isHit ? ['R','HR','RBI','SB','AVG'] : ['W','K','SVH3','ERA','WHIP'];
+        var addPbd = _rosAdSelected || null;
+        var dropPbd = (function(){
+          if (!_rosDropSelected) return null;
+          var dr = _rosAdRosterList.find(function(r){return r._key===_rosDropSelected;});
+          return dr ? dr._fp : null;
+        })();
+        // Compute per-cat Net (Add - Drop)
+        var perCat = allCats.map(function(c) {
+          var ad = addPbd  ? (catSGPFA(addPbd, c)  || 0) : 0;
+          var dr = dropPbd ? (catSGPFA(dropPbd, c) || 0) : 0;
+          return { cat: c, val: ad - dr };
+        });
+        // Find dominant cell — only highlight when |val| >= 1.0 AND |val|/|net| >= 0.50
+        var absNet = Math.abs(net);
+        var dom = null;
+        perCat.forEach(function(x) {
+          if (Math.abs(x.val) < 1.0) return;
+          if (absNet > 0 && Math.abs(x.val)/absNet < 0.50) return;
+          if (!dom || Math.abs(x.val) > Math.abs(dom.val)) dom = x;
+        });
+        var rateCatsBd = isHit ? {AVG:1} : {ERA:1, WHIP:1};
+        function cellColor(v) {
+          if (v >= 0.10) return '#4a9a68';
+          if (v <= -0.50) return '#c0392b';
+          if (v <= -0.10) return '#854f0b';
+          return '#888780';
+        }
+        var bdHtml = '<div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px;text-align:center">Net by category</div>';
+        bdHtml += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:3px">';
+        perCat.forEach(function(x) {
+          var isDom = dom && dom.cat === x.cat;
+          var isRate = !!rateCatsBd[x.cat];
+          var col = cellColor(x.val);
+          var domBg = '';
+          var domLabelCol = 'var(--muted)';
+          var domValCol = col;
+          if (isDom) {
+            if (isRate) {
+              domBg = 'background:rgba(186,117,23,0.12);';
+              domLabelCol = '#854f0b';
+              domValCol = '#854f0b';
+            } else {
+              domBg = 'background:rgba(74,154,104,0.10);';
+              domLabelCol = '#1e6b3a';
+              domValCol = '#1e6b3a';
+            }
+          }
+          bdHtml += '<div style="text-align:center;padding:3px 0;border-radius:4px;'+domBg+'">';
+          bdHtml += '<div style="font-size:8px;color:'+domLabelCol+';text-transform:uppercase;letter-spacing:0.04em'+(isDom?';font-weight:500':'')+'">'+x.cat+'</div>';
+          bdHtml += '<div style="font-size:'+(isDom?'11':'10')+'px;font-weight:'+(isDom?'600':'500')+';color:'+domValCol+'">'+(x.val>=0?'+':'')+x.val.toFixed(2)+'</div>';
+          bdHtml += '</div>';
+        });
+        bdHtml += '</div>';
+        breakdownEl.innerHTML = bdHtml;
+        breakdownEl.style.display = 'block';
+      }
+    }
+
     // ── Rate-stat heaviness warning (Option D) ────────────────────────────
     // When ≥70% of |Net SGP| comes from AVG/ERA/WHIP combined, flag it. Rate
     // stats are projection-noisy AND amplified by team-context math, so a
@@ -5992,7 +6093,7 @@ function _rosAdRenderBars() {
         });
         var rateShare = Math.abs(net) > 0.001 ? Math.abs(rateContrib) / Math.abs(net) : 0;
         if (rateShare >= 0.70 && heaviestCat) {
-          var sharePct = Math.round(rateShare * 100);
+          var sharePct = Math.min(99, Math.round(rateShare * 100));
           warnEl.style.display = 'block';
           warnEl.innerHTML = '<strong>⚠ Rate-stat heavy.</strong> ~' + sharePct + '% of this Net SGP comes from <strong>' + heaviestCat + '</strong>. Rate-stat projections are noisier than counting stats &mdash; verify before acting.';
         }
