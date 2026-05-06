@@ -4768,7 +4768,7 @@ function renderROSPage() {
       var teamId = (cells[1]&&cells[1].teamId)||'';
       var teamName = teamId ? ((S.teamInfo[teamId]||{}).shortName||(S.teamInfo[teamId]||{}).name||'') : '';
       var key = normRos(name);
-      window._rosRosterLookup[key] = { teamId:teamId, teamName:teamName };
+      window._rosRosterLookup[key] = { teamId:teamId, teamName:teamName, statusId: row.statusId || '1' };
       // Current season stats
       function gv3(cat){ return getStatVal ? getStatVal(cells, cat, idx3) : null; }
       window._rosCurrentStats[key] = {
@@ -6083,12 +6083,18 @@ function _rosAdListHtml(players, side) {
     var avatarHtml = hs
       ? '<img src="'+hs+'" style="width:26px;height:26px;border-radius:50%;object-fit:cover;border:0.5px solid #ddd;flex-shrink:0" onerror="this.style.display=\'none\'">'
       : '<div style="width:26px;height:26px;border-radius:50%;background:#f0ede8;border:0.5px solid #ddd;flex-shrink:0"></div>';
-    var minorBadge = !_rosHasMLBRole(p, !!p.isHit)
-      ? '<span style="font-size:9px;font-weight:500;color:#854f0b;background:rgba(186,117,23,0.14);border:0.5px solid rgba(186,117,23,0.30);border-radius:8px;padding:1px 5px;margin-left:6px;white-space:nowrap">Minor</span>'
-      : '';
+    var statusBadge = '';
+    var displayName = p._displayName || p.name || '';
+    var lookupKey = displayName.replace(/\s*\([^)]*\).*$/, '').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+    var ri = (window._rosRosterLookup||{})[lookupKey];
+    if (ri && ri.statusId === '3') {
+      statusBadge = '<span style="font-size:9px;font-weight:500;color:#b7791f;background:#fef3e2;border:0.5px solid rgba(183,121,31,0.30);border-radius:8px;padding:1px 5px;margin-left:6px;white-space:nowrap">IR</span>';
+    } else if (!_rosHasMLBRole(p, !!p.isHit)) {
+      statusBadge = '<span style="font-size:9px;font-weight:500;color:#854f0b;background:rgba(186,117,23,0.14);border:0.5px solid rgba(186,117,23,0.30);border-radius:8px;padding:1px 5px;margin-left:6px;white-space:nowrap">Minor</span>';
+    }
     return '<div onclick="rosAdSelect(\''+side+'\','+i+')" style="display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;border-bottom:0.5px solid #ece9e3;background:#fff" onmouseover="this.style.background=\'#f5f3ef\'" onmouseout="this.style.background=\'#fff\'">'
       + avatarHtml
-      + '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:500;color:#2c2a26;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center">'+p._displayName+minorBadge+'</div>'
+      + '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:500;color:#2c2a26;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center">'+p._displayName+statusBadge+'</div>'
       + '<div style="font-size:10px;color:#888780">'+p._pos+' · '+(p._team||'')+'</div></div>'
       + '<span style="font-size:11px;font-weight:500;color:'+_rosAdCol(sgpV)+';flex-shrink:0">'+_rosAdFmt(sgpV)+'</span>'
       + '</div>';
@@ -16996,7 +17002,7 @@ function renderROSTradeLab() {
       var teamId = (cells[1]&&cells[1].teamId)||'';
       var teamName = teamId ? ((S.teamInfo[teamId]||{}).shortName||(S.teamInfo[teamId]||{}).name||'') : '';
       var key = normN(name);
-      window._rosRosterLookup[key] = { teamId:teamId, teamName:teamName };
+      window._rosRosterLookup[key] = { teamId:teamId, teamName:teamName, statusId: row.statusId || '1' };
     });
   }
 
