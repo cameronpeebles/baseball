@@ -2641,6 +2641,73 @@ function init() {
     S.rosterRaw = rosters;
     buildRosterSelector();
     computeZScores();
+
+    // Eagerly load FanGraphs ROS data so the Team Diagnostic card on the
+    // dashboard can compute ROS% without requiring a visit to the ROS page.
+    // The dashboard renders below with whatever data is available; when this
+    // arrives, we rebuild the dashboard so the 4th input bar appears.
+    (function preloadRosData() {
+      function buildLookups() {
+        // Build _rosRosterLookup + _rosCurrentStats from S.hitRows/S.pitRows
+        // if they don't already exist. Idempotent — safe to call again later
+        // when the ROS page renders.
+        if (window._rosRosterLookup && Object.keys(window._rosRosterLookup).length) return;
+        if (!S.hitRows || !S.pitRows) return;
+        window._rosRosterLookup = {};
+        window._rosCurrentStats = window._rosCurrentStats || {};
+        function normRos(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+        var _hitIdx = (typeof buildStatIdx === 'function') ? buildStatIdx(S.hitHeaders) : {};
+        var _pitIdx = (typeof buildStatIdx === 'function') ? buildStatIdx(S.pitHeaders) : {};
+        var allRows = (S.hitRows||[]).concat(S.pitRows||[]);
+        allRows.forEach(function(row){
+          var sc = row.scorer||{};
+          var name = sc.name||''; if(!name) return;
+          var isHitter = (S.hitRows||[]).indexOf(row) !== -1;
+          var idx3 = isHitter ? _hitIdx : _pitIdx;
+          var cells = row.cells||[];
+          var teamId = (cells[1]&&cells[1].teamId)||'';
+          var teamName = teamId ? ((S.teamInfo[teamId]||{}).shortName||(S.teamInfo[teamId]||{}).name||'') : '';
+          var key = normRos(name);
+          window._rosRosterLookup[key] = { teamId:teamId, teamName:teamName, statusId: row.statusId || '1' };
+          // Current season stats (mirror the ROS page's tryRender block)
+          function gv3(cat){ return (typeof getStatVal === 'function') ? getStatVal(cells, cat, idx3) : null; }
+          if (isHitter) {
+            window._rosCurrentStats[key] = {
+              R: gv3('R'), HR: gv3('HR'), RBI: gv3('RBI'), SB: gv3('SB'),
+              AVG: gv3('AVG'), AB: gv3('AB'),
+              pos: (sc.pos || '') + ''
+            };
+          } else {
+            window._rosCurrentStats[key] = {
+              W: gv3('W'), K: gv3('K'), SVH3: gv3('SVH3'),
+              ERA: gv3('ERA'), WHIP: gv3('WHIP'), IP: gv3('IP'),
+              pos: (sc.pos || '') + ''
+            };
+          }
+        });
+      }
+      buildLookups();
+
+      // Skip if data already loaded (e.g., user navigated back)
+      if (_rosHitData && _rosPitData) return;
+
+      var hitDone = false, pitDone = false;
+      function maybeRefresh() {
+        if (!hitDone || !pitDone) return;
+        // Rebuild the dashboard so the diagnostic card picks up rosPct
+        var dashEl = document.getElementById('page-dashboard');
+        if (dashEl && typeof renderDashboard === 'function') {
+          try { renderDashboard(); } catch(e) { console.warn('Dashboard refresh after ROS load failed:', e); }
+        }
+      }
+      loadJSON('fantasypros_hitters.json')
+        .then(function(d){ _rosHitData = d || []; hitDone = true; maybeRefresh(); })
+        .catch(function(){ _rosHitData = []; hitDone = true; maybeRefresh(); });
+      loadJSON('fantasypros_pitchers.json')
+        .then(function(d){ _rosPitData = d || []; pitDone = true; maybeRefresh(); })
+        .catch(function(){ _rosPitData = []; pitDone = true; maybeRefresh(); });
+    })();
+
     renderDashboard();
     // Pre-build fWAR model inputs (calculation waits for user to click Recalculate)
     renderFWARPage();
