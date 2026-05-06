@@ -3356,8 +3356,9 @@ function drawPlayers(type) {
     html += '<td>' + ratingBadge(ratings.lgRating)  + '</td>';
 
     // Curr SGP / ROS SGP cells
-    var currSgpVal = isHit ? (window._playerCurrSgpHit||{})[nameLow] : (window._playerCurrSgpPit||{})[nameLow];
-    var rosSgpVal  = isHit ? (window._playerRosSgpHit ||{})[nameLow] : (window._playerRosSgpPit ||{})[nameLow];
+    var sgpKey   = (typeof _normPlayerKey === 'function') ? _normPlayerKey(name) : nameLow;
+    var currSgpVal = isHit ? (window._playerCurrSgpHit||{})[sgpKey] : (window._playerCurrSgpPit||{})[sgpKey];
+    var rosSgpVal  = isHit ? (window._playerRosSgpHit ||{})[sgpKey] : (window._playerRosSgpPit ||{})[sgpKey];
     function _sgpCol(v) {
       if (v == null) return 'var(--muted)';
       if (v >= 2.0) return '#1e6b3a';
@@ -3374,8 +3375,9 @@ function drawPlayers(type) {
 
     // Archetype cell
     var fpctA = fwarPctLookup[nameLow];
-    var rosPA = isHit ? (window._playerRosPctHit||{})[nameLow] : (window._playerRosPctPit||{})[nameLow];
-    var arch  = getArchetype(fpctA != null ? fpctA / 100 : null, ratings.posRating, ratings.lgRating, rosPA != null ? rosPA / 100 : null);
+    var rosPA = isHit ? (window._playerRosPctHit||{})[sgpKey] : (window._playerRosPctPit||{})[sgpKey];
+    var arch  = getArchetype(fpctA != null ? fpctA / 100 : null, ratings.posRating, ratings.lgRating, rosPA != null ? rosPA / 100 : null,
+      { AB: isHit ? stats2['AB'] : null, IP: isHit ? null : stats2['IP'], name: name });
     if (arch) {
       html += '<td style="white-space:nowrap"><span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:' + arch.color + '22;color:' + arch.color + ';border:1px solid ' + arch.color + '44">' + arch.name + '</span></td>';
     } else {
@@ -3622,14 +3624,15 @@ function showRoster(teamId) {
       html += '<td style="white-space:nowrap">' + rosterRatingBadge(lgR  != null ? lgR  : null) + '</td>';
 
       // Curr SGP / ROS SGP / Archetype cells (player-level, no team context)
-      // Use normN3 first, fall back to _normPlayerKey (strips parenthetical suffixes too)
+      // Use _normPlayerKey (strips Jr/Sr suffixes for cross-source matching) first,
+      // fall back to normN3 (raw lowercase, no parens stripped)
       var nameKeyAlt = (typeof _normPlayerKey === 'function') ? _normPlayerKey(name) : normN3;
       var currSgpMap = isHitSection ? (window._playerCurrSgpHit||{}) : (window._playerCurrSgpPit||{});
       var rosSgpMap  = isHitSection ? (window._playerRosSgpHit ||{}) : (window._playerRosSgpPit ||{});
       var rosPctMap2 = isHitSection ? (window._playerRosPctHit ||{}) : (window._playerRosPctPit ||{});
-      var currSgpV = currSgpMap[normN3] != null ? currSgpMap[normN3] : currSgpMap[nameKeyAlt];
-      var rosSgpV  = rosSgpMap [normN3] != null ? rosSgpMap [normN3] : rosSgpMap [nameKeyAlt];
-      var rosPctV2 = rosPctMap2[normN3] != null ? rosPctMap2[normN3] : rosPctMap2[nameKeyAlt];
+      var currSgpV = currSgpMap[nameKeyAlt] != null ? currSgpMap[nameKeyAlt] : currSgpMap[normN3];
+      var rosSgpV  = rosSgpMap [nameKeyAlt] != null ? rosSgpMap [nameKeyAlt] : rosSgpMap [normN3];
+      var rosPctV2 = rosPctMap2[nameKeyAlt] != null ? rosPctMap2[nameKeyAlt] : rosPctMap2[normN3];
       function _rsSgpCol(v) {
         if (v == null) return 'var(--muted)';
         if (v >= 2.0) return '#1e6b3a';
@@ -3648,8 +3651,16 @@ function showRoster(teamId) {
         : ((window._fwarPctLookupPit||window._fwarPctLookup||{})[normN3] != null
             ? (window._fwarPctLookupPit||window._fwarPctLookup||{})[normN3]
             : (window._fwarPctLookupPit||window._fwarPctLookup||{})[name.toLowerCase()]);
+      // Look up AB/IP from row cells via header keys for partial-season detection
+      var rowAB = null, rowIP = null;
+      for (var hi = 0; hi < (headers||[]).length; hi++) {
+        var hkey = ((headers[hi].key || headers[hi].shortName || '') + '').toUpperCase();
+        if (hkey === 'AB' && cells[hi]) rowAB = parseFloat((cells[hi].content||'').toString().replace(/<[^>]+>/g, '')) || 0;
+        if (hkey === 'IP' && cells[hi]) rowIP = parseFloat((cells[hi].content||'').toString().replace(/<[^>]+>/g, '')) || 0;
+      }
       var archRos = (typeof getArchetype === 'function')
-        ? getArchetype(fpctRos != null ? fpctRos / 100 : null, posR, lgR, rosPctV2 != null ? rosPctV2 / 100 : null)
+        ? getArchetype(fpctRos != null ? fpctRos / 100 : null, posR, lgR, rosPctV2 != null ? rosPctV2 / 100 : null,
+            { AB: isHitSection ? rowAB : null, IP: isHitSection ? null : rowIP, name: name })
         : null;
       if (archRos) {
         html += '<td style="white-space:nowrap"><span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:'+archRos.color+'22;color:'+archRos.color+';border:1px solid '+archRos.color+'44">'+archRos.name+'</span></td>';
@@ -8050,7 +8061,12 @@ window._playerRosCatHit  = window._playerRosCatHit  || {};
 window._playerRosCatPit  = window._playerRosCatPit  || {};
 
 function _normPlayerKey(n) {
-  return (n||'').replace(/\s*\([^)]*\).*$/, '').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+  // Strip parenthetical suffixes, lowercase, drop non-letters, collapse whitespace.
+  // Then strip common name suffixes (Jr, Sr, II, III, IV) so "Jazz Chisholm Jr"
+  // and "Jazz Chisholm" produce the same key — these vary across data sources.
+  var k = (n||'').replace(/\s*\([^)]*\).*$/, '').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+  k = k.replace(/\s+(jr|sr|ii|iii|iv)$/, '').trim();
+  return k;
 }
 
 function _buildPlayerSgpLookups() {
@@ -8165,30 +8181,64 @@ function _buildPlayerSgpLookups() {
   window._playerRosPctPit = buildPctLookup(rosPit);
 }
 
-function getArchetype(fwarPct, posRating, lgRating, rosPct) {
+function getArchetype(fwarPct, posRating, lgRating, rosPct, opts) {
   if (fwarPct == null || posRating == null || lgRating == null) return null;
+  opts = opts || {};
 
   var fp  = fwarPct * 100;   // already 0–100
   var pr  = posRating * 100; // 0–1 → 0–100
   var lr  = lgRating * 100;  // 0–1 → 0–100
   var rp  = rosPct != null ? rosPct * 100 : null;
 
-  // ── ROS-aware 9-rule cascade ────────────────────────────────────────────
+  // ── Partial-season guard ────────────────────────────────────────────────
+  // When the player has <10 AB or <5 IP they get filtered from need-weighting
+  // upstream, but the archetype label still gets computed. For these players
+  // the cascade misleads — e.g. a returning IL player with 4 AB and a strong
+  // ROS projection looks like "Buy-Low" but is really "Returning from IL."
+  // Caller passes opts.AB/opts.IP from the row; we route them to a special
+  // "Returning" label and short-circuit.
+  if (opts.AB != null && opts.AB < 10 && opts.IP == null) {
+    if (rp != null && rp >= 50) {
+      return { name: 'Returning · High Ceiling', color: '#1abc9c', action: 'Activate / monitor', desc: 'Limited current sample (≤10 AB) but ROS projects strong production.' };
+    }
+    return { name: 'Limited Sample',  color: '#9b9b9b', action: 'Wait & see', desc: 'Insufficient current playing time to classify reliably.' };
+  }
+  if (opts.IP != null && opts.IP < 5 && opts.AB == null) {
+    if (rp != null && rp >= 50) {
+      return { name: 'Returning · High Ceiling', color: '#1abc9c', action: 'Activate / monitor', desc: 'Limited current sample (≤5 IP) but ROS projects strong production.' };
+    }
+    return { name: 'Limited Sample',  color: '#9b9b9b', action: 'Wait & see', desc: 'Insufficient current playing time to classify reliably.' };
+  }
+
+  // ── ROS-aware 11-rule cascade ───────────────────────────────────────────
   // When ROS data is available, classify using fwar / rating(=lg) / ros so
   // archetype reflects forward-looking expectation, not just current results.
   if (rp != null) {
     var aH = fp >= 65, aM = fp >= 45 && fp < 65, aL = fp < 45;
     var bH = rp >= 65, bM = rp >= 45 && rp < 65, bL = rp < 45;
     var cH = lr >= 65, cM = lr >= 45 && lr < 65, cL = lr < 45;
-    if (aH && bH && cH) return { name: 'True Elite',           color: '#1e6b3a', action: 'Untouchable cornerstone',  desc: 'Production, projection, and talent all elite.' };
-    if (aH && bL)        return { name: 'Sell High',            color: '#854f0b', action: 'Trade while value is up',  desc: 'Producing now but ROS projects regression.' };
-    if (aH && cL)        return { name: 'Format Mismatch Star', color: '#2980b9', action: 'Hold / slight sell-high',  desc: 'Producing here, but talent valuation lower league-wide.' };
-    if (aH && bM && cM)  return { name: 'Overperformer',        color: '#c0392b', action: 'Sell-high',                desc: 'Output above what projection or talent supports.' };
-    if (aM && bH)        return { name: 'Breakout Candidate',   color: '#8e44ad', action: 'Buy-low / hold',           desc: 'Average results but ROS projects upward.' };
-    if (aL && bH)        return { name: 'Buy-Low',              color: '#16a085', action: 'Buy-low',                  desc: 'Down right now, but ROS projects rebound.' };
-    if (aL && cH)        return { name: 'Underperforming Stud', color: '#e67e22', action: 'Buy-low',                  desc: 'Talent says yes, results haven\u2019t shown it.' };
-    if (aL && bL && cL)  return { name: 'Replacement Level',    color: '#888888', action: 'Drop / ignore',            desc: 'Weak across all three signals.' };
-    return                       { name: 'Stable Contributor',  color: '#1a1a1a', action: 'Hold',                     desc: 'Balanced across signals — reliable, not elite.' };
+    if (aH && bH && cH)  return { name: 'True Elite',            color: '#1e6b3a', action: 'Untouchable cornerstone',  desc: 'Production, projection, and talent all elite.' };
+    if (aH && bH && cM)  return { name: 'Solid Performer',       color: '#2d7a5a', action: 'Hold / mild monitor',      desc: 'High results and ROS, talent valuation merely solid.' };
+    if (aH && bL)        return { name: 'Sell High',             color: '#854f0b', action: 'Trade while value is up',  desc: 'Producing now but ROS projects regression.' };
+    if (aH && cL)        return { name: 'Format Mismatch Star',  color: '#2980b9', action: 'Hold / slight sell-high',  desc: 'Producing here, but talent valuation lower league-wide.' };
+    if (aH && bM && cM)  return { name: 'Overperformer',         color: '#c0392b', action: 'Sell-high',                desc: 'Output above what projection or talent supports.' };
+    if (aM && bH)        return { name: 'Breakout Candidate',    color: '#8e44ad', action: 'Buy-low / hold',           desc: 'Average results but ROS projects upward.' };
+    if (aM && bL)        return { name: 'Fading',                color: '#854f0b', action: 'Sell-high',                desc: 'Average results with weak ROS — get out before it slides.' };
+    if (aM && bM)        return { name: 'Middle of the Pack',    color: '#888888', action: 'Hold / minor moves',       desc: 'Mid across the board — neither breaking out nor regressing.' };
+    if (aL && bH)        return { name: 'Buy-Low',               color: '#16a085', action: 'Buy-low',                  desc: 'Down right now, but ROS projects rebound.' };
+    if (aL && cH)        return { name: 'Underperforming Stud',  color: '#e67e22', action: 'Buy-low',                  desc: 'Talent says yes, results haven\u2019t shown it.' };
+    if (aL && bL && cL)  return { name: 'Replacement Level',     color: '#888888', action: 'Drop / ignore',            desc: 'Weak across all three signals.' };
+    return                       { name: 'Stable Contributor',   color: '#1a1a1a', action: 'Hold',                     desc: 'Balanced across signals — reliable, not elite.' };
+  }
+
+  // ── Dev-mode warning when ROS is missing despite player data being present
+  // Surfaces name-matching bugs (e.g. "Jazz Chisholm Jr." not matching FP feed)
+  if (typeof window !== 'undefined' && window._rosHitData && window._rosHitData.length && opts && opts.name && !window._rosArchetypeWarnings) {
+    window._rosArchetypeWarnings = {};
+  }
+  if (typeof window !== 'undefined' && window._rosHitData && window._rosHitData.length && opts && opts.name && window._rosArchetypeWarnings && !window._rosArchetypeWarnings[opts.name]) {
+    window._rosArchetypeWarnings[opts.name] = true;
+    console.warn('[archetype] no ROS% lookup for "' + opts.name + '" — falling back to legacy cascade. Likely name-mismatch in FP feed.');
   }
 
   // ── Legacy 9-rule cascade (no ROS) ─────────────────────────────────────
