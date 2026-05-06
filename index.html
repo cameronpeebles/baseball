@@ -382,6 +382,11 @@ td.neg { color: #c0392b; font-weight: 500; }
         <!-- 8. Strengths & Weaknesses -->
         <div style="width:250px;height:250px;flex-shrink:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px" id="fwar-profile-sw"></div>
 
+        <!-- 9. ROS Outlook (NEW) -->
+        <div style="width:250px;height:250px;flex-shrink:0;overflow:hidden;background:var(--surface);border:0.5px solid rgba(29,158,117,0.40);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;position:relative" id="fwar-profile-ros">
+          <div style="position:absolute;top:-7px;right:8px;font-size:8px;font-weight:500;color:#1e6b3a;background:var(--surface);padding:1px 6px;border-radius:8px;border:0.5px solid rgba(29,158,117,0.30);text-transform:uppercase;letter-spacing:0.04em">New</div>
+        </div>
+
       </div>
     </div>
 
@@ -406,11 +411,11 @@ td.neg { color: #c0392b; font-weight: 500; }
           <div class="pill-group" id="hit-arch-pills">
             <button class="pill active" onclick="setArch('hit','ALL',this)">All</button>
             <button class="pill" onclick="setArch('hit','True Elite',this)">True Elite</button>
-            <button class="pill" onclick="setArch('hit','Elite Asset',this)">Elite Asset</button>
+            <button class="pill" onclick="setArch('hit','Sell High',this)">Sell High</button>
             <button class="pill" onclick="setArch('hit','Format Mismatch Star',this)">Format Mismatch</button>
             <button class="pill" onclick="setArch('hit','Overperformer',this)">Overperformer</button>
             <button class="pill" onclick="setArch('hit','Breakout Candidate',this)">Breakout</button>
-            <button class="pill" onclick="setArch('hit','Positional Play',this)">Positional Play</button>
+            <button class="pill" onclick="setArch('hit','Buy-Low',this)">Buy-Low</button>
             <button class="pill" onclick="setArch('hit','Underperforming Stud',this)">Underperforming Stud</button>
             <button class="pill" onclick="setArch('hit','Stable Contributor',this)">Stable Contributor</button>
             <button class="pill" onclick="setArch('hit','Replacement Level',this)">Replacement Level</button>
@@ -449,11 +454,11 @@ td.neg { color: #c0392b; font-weight: 500; }
           <div class="pill-group" id="pit-arch-pills">
             <button class="pill active" onclick="setArch('pit','ALL',this)">All</button>
             <button class="pill" onclick="setArch('pit','True Elite',this)">True Elite</button>
-            <button class="pill" onclick="setArch('pit','Elite Asset',this)">Elite Asset</button>
+            <button class="pill" onclick="setArch('pit','Sell High',this)">Sell High</button>
             <button class="pill" onclick="setArch('pit','Format Mismatch Star',this)">Format Mismatch</button>
             <button class="pill" onclick="setArch('pit','Overperformer',this)">Overperformer</button>
             <button class="pill" onclick="setArch('pit','Breakout Candidate',this)">Breakout</button>
-            <button class="pill" onclick="setArch('pit','Positional Play',this)">Positional Play</button>
+            <button class="pill" onclick="setArch('pit','Buy-Low',this)">Buy-Low</button>
             <button class="pill" onclick="setArch('pit','Underperforming Stud',this)">Underperforming Stud</button>
             <button class="pill" onclick="setArch('pit','Stable Contributor',this)">Stable Contributor</button>
             <button class="pill" onclick="setArch('pit','Replacement Level',this)">Replacement Level</button>
@@ -1264,86 +1269,91 @@ td.neg { color: #c0392b; font-weight: 500; }
               <tbody>
                 <tr style="border-bottom:1px solid var(--border)">
                   <td style="padding:8px 12px;font-weight:600">fWAR%</td>
-                  <td style="padding:8px 12px;text-align:center">≥ 70</td>
-                  <td style="padding:8px 12px;text-align:center">50–69</td>
-                  <td style="padding:8px 12px;text-align:center">&lt; 50</td>
+                  <td style="padding:8px 12px;text-align:center">≥ 65</td>
+                  <td style="padding:8px 12px;text-align:center">45–64</td>
+                  <td style="padding:8px 12px;text-align:center">&lt; 45</td>
                 </tr>
-                <tr style="border-bottom:1px solid var(--border);background:var(--bg)">
-                  <td style="padding:8px 12px;font-weight:600">Pos Rating</td>
-                  <td style="padding:8px 12px;text-align:center">≥ 60</td>
-                  <td style="padding:8px 12px;text-align:center">45–59</td>
+                <tr style="border-bottom:1px solid var(--border);background:rgba(29,158,117,0.05)">
+                  <td style="padding:8px 12px;font-weight:600;color:#1e6b3a">ROS%</td>
+                  <td style="padding:8px 12px;text-align:center">≥ 65</td>
+                  <td style="padding:8px 12px;text-align:center">45–64</td>
                   <td style="padding:8px 12px;text-align:center">&lt; 45</td>
                 </tr>
                 <tr>
                   <td style="padding:8px 12px;font-weight:600">League Rating</td>
-                  <td style="padding:8px 12px;text-align:center">≥ 60</td>
-                  <td style="padding:8px 12px;text-align:center">45–59</td>
+                  <td style="padding:8px 12px;text-align:center">≥ 65</td>
+                  <td style="padding:8px 12px;text-align:center">45–64</td>
                   <td style="padding:8px 12px;text-align:center">&lt; 45</td>
                 </tr>
               </tbody>
             </table>
           </div>
 
+          <div style="background:rgba(29,158,117,0.06);border:0.5px solid rgba(29,158,117,0.30);border-radius:8px;padding:11px 14px;margin-bottom:14px">
+            <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#1e6b3a;margin-bottom:4px">Recent changes</div>
+            <div style="font-size:12px;line-height:1.6">Added two new sortable columns to the Player Data table — <strong>Curr SGP</strong> and <strong>ROS SGP</strong> — sitting between League Rating and Archetype. Added a <strong>ROS Outlook</strong> tile (9th profile card) that shows projected SGP, Δ vs current pace, per-category contribution mini-chart, and a Breakout / Regression / Stable signal. Replaced the previous 9 player archetypes with a <strong>new 9-rule cascade</strong> that incorporates ROS data — giving each archetype a forward-looking dimension. The legacy 9-rule cascade still runs as a fallback when ROS data isn't loaded.</div>
+          </div>
+
           <div style="display:flex;flex-direction:column;gap:8px">
-            <div style="display:grid;grid-template-columns:28px 140px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+            <div style="display:grid;grid-template-columns:28px 160px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
               <div style="width:14px;height:14px;border-radius:3px;background:#1e6b3a;margin-top:2px"></div>
-              <div><strong style="color:#1e6b3a">True Elite</strong><div style="font-size:11px;color:var(--muted)">High · High · High</div></div>
-              <div style="line-height:1.5">Dominant production, skill, and positional advantage.</div>
+              <div><strong style="color:#1e6b3a">True Elite</strong><div style="font-size:11px;color:var(--muted)">fWAR ≥ 65 · ROS ≥ 65 · Lg ≥ 65</div></div>
+              <div style="line-height:1.5">Production, projection, and talent all elite.</div>
               <div style="white-space:nowrap;font-weight:600;color:#1e6b3a">Untouchable cornerstone</div>
             </div>
-            <div style="display:grid;grid-template-columns:28px 140px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
-              <div style="width:14px;height:14px;border-radius:3px;background:#2d7a5a;margin-top:2px"></div>
-              <div><strong style="color:#2d7a5a">Elite Asset</strong><div style="font-size:11px;color:var(--muted)">High · High · Low/Med</div></div>
-              <div style="line-height:1.5">Producing and strong at position, skill slightly lagging.</div>
-              <div style="white-space:nowrap;font-weight:600;color:#2d7a5a">Hold (monitor for regression)</div>
+            <div style="display:grid;grid-template-columns:28px 160px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+              <div style="width:14px;height:14px;border-radius:3px;background:#854f0b;margin-top:2px"></div>
+              <div><strong style="color:#854f0b">Sell High</strong><div style="font-size:11px;color:var(--muted)">fWAR ≥ 65 · ROS &lt; 45</div></div>
+              <div style="line-height:1.5">Producing now but ROS projects regression.</div>
+              <div style="white-space:nowrap;font-weight:600;color:#854f0b">Trade while value is up</div>
             </div>
-            <div style="display:grid;grid-template-columns:28px 140px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+            <div style="display:grid;grid-template-columns:28px 160px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
               <div style="width:14px;height:14px;border-radius:3px;background:#2980b9;margin-top:2px"></div>
-              <div><strong style="color:#2980b9">Format Mismatch Star</strong><div style="font-size:11px;color:var(--muted)">High · Low · High</div></div>
-              <div style="line-height:1.5">Great player, producing, but position reduces edge.</div>
+              <div><strong style="color:#2980b9">Format Mismatch Star</strong><div style="font-size:11px;color:var(--muted)">fWAR ≥ 65 · Lg &lt; 45</div></div>
+              <div style="line-height:1.5">Producing here, but talent valuation lower league-wide.</div>
               <div style="white-space:nowrap;font-weight:600;color:#2980b9">Hold / slight sell-high</div>
             </div>
-            <div style="display:grid;grid-template-columns:28px 140px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+            <div style="display:grid;grid-template-columns:28px 160px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
               <div style="width:14px;height:14px;border-radius:3px;background:#c0392b;margin-top:2px"></div>
-              <div><strong style="color:#c0392b">Overperformer</strong><div style="font-size:11px;color:var(--muted)">High · Low · Low</div></div>
-              <div style="line-height:1.5">Fantasy output inflated vs underlying skill.</div>
+              <div><strong style="color:#c0392b">Overperformer</strong><div style="font-size:11px;color:var(--muted)">fWAR ≥ 65 · ROS Mid · Lg Mid</div></div>
+              <div style="line-height:1.5">Output above what projection or talent supports.</div>
               <div style="white-space:nowrap;font-weight:600;color:#c0392b">Sell-high</div>
             </div>
-            <div style="display:grid;grid-template-columns:28px 140px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+            <div style="display:grid;grid-template-columns:28px 160px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
               <div style="width:14px;height:14px;border-radius:3px;background:#8e44ad;margin-top:2px"></div>
-              <div><strong style="color:#8e44ad">Breakout Candidate</strong><div style="font-size:11px;color:var(--muted)">Low · High · High</div></div>
-              <div style="line-height:1.5">Strong skill + positional edge, results lagging.</div>
-              <div style="white-space:nowrap;font-weight:600;color:#8e44ad">Buy-low</div>
+              <div><strong style="color:#8e44ad">Breakout Candidate</strong><div style="font-size:11px;color:var(--muted)">fWAR Mid · ROS ≥ 65</div></div>
+              <div style="line-height:1.5">Average results but ROS projects upward.</div>
+              <div style="white-space:nowrap;font-weight:600;color:#8e44ad">Buy-low / hold</div>
             </div>
-            <div style="display:grid;grid-template-columns:28px 140px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+            <div style="display:grid;grid-template-columns:28px 160px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
               <div style="width:14px;height:14px;border-radius:3px;background:#16a085;margin-top:2px"></div>
-              <div><strong style="color:#16a085">Positional Play</strong><div style="font-size:11px;color:var(--muted)">Low · High · Low/Med</div></div>
-              <div style="line-height:1.5">Value driven mostly by scarcity, not skill.</div>
-              <div style="white-space:nowrap;font-weight:600;color:#16a085">Hold / stream</div>
+              <div><strong style="color:#16a085">Buy-Low</strong><div style="font-size:11px;color:var(--muted)">fWAR &lt; 45 · ROS ≥ 65</div></div>
+              <div style="line-height:1.5">Down right now, but ROS projects rebound.</div>
+              <div style="white-space:nowrap;font-weight:600;color:#16a085">Buy-low</div>
             </div>
-            <div style="display:grid;grid-template-columns:28px 140px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+            <div style="display:grid;grid-template-columns:28px 160px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
               <div style="width:14px;height:14px;border-radius:3px;background:#e67e22;margin-top:2px"></div>
-              <div><strong style="color:#e67e22">Underperforming Stud</strong><div style="font-size:11px;color:var(--muted)">Low · Low · High</div></div>
-              <div style="line-height:1.5">Great player, not converting to fantasy yet.</div>
+              <div><strong style="color:#e67e22">Underperforming Stud</strong><div style="font-size:11px;color:var(--muted)">fWAR &lt; 45 · Lg ≥ 65</div></div>
+              <div style="line-height:1.5">Talent says yes, results haven't shown it.</div>
               <div style="white-space:nowrap;font-weight:600;color:#e67e22">Buy-low</div>
             </div>
-            <div style="display:grid;grid-template-columns:28px 140px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+            <div style="display:grid;grid-template-columns:28px 160px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
               <div style="width:14px;height:14px;border-radius:3px;background:#1a1a1a;margin-top:2px"></div>
-              <div><strong style="color:#1a1a1a">Stable Contributor</strong><div style="font-size:11px;color:var(--muted)">Mid · Mid · Mid</div></div>
-              <div style="line-height:1.5">Consistent across the board - reliable but not elite.</div>
+              <div><strong style="color:#1a1a1a">Stable Contributor</strong><div style="font-size:11px;color:var(--muted)">balanced fallback</div></div>
+              <div style="line-height:1.5">Balanced across signals — reliable, not elite.</div>
               <div style="white-space:nowrap;font-weight:600;color:#1a1a1a">Hold</div>
             </div>
-            <div style="display:grid;grid-template-columns:28px 140px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
+            <div style="display:grid;grid-template-columns:28px 160px 1fr auto;gap:10px;align-items:start;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px">
               <div style="width:14px;height:14px;border-radius:3px;background:#888888;margin-top:2px"></div>
-              <div><strong style="color:#888888">Replacement Level</strong><div style="font-size:11px;color:var(--muted)">Low · Low · Low</div></div>
-              <div style="line-height:1.5">Weak across the board.</div>
+              <div><strong style="color:#888888">Replacement Level</strong><div style="font-size:11px;color:var(--muted)">fWAR &lt; 45 · ROS &lt; 45 · Lg &lt; 45</div></div>
+              <div style="line-height:1.5">Weak across all three signals.</div>
               <div style="white-space:nowrap;font-weight:600;color:#888888">Drop / ignore</div>
             </div>
           </div>
 
           <div style="margin-top:16px;padding:12px 16px;background:#fef3e2;border-radius:8px;border-left:4px solid #c8a96e">
             <div style="font-size:12px;font-weight:700;color:#b7791f;margin-bottom:4px">How to use archetypes</div>
-            <div style="font-size:12px;line-height:1.7;color:#7a5c2e">The gap between League Rating and fWAR% is the key signal. A high League Rating with low fWAR% means a real baseball star who doesn't fit this league's scoring - sell-high opportunity. A low League Rating with high fWAR% means an undervalued fantasy gem - hold or buy more. Click any player row on the Player Data page to see their full archetype breakdown.</div>
+            <div style="font-size:12px;line-height:1.7;color:#7a5c2e">The most actionable signals come from <em>gaps between</em> the three inputs. <strong>fWAR ≥ 65 + ROS &lt; 45</strong> means a Sell High candidate — currently producing, projected to fall. <strong>fWAR &lt; 45 + ROS ≥ 65</strong> means a Buy-Low candidate — down right now but projected to rebound. <strong>League Rating ≥ 65 + fWAR &lt; 45</strong> means an Underperforming Stud — talent says yes, results haven't shown it. Click any player row on the Player Data page to see their full breakdown including the new ROS Outlook tile (rightmost).</div>
           </div>
         </div>
       </div>
@@ -1395,6 +1405,45 @@ td.neg { color: #c0392b; font-weight: 500; }
 
           <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6">
             <strong>Reading the chart:</strong> When fWAR% (yellow) sits above League Rating (blue) in a category, the player is generating more fantasy value in that category than their raw stats suggest - often due to category scarcity or weight. When it sits below, the raw stat is strong but not converting to fantasy value.
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:800px">
+        <div class="card-header"><span class="card-title">Curr SGP &amp; ROS SGP columns</span><span style="font-size:12px;color:var(--muted)">New sortable columns in the Player Data table</span></div>
+        <div class="card-body" style="padding:20px">
+          <p style="font-size:13px;line-height:1.7;margin-bottom:14px">Two new sortable columns sit between League Rating and Archetype, both showing raw player SGP (no team-context multipliers, no need-weighting). Sort by either to surface specific player profiles — high Curr / low ROS for sell candidates, low Curr / high ROS for buy targets.</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+            <div style="padding:14px;background:var(--bg);border-radius:8px;border-top:3px solid #1e6b3a">
+              <div style="font-weight:700;font-size:12px;color:#1e6b3a;margin-bottom:6px">CURR SGP</div>
+              <div style="font-size:12px;line-height:1.6">SGP from this season's stats only. Backward-looking — what the player has actually produced. Calculated against a neutral 4000-AB / 1300-IP league pool at .260 / 3.90 / 1.20 baselines so values are intrinsic to the player, not skewed by any one team's context.</div>
+            </div>
+            <div style="padding:14px;background:var(--bg);border-radius:8px;border-top:3px solid #1e6b3a">
+              <div style="font-weight:700;font-size:12px;color:#1e6b3a;margin-bottom:6px">ROS SGP</div>
+              <div style="font-size:12px;line-height:1.6">SGP from FantasyPros rest-of-season projections. Forward-looking — what the player is projected to produce. Same neutral-pool calculation as Curr SGP for direct comparison.</div>
+            </div>
+          </div>
+          <div style="font-family:monospace;background:var(--surface);padding:10px 12px;border-radius:6px;font-size:11px;line-height:1.7;margin-bottom:8px">
+            counting_sgp = stat / SGP_denominator<br>
+            avg_sgp      = (newAVG − poolAVG) / 0.008 × min(1, AB / 350)<br>
+            era_sgp      = (poolERA − newERA) / 0.106<br>
+            whip_sgp     = (poolWHIP − newWHIP) / 0.0191<br>
+            <br>
+            total_sgp    = Σ catSGP × trust_factor
+          </div>
+          <p style="font-size:11px;line-height:1.7;color:var(--muted)">Trust = min(1, AB/250) for hitters, min(1, IP/60) for SP, min(1, IP/30) for RP. AVG additionally applies the 350-AB sub-trust to dampen rate-stat noise on partial-season players.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:800px">
+        <div class="card-header"><span class="card-title">ROS Outlook tile</span><span style="font-size:12px;color:var(--muted)">9th profile card · click any player row</span></div>
+        <div class="card-body" style="padding:20px">
+          <p style="font-size:13px;line-height:1.7;margin-bottom:12px">When you click a player row, a new <strong>ROS Outlook</strong> tile appears at the right end of the profile panel (with a green NEW ribbon). It packs four pieces of forward-looking information into the standard 250×250 tile.</p>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Headline ROS SGP</strong> — large green number, color tier matches the table cell color (≥2.0 dark green, ≥0.5 light green, ≥−0.5 neutral, &lt; −0.5 red).</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Curr SGP + Δ vs ROS</strong> — two small tiles below the headline. The Δ is signed (ROS − Curr) and color-coded: ≥+0.5 green (improving), ≥−0.5 neutral, &lt; −0.5 amber (regressing).</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>5-bar mini-chart</strong> — per-category ROS SGP contribution (R/HR/RBI/SB/AVG for hitters, W/K/SVH3/ERA/WHIP for pitchers). Bar height shows magnitude relative to the player's largest contributor; color shows direction (green positive, red negative, gray near zero).</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Signal callout</strong> — at the bottom, a one-line read on the Δ: <span style="color:#1e6b3a;font-weight:500">↑ Breakout signal</span> when ROS exceeds Curr by ≥1.0 SGP, <span style="color:#854f0b;font-weight:500">↓ Regression risk</span> when Curr exceeds ROS by ≥1.0 SGP, <span style="color:#5a594f;font-weight:500">= Stable</span> otherwise.</div>
           </div>
         </div>
       </div>
@@ -2778,10 +2827,17 @@ function init() {
       var hitDone = false, pitDone = false;
       function maybeRefresh() {
         if (!hitDone || !pitDone) return;
+        // Build player-level ROS / Curr SGP lookups so the Player Data page
+        // can show forward-looking columns + ROS-aware archetypes.
+        try { _buildPlayerSgpLookups(); } catch(e) { console.warn('Player SGP lookup build failed:', e); }
         // Rebuild the dashboard so the diagnostic card picks up rosPct
         var dashEl = document.getElementById('page-dashboard');
         if (dashEl && typeof renderDashboard === 'function') {
           try { renderDashboard(); } catch(e) { console.warn('Dashboard refresh after ROS load failed:', e); }
+        }
+        // Refresh the Player Data table if it's been rendered
+        if (window._fwarRendered && typeof recalculateFWAR === 'function') {
+          try { recalculateFWAR(); } catch(e) { console.warn('FWAR refresh after ROS load failed:', e); }
         }
       }
       loadJSON('fantasypros_hitters.json')
@@ -3058,7 +3114,7 @@ function drawPlayers(type) {
     var ftId   = (cells[1] && cells[1].teamId) || '';
     var fw     = fwarLookup[name];
     var fgRow  = hasFG ? (fgLookup[name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim()] || fgLookup[name.toLowerCase()] || null) : null;
-    return { row: row, scorer: scorer, cells: cells, name: name, ftId: ftId, fw: fw, fgRow: fgRow };
+    return { row: row, scorer: scorer, cells: cells, name: name, ftId: ftId, fw: fw, fgRow: fgRow, isHit: isHit };
   });
 
   var posFilter = isHit ? S.hitPos : S.pitPos;
@@ -3097,7 +3153,8 @@ function drawPlayers(type) {
       var fpctA2  = window._fwarPctLookup  ? window._fwarPctLookup[nameLow]  : null;
       var posRA2  = window._posRatingLookup ? window._posRatingLookup[nameLow] : null;
       var lgRA2   = window._lgRatingLookup  ? window._lgRatingLookup[nameLow]  : null;
-      var arch2   = getArchetype(fpctA2 != null ? fpctA2 / 100 : null, posRA2, lgRA2);
+      var rosPA2  = isHit ? (window._playerRosPctHit||{})[nameLow] : (window._playerRosPctPit||{})[nameLow];
+      var arch2   = getArchetype(fpctA2 != null ? fpctA2 / 100 : null, posRA2, lgRA2, rosPA2 != null ? rosPA2 / 100 : null);
       if (!arch2 || arch2.name !== archFilter) return false;
     }
     return true;
@@ -3167,6 +3224,8 @@ function drawPlayers(type) {
   }
   html += thSort('Pos Rating',   '__posRating',  '#5b8db8', 'font-size:11px;font-weight:700;');
   html += thSort('League Rating','__lgRating',   '#7bc8a4', 'font-size:11px;font-weight:700;');
+  html += thSort('Curr SGP',     '__currSgp',    '#1e6b3a', 'font-size:11px;font-weight:700;');
+  html += thSort('ROS SGP',      '__rosSgp',     '#1e6b3a', 'font-size:11px;font-weight:700;');
   html += '<th style="font-size:11px;font-weight:700;white-space:nowrap;color:#c0392b">Archetype</th>';
   // Fantrax cols in desired order
   ftxCols.forEach(function(d) {
@@ -3187,7 +3246,7 @@ function drawPlayers(type) {
     html += '<tr class="lg-avg-row" style="border-bottom:2px solid #2980b9">';
     html += '<td class="left" style="font-weight:600;font-size:11px;color:#2980b9;white-space:nowrap" colspan="3">MLB Avg (Savant)</td>';
     if (hasFWAR) html += '<td></td><td></td><td></td>';
-    html += '<td></td><td></td><td></td>'; // Pos Rating, League Rating, Archetype
+    html += '<td></td><td></td><td></td><td></td><td></td>'; // Pos Rating, League Rating, Curr SGP, ROS SGP, Archetype
     ftxCols.forEach(function() { html += '<td></td>'; });
     fgCols.forEach(function(c) {
       var v = fgLeague[c];
@@ -3274,9 +3333,27 @@ function drawPlayers(type) {
     html += '<td>' + ratingBadge(ratings.posRating) + '</td>';
     html += '<td>' + ratingBadge(ratings.lgRating)  + '</td>';
 
+    // Curr SGP / ROS SGP cells
+    var currSgpVal = isHit ? (window._playerCurrSgpHit||{})[nameLow] : (window._playerCurrSgpPit||{})[nameLow];
+    var rosSgpVal  = isHit ? (window._playerRosSgpHit ||{})[nameLow] : (window._playerRosSgpPit ||{})[nameLow];
+    function _sgpCol(v) {
+      if (v == null) return 'var(--muted)';
+      if (v >= 2.0) return '#1e6b3a';
+      if (v >= 0.5) return '#4a9a68';
+      if (v >= -0.5) return '#5a594f';
+      return '#c0392b';
+    }
+    function _sgpFmt(v) {
+      if (v == null) return '-';
+      return (v >= 0 ? '+' : '') + v.toFixed(2);
+    }
+    html += '<td style="font-weight:600;color:'+_sgpCol(currSgpVal)+';font-size:11px;background:rgba(29,158,117,0.04)">'+_sgpFmt(currSgpVal)+'</td>';
+    html += '<td style="font-weight:600;color:'+_sgpCol(rosSgpVal)+';font-size:11px;background:rgba(29,158,117,0.04)">'+_sgpFmt(rosSgpVal)+'</td>';
+
     // Archetype cell
     var fpctA = fwarPctLookup[nameLow];
-    var arch  = getArchetype(fpctA != null ? fpctA / 100 : null, ratings.posRating, ratings.lgRating);
+    var rosPA = isHit ? (window._playerRosPctHit||{})[nameLow] : (window._playerRosPctPit||{})[nameLow];
+    var arch  = getArchetype(fpctA != null ? fpctA / 100 : null, ratings.posRating, ratings.lgRating, rosPA != null ? rosPA / 100 : null);
     if (arch) {
       html += '<td style="white-space:nowrap"><span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:' + arch.color + '22;color:' + arch.color + ';border:1px solid ' + arch.color + '44">' + arch.name + '</span></td>';
     } else {
@@ -3325,6 +3402,18 @@ function getPlayerSortVal(e, col, headers) {
   if (col === '__totalZ')    return e.fw ? e.fw.totalZ : null;
   if (col === '__posRating') return window._posRatingLookup ? (window._posRatingLookup[e.name.toLowerCase()]||null) : null;
   if (col === '__lgRating')  return window._lgRatingLookup  ? (window._lgRatingLookup[e.name.toLowerCase()]||null)  : null;
+  if (col === '__currSgp') {
+    var nlc = e.name.toLowerCase();
+    var ish = e.isHit !== undefined ? e.isHit : true;
+    var lk = ish ? (window._playerCurrSgpHit||{}) : (window._playerCurrSgpPit||{});
+    return lk[nlc] != null ? lk[nlc] : null;
+  }
+  if (col === '__rosSgp') {
+    var nlc2 = e.name.toLowerCase();
+    var ish2 = e.isHit !== undefined ? e.isHit : true;
+    var lk2 = ish2 ? (window._playerRosSgpHit||{}) : (window._playerRosSgpPit||{});
+    return lk2[nlc2] != null ? lk2[nlc2] : null;
+  }
   if (col.indexOf('__fg_') === 0) {
     var c = col.slice(5);
     return e.fgRow ? e.fgRow[c] : null;
@@ -7887,13 +7976,161 @@ function getStatVal(cells, key, idx) {
 // ── Player Archetype ─────────────────────────────────────────────────────────
 // Thresholds: fWAR% and Pos Rating: High ≥ 60, Low < 40
 //             League Rating:        High ≥ 65, Med 45–64, Low < 45
-function getArchetype(fwarPct, posRating, lgRating) {
+// ── Player-level ROS / Curr SGP lookups ──────────────────────────────────
+// Built once when ROS data loads. Used by Player Data page + archetype.
+// Stores raw player SGP (no team-context multipliers) so values are intrinsic
+// to the player. Curr lookup uses current-season stats, ROS uses FP projections.
+window._playerCurrSgpHit = window._playerCurrSgpHit || {};
+window._playerCurrSgpPit = window._playerCurrSgpPit || {};
+window._playerRosSgpHit  = window._playerRosSgpHit  || {};
+window._playerRosSgpPit  = window._playerRosSgpPit  || {};
+// Per-cat ROS SGP for the bar chart in the new ROS Outlook tile
+window._playerRosCatHit  = window._playerRosCatHit  || {};
+window._playerRosCatPit  = window._playerRosCatPit  || {};
+
+function _normPlayerKey(n) {
+  return (n||'').replace(/\s*\([^)]*\).*$/, '').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+}
+
+function _buildPlayerSgpLookups() {
+  var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
+  // League-average team rate-stat pool (so a player's AVG/ERA/WHIP impact uses a
+  // neutral baseline, not a specific team's context). 4000 AB / 1300 IP at .260/3.90/1.20.
+  var POOL_AB=4000, POOL_AVG=0.260, POOL_IP=1300, POOL_ERA=3.90, POOL_WHIP=1.20;
+
+  function rosSgpForHitter(p) {
+    var t = 0, perCat = {};
+    perCat.R   = (p.R||0)/D2.r;          t += perCat.R;
+    perCat.HR  = (p.HR||0)/D2.hr;        t += perCat.HR;
+    perCat.RBI = (p.RBI||0)/D2.rbi;      t += perCat.RBI;
+    perCat.SB  = (p.SB||0)/D2.sb;        t += perCat.SB;
+    perCat.AVG = 0;
+    var rH = (p.H>0?p.H:(p.AVG&&p.AB?p.AVG*p.AB:null));
+    if (rH && p.AB > 0) {
+      var nH = POOL_AVG*POOL_AB + rH, nAB = POOL_AB + p.AB;
+      var avgT = Math.min(1, p.AB/350);
+      perCat.AVG = ((nH/nAB) - POOL_AVG) / D2.avg * avgT;
+      t += perCat.AVG;
+    }
+    var trust = Math.min(1, (p.AB||0)/250);
+    return { total: t * trust, perCat: perCat };
+  }
+
+  function rosSgpForPitcher(p) {
+    var t = 0, perCat = {};
+    perCat.W    = (p.W||0)/D2.w;          t += perCat.W;
+    perCat.K    = (p.K||0)/D2.k;          t += perCat.K;
+    perCat.SVH3 = (p.SV||0)/D2.svh3;      t += perCat.SVH3;
+    perCat.ERA = 0; perCat.WHIP = 0;
+    if (p.ERA != null && p.IP > 0) {
+      var tER = POOL_ERA*POOL_IP/9, pER = p.ERA*p.IP/9, nIP = POOL_IP + p.IP;
+      perCat.ERA = (POOL_ERA - (tER+pER)/nIP*9) / D2.era;
+      t += perCat.ERA;
+    }
+    if (p.WHIP != null && p.IP > 0) {
+      var tBR = POOL_WHIP*POOL_IP, pBR = p.WHIP*p.IP, nIP2 = POOL_IP + p.IP;
+      perCat.WHIP = (POOL_WHIP - (tBR+pBR)/nIP2) / D2.whip;
+      t += perCat.WHIP;
+    }
+    var pos = (p.pos||'').toUpperCase();
+    var trust = pos.indexOf('SP')!==-1 ? Math.min(1,(p.IP||0)/60) : Math.min(1,(p.IP||0)/30);
+    return { total: t * trust, perCat: perCat };
+  }
+
+  // ROS lookups
+  var rosHit = window._playerRosSgpHit = {};
+  var rosPit = window._playerRosSgpPit = {};
+  var rosCatHit = window._playerRosCatHit = {};
+  var rosCatPit = window._playerRosCatPit = {};
+  if (typeof _rosHitData !== 'undefined' && _rosHitData) {
+    _rosHitData.forEach(function(p) {
+      var k = _normPlayerKey(p.name); if (!k) return;
+      var r = rosSgpForHitter(p);
+      rosHit[k] = isFinite(r.total) ? +r.total.toFixed(3) : null;
+      rosCatHit[k] = r.perCat;
+    });
+  }
+  if (typeof _rosPitData !== 'undefined' && _rosPitData) {
+    _rosPitData.forEach(function(p) {
+      var k = _normPlayerKey(p.name); if (!k) return;
+      var r = rosSgpForPitcher(p);
+      rosPit[k] = isFinite(r.total) ? +r.total.toFixed(3) : null;
+      rosCatPit[k] = r.perCat;
+    });
+  }
+
+  // Curr-season lookups from S.hitRows / S.pitRows
+  var currHit = window._playerCurrSgpHit = {};
+  var currPit = window._playerCurrSgpPit = {};
+  if (S.hitRows && S.hitRows.length) {
+    var hitIdx = (typeof buildStatIdx === 'function') ? buildStatIdx(S.hitHeaders) : {};
+    S.hitRows.forEach(function(row) {
+      var sc = row.scorer || {}; var name = sc.name || ''; if (!name) return;
+      var k = _normPlayerKey(name);
+      var cells = row.cells || [];
+      function gv(cat){ return (typeof getStatVal === 'function') ? getStatVal(cells, cat, hitIdx) : null; }
+      var p = { R: gv('R')||0, HR: gv('HR')||0, RBI: gv('RBI')||0, SB: gv('SB')||0, AVG: gv('AVG'), AB: gv('AB')||0 };
+      var r = rosSgpForHitter(p);
+      currHit[k] = isFinite(r.total) ? +r.total.toFixed(3) : null;
+    });
+  }
+  if (S.pitRows && S.pitRows.length) {
+    var pitIdx = (typeof buildStatIdx === 'function') ? buildStatIdx(S.pitHeaders) : {};
+    S.pitRows.forEach(function(row) {
+      var sc = row.scorer || {}; var name = sc.name || ''; if (!name) return;
+      var k = _normPlayerKey(name);
+      var cells = row.cells || [];
+      function gv(cat){ return (typeof getStatVal === 'function') ? getStatVal(cells, cat, pitIdx) : null; }
+      var p = { W: gv('W')||0, K: gv('K')||0, SV: gv('SVH3')||0, ERA: gv('ERA'), WHIP: gv('WHIP'), IP: gv('IP')||0, pos: (sc.pos||'') };
+      var r = rosSgpForPitcher(p);
+      currPit[k] = isFinite(r.total) ? +r.total.toFixed(3) : null;
+    });
+  }
+
+  // ROS% percentile per player — within their pool (hitters / pitchers).
+  // Used by the archetype cascade as the "ROS pct" input.
+  function buildPctLookup(sgpMap) {
+    var entries = Object.keys(sgpMap)
+      .map(function(k){ return { k: k, v: sgpMap[k] }; })
+      .filter(function(x){ return x.v != null && isFinite(x.v); })
+      .sort(function(a,b){ return a.v - b.v; });
+    var out = {};
+    entries.forEach(function(e, i) {
+      out[e.k] = entries.length > 1 ? Math.round(i / (entries.length - 1) * 100) : 50;
+    });
+    return out;
+  }
+  window._playerRosPctHit = buildPctLookup(rosHit);
+  window._playerRosPctPit = buildPctLookup(rosPit);
+}
+
+function getArchetype(fwarPct, posRating, lgRating, rosPct) {
   if (fwarPct == null || posRating == null || lgRating == null) return null;
 
   var fp  = fwarPct * 100;   // already 0–100
   var pr  = posRating * 100; // 0–1 → 0–100
   var lr  = lgRating * 100;  // 0–1 → 0–100
+  var rp  = rosPct != null ? rosPct * 100 : null;
 
+  // ── ROS-aware 9-rule cascade ────────────────────────────────────────────
+  // When ROS data is available, classify using fwar / rating(=lg) / ros so
+  // archetype reflects forward-looking expectation, not just current results.
+  if (rp != null) {
+    var aH = fp >= 65, aM = fp >= 45 && fp < 65, aL = fp < 45;
+    var bH = rp >= 65, bM = rp >= 45 && rp < 65, bL = rp < 45;
+    var cH = lr >= 65, cM = lr >= 45 && lr < 65, cL = lr < 45;
+    if (aH && bH && cH) return { name: 'True Elite',           color: '#1e6b3a', action: 'Untouchable cornerstone',  desc: 'Production, projection, and talent all elite.' };
+    if (aH && bL)        return { name: 'Sell High',            color: '#854f0b', action: 'Trade while value is up',  desc: 'Producing now but ROS projects regression.' };
+    if (aH && cL)        return { name: 'Format Mismatch Star', color: '#2980b9', action: 'Hold / slight sell-high',  desc: 'Producing here, but talent valuation lower league-wide.' };
+    if (aH && bM && cM)  return { name: 'Overperformer',        color: '#c0392b', action: 'Sell-high',                desc: 'Output above what projection or talent supports.' };
+    if (aM && bH)        return { name: 'Breakout Candidate',   color: '#8e44ad', action: 'Buy-low / hold',           desc: 'Average results but ROS projects upward.' };
+    if (aL && bH)        return { name: 'Buy-Low',              color: '#16a085', action: 'Buy-low',                  desc: 'Down right now, but ROS projects rebound.' };
+    if (aL && cH)        return { name: 'Underperforming Stud', color: '#e67e22', action: 'Buy-low',                  desc: 'Talent says yes, results haven\u2019t shown it.' };
+    if (aL && bL && cL)  return { name: 'Replacement Level',    color: '#888888', action: 'Drop / ignore',            desc: 'Weak across all three signals.' };
+    return                       { name: 'Stable Contributor',  color: '#1a1a1a', action: 'Hold',                     desc: 'Balanced across signals — reliable, not elite.' };
+  }
+
+  // ── Legacy 9-rule cascade (no ROS) ─────────────────────────────────────
   var fHigh = fp  >= 70;
   var fMid  = fp  >= 50 && fp  < 70;
   var pHigh = pr  >= 60;
@@ -8368,7 +8605,7 @@ function drawFARatings() {
       var lgPool = isBat ? pools.lgHitPool : (primaryPos(p.pos||'')==='SP' ? pools.lgSpPool : pools.lgRpPool);
       lgRat = window._calcRating(p.stats||{}, pCats, lgPool, p.pos||'');
     }
-    return { fwarVal:fwarVal, fwarPct:fwarPct, posRat:posRat, lgRat:lgRat };
+    return { fwarVal:fwarVal, fwarPct:fwarPct, posRat:posRat, lgRat:lgRat, rosPct: (isBat ? (window._playerRosPctHit||{})[k] : (window._playerRosPctPit||{})[k]) };
   }
   function fwarSortVal(p, isBat) {
     var m = getFAMetrics(p, isBat);
@@ -8379,7 +8616,7 @@ function drawFARatings() {
     function rCol(v){ if(v==null)return'var(--muted)'; var p=v>1?v:v*100; return p>=65?'#1e6b3a':p>=50?'#4a9a68':p>=35?'#b7791f':'#c0392b'; }
     var fwCol = m.fwarVal==null?'var(--text)':m.fwarVal>=3?'#1e6b3a':m.fwarVal>=1?'#4a9a68':m.fwarVal>=-1?'var(--text)':'#c0392b';
     var fwarPctNorm = m.fwarPct!=null?m.fwarPct/100:null;
-    var arch = getArchetype(fwarPctNorm, m.posRat, m.lgRat);
+    var arch = getArchetype(fwarPctNorm, m.posRat, m.lgRat, m.rosPct!=null?m.rosPct/100:null);
     var h='';
     h += '<td><strong style="color:'+fwCol+'">'+(m.fwarVal!=null?(m.fwarVal>=0?'+':'')+m.fwarVal.toFixed(2):'-')+'</strong></td>';
     h += '<td><strong style="color:'+rCol(fwarPctNorm)+'">'+(m.fwarPct!=null?Math.round(m.fwarPct):'-')+'</strong></td>';
@@ -8853,7 +9090,8 @@ window.showFAFixer = function(teamId) {
       html += '<td><strong style="color:' + rCol(fwarPct!=null?fwarPct/100:null) + '">'+(fwarPct!=null?Math.round(fwarPct):'-')+'</strong></td>';
       html += '<td><strong style="color:' + rCol(posRat) + '">' + rFmt(posRat) + '</strong></td>';
       html += '<td><strong style="color:' + rCol(lgRat) + '">' + rFmt(lgRat) + '</strong></td>';
-      var arch1 = getArchetype(fwarPct!=null?fwarPct/100:null, posRat, lgRat);
+      var rosPctA = isBat ? (window._playerRosPctHit||{})[nameLow] : (window._playerRosPctPit||{})[nameLow];
+      var arch1 = getArchetype(fwarPct!=null?fwarPct/100:null, posRat, lgRat, rosPctA!=null?rosPctA/100:null);
       html += arch1 ? '<td style="white-space:nowrap"><span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:'+arch1.color+'22;color:'+arch1.color+';border:1px solid '+arch1.color+'44">'+arch1.name+'</span></td>' : '<td style="color:var(--muted);font-size:11px">-</td>';
       html += '</tr>';
     });
@@ -13117,6 +13355,7 @@ var FWAR = {
 function renderFWARPage() {
   if (fwarRendered) return;
   fwarRendered = true;
+  window._fwarRendered = true;
   buildFWARModelInputs();
   // If player data is already loaded, run initial calculation
   if (S.hitRows.length && S.pitRows.length) recalculateFWAR();
@@ -13282,7 +13521,9 @@ window.showFWARProfile = function(name, type) {
   var fpctVal    = fwarPctLookupTyped ? (fwarPctLookupTyped[nameLow2] != null ? fwarPctLookupTyped[nameLow2] : null) : null;
   var posRatVal  = window._posRatingLookup ? (window._posRatingLookup[nameLow2] != null ? window._posRatingLookup[nameLow2] : null) : null;
   var lgRatVal   = window._lgRatingLookup  ? (window._lgRatingLookup[nameLow2]  != null ? window._lgRatingLookup[nameLow2]  : null) : null;
-  var arch = getArchetype(fpctVal != null ? fpctVal / 100 : null, posRatVal, lgRatVal);
+  var rosPctMap  = isHit ? (window._playerRosPctHit||{}) : (window._playerRosPctPit||{});
+  var rosPctRaw  = rosPctMap[nameLow2];
+  var arch = getArchetype(fpctVal != null ? fpctVal / 100 : null, posRatVal, lgRatVal, rosPctRaw != null ? rosPctRaw / 100 : null);
 
   // ── Strengths / Weaknesses from category deviations ──────────────────────
   var lgData = buildCatData(lgPool);
@@ -13392,6 +13633,71 @@ window.showFWARProfile = function(name, type) {
     });
   } else { swHtml += '<div style="font-size:11px;color:var(--muted)">None identified</div>'; }
   document.getElementById('fwar-profile-sw').innerHTML = swHtml;
+
+  // ── ROS Outlook tile fill ────────────────────────────────────────────
+  (function fillRosOutlook() {
+    var rosEl = document.getElementById('fwar-profile-ros');
+    if (!rosEl) return;
+    var currMap = isHit ? (window._playerCurrSgpHit||{}) : (window._playerCurrSgpPit||{});
+    var rosMap  = isHit ? (window._playerRosSgpHit ||{}) : (window._playerRosSgpPit ||{});
+    var rosCats = isHit ? (window._playerRosCatHit ||{}) : (window._playerRosCatPit ||{});
+    var currVal = currMap[nameLow2];
+    var rosVal  = rosMap[nameLow2];
+    var catVals = rosCats[nameLow2] || {};
+    var catList = isHit ? ['R','HR','RBI','SB','AVG'] : ['W','K','SVH3','ERA','WHIP'];
+
+    // Build the tile HTML
+    var hOut = '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:500;margin-bottom:8px">ROS Outlook</div>';
+
+    if (rosVal == null) {
+      hOut += '<div style="font-size:11px;color:var(--muted);flex:1;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.4">No ROS projection available for this player.</div>';
+      rosEl.innerHTML = hOut;
+      return;
+    }
+
+    var rosCol = rosVal >= 2.0 ? '#1e6b3a' : rosVal >= 0.5 ? '#4a9a68' : rosVal >= -0.5 ? '#5a594f' : '#c0392b';
+    var deltaVal = (currVal != null) ? (rosVal - currVal) : null;
+    var deltaCol = deltaVal == null ? 'var(--muted)' : (deltaVal >= 0.5 ? '#1e6b3a' : deltaVal >= -0.5 ? '#5a594f' : '#854f0b');
+
+    hOut += '<div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px">';
+    hOut += '<span style="font-size:24px;font-weight:600;color:'+rosCol+'">'+(rosVal>=0?'+':'')+rosVal.toFixed(2)+'</span>';
+    hOut += '<span style="font-size:10px;color:var(--muted)">ROS SGP</span></div>';
+
+    hOut += '<div style="display:flex;gap:5px;margin-bottom:8px">';
+    hOut += '<div style="flex:1;background:var(--bg);padding:5px 7px;border-radius:5px"><div style="font-size:9px;color:var(--muted);text-transform:uppercase">Curr SGP</div><div style="font-size:11px;font-weight:600;color:'+(currVal!=null?(currVal>=0.5?'#1e6b3a':currVal>=-0.5?'#5a594f':'#c0392b'):'var(--muted)')+'">'+(currVal!=null?(currVal>=0?'+':'')+currVal.toFixed(2):'—')+'</div></div>';
+    hOut += '<div style="flex:1;background:var(--bg);padding:5px 7px;border-radius:5px"><div style="font-size:9px;color:var(--muted);text-transform:uppercase">Δ vs ROS</div><div style="font-size:11px;font-weight:600;color:'+deltaCol+'">'+(deltaVal!=null?(deltaVal>=0?'+':'')+deltaVal.toFixed(2):'—')+'</div></div>';
+    hOut += '</div>';
+
+    // 5-bar mini-chart for per-category ROS SGP
+    var maxAbs = 0;
+    catList.forEach(function(c) { var v = catVals[c]||0; if (Math.abs(v) > maxAbs) maxAbs = Math.abs(v); });
+    if (maxAbs < 0.01) maxAbs = 1;
+    hOut += '<div style="height:32px;display:flex;align-items:end;gap:2px;margin-bottom:6px">';
+    catList.forEach(function(c) {
+      var v = catVals[c] || 0;
+      var pct = Math.min(100, Math.abs(v) / maxAbs * 100);
+      var hPx = Math.max(2, Math.round(pct * 28 / 100));
+      var bg = v >= 0.10 ? '#4a9a68' : v <= -0.10 ? '#c0392b' : '#d0cec8';
+      hOut += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px"><div style="width:100%;height:'+hPx+'px;background:'+bg+';border-radius:1px"></div><div style="font-size:7px;color:var(--muted)">'+c+'</div></div>';
+    });
+    hOut += '</div>';
+
+    // Signal callout — Breakout / Regression / Stable
+    var sig, sigBg, sigBorder, sigCol;
+    if (deltaVal != null && deltaVal >= 1.0) {
+      sig = '<strong>↑ Breakout signal.</strong> ROS exceeds current pace by '+deltaVal.toFixed(2)+' SGP.';
+      sigBg = 'rgba(74,154,104,0.10)'; sigBorder = 'rgba(74,154,104,0.30)'; sigCol = '#1e6b3a';
+    } else if (deltaVal != null && deltaVal <= -1.0) {
+      sig = '<strong>↓ Regression risk.</strong> ROS trails current pace by '+Math.abs(deltaVal).toFixed(2)+' SGP.';
+      sigBg = 'rgba(186,117,23,0.10)'; sigBorder = 'rgba(186,117,23,0.30)'; sigCol = '#854f0b';
+    } else {
+      sig = '<strong>= Stable.</strong> ROS aligned with current pace.';
+      sigBg = 'rgba(136,135,128,0.08)'; sigBorder = 'rgba(136,135,128,0.30)'; sigCol = '#5a594f';
+    }
+    hOut += '<div style="background:'+sigBg+';border:0.5px solid '+sigBorder+';border-radius:6px;padding:5px 8px;font-size:10px;color:'+sigCol+';line-height:1.4;margin-top:auto">'+sig+'</div>';
+
+    rosEl.innerHTML = hOut;
+  })();
 
   // ── Charts ────────────────────────────────────────────────────────────────
   var CY = '#f5f0a0', CM = '#a8d5b5', CB = '#2e7fbc';
