@@ -10300,12 +10300,18 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   // Get expected band from archetype table
   var arcRowInTable = null;
   if (typeof renderArchetypePage !== 'undefined') {
-    // Recompute expected rank from full table
+    // Recompute expected rank using the SAME formula that produced expScore.
+    // With ROS: 0.40 × fwar + 0.20 × rating + 0.30 × ros - 10 × JOE
+    // Without ROS: legacy 0.55 × fwar + 0.30 × rating - 10 × JOE
     var allScores = teamIds.map(function(tid){
       var fp=rankPct(fwarTotals,tid), lp=rankPct(lgTotals,tid);
+      var rp = (rosTotals && rosPct != null) ? rankPct(rosTotals, tid) : null;
       var jr=(window._joeSeasonData||[]).find(function(r){return r.team===((S.teamInfo[tid]||{}).name||(S.teamInfo[tid]||{}).shortName||'');});
       var jv=jr?(jr.joe!=null?jr.joe:0):0;
-      return {tid:tid, score: parseFloat((0.55*fp+0.30*lp-10*jv).toFixed(1))};
+      var sc = (rp != null)
+        ? (0.40*fp + 0.20*lp + 0.30*rp - 10*jv)
+        : (0.55*fp + 0.30*lp - 10*jv);
+      return {tid:tid, score: parseFloat(sc.toFixed(1))};
     }).sort(function(a,b){return b.score-a.score;});
     var myExpRank = allScores.findIndex(function(x){return x.tid===teamId;})+1;
     // Confidence band
@@ -10709,15 +10715,23 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   h += '<div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:12px">';
   // Why section
   h += '<div><div style="'+lb+';margin-bottom:10px">Why this team is labeled this way</div>';
-  h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px">';
-  var gapStr = (gap>=0?'+':'')+Math.round(gap);
-  var gapCol = gap>0?'#1e6b3a':gap<0?'#c0392b':'#5f5e5a';
-  h += '<div style="'+mc+';text-align:center"><div style="'+lb+'">Performance gap</div><div style="font-size:20px;font-weight:500;color:'+gapCol+';margin:5px 0 2px">'+gapStr+'</div><div style="font-size:10px;color:var(--muted)">fWAR% minus Rating%</div></div>';
-  h += '<div style="'+mc+';text-align:center"><div style="'+lb+'">Combined key</div><div style="font-size:12px;font-weight:500;color:'+jc+';margin:5px 0 2px">'+arcKey+'</div><div style="font-size:10px;color:var(--muted)">Production / Talent / Luck</div></div>';
-  h += '<div style="'+mc+';text-align:center"><div style="'+lb+'">Luck tier</div><div style="font-size:14px;font-weight:500;color:'+jc+';margin:5px 0 2px">'+jBucket+'</div><div style="font-size:10px;color:var(--muted)">'+(jBucket==='Unlucky'?'Schedule hurting results':jBucket==='Lucky'?'Results may be inflated':'Schedule is neutral')+'</div></div>';
-  h += '</div>';
-  // Explanation paragraph
-  var expText = buildDiagExplanation(fBucket, lBucket, jBucket, gap, dir);
+  // When ROS data is available, the upper "Pairwise gaps" section already shows fwar-rating,
+  // fwar-ros, and rating-ros tiles. Skip the redundant Performance gap / Combined key tiles
+  // here and rely on the single-line explanation paragraph instead.
+  if (rosPct == null) {
+    h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px">';
+    var gapStr = (gap>=0?'+':'')+Math.round(gap);
+    var gapCol = gap>0?'#1e6b3a':gap<0?'#c0392b':'#5f5e5a';
+    h += '<div style="'+mc+';text-align:center"><div style="'+lb+'">Performance gap</div><div style="font-size:20px;font-weight:500;color:'+gapCol+';margin:5px 0 2px">'+gapStr+'</div><div style="font-size:10px;color:var(--muted)">fWAR% minus Rating%</div></div>';
+    h += '<div style="'+mc+';text-align:center"><div style="'+lb+'">Combined key</div><div style="font-size:12px;font-weight:500;color:'+jc+';margin:5px 0 2px">'+arcKey+'</div><div style="font-size:10px;color:var(--muted)">Production / Talent / Luck</div></div>';
+    h += '<div style="'+mc+';text-align:center"><div style="'+lb+'">Luck tier</div><div style="font-size:14px;font-weight:500;color:'+jc+';margin:5px 0 2px">'+jBucket+'</div><div style="font-size:10px;color:var(--muted)">'+(jBucket==='Unlucky'?'Schedule hurting results':jBucket==='Lucky'?'Results may be inflated':'Schedule is neutral')+'</div></div>';
+    h += '</div>';
+  }
+  // Explanation paragraph — use the cascade's arcReason when ROS is available
+  // (already context-aware), fall back to the legacy buildDiagExplanation otherwise.
+  var expText = (rosPct != null && arcReason)
+    ? arcReason
+    : buildDiagExplanation(fBucket, lBucket, jBucket, gap, dir);
   h += '<div style="background:'+trendBg+';border-radius:var(--radius);padding:10px 12px;font-size:12px;color:'+trendCol+';line-height:1.6;margin-bottom:12px">'+expText+'</div>';
 
   // Positional group breakdown
@@ -11135,12 +11149,48 @@ function assembleDashboard(teamId, el) {
     function teamLgT(tid){ var tot=0; ['Infield','Outfield','SP','RP'].forEach(function(g){ var gp=(TA.players||[]).filter(function(p){return p.ftId===tid&&p.bestGroup===g;}); var s=0,c=0; gp.forEach(function(p){var v=(window._lgRatingLookup||{})[normN_d(p.name)];if(v!=null){s+=v*100;c++;}}); tot+=c?s/c:0; }); return tot; }
     var fwTots=teamIds2.map(function(tid){return {tid:tid,v:teamFwarT(tid)};}).sort(function(a,b){return a.v-b.v;});
     var lgTots=teamIds2.map(function(tid){return {tid:tid,v:teamLgT(tid)};}).sort(function(a,b){return a.v-b.v;});
+    // ROS percentile per team — mirror diagnostic ROS%. Available only when FP data is loaded.
+    var rosTots = null;
+    (function() {
+      if (typeof _rosHitData === 'undefined' || !_rosHitData || !_rosHitData.length) return;
+      if (typeof _rosPitData === 'undefined' || !_rosPitData || !_rosPitData.length) return;
+      if (!window._rosRosterLookup || !Object.keys(window._rosRosterLookup).length) return;
+      if (typeof _rosHasMLBRole !== 'function') return;
+      function nm(n){ return (n||'').replace(/\s*\([^)]*\).*$/, '').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+      function pSGP(p, isHit, tid) {
+        var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
+        var ts = (window._rosTeamStats||{})[tid] || {R:0,HR:0,RBI:0,SB:0,AVG:null,AB:0,K:0,W:0,SVH3:0,ERA:null,WHIP:null,IP:0};
+        var t = 0;
+        if (isHit) {
+          t += ((p.R||0)/D2.r) + ((p.HR||0)/D2.hr) + ((p.RBI||0)/D2.rbi) + ((p.SB||0)/D2.sb);
+          var rH=(p.H>0?p.H:(p.AVG&&p.AB?p.AVG*p.AB:null));
+          if(rH&&p.AB>0&&ts.AVG!=null&&ts.AB>0){var cH=(ts.AVG||0)*(ts.AB||0),nH=cH+rH,nAB=(ts.AB||0)+(p.AB||0);t+=(nAB>0?((nH/nAB)-(ts.AVG||0)):0)/D2.avg;}
+        } else {
+          t += ((p.W||0)/D2.w) + ((p.K||0)/D2.k) + ((p.SV||0)/D2.svh3);
+          if(p.ERA!=null&&p.IP>0&&ts.ERA!=null&&ts.IP>0){var tER=(ts.ERA||0)*(ts.IP||0)/9,pER=p.ERA*(p.IP||0)/9,nIP=(ts.IP||0)+(p.IP||0);t+=(nIP>0?((ts.ERA||0)-(tER+pER)/nIP*9):0)/D2.era;}
+          if(p.WHIP!=null&&p.IP>0&&ts.WHIP!=null&&ts.IP>0){var tBR=(ts.WHIP||0)*(ts.IP||0),pBR=p.WHIP*(p.IP||0),nIP2=(ts.IP||0)+(p.IP||0);t+=(nIP2>0?((ts.WHIP||0)-(tBR+pBR)/nIP2):0)/D2.whip;}
+        }
+        var trust = isHit ? Math.min(1,(p.AB||0)/250) : ((p.pos||'').toUpperCase().indexOf('SP')!==-1?Math.min(1,(p.IP||0)/60):Math.min(1,(p.IP||0)/30));
+        return t * trust;
+      }
+      function teamRosT(tid) {
+        var tot = 0;
+        _rosHitData.forEach(function(p){ var k=nm(p.name); var ri=window._rosRosterLookup[k]; if(!ri||ri.teamId!==tid) return; if(!_rosHasMLBRole(p,true)) return; var s=pSGP(p,true,tid); if(isFinite(s)) tot+=s; });
+        _rosPitData.forEach(function(p){ var k=nm(p.name); var ri=window._rosRosterLookup[k]; if(!ri||ri.teamId!==tid) return; if(!_rosHasMLBRole(p,false)) return; var s=pSGP(p,false,tid); if(isFinite(s)) tot+=s; });
+        return tot;
+      }
+      rosTots = teamIds2.map(function(tid){ return {tid:tid, v:teamRosT(tid)}; }).sort(function(a,b){return a.v-b.v;});
+    })();
     function rPct(sorted,tid){var i=sorted.findIndex(function(x){return x.tid===tid;});return Math.round(i/(sorted.length-1||1)*100);}
     var allExp=teamIds2.map(function(tid){
       var fp=rPct(fwTots,tid),lp=rPct(lgTots,tid);
+      var rp = rosTots ? rPct(rosTots, tid) : null;
       var jr=(window._joeSeasonData||[]).find(function(r){return r.team===((S.teamInfo[tid]||{}).name||(S.teamInfo[tid]||{}).shortName||'');});
       var jv=jr?(jr.joe!=null?jr.joe:0):0;
-      return {tid:tid,score:parseFloat((0.55*fp+0.30*lp-10*jv).toFixed(1))};
+      var sc = (rp != null)
+        ? (0.40*fp + 0.20*lp + 0.30*rp - 10*jv)
+        : (0.55*fp + 0.30*lp - 10*jv);
+      return {tid:tid,score:parseFloat(sc.toFixed(1))};
     }).sort(function(a,b){return b.score-a.score;});
     expRankNum=allExp.findIndex(function(x){return x.tid===teamId;})+1;
     var myExpScore=allExp.find(function(x){return x.tid===teamId;});
