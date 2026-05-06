@@ -15381,6 +15381,9 @@ function computeSGPDenominators() {
     avg:  'avg', w:    'w',   k:    'k',   svh3: 'sv',
     era:  'era', whip: 'whip'
   };
+  // Categories where lower is better — sort ascending so adjacent gaps still
+  // represent "ranks adjacent to each other in this category"
+  var lowGood = { era: true, whip: true };
   function median(arr) {
     if (!arr.length) return 0;
     var s = arr.slice().sort(function(a,b){ return a-b; });
@@ -15390,9 +15393,17 @@ function computeSGPDenominators() {
   var result = {};
   Object.keys(cats).forEach(function(cat) {
     var field = cats[cat];
+    var inverse = !!lowGood[cat];
     var blended = 0, totalW = 0;
     Object.keys(weights).forEach(function(yr) {
-      var teams = (HISTORIC_DATA[yr] || []).slice().sort(function(a,b){ return a.rank-b.rank; });
+      // Sort by THIS stat (not by points-rank). Otherwise non-competitive
+      // teams whose point-rank differs from their stat-rank create huge
+      // bogus gaps. E.g. a partial-roster team ranked 4th in points but
+      // 8th in K gets adjacent-compared to its point-neighbors, not its
+      // K-neighbors, which creates 1000+ K gap outliers.
+      var teams = (HISTORIC_DATA[yr] || []).slice()
+        .filter(function(t){ return t[field] != null; })
+        .sort(function(a,b){ return inverse ? a[field] - b[field] : b[field] - a[field]; });
       if (teams.length < 2) return;
       var gaps = [];
       for (var i = 1; i < teams.length; i++)
