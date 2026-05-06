@@ -2859,6 +2859,7 @@ function init() {
           if (activeRosterTeam) {
             if (typeof showRoster === 'function' && document.getElementById('roster-body')) showRoster(activeRosterTeam);
             if (typeof showTeamRoster === 'function' && document.getElementById('teamroster-body')) showTeamRoster(activeRosterTeam);
+            if (typeof buildTeamRosterCharts === 'function' && document.getElementById('teamroster-charts')) buildTeamRosterCharts(activeRosterTeam);
           }
         } catch(e) { console.warn('Roster refresh after ROS load failed:', e); }
       }
@@ -3944,6 +3945,36 @@ function buildTeamRosterCharts(teamId) {
     return zToPct(z);
   });
 
+  // ── ROS data aggregation ─────────────────────────────────────────────────
+  // Sum per-category ROS SGP across rostered players for this team.
+  // Used by: 5th donut panel + 3rd radar line on each.
+  var rosByGroup  = {Infield:0, Outfield:0, SP:0, RP:0};
+  var hitRosByCat = {R:0, RBI:0, HR:0, SB:0, AVG:0};
+  var pitRosByCat = {W:0, K:0, SVH3:0, ERA:0, WHIP:0};
+  var rosAvailable = false;
+  if (window._playerRosSgpHit && window._playerRosCatHit) {
+    rosAvailable = true;
+    (TA.players || []).filter(function(p){ return p.ftId === teamId; }).forEach(function(p) {
+      var k = (typeof _normPlayerKey === 'function') ? _normPlayerKey(p.name) : normN(p.name);
+      var g = p.bestGroup || '';
+      var isHit = (g === 'Infield' || g === 'Outfield');
+      var rosSgp = isHit ? (window._playerRosSgpHit||{})[k] : (window._playerRosSgpPit||{})[k];
+      var rosCat = isHit ? (window._playerRosCatHit||{})[k] : (window._playerRosCatPit||{})[k];
+      if (rosSgp != null && rosByGroup[g] != null) rosByGroup[g] = parseFloat((rosByGroup[g] + rosSgp).toFixed(2));
+      if (rosCat) {
+        Object.keys(rosCat).forEach(function(c) {
+          if (isHit && hitRosByCat[c] != null) hitRosByCat[c] += rosCat[c] || 0;
+          else if (!isHit && pitRosByCat[c] != null) pitRosByCat[c] += rosCat[c] || 0;
+        });
+      }
+    });
+  }
+  // Convert ROS per-cat sums into 0-100 pseudo-percentiles for the radar.
+  // Use a heuristic: 0 SGP = 50, +5 = 95, -5 = 5. Linear scaling capped.
+  function rosSgpToPct(v) { return Math.max(1, Math.min(99, Math.round(50 + v * 9))); }
+  var hitRosPct = ['R','RBI','HR','SB','AVG'].map(function(k){ return rosAvailable ? rosSgpToPct(hitRosByCat[k]||0) : null; });
+  var pitRosPct = ['ERA','WHIP','W','K','SVH3'].map(function(k){ return rosAvailable ? rosSgpToPct(pitRosByCat[k]||0) : null; });
+
   var scatterPlayers = (TA.players||[]).filter(function(p){ return p.ftId===teamId; }).map(function(p){
     var k=normN(p.name);
     var isHit = p.bestGroup==='Infield'||p.bestGroup==='Outfield';
@@ -3956,13 +3987,18 @@ function buildTeamRosterCharts(teamId) {
 
   var uid = 'tr'+Date.now();
   var h = '<div class="card" style="margin-bottom:16px">';
-  h += '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:16px">';
+  // 5-col grid when ROS available, 4-col fallback
+  var nCols = rosAvailable ? 5 : 4;
+  h += '<div style="display:grid;grid-template-columns:repeat('+nCols+',minmax(0,1fr));gap:12px;padding:16px">';
   var panels = [
-    {id:'d1_'+uid,title:'Team fWAR by group',donut:true,fwLeg:true},
-    {id:'d2_'+uid,title:'Team positional strength by group',donut:true,fwLeg:false},
-    {id:'d3_'+uid,title:'Hitting by category',radar:true},
-    {id:'d4_'+uid,title:'Pitching by category',radar:true}
+    {id:'d1_'+uid,title:'Team fWAR by group · current',donut:true,fwLeg:true},
   ];
+  if (rosAvailable) {
+    panels.push({id:'d1r_'+uid,title:'Team ROS SGP by group · projected',donut:true,rosLeg:true});
+  }
+  panels.push({id:'d2_'+uid,title:'Team positional strength by group',donut:true,fwLeg:false});
+  panels.push({id:'d3_'+uid,title:'Hitting by category',radar:true});
+  panels.push({id:'d4_'+uid,title:'Pitching by category',radar:true});
   panels.forEach(function(p) {
     h += '<div style="display:flex;flex-direction:column;gap:6px">';
     h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted)">'+p.title+'</div>';
@@ -3978,6 +4014,13 @@ function buildTeamRosterCharts(teamId) {
         h+='<span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)"><span style="width:7px;height:7px;border-radius:1px;background:'+GC[gi]+';display:inline-block"></span>'+g+' '+(val>=0?'+':'')+val.toFixed(1)+'</span>';
       });
       h += '</div>';
+    } else if(p.rosLeg){
+      h += '<div style="display:flex;flex-wrap:wrap;gap:5px">';
+      ['IF','OF','SP','RP'].forEach(function(g,gi){
+        var val=rosByGroup[GROUPS[gi]];
+        h+='<span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)"><span style="width:7px;height:7px;border-radius:1px;background:'+GC[gi]+';display:inline-block"></span>'+g+' '+(val>=0?'+':'')+val.toFixed(1)+'</span>';
+      });
+      h += '</div>';
     } else if(p.donut){
       h += '<div style="display:flex;flex-wrap:wrap;gap:5px">';
       ['IF','OF','SP','RP'].forEach(function(g,gi){
@@ -3985,10 +4028,13 @@ function buildTeamRosterCharts(teamId) {
       });
       h += '</div>';
     } else if(p.radar){
-      h += '<div style="display:flex;gap:10px;justify-content:center">';
+      h += '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">';
       var radarLineCol = p.id.indexOf('d3_')===0 ? '#1a1f5e' : '#5ab88a';
-      h += '<span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)"><span style="width:10px;height:2px;background:'+radarLineCol+';display:inline-block"></span>Pos Strength</span>';
-      h += '<span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><span style="width:10px;border-top:2px dashed #c0392b;display:inline-block"></span>fWAR%</span>';
+      h += '<span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)"><span style="width:10px;height:2px;background:'+radarLineCol+';display:inline-block"></span>Curr%</span>';
+      h += '<span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><span style="width:10px;border-top:2px dashed #c0392b;display:inline-block"></span>fWAR-wt%</span>';
+      if (rosAvailable) {
+        h += '<span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><span style="width:10px;height:2px;background:#1e6b3a;display:inline-block"></span>ROS%</span>';
+      }
       h += '</div>';
     }
     h += '</div>';
@@ -4000,17 +4046,31 @@ function buildTeamRosterCharts(teamId) {
   var fwVals=GROUPS.map(function(g){return Math.max(0,fwarByGroup[g]);});
   if(fwVals.every(function(v){return v===0;})) fwVals=[1,1,1,1];
   new Chart(document.getElementById('d1_'+uid),{type:'doughnut',data:{labels:['IF','OF','SP','RP'],datasets:[{data:fwVals,backgroundColor:GC,borderWidth:2,borderColor:'var(--surface)'}]},options:Object.assign({},baseOpts,{cutout:'62%',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+(fwarByGroup[GROUPS[ctx.dataIndex]]>=0?'+':'')+fwarByGroup[GROUPS[ctx.dataIndex]].toFixed(1);}}}}})});
+  if (rosAvailable) {
+    var rosVals = GROUPS.map(function(g){ return Math.max(0, rosByGroup[g]); });
+    if (rosVals.every(function(v){ return v===0; })) rosVals=[1,1,1,1];
+    new Chart(document.getElementById('d1r_'+uid),{type:'doughnut',data:{labels:['IF','OF','SP','RP'],datasets:[{data:rosVals,backgroundColor:GC,borderWidth:2,borderColor:'var(--surface)'}]},options:Object.assign({},baseOpts,{cutout:'62%',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+(rosByGroup[GROUPS[ctx.dataIndex]]>=0?'+':'')+rosByGroup[GROUPS[ctx.dataIndex]].toFixed(1);}}}}})});
+  }
   new Chart(document.getElementById('d2_'+uid),{type:'doughnut',data:{labels:['IF','OF','SP','RP'],datasets:[{data:posStrength.map(function(v){return v||1;}),backgroundColor:GC,borderWidth:2,borderColor:'var(--surface)'}]},options:Object.assign({},baseOpts,{cutout:'62%'})});
 
   var radarOpts=Object.assign({},baseOpts,{scales:{r:{min:0,max:100,ticks:{display:false,stepSize:25},grid:{color:'rgba(128,128,128,0.12)'},pointLabels:{font:{size:10},color:'#8a8479'}}}});
-  new Chart(document.getElementById('d3_'+uid),{type:'radar',data:{labels:['R','RBI','HR','SB','AVG'],datasets:[
+  var hitRadarSets = [
     {data:hitPct,backgroundColor:'#1a1f5e18',borderColor:'#1a1f5e',borderWidth:1.5,pointRadius:3,pointBackgroundColor:'#1a1f5e'},
     {data:hitFwarPct,backgroundColor:'#c0392b10',borderColor:'#c0392b',borderWidth:1.5,borderDash:[4,3],pointRadius:3,pointBackgroundColor:'#c0392b'}
-  ]},options:radarOpts});
-  new Chart(document.getElementById('d4_'+uid),{type:'radar',data:{labels:['ERA','WHIP','W','K','SVH3'],datasets:[
+  ];
+  if (rosAvailable) {
+    hitRadarSets.push({data:hitRosPct,backgroundColor:'#1e6b3a14',borderColor:'#1e6b3a',borderWidth:1.5,pointRadius:3,pointBackgroundColor:'#1e6b3a'});
+  }
+  new Chart(document.getElementById('d3_'+uid),{type:'radar',data:{labels:['R','RBI','HR','SB','AVG'],datasets:hitRadarSets},options:radarOpts});
+
+  var pitRadarSets = [
     {data:pitPct,backgroundColor:'#7bc8a418',borderColor:'#5ab88a',borderWidth:1.5,pointRadius:3,pointBackgroundColor:'#5ab88a'},
     {data:pitFwarPct,backgroundColor:'#c0392b10',borderColor:'#c0392b',borderWidth:1.5,borderDash:[4,3],pointRadius:3,pointBackgroundColor:'#c0392b'}
-  ]},options:radarOpts});
+  ];
+  if (rosAvailable) {
+    pitRadarSets.push({data:pitRosPct,backgroundColor:'#1e6b3a14',borderColor:'#1e6b3a',borderWidth:1.5,pointRadius:3,pointBackgroundColor:'#1e6b3a'});
+  }
+  new Chart(document.getElementById('d4_'+uid),{type:'radar',data:{labels:['ERA','WHIP','W','K','SVH3'],datasets:pitRadarSets},options:radarOpts});
 
   // Scatter moved to full-width card below Top 5
 }
