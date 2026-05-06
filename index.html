@@ -5728,6 +5728,7 @@ function _rosAdBuildPanelHtml() {
   h += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px">Net SGP</div>';
   h += '<div id="ros-net-val" style="font-size:30px;font-weight:600;line-height:1"></div>';
   h += '<div id="ros-net-verdict" style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;margin-top:6px;padding:3px 8px;border-radius:10px;display:inline-block"></div>';
+  h += '<div id="ros-net-warn" style="display:none;font-size:9px;color:#854f0b;background:rgba(186,117,23,0.10);border:0.5px solid rgba(186,117,23,0.30);border-radius:8px;padding:4px 8px;margin-top:8px;line-height:1.35;text-align:left"></div>';
   h += '</div></div>';
 
   // RIGHT: Add (All Players)
@@ -5799,7 +5800,8 @@ function _rosAdCatSGP(p, cat, isHit) {
     var rH = p.H>0 ? p.H : (p.AVG&&p.AB ? parseFloat(p.AVG)*parseFloat(p.AB||0) : null);
     if(!rH||!p.AB||ts.AVG==null||!ts.AB) return null;
     var nH=(ts.AVG||0)*(ts.AB||0)+rH, nAB=(ts.AB||0)+parseFloat(p.AB||0);
-    return nAB>0 ? ((nH/nAB)-(ts.AVG||0))/D2.avg*(mults.AVG||1) : null;
+    var avgT = Math.min(1, (parseFloat(p.AB||0))/350);
+    return nAB>0 ? ((nH/nAB)-(ts.AVG||0))/D2.avg*(mults.AVG||1)*avgT : null;
   }
   if(cat==='ERA') {
     if(!v||!p.IP||ts.ERA==null||!ts.IP) return null;
@@ -5828,7 +5830,10 @@ function _rosAdPlayerSGP(p, isHit) {
     var rH=(p.H>0?p.H:(p.AVG&&p.AB?p.AVG*p.AB:null));
     if(rH&&p.AB>0&&ts.AVG!=null&&ts.AB>0){
       var cH=(ts.AVG||0)*(ts.AB||0),nH=cH+rH,nAB=(ts.AB||0)+(p.AB||0);
-      total += (nAB>0?((nH/nAB)-(ts.AVG||0)):0)/D2.avg*(mults.AVG||1);
+      // AVG-specific trust: tighter threshold (350 AB) since rate stats are noisier
+      // for partial-season players. Counting stats stay on the standard 250-AB trust below.
+      var avgTrust = Math.min(1, (p.AB||0)/350);
+      total += (nAB>0?((nH/nAB)-(ts.AVG||0)):0)/D2.avg*(mults.AVG||1)*avgTrust;
     }
   } else {
     total += ((p.W||0)/D2.w) * (mults.W||1);
@@ -5859,7 +5864,8 @@ function _rosCurrSGP(cs, isHit) {
     var cH2=(cs.H>0?cs.H:(cs.AVG&&cs.AB?cs.AVG*cs.AB:null));
     if(cH2&&cs.AB>0&&ts.AVG!=null&&ts.AB>0){
       var cH3=(ts.AVG||0)*(ts.AB||0),nH2=cH3+cH2,nAB2=(ts.AB||0)+(cs.AB||0);
-      total += (nAB2>0?((nH2/nAB2)-(ts.AVG||0)):0)/D2.avg;
+      var avgTrust2 = Math.min(1, (cs.AB||0)/350);
+      total += (nAB2>0?((nH2/nAB2)-(ts.AVG||0)):0)/D2.avg*avgTrust2;
     }
   } else {
     if(cs.W!=null)   total += cs.W/D2.w;
@@ -5907,7 +5913,8 @@ function _rosAdRenderBars() {
       var rH=(p.H>0?p.H:(p.AVG&&p.AB?p.AVG*p.AB:null));
       if(!rH||!p.AB||ts.AVG==null||!ts.AB) return 0;
       var nH=(ts.AVG||0)*(ts.AB||0)+rH,nAB=(ts.AB||0)+(p.AB||0);
-      return (nAB>0?((nH/nAB)-(ts.AVG||0)):0)/D2.avg*(mults.AVG||1);
+      var avgT = Math.min(1, (p.AB||0)/350);
+      return (nAB>0?((nH/nAB)-(ts.AVG||0)):0)/D2.avg*(mults.AVG||1)*avgT;
     }
     if (cat==='ERA') {
       if(!p.ERA||!p.IP||ts.ERA==null||!ts.IP) return 0;
@@ -5957,6 +5964,40 @@ function _rosAdRenderBars() {
     }
     netCard.style.background = cardBg;
     netCard.style.borderColor = cardBorder;
+
+    // ── Rate-stat heaviness warning (Option D) ────────────────────────────
+    // When ≥70% of |Net SGP| comes from AVG/ERA/WHIP combined, flag it. Rate
+    // stats are projection-noisy AND amplified by team-context math, so a
+    // verdict driven mostly by them deserves a "look closer" nudge.
+    var warnEl = document.getElementById('ros-net-warn');
+    if (warnEl) {
+      warnEl.style.display = 'none';
+      warnEl.innerHTML = '';
+      if (Math.abs(net) >= 0.5) { // only worth flagging when verdict actually says something
+        var rateCats = isHit ? ['AVG'] : ['ERA','WHIP'];
+        var addP = _rosAdSelected || null;
+        var dropPforNet = (function(){
+          if (!_rosDropSelected) return null;
+          var dropR3 = _rosAdRosterList.find(function(r){return r._key===_rosDropSelected;});
+          return dropR3 ? dropR3._fp : null;
+        })();
+        var rateContrib = 0;
+        var heaviestCat = null, heaviestAbs = 0;
+        rateCats.forEach(function(rc) {
+          var addCatSgp  = addP        ? (catSGPFA(addP, rc) || 0)  : 0;
+          var dropCatSgp = dropPforNet ? (catSGPFA(dropPforNet, rc) || 0) : 0;
+          var d = addCatSgp - dropCatSgp;
+          rateContrib += d;
+          if (Math.abs(d) > heaviestAbs) { heaviestAbs = Math.abs(d); heaviestCat = rc; }
+        });
+        var rateShare = Math.abs(net) > 0.001 ? Math.abs(rateContrib) / Math.abs(net) : 0;
+        if (rateShare >= 0.70 && heaviestCat) {
+          var sharePct = Math.round(rateShare * 100);
+          warnEl.style.display = 'block';
+          warnEl.innerHTML = '<strong>⚠ Rate-stat heavy.</strong> ~' + sharePct + '% of this Net SGP comes from <strong>' + heaviestCat + '</strong>. Rate-stat projections are noisier than counting stats &mdash; verify before acting.';
+        }
+      }
+    }
   }
 
   _rosAdRenderStats();
@@ -5990,7 +6031,9 @@ function _rosAdRenderStats() {
        {k:'SB', fmt:function(v){return Math.round(v);},            sgpFn:function(v){return +(v/D2.sb).toFixed(2);}, better:'high'},
        {k:'AVG',fmt:function(v){return parseFloat(v).toFixed(3);}, sgpFn:function(v,ab){
          if(!ab) return null;
-         var h2=parseFloat(v||0)*ab,nA=(0.260*4000+h2)/(4000+ab); return +((nA-0.260)/D2.avg).toFixed(2);
+         var h2=parseFloat(v||0)*ab,nA=(0.260*4000+h2)/(4000+ab);
+         var avgT = Math.min(1, ab/350);
+         return +(((nA-0.260)/D2.avg)*avgT).toFixed(2);
        }, better:'high', needsAB:true}]
     : [{k:'W',   fmt:function(v){return Math.round(v);},            sgpFn:function(v){return +(v/D2.w).toFixed(2);},  better:'high'},
        {k:'K',   fmt:function(v){return Math.round(v);},            sgpFn:function(v){return +(v/D2.k).toFixed(2);},  better:'high'},
@@ -6027,7 +6070,7 @@ function _rosAdRenderStats() {
     if(cat==='W')   return +(v/D2.w).toFixed(2);
     if(cat==='K')   return +(v/D2.k).toFixed(2);
     if(cat==='SVH3')return +(v/D2.svh3).toFixed(2);
-    if(cat==='AVG'){ var ab=parseFloat(cs.AB||0); if(!ab) return null; var h2=v*ab,nA=(0.260*4000+h2)/(4000+ab); return +((nA-0.260)/D2.avg).toFixed(2); }
+    if(cat==='AVG'){ var ab=parseFloat(cs.AB||0); if(!ab) return null; var h2=v*ab,nA=(0.260*4000+h2)/(4000+ab); var avgT=Math.min(1,ab/350); return +(((nA-0.260)/D2.avg)*avgT).toFixed(2); }
     if(cat==='ERA'){ var ip=parseFloat(cs.IP||0); if(!ip) return null; var nE=(4.00*900/9+v*ip/9)/(900+ip)*9; return +((4.00-nE)/D2.era).toFixed(2); }
     if(cat==='WHIP'){ var ip2=parseFloat(cs.IP||0); if(!ip2) return null; var nW=(1.25*900+v*ip2)/(900+ip2); return +((1.25-nW)/D2.whip).toFixed(2); }
     return null;
@@ -6269,7 +6312,7 @@ function _rosAdBuildLists() {
     if(isHit){
       teamSGP += ((p.R||0)/D2.r)*(mults.R||1)+((p.HR||0)/D2.hr)*(mults.HR||1)+((p.RBI||0)/D2.rbi)*(mults.RBI||1)+((p.SB||0)/D2.sb)*(mults.SB||1);
       var rH=p.H>0?p.H:(p.AVG&&p.AB?p.AVG*p.AB:null);
-      if(rH&&p.AB>0&&ts.AVG!=null&&ts.AB>0){var nH=(ts.AVG||0)*(ts.AB||0)+rH,nAB=(ts.AB||0)+(p.AB||0);teamSGP+=(nAB>0?((nH/nAB)-(ts.AVG||0)):0)/D2.avg*(mults.AVG||1);}
+      if(rH&&p.AB>0&&ts.AVG!=null&&ts.AB>0){var nH=(ts.AVG||0)*(ts.AB||0)+rH,nAB=(ts.AB||0)+(p.AB||0);var avgT=Math.min(1,(p.AB||0)/350);teamSGP+=(nAB>0?((nH/nAB)-(ts.AVG||0)):0)/D2.avg*(mults.AVG||1)*avgT;}
       var trust=Math.min(1,(p.AB||0)/250); teamSGP*=trust;
     } else {
       teamSGP += ((p.W||0)/D2.w)*(mults.W||1)+((p.K||0)/D2.k)*(mults.K||1)+((p.SV||0)/D2.svh3)*(mults.SVH3||1);
