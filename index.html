@@ -8298,9 +8298,16 @@ function _buildPlayerSgpLookups() {
       var k = _normPlayerKey(name);
       var cells = row.cells || [];
       function gv(cat){ return (typeof getStatVal === 'function') ? getStatVal(cells, cat, pitIdx) : null; }
-      var p = { W: gv('W')||0, K: gv('K')||0, SV: gv('SVH3')||0, ERA: gv('ERA'), WHIP: gv('WHIP'), IP: gv('IP')||0, pos: (sc.pos||'') };
+      var p = { W: gv('W')||0, K: gv('K')||0, SV: gv('SVH3')||0, ERA: gv('ERA'), WHIP: gv('WHIP'), IP: gv('IP')||0, pos: (sc.posShortNames||sc.pos||'') };
       var r = rosSgpForPitcher(p);
       currPit[k] = isFinite(r.total) ? +r.total.toFixed(3) : null;
+      if (window._sgpDebug && (k.indexOf('davis martin') !== -1 || k.indexOf('skenes') !== -1 || k.indexOf('clay holmes') !== -1)) {
+        console.log('[Curr SGP debug]', name, {
+          input: p,
+          perCat: r.perCat,
+          total: r.total
+        });
+      }
     });
   }
 
