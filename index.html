@@ -10146,6 +10146,64 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
     else if (fwM && roM && unlucky)       setArc('Unlucky Mid',       'Slight Up',    'Hold / Buy small',   'Middle-of-pack but underperforming expectation.');
     else if (fwM && roM)                  setArc('Middle of the Pack','Flat',         'Choose Direction',   'Balanced across signals. Decide whether to push or rebuild.');
     else                                  setArc(arcEntry.arch||'Mixed Signals', arcEntry.dir||'Flat', arcEntry.action||'Reassess', 'Mixed signals — no archetype dominates.');
+
+    // ── Borderline detection ────────────────────────────────────────
+    // Re-run the cascade with each input nudged ±3 around bucket boundaries
+    // (45 / 65). If a different archetype name would fire, append a "borderline"
+    // note so the user knows the call could swing.
+    function _classifyArc(fw, ro, rt, j) {
+      var aH = fw >= 65, aM = fw >= 45 && fw < 65, aL = fw < 45;
+      var bH = ro >= 65, bM = ro >= 45 && ro < 65, bL = ro < 45;
+      var cH = rt >= 65, cL = rt < 45;
+      var lk = j >= 0.12, ul = j <= -0.12;
+      if (aH && bH && lk) return 'Lucky Contender';
+      if (aH && bH)        return 'True Contender';
+      if (aH && bL)        return 'Selling Window';
+      if (aH && bM && lk)  return 'Hot Streak';
+      if (aH && bM)        return 'Solid Performer';
+      if (aL && bH)        return 'Sleeping Giant';
+      if (aL && bM && ul)  return 'Unlucky Mid';
+      if (aL && cH)        return 'Talent Trap';
+      if (aL && bL && rt < 45) return 'Rebuild';
+      if (aM && bH)        return 'Rising';
+      if (aM && bL)        return 'Fading';
+      if (aM && bM && lk)  return 'Lucky Mid';
+      if (aM && bM && ul)  return 'Unlucky Mid';
+      if (aM && bM)        return 'Middle of the Pack';
+      return null;
+    }
+    function _isNear(v, boundary) { return Math.abs(v - boundary) <= 3; }
+    var alts = {};
+    var dims = [
+      { val:fwarPct, isCloseToBoundary: (_isNear(fwarPct,45)||_isNear(fwarPct,65)) },
+      { val:rosPct,  isCloseToBoundary: (_isNear(rosPct,45)||_isNear(rosPct,65)) },
+      { val:lgPct,   isCloseToBoundary: (_isNear(lgPct,45)||_isNear(lgPct,65)) },
+      { val:joe,     isCloseToBoundary: (_isNear(joe*100,12)||_isNear(joe*100,-12)) }
+    ];
+    if (dims[0].isCloseToBoundary || dims[1].isCloseToBoundary || dims[2].isCloseToBoundary || dims[3].isCloseToBoundary) {
+      // Try perturbing each dim independently by ±4 (just past the 3-pt boundary)
+      var baseArc = arcEntry.arch;
+      [-4, 4].forEach(function(delta) {
+        var perturbations = [
+          [fwarPct+delta, rosPct,       lgPct,       joe],
+          [fwarPct,       rosPct+delta, lgPct,       joe],
+          [fwarPct,       rosPct,       lgPct+delta, joe],
+          [fwarPct,       rosPct,       lgPct,       joe + delta*0.04]
+        ];
+        perturbations.forEach(function(p) {
+          var alt = _classifyArc(p[0], p[1], p[2], p[3]);
+          if (alt && alt !== baseArc) alts[alt] = (alts[alt]||0) + 1;
+        });
+      });
+      var altList = Object.keys(alts);
+      if (altList.length === 1) {
+        arcReason = arcReason + ' · borderline with ' + altList[0];
+      } else if (altList.length > 1) {
+        // Show the most-frequently-reached alternate
+        altList.sort(function(a,b){ return alts[b] - alts[a]; });
+        arcReason = arcReason + ' · borderline with ' + altList[0];
+      }
+    }
   }
 
   // ── Trust Score ───────────────────────────────────────────────────────
@@ -10257,6 +10315,53 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   // ── Colour helpers ────────────────────────────────────────────────────
   function bktCol(b){return b==='High'?'#1e6b3a':b==='Mid'?'#b7791f':'#c0392b';}
   function bktBg(b){ return b==='High'?'#e8f0eb':b==='Mid'?'#fef3e2':'#fce8e8';}
+
+  // Continuous (smooth) versions — take a percentile value (0-100) and return
+  // colors that blend across the Low→Mid→High range instead of jumping at
+  // bucket boundaries. Boundary cliffs at 45 and 65 are softened over a
+  // ±5-point window using HSL interpolation across the existing palette.
+  // Anchors:  Low (≤40) #c0392b/#fce8e8  ·  Mid (50-60) #b7791f/#fef3e2  ·  High (≥70) #1e6b3a/#e8f0eb
+  function _hexToHsl(hex) {
+    var r=parseInt(hex.slice(1,3),16)/255, g=parseInt(hex.slice(3,5),16)/255, b=parseInt(hex.slice(5,7),16)/255;
+    var mx=Math.max(r,g,b), mn=Math.min(r,g,b), h=0, s=0, l=(mx+mn)/2;
+    if (mx !== mn) {
+      var d = mx - mn;
+      s = l > 0.5 ? d/(2-mx-mn) : d/(mx+mn);
+      switch(mx){
+        case r: h = (g-b)/d + (g<b?6:0); break;
+        case g: h = (b-r)/d + 2; break;
+        case b: h = (r-g)/d + 4; break;
+      }
+      h *= 60;
+    }
+    return [h, s*100, l*100];
+  }
+  function _lerpHsl(a, b, t) {
+    // Interpolate hue along the shorter arc
+    var dh = b[0] - a[0];
+    if (dh > 180) dh -= 360;
+    if (dh < -180) dh += 360;
+    return [(a[0] + dh*t + 360) % 360, a[1] + (b[1]-a[1])*t, a[2] + (b[2]-a[2])*t];
+  }
+  function _hslToCss(hsl) {
+    return 'hsl(' + Math.round(hsl[0]) + ',' + Math.round(hsl[1]) + '%,' + Math.round(hsl[2]) + '%)';
+  }
+  var _LOW_TXT  = _hexToHsl('#c0392b'), _LOW_BG  = _hexToHsl('#fce8e8');
+  var _MID_TXT  = _hexToHsl('#b7791f'), _MID_BG  = _hexToHsl('#fef3e2');
+  var _HIGH_TXT = _hexToHsl('#1e6b3a'), _HIGH_BG = _hexToHsl('#e8f0eb');
+  // pctColor(v) returns { text, bg } interpolated across red→amber→green.
+  // Anchor points: 30 = pure red, 55 = pure amber, 80 = pure green.
+  function pctColor(v) {
+    var t;
+    if (v <= 30) return { text: _hslToCss(_LOW_TXT),  bg: _hslToCss(_LOW_BG) };
+    if (v >= 80) return { text: _hslToCss(_HIGH_TXT), bg: _hslToCss(_HIGH_BG) };
+    if (v <= 55) {
+      t = (v - 30) / 25;
+      return { text: _hslToCss(_lerpHsl(_LOW_TXT, _MID_TXT, t)), bg: _hslToCss(_lerpHsl(_LOW_BG, _MID_BG, t)) };
+    }
+    t = (v - 55) / 25;
+    return { text: _hslToCss(_lerpHsl(_MID_TXT, _HIGH_TXT, t)), bg: _hslToCss(_lerpHsl(_MID_BG, _HIGH_BG, t)) };
+  }
   function joeCol(v){return v>0?'#1e6b3a':v<0?'#c0392b':'#5f5e5a';}
   function joeBg(v){ return v>0?'#e8f0eb':v<0?'#fce8e8':'#f1efe8';}
   var mc = 'background:var(--bg);border-radius:var(--radius);padding:12px 14px';
@@ -10353,9 +10458,10 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
 
   // ── Build HTML ──────────────────────────────────────────────────────
   // ── Build HTML ────────────────────────────────────────────────────────
+  var _arcC = pctColor(fwarPct);
   var h = '<div class="card" style="margin-bottom:20px">';
   h += '<div class="card-header"><span class="card-title">Team diagnostic</span>';
-  h += pill(arcEntry.arch||'—', bktBg(fBucket), bktCol(fBucket));
+  h += pill(arcEntry.arch||'—', _arcC.bg, _arcC.text);
   h += '</div><div class="card-body" style="padding:14px 16px;display:flex;flex-direction:column;gap:14px">';
 
   // ── Section 1: Archetype + Current vs Expected ────────────────────
@@ -10363,7 +10469,7 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   h += '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">';
   // Archetype
   h += '<div style="'+mc+'"><div style="'+lb+'">Archetype</div>';
-  h += '<div style="font-size:15px;font-weight:500;color:'+bktCol(fBucket)+';margin:5px 0 3px">'+(arcEntry.arch||'—')+'</div>';
+  h += '<div style="font-size:15px;font-weight:500;color:'+_arcC.text+';margin:5px 0 3px">'+(arcEntry.arch||'—')+'</div>';
   h += '<div style="font-size:11px;color:var(--muted)">'+(arcReason||arcKey)+'</div></div>';
   // Direction
   var dirCol = isPos?'#1e6b3a':isNeg?'#c0392b':'#5f5e5a';
@@ -10417,23 +10523,26 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
     return bh;
   }
   h += '<div style="'+mc+'"><div style="'+lb+'">Team production (fWAR%)</div>';
-  h += '<div style="display:flex;align-items:baseline;gap:6px;margin:6px 0 3px"><span style="font-size:22px;font-weight:500">'+fwarPct+'</span><span style="font-size:11px;color:var(--muted)">th pct</span>'+pill(fBucket,bktBg(fBucket),bktCol(fBucket))+'</div>';
+  var _fwC = pctColor(fwarPct);
+  h += '<div style="display:flex;align-items:baseline;gap:6px;margin:6px 0 3px"><span style="font-size:22px;font-weight:500">'+fwarPct+'</span><span style="font-size:11px;color:var(--muted)">th pct</span>'+pill(fBucket,_fwC.bg,_fwC.text)+'</div>';
   h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Actual fantasy output vs league</div>';
-  h += gradBar(fwarPct,'#E24B4A','#639922',bktCol(fBucket))+'</div>';
+  h += gradBar(fwarPct,'#E24B4A','#639922',_fwC.text)+'</div>';
   // Lg Rating%
   h += '<div style="'+mc+'"><div style="'+lb+'">Underlying talent (Rating%)</div>';
-  h += '<div style="display:flex;align-items:baseline;gap:6px;margin:6px 0 3px"><span style="font-size:22px;font-weight:500">'+lgPct+'</span><span style="font-size:11px;color:var(--muted)">th pct</span>'+pill(lBucket,bktBg(lBucket),bktCol(lBucket))+'</div>';
+  var _lgC = pctColor(lgPct);
+  h += '<div style="display:flex;align-items:baseline;gap:6px;margin:6px 0 3px"><span style="font-size:22px;font-weight:500">'+lgPct+'</span><span style="font-size:11px;color:var(--muted)">th pct</span>'+pill(lBucket,_lgC.bg,_lgC.text)+'</div>';
   h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Roster quality across all positions</div>';
-  h += gradBar(lgPct,'#E24B4A','#639922',bktCol(lBucket))+'</div>';
+  h += gradBar(lgPct,'#E24B4A','#639922',_lgC.text)+'</div>';
   // ROS% — projected production (NEW)
   if (rosPct != null) {
     var rosBucket = fBkt(rosPct);
+    var _roC = pctColor(rosPct);
     h += '<div style="'+mc+';border:0.5px solid rgba(29,158,117,0.30);position:relative">';
     h += '<div style="position:absolute;top:-7px;right:8px;font-size:8px;font-weight:500;color:#1e6b3a;background:var(--card);padding:1px 6px;border-radius:8px;border:0.5px solid rgba(29,158,117,0.30);text-transform:uppercase;letter-spacing:0.04em">New</div>';
     h += '<div style="'+lb+'">Projected production (ROS%)</div>';
-    h += '<div style="display:flex;align-items:baseline;gap:6px;margin:6px 0 3px"><span style="font-size:22px;font-weight:500">'+rosPct+'</span><span style="font-size:11px;color:var(--muted)">th pct</span>'+pill(rosBucket,bktBg(rosBucket),bktCol(rosBucket))+'</div>';
+    h += '<div style="display:flex;align-items:baseline;gap:6px;margin:6px 0 3px"><span style="font-size:22px;font-weight:500">'+rosPct+'</span><span style="font-size:11px;color:var(--muted)">th pct</span>'+pill(rosBucket,_roC.bg,_roC.text)+'</div>';
     h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Rest-of-season SGP vs league</div>';
-    h += gradBar(rosPct,'#E24B4A','#639922',bktCol(rosBucket))+'</div>';
+    h += gradBar(rosPct,'#E24B4A','#639922',_roC.text)+'</div>';
   }
   // JOE
   var jc=joeCol(joe), jbg=joeBg(joe);
