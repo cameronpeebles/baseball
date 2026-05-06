@@ -9958,6 +9958,75 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   var lgPct   = rankPct(lgTotals,   teamId);
   var joe     = joeVal != null ? joeVal : 0;
 
+  // ── Team ROS% (NEW) ──────────────────────────────────────────────────
+  // Sum raw Team ROS SGP per team across all rostered players who pass the
+  // playing-time filter. mults are flat (×1) so this measures absolute
+  // projected production, not need-fit. Falls back gracefully if ROS data
+  // hasn't loaded yet — rosPct stays null and the card omits the fourth input.
+  var rosPct = null;
+  var rosTotals = null;
+  (function computeRosPct() {
+    if (typeof _rosHitData === 'undefined' || !_rosHitData || !_rosHitData.length) return;
+    if (typeof _rosPitData === 'undefined' || !_rosPitData || !_rosPitData.length) return;
+    if (!window._rosRosterLookup || !Object.keys(window._rosRosterLookup).length) return;
+    if (typeof _rosHasMLBRole !== 'function') return;
+
+    function diagNorm(n) {
+      return (n || '').replace(/\s*\([^)]*\).*$/, '').toLowerCase().replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
+    }
+
+    function diagRosSgp(p, isHit, tid) {
+      // Mirror _tnRawSGP — flat multipliers, team rate-stat context, trust factor.
+      var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
+      var ts = (window._rosTeamStats || {})[tid] || {R:0,HR:0,RBI:0,SB:0,AVG:null,AB:0,K:0,W:0,SVH3:0,ERA:null,WHIP:null,IP:0};
+      var total = 0;
+      if (isHit) {
+        total += ((p.R||0)/D2.r) + ((p.HR||0)/D2.hr) + ((p.RBI||0)/D2.rbi) + ((p.SB||0)/D2.sb);
+        var rH = (p.H > 0 ? p.H : (p.AVG && p.AB ? p.AVG * p.AB : null));
+        if (rH && p.AB > 0 && ts.AVG != null && ts.AB > 0) {
+          var cH = (ts.AVG||0)*(ts.AB||0), nH = cH+rH, nAB = (ts.AB||0)+(p.AB||0);
+          total += (nAB > 0 ? ((nH/nAB) - (ts.AVG||0)) : 0) / D2.avg;
+        }
+      } else {
+        total += ((p.W||0)/D2.w) + ((p.K||0)/D2.k) + ((p.SV||0)/D2.svh3);
+        if (p.ERA != null && p.IP > 0 && ts.ERA != null && ts.IP > 0) {
+          var tER=(ts.ERA||0)*(ts.IP||0)/9, pER=p.ERA*(p.IP||0)/9, nIP=(ts.IP||0)+(p.IP||0);
+          total += (nIP > 0 ? ((ts.ERA||0) - (tER+pER)/nIP*9) : 0) / D2.era;
+        }
+        if (p.WHIP != null && p.IP > 0 && ts.WHIP != null && ts.IP > 0) {
+          var tBR=(ts.WHIP||0)*(ts.IP||0), pBR=p.WHIP*(p.IP||0), nIP2=(ts.IP||0)+(p.IP||0);
+          total += (nIP2 > 0 ? ((ts.WHIP||0) - (tBR+pBR)/nIP2) : 0) / D2.whip;
+        }
+      }
+      var trust = isHit ? Math.min(1, (p.AB||0)/250) : ((p.pos||'').toUpperCase().indexOf('SP') !== -1 ? Math.min(1, (p.IP||0)/60) : Math.min(1, (p.IP||0)/30));
+      return total * trust;
+    }
+
+    function teamRosTotal(tid) {
+      var total = 0;
+      _rosHitData.forEach(function(p) {
+        var k = diagNorm(p.name);
+        var ri = window._rosRosterLookup[k];
+        if (!ri || ri.teamId !== tid) return;
+        if (!_rosHasMLBRole(p, true)) return;
+        var s = diagRosSgp(p, true, tid);
+        if (isFinite(s)) total += s;
+      });
+      _rosPitData.forEach(function(p) {
+        var k = diagNorm(p.name);
+        var ri = window._rosRosterLookup[k];
+        if (!ri || ri.teamId !== tid) return;
+        if (!_rosHasMLBRole(p, false)) return;
+        var s = diagRosSgp(p, false, tid);
+        if (isFinite(s)) total += s;
+      });
+      return total;
+    }
+
+    rosTotals = teamIds.map(function(tid){return {tid:tid, v:teamRosTotal(tid)};}).sort(function(a,b){return a.v-b.v;});
+    rosPct = rankPct(rosTotals, teamId);
+  })();
+
   // fWAR by group for positional breakdown
   var fwarByGroup = {Infield:null,Outfield:null,SP:null,RP:null};
   var fwMapD = {};
@@ -9979,17 +10048,69 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   var arcKey  = fBucket+'-'+lBucket+'-'+jBucket;
   var arcEntry = (typeof ARCHETYPE_MAP !== 'undefined' && ARCHETYPE_MAP[arcKey]) || {arch:'—',dir:'Flat',action:'—'};
 
+  // ── ROS-aware archetype override ─────────────────────────────────────
+  // When ROS% is available, derive the archetype from continuous signals
+  // rather than the 27-cell map. The map remains for fallback when ROS data
+  // hasn't loaded.
+  var arcReason = '';
+  if (rosPct != null) {
+    var fwH = fwarPct >= 65, fwM = fwarPct >= 45 && fwarPct < 65, fwL = fwarPct < 45;
+    var roH = rosPct  >= 65, roM = rosPct  >= 45 && rosPct  < 65, roL = rosPct  < 45;
+    var rtH = lgPct   >= 65, rtL = lgPct   < 45;
+    var lucky = joe >=  0.12, unlucky = joe <= -0.12;
+
+    function setArc(arch, dir, action, reason) {
+      arcEntry = { arch: arch, dir: dir, action: action };
+      arcReason = reason;
+    }
+
+    if (fwH && roH && lucky)              setArc('Lucky Contender',   'Slight Down', 'Sell High',          'High results AND projection, with positive luck — a touch unsustainable.');
+    else if (fwH && roH)                  setArc('True Contender',    'Flat',         'Hold / Optimize',    'Production and projection both elite. Maintain core.');
+    else if (fwH && roL)                  setArc('Selling Window',    'Down',         'Sell High',          'High results but ROS projects regression. Trade overperformers while value is up.');
+    else if (fwH && roM && lucky)         setArc('Hot Streak',        'Slight Down',  'Sell High',          'Results above projection AND lucky. Some give-back coming.');
+    else if (fwH && roM)                  setArc('Solid Performer',   'Slight Down',  'Optimize',           'Outperforming projection slightly. Watch for regression.');
+    else if (fwL && roH)                  setArc('Sleeping Giant',    'Up',           'Hold / Buy',         'Low results despite high ROS projection — buy-low setup.');
+    else if (fwL && roM && unlucky)       setArc('Unlucky Mid',       'Slight Up',    'Hold',               'Low results with neutral projection but unlucky. Some bounce-back due.');
+    else if (fwL && rtH)                  setArc('Talent Trap',       'Slight Up',    'Hold / Reassess',    'Market values the talent but neither current results nor ROS confirm it.');
+    else if (fwL && roL && rtL)           setArc('Rebuild',           'Flat',         'Rebuild',            'Across-the-board low. Acquire upside, accept this season.');
+    else if (fwM && roH)                  setArc('Rising',            'Up',           'Hold / Buy',         'Average results but ROS projects strongly upward.');
+    else if (fwM && roL)                  setArc('Fading',            'Down',         'Sell High',          'Average results with weak ROS — get out before it slides.');
+    else if (fwM && roM && lucky)         setArc('Lucky Mid',         'Slight Down',  'Optimize / Sell',    'Middle-of-pack with luck inflating results.');
+    else if (fwM && roM && unlucky)       setArc('Unlucky Mid',       'Slight Up',    'Hold / Buy small',   'Middle-of-pack but underperforming expectation.');
+    else if (fwM && roM)                  setArc('Middle of the Pack','Flat',         'Choose Direction',   'Balanced across signals. Decide whether to push or rebuild.');
+    else                                  setArc(arcEntry.arch||'Mixed Signals', arcEntry.dir||'Flat', arcEntry.action||'Reassess', 'Mixed signals — no archetype dominates.');
+  }
+
   // ── Trust Score ───────────────────────────────────────────────────────
-  var gap     = fwarPct - lgPct;
-  var trustRaw = 100 - (0.8*Math.abs(gap)) - (35*Math.abs(joe));
-  // Cap trust at 80 for weak teams (both production and talent below average)
-  if (fwarPct < 50 && lgPct < 50) trustRaw = Math.min(trustRaw, 80);
+  // When ROS data is available, average all three pairwise gaps;
+  // otherwise fall back to the original fwar/rating gap only.
+  var gap     = fwarPct - lgPct; // legacy gap, kept for downstream code
+  var fwarRosGap = rosPct != null ? (fwarPct - rosPct) : null;
+  var ratingRosGap = rosPct != null ? (lgPct - rosPct) : null;
+  var avgGap;
+  if (rosPct != null) {
+    avgGap = (Math.abs(gap) + Math.abs(fwarRosGap) + Math.abs(ratingRosGap)) / 3;
+  } else {
+    avgGap = Math.abs(gap);
+  }
+  var trustRaw = 100 - (0.8 * avgGap) - (35 * Math.abs(joe));
+  // Cap trust at 80 for weak teams (below average across all available signals)
+  var allWeak = (fwarPct < 50 && lgPct < 50 && (rosPct == null || rosPct < 50));
+  if (allWeak) trustRaw = Math.min(trustRaw, 80);
   var trust   = Math.max(0, Math.min(100, Math.round(trustRaw)));
   function trustTier(v){ return v>=80?'Very High':v>=65?'High':v>=50?'Medium':v>=35?'Low':'Very Low'; }
   function trustIcon(v){ return v>=80?'🔒':v>=65?'✅':v>=50?'⚖️':v>=35?'⚠️':'🚨'; }
 
   // ── Expected Score ────────────────────────────────────────────────────
-  var expScore = parseFloat((0.55*fwarPct + 0.30*lgPct - 10*joe).toFixed(1));
+  // With ROS: weight current production highest, ROS second, rating third
+  // (ROS already reflects most of the talent signal).
+  // Without ROS: original 0.55/0.30/JOE formula.
+  var expScore;
+  if (rosPct != null) {
+    expScore = parseFloat((0.40*fwarPct + 0.20*lgPct + 0.30*rosPct - 10*joe).toFixed(1));
+  } else {
+    expScore = parseFloat((0.55*fwarPct + 0.30*lgPct - 10*joe).toFixed(1));
+  }
   function interpLabel(s){ return s>=70?'True Contender':s>=55?'Playoff Caliber':s>=45?'Middling':'Weak Team'; }
   function interpColor(s){ return s>=70?'#1e6b3a':s>=55?'#4a9a68':s>=45?'#b7791f':'#c0392b'; }
   function interpBg(s){    return s>=70?'#e8f0eb':s>=55?'#f0f7ec':s>=45?'#fef3e2':'#fce8e8'; }
@@ -10018,7 +10139,15 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   var rankDiff = (curRank && arcRowInTable) ? arcRowInTable.expRank - curRank : null;
 
   // ── Trend Outlook ─────────────────────────────────────────────────────
-  var trendStrength = Math.abs(gap) + 10*Math.abs(joe);
+  // With ROS: trend strength uses |fwar − ros| as the primary signal — the
+  // direct read on "are results above or below projection." Without ROS:
+  // fall back to |fwar − rating| as before.
+  var trendStrength;
+  if (rosPct != null) {
+    trendStrength = Math.abs(fwarRosGap) + 10*Math.abs(joe);
+  } else {
+    trendStrength = Math.abs(gap) + 10*Math.abs(joe);
+  }
   var strength = trendStrength>=20?'Strong':trendStrength>=10?'Moderate':'Weak';
   var dir = arcEntry.dir || 'Flat';
   var isPos = dir==='Up'||dir==='Slight Up';
@@ -10168,7 +10297,7 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   // Archetype
   h += '<div style="'+mc+'"><div style="'+lb+'">Archetype</div>';
   h += '<div style="font-size:15px;font-weight:500;color:'+bktCol(fBucket)+';margin:5px 0 3px">'+(arcEntry.arch||'—')+'</div>';
-  h += '<div style="font-size:11px;color:var(--muted)">'+arcKey+'</div></div>';
+  h += '<div style="font-size:11px;color:var(--muted)">'+(arcReason||arcKey)+'</div></div>';
   // Direction
   var dirCol = isPos?'#1e6b3a':isNeg?'#c0392b':'#5f5e5a';
   h += '<div style="'+mc+'"><div style="'+lb+'">Should-be direction</div>';
@@ -10201,10 +10330,18 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   h += 'Each bar shows a percentile (0–100) against the rest of the league. ';
   h += '<strong style="color:var(--text);font-weight:500">fWAR%</strong> = what your team has actually produced (results). ';
   h += '<strong style="color:var(--text);font-weight:500">Rating%</strong> = quality of the players themselves (talent). ';
+  if (rosPct != null) {
+    h += '<strong style="color:var(--text);font-weight:500">ROS%</strong> = projected rest-of-season SGP (forward-looking). ';
+  }
   h += '<strong style="color:var(--text);font-weight:500">JOE</strong> = luck-adjusted performance vs expected. ';
-  h += '50 = league average. High Rating% with low fWAR% = underperforming talent — a buy signal.';
+  h += '50 = league average. ';
+  if (rosPct != null) {
+    h += 'High ROS% with low fWAR% = projection above current results — a buy signal. The pairwise gaps below show which signals disagree most.';
+  } else {
+    h += 'High Rating% with low fWAR% = underperforming talent — a buy signal.';
+  }
   h += '</div>';
-  h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">';
+  h += '<div style="display:grid;grid-template-columns:repeat('+(rosPct!=null?4:3)+',minmax(0,1fr));gap:10px">';
   // fWAR%
   function gradBar(pct, low, high, markerCol){
     var bh='<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:2px"><span>0</span><span>50</span><span>100</span></div>';
@@ -10221,6 +10358,16 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   h += '<div style="display:flex;align-items:baseline;gap:6px;margin:6px 0 3px"><span style="font-size:22px;font-weight:500">'+lgPct+'</span><span style="font-size:11px;color:var(--muted)">th pct</span>'+pill(lBucket,bktBg(lBucket),bktCol(lBucket))+'</div>';
   h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Roster quality across all positions</div>';
   h += gradBar(lgPct,'#E24B4A','#639922',bktCol(lBucket))+'</div>';
+  // ROS% — projected production (NEW)
+  if (rosPct != null) {
+    var rosBucket = fBkt(rosPct);
+    h += '<div style="'+mc+';border:0.5px solid rgba(29,158,117,0.30);position:relative">';
+    h += '<div style="position:absolute;top:-7px;right:8px;font-size:8px;font-weight:500;color:#1e6b3a;background:var(--card);padding:1px 6px;border-radius:8px;border:0.5px solid rgba(29,158,117,0.30);text-transform:uppercase;letter-spacing:0.04em">New</div>';
+    h += '<div style="'+lb+'">Projected production (ROS%)</div>';
+    h += '<div style="display:flex;align-items:baseline;gap:6px;margin:6px 0 3px"><span style="font-size:22px;font-weight:500">'+rosPct+'</span><span style="font-size:11px;color:var(--muted)">th pct</span>'+pill(rosBucket,bktBg(rosBucket),bktCol(rosBucket))+'</div>';
+    h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Rest-of-season SGP vs league</div>';
+    h += gradBar(rosPct,'#E24B4A','#639922',bktCol(rosBucket))+'</div>';
+  }
   // JOE
   var jc=joeCol(joe), jbg=joeBg(joe);
   var joeMarkerPct = Math.round((joe+1)/2*100);
@@ -10228,9 +10375,43 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   h += '<div style="display:flex;align-items:baseline;gap:6px;margin:6px 0 3px"><span style="font-size:22px;font-weight:500;color:'+jc+'">'+(joe>=0?'+':'')+joe.toFixed(2)+'</span>'+pill(jBucket,jbg,jc)+'</div>';
   h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Negative = unlucky, Positive = lucky</div>';
   h += '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:2px"><span>-1.0</span><span>0</span><span>+1.0</span></div>';
-  h += '<div style="height:7px;border-radius:3px;background:linear-gradient(to right,#E24B4A,#EF9F27,#639922);position:relative">';
+  h += '<div style="height:7px;border-radius:3px;background:linear-gradient(to right,#639922,#EF9F27,#E24B4A);position:relative">';
   h += '<div style="position:absolute;top:-3px;left:'+joeMarkerPct+'%;width:2px;height:13px;background:'+jc+';border-radius:1px"></div></div></div>';
   h += '</div></div>';
+
+  // ── Pairwise gaps · what's pulling trust ─────────────────────────
+  if (rosPct != null) {
+    h += '<hr style="border:none;border-top:0.5px solid var(--border);margin:8px 0 12px">';
+    h += '<div>';
+    h += '<div style="'+lb+';margin-bottom:8px">Pairwise gaps · what\'s pulling trust</div>';
+    h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">';
+    function gapTile(label, value, posDesc, negDesc, neutralDesc, accent) {
+      var col = Math.abs(value) <= 8 ? '#5a594f' : (value < 0 ? (accent || '#854f0b') : (accent || '#1e6b3a'));
+      var desc = Math.abs(value) <= 8 ? neutralDesc : (value < 0 ? negDesc : posDesc);
+      var bg = 'var(--bg)';
+      var border = '0.5px solid var(--border)';
+      if (label === 'fWAR − ROS') { bg = 'var(--bg)'; border = '0.5px solid rgba(29,158,117,0.30)'; }
+      var s = '<div style="background:'+bg+';border:'+border+';border-radius:6px;padding:9px 12px">';
+      s += '<div style="font-size:10px;font-weight:500;color:var(--text);margin-bottom:2px">'+label+'</div>';
+      s += '<div style="display:flex;align-items:baseline;gap:6px"><span style="font-size:14px;font-weight:600;color:'+col+'">'+(value>=0?'+':'')+Math.round(value)+'</span>';
+      s += '<span style="font-size:10px;color:'+(Math.abs(value)<=8?'var(--muted)':col)+';font-weight:'+(Math.abs(value)<=8?'400':'500')+'">'+desc+'</span></div>';
+      s += '</div>';
+      return s;
+    }
+    h += gapTile('fWAR − Rating', gap,
+      'overperforming the talent on the roster',
+      'underperforming the talent on the roster',
+      'production matches talent');
+    h += gapTile('fWAR − ROS', fwarRosGap,
+      'current results above projection',
+      'projecting upward — current pace below ROS',
+      'production aligned with projection');
+    h += gapTile('Rating − ROS', ratingRosGap,
+      'market overrates this roster',
+      'ROS exceeds market consensus',
+      'market & ROS aligned');
+    h += '</div></div>';
+  }
 
   h += '<hr style="border:none;border-top:0.5px solid var(--border);margin:16px 0">';
   // ── Section 3: Z-Scores · Scatter · Positional ────────────────────
