@@ -2839,6 +2839,28 @@ function init() {
         if (window._fwarRendered && typeof recalculateFWAR === 'function') {
           try { recalculateFWAR(); } catch(e) { console.warn('FWAR refresh after ROS load failed:', e); }
         }
+        // Refresh the active Roster / Team Roster page so new SGP + Archetype cells fill in
+        try {
+          var activeRosterTeam = null;
+          var rosterPage = document.getElementById('page-rosters');
+          var trPage = document.getElementById('page-teamroster') || document.querySelector('#page-rosters');
+          // Look for the currently-selected team button on either page
+          ['#team-sel .team-btn.active', '#team-sel-tr .team-btn.active'].forEach(function(sel) {
+            var btn = document.querySelector(sel);
+            if (btn && !activeRosterTeam) {
+              // Find teamId by reverse-lookup on shortName/name
+              var label = btn.textContent;
+              Object.keys(S.teamInfo).forEach(function(tid) {
+                var ti = S.teamInfo[tid];
+                if ((ti.shortName === label || ti.name === label) && !activeRosterTeam) activeRosterTeam = tid;
+              });
+            }
+          });
+          if (activeRosterTeam) {
+            if (typeof showRoster === 'function' && document.getElementById('roster-body')) showRoster(activeRosterTeam);
+            if (typeof showTeamRoster === 'function' && document.getElementById('teamroster-body')) showTeamRoster(activeRosterTeam);
+          }
+        } catch(e) { console.warn('Roster refresh after ROS load failed:', e); }
       }
       loadJSON('fantasypros_hitters.json')
         .then(function(d){ _rosHitData = d || []; hitDone = true; maybeRefresh(); })
@@ -3499,6 +3521,9 @@ function showRoster(teamId) {
     }
     html += '<th style="color:#5b8db8;font-weight:700;white-space:nowrap;font-size:11px">Pos Rating</th>';
     html += '<th style="color:#2d7a5a;font-weight:700;white-space:nowrap;font-size:11px">League Rating</th>';
+    html += '<th style="color:#1e6b3a;font-weight:700;white-space:nowrap;font-size:11px;background:rgba(29,158,117,0.04)">Curr SGP</th>';
+    html += '<th style="color:#1e6b3a;font-weight:700;white-space:nowrap;font-size:11px;background:rgba(29,158,117,0.04)">ROS SGP</th>';
+    html += '<th style="color:#c0392b;font-weight:700;white-space:nowrap;font-size:11px">Archetype</th>';
     var statHeaders = headers.filter(function(h) { return ['age','opponent'].indexOf(h.key || '') === -1; });
     statHeaders.forEach(function(h) { html += '<th>' + (h.shortName || h.name || '') + '</th>'; });
     if (hasFG) {
@@ -3510,7 +3535,7 @@ function showRoster(teamId) {
 
     // League average row
     if (hasFG && fgLeague && Object.keys(fgLeague).length > 0) {
-      var blankCols = 4 + (hasFWAR ? 2 : 0) + 2 + statHeaders.length;
+      var blankCols = 4 + (hasFWAR ? 2 : 0) + 2 + 3 + statHeaders.length;
       html += '<tr style="background:#e8f4fd;border-bottom:2px solid #2980b9">';
       html += '<td class="left" colspan="' + blankCols + '" style="font-weight:600;font-size:11px;color:#2980b9;white-space:nowrap">MLB Avg (Savant)</td>';
       fgCols.forEach(function(c) {
@@ -3595,6 +3620,42 @@ function showRoster(teamId) {
       }
       html += '<td style="white-space:nowrap">' + rosterRatingBadge(posR != null ? posR : null) + '</td>';
       html += '<td style="white-space:nowrap">' + rosterRatingBadge(lgR  != null ? lgR  : null) + '</td>';
+
+      // Curr SGP / ROS SGP / Archetype cells (player-level, no team context)
+      // Use normN3 first, fall back to _normPlayerKey (strips parenthetical suffixes too)
+      var nameKeyAlt = (typeof _normPlayerKey === 'function') ? _normPlayerKey(name) : normN3;
+      var currSgpMap = isHitSection ? (window._playerCurrSgpHit||{}) : (window._playerCurrSgpPit||{});
+      var rosSgpMap  = isHitSection ? (window._playerRosSgpHit ||{}) : (window._playerRosSgpPit ||{});
+      var rosPctMap2 = isHitSection ? (window._playerRosPctHit ||{}) : (window._playerRosPctPit ||{});
+      var currSgpV = currSgpMap[normN3] != null ? currSgpMap[normN3] : currSgpMap[nameKeyAlt];
+      var rosSgpV  = rosSgpMap [normN3] != null ? rosSgpMap [normN3] : rosSgpMap [nameKeyAlt];
+      var rosPctV2 = rosPctMap2[normN3] != null ? rosPctMap2[normN3] : rosPctMap2[nameKeyAlt];
+      function _rsSgpCol(v) {
+        if (v == null) return 'var(--muted)';
+        if (v >= 2.0) return '#1e6b3a';
+        if (v >= 0.5) return '#4a9a68';
+        if (v >= -0.5) return '#5a594f';
+        return '#c0392b';
+      }
+      function _rsSgpFmt(v) { return v == null ? '—' : (v >= 0 ? '+' : '') + v.toFixed(2); }
+      html += '<td style="font-weight:600;color:'+_rsSgpCol(currSgpV)+';white-space:nowrap;background:rgba(29,158,117,0.04)">'+_rsSgpFmt(currSgpV)+'</td>';
+      html += '<td style="font-weight:600;color:'+_rsSgpCol(rosSgpV) +';white-space:nowrap;background:rgba(29,158,117,0.04)">'+_rsSgpFmt(rosSgpV) +'</td>';
+      // Archetype using the same 9-rule cascade as Player Data
+      var fpctRos = isHitSection
+        ? ((window._fwarPctLookupHit||window._fwarPctLookup||{})[normN3] != null
+            ? (window._fwarPctLookupHit||window._fwarPctLookup||{})[normN3]
+            : (window._fwarPctLookupHit||window._fwarPctLookup||{})[name.toLowerCase()])
+        : ((window._fwarPctLookupPit||window._fwarPctLookup||{})[normN3] != null
+            ? (window._fwarPctLookupPit||window._fwarPctLookup||{})[normN3]
+            : (window._fwarPctLookupPit||window._fwarPctLookup||{})[name.toLowerCase()]);
+      var archRos = (typeof getArchetype === 'function')
+        ? getArchetype(fpctRos != null ? fpctRos / 100 : null, posR, lgR, rosPctV2 != null ? rosPctV2 / 100 : null)
+        : null;
+      if (archRos) {
+        html += '<td style="white-space:nowrap"><span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:'+archRos.color+'22;color:'+archRos.color+';border:1px solid '+archRos.color+'44">'+archRos.name+'</span></td>';
+      } else {
+        html += '<td style="color:var(--muted);font-size:11px">—</td>';
+      }
 
       cells.slice(2).forEach(function(cell) { html += '<td>' + ((cell.content != null ? cell.content : '')).toString().replace(/<[^>]+>/g, '') + '</td>'; });
 
