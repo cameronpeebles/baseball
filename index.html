@@ -913,55 +913,106 @@ td.neg { color: #c0392b; font-weight: 500; }
           <div class="card-header"><span class="card-title">Team diagnostic — formulas and calculations</span></div>
           <div class="card-body" style="padding:16px 20px;display:flex;flex-direction:column;gap:16px">
 
-            <p style="font-size:13px;line-height:1.7">The Team Diagnostic card appears at the top of the Dashboard and classifies your team using three inputs, then derives an archetype, expected direction, trust score, and recommended actions — all deterministically from the rules below.</p>
+            <p style="font-size:13px;line-height:1.7">The Team Diagnostic card appears at the top of the Dashboard and classifies your team using <strong>four inputs</strong>, derives an archetype from a rule cascade, computes an expected score and trust score, and exposes the pairwise disagreements between signals so you can see exactly which signals are pulling each other apart.</p>
+
+            <div style="background:rgba(29,158,117,0.06);border:0.5px solid rgba(29,158,117,0.30);border-radius:8px;padding:11px 14px">
+              <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#1e6b3a;margin-bottom:4px">Recent changes</div>
+              <div style="font-size:12px;line-height:1.6">Added <strong>ROS%</strong> as a 4th forward-looking input. Replaced the 27-cell archetype lookup with a 15-rule continuous cascade that includes a borderline detector. Switched the input pill colors from hard buckets to a smooth red→amber→green gradient. Added a <strong>Pairwise gaps</strong> section showing the three signal disagreements that drive the trust score.</div>
+            </div>
 
             <div>
-              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">The three inputs</div>
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">The four inputs</div>
               <div style="display:flex;flex-direction:column;gap:8px">
                 <div style="padding:12px 16px;background:var(--bg);border-radius:8px">
-                  <div style="font-weight:500;font-size:12px;margin-bottom:4px">Team fWAR% (0–100)</div>
-                  <div style="font-size:12px;line-height:1.6;color:var(--muted)">For each positional group (IF, OF, SP, RP), average the fWAR% of all rostered players. Sum the four group averages. Rank all 10 teams by that total and convert to a 0–100 percentile. Buckets: High ≥ 65 · Mid 45–64 · Low &lt; 45</div>
+                  <div style="font-weight:500;font-size:12px;margin-bottom:4px">Team production · fWAR% (0–100)</div>
+                  <div style="font-size:12px;line-height:1.6;color:var(--muted)">For each positional group (IF, OF, SP, RP), average the fWAR% of all rostered players. Sum the four group averages. Rank all 10 teams and convert to a 0–100 percentile. Backward-looking — what your team has actually produced this season.</div>
                 </div>
                 <div style="padding:12px 16px;background:var(--bg);border-radius:8px">
-                  <div style="font-weight:500;font-size:12px;margin-bottom:4px">League Rating% (0–100)</div>
-                  <div style="font-size:12px;line-height:1.6;color:var(--muted)">Same approach as fWAR% — average league rating per positional group (IF, OF, SP, RP), sum the four averages, rank all 10 teams 0–100. Measures roster quality rather than current production. Buckets: High ≥ 65 · Mid 45–64 · Low &lt; 45</div>
+                  <div style="font-weight:500;font-size:12px;margin-bottom:4px">Underlying talent · Rating% (0–100)</div>
+                  <div style="font-size:12px;line-height:1.6;color:var(--muted)">Same approach as fWAR% but using league-wide player ratings (talent valuation). Sum group averages, rank teams 0–100. Measures roster quality independent of current performance.</div>
+                </div>
+                <div style="padding:12px 16px;background:var(--bg);border-radius:8px;border:0.5px solid rgba(29,158,117,0.30);position:relative">
+                  <div style="position:absolute;top:-7px;right:8px;font-size:8px;font-weight:500;color:#1e6b3a;background:var(--card);padding:1px 6px;border-radius:8px;border:0.5px solid rgba(29,158,117,0.30);text-transform:uppercase;letter-spacing:0.04em">New</div>
+                  <div style="font-weight:500;font-size:12px;margin-bottom:4px">Projected production · ROS% (0–100)</div>
+                  <div style="font-size:12px;line-height:1.6;color:var(--muted)">Sum each rostered player's <strong>raw Team ROS SGP</strong> (FanGraphs ROS projection × team rate-stat context × playing-time trust factor) for every team in the league, then rank percentiles. Multipliers are flat — this measures absolute projected fantasy value, not need-fit. Players below the playing-time threshold (10 AB / 5 IP) are filtered out so dynasty stashes don't inflate the number. Forward-looking — what your team is projected to do for the rest of the season.</div>
                 </div>
                 <div style="padding:12px 16px;background:var(--bg);border-radius:8px">
-                  <div style="font-weight:500;font-size:12px;margin-bottom:4px">JOE Factor (−1 to +1)</div>
-                  <div style="font-size:12px;line-height:1.6;color:var(--muted)">Season average JOE score from the JOE Factor page. Negative = unlucky (schedule hurt results), Positive = lucky (schedule helped results). Buckets: Lucky ≥ +0.12 · Neutral −0.12 to +0.12 · Unlucky ≤ −0.12</div>
+                  <div style="font-weight:500;font-size:12px;margin-bottom:4px">Luck factor · JOE (−1 to +1)</div>
+                  <div style="font-size:12px;line-height:1.6;color:var(--muted)">Season average JOE score from the JOE Factor page. Negative = unlucky, positive = lucky. Buckets: Lucky ≥ +0.12 · Neutral · Unlucky ≤ −0.12.</div>
                 </div>
               </div>
+            </div>
+
+            <div>
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Pill colors and labels</div>
+              <p style="font-size:12px;line-height:1.7;margin-bottom:8px">Each input value gets a <strong>Low / Mid / High</strong> bucket label (the categorical pill text uses thresholds 45 and 65). The <strong>color</strong> of the pill, however, is now a continuous interpolation across the input range — so a value at 44 isn't a hard red and a value at 46 isn't a hard amber. The visual transition is smooth across red → amber → green with anchor points at 30 (pure red), 55 (pure amber), and 80 (pure green).</p>
+              <p style="font-size:12px;line-height:1.6;color:var(--muted);margin-bottom:0">This means a team near a bucket boundary won't visually flip overnight from a small input change. The label is the discrete identity; the color is the magnitude.</p>
             </div>
 
             <div>
               <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Derived scores</div>
               <div style="display:flex;flex-direction:column;gap:8px">
                 <div style="padding:12px 16px;background:var(--bg);border-radius:8px">
-                  <div style="font-weight:500;font-size:12px;margin-bottom:4px">Should-Be Score (Expected Score)</div>
-                  <div style="font-size:12px;font-family:var(--font-mono);background:var(--surface);padding:6px 10px;border-radius:6px;margin:6px 0">Score = 0.55 × fWAR% + 0.30 × LeagueRating% − 10 × JOE Factor</div>
-                  <div style="font-size:12px;line-height:1.6;color:var(--muted)">Higher = stronger team. Interpretation: 70+ True Contender · 55–69 Playoff Caliber · 45–54 Middling · &lt;45 Weak Team</div>
+                  <div style="font-weight:500;font-size:12px;margin-bottom:4px">Expected Score</div>
+                  <div style="font-size:12px;font-family:var(--font-mono);background:var(--surface);padding:6px 10px;border-radius:6px;margin:6px 0">expScore = 0.40 × fWAR% + 0.20 × Rating% + 0.30 × ROS% − 10 × JOE</div>
+                  <div style="font-size:12px;line-height:1.6;color:var(--muted)">Higher = stronger team. Production weighted highest (current points are real), ROS second (forward-looking value), Rating smaller (since ROS already encodes most talent signal). Interpretation: 70+ True Contender · 55–69 Playoff Caliber · 45–54 Middling · &lt;45 Weak Team. <em>Falls back to the legacy 0.55 × fWAR% + 0.30 × Rating% − 10 × JOE when ROS data isn't loaded.</em></div>
                 </div>
                 <div style="padding:12px 16px;background:var(--bg);border-radius:8px">
                   <div style="font-weight:500;font-size:12px;margin-bottom:4px">Trust Score (0–100)</div>
-                  <div style="font-size:12px;font-family:var(--font-mono);background:var(--surface);padding:6px 10px;border-radius:6px;margin:6px 0">Trust = 100 − (0.8 × |fWAR% − Rating%|) − (35 × |JOE Factor|)</div>
-                  <div style="font-size:12px;line-height:1.6;color:var(--muted)">Measures how much to believe the current results. Penalised by both a large production/talent gap and extreme luck. Tiers: 80–100 Very High · 65–79 High · 50–64 Medium · 35–49 Low · &lt;35 Very Low</div>
+                  <div style="font-size:12px;font-family:var(--font-mono);background:var(--surface);padding:6px 10px;border-radius:6px;margin:6px 0">avgGap = avg of |fWAR − Rating|, |fWAR − ROS|, |Rating − ROS|<br>trust   = 100 − (0.8 × avgGap) − (35 × |JOE|)</div>
+                  <div style="font-size:12px;line-height:1.6;color:var(--muted)">Penalised by the average disagreement across all three signal pairs and by extreme luck. When all three signals point the same direction, trust is high. When any pair diverges, trust drops. Capped at 80 for teams below average across all three percentiles. Tiers: 80+ Very High · 65+ High · 50+ Medium · 35+ Low · &lt;35 Very Low.</div>
                 </div>
                 <div style="padding:12px 16px;background:var(--bg);border-radius:8px">
-                  <div style="font-weight:500;font-size:12px;margin-bottom:4px">Performance Gap</div>
-                  <div style="font-size:12px;font-family:var(--font-mono);background:var(--surface);padding:6px 10px;border-radius:6px;margin:6px 0">Gap = fWAR% − LeagueRating%</div>
-                  <div style="font-size:12px;line-height:1.6;color:var(--muted)">Positive gap = producing more than talent suggests (overachieving or hot streak). Negative gap = talent exceeds production (underachieving or cold streak). Used in Trend Outlook and Recommended Action logic.</div>
+                  <div style="font-weight:500;font-size:12px;margin-bottom:4px">Pairwise gaps</div>
+                  <div style="font-size:12px;line-height:1.6;color:var(--muted)">Three signed differences shown directly on the card so you can see what's pulling trust:
+                    <ul style="margin:6px 0 0 18px;padding:0;line-height:1.6">
+                      <li><strong>fWAR − Rating</strong> · production vs the talent on the roster</li>
+                      <li><strong>fWAR − ROS</strong> · current pace vs projection (highlighted — this is the most actionable gap)</li>
+                      <li><strong>Rating − ROS</strong> · market consensus vs projection</li>
+                    </ul>
+                    Gaps within ±8 are treated as "aligned" and rendered neutral. Larger gaps render in red/amber and carry an interpretive caption ("projecting upward — current pace below ROS", etc.).
+                  </div>
                 </div>
               </div>
             </div>
 
             <div>
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Archetype — rule cascade</div>
+              <p style="font-size:12px;line-height:1.7;margin-bottom:8px">When ROS data is loaded, the archetype label is picked by walking a 15-rule cascade against the four inputs. The first rule that matches wins. The cascade replaces the legacy 27-cell ARCHETYPE_MAP lookup, which had hard cliffs at every bucket boundary.</p>
+              <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;font-size:11px">
+                <div style="padding:8px 10px;background:var(--bg);border-radius:6px;line-height:1.5"><strong>Lucky Contender</strong> · fWAR≥65, ROS≥65, JOE≥0.12</div>
+                <div style="padding:8px 10px;background:var(--bg);border-radius:6px;line-height:1.5"><strong>True Contender</strong> · fWAR≥65, ROS≥65, neutral luck</div>
+                <div style="padding:8px 10px;background:var(--bg);border-radius:6px;line-height:1.5"><strong>Selling Window</strong> · fWAR≥65, ROS&lt;45</div>
+                <div style="padding:8px 10px;background:var(--bg);border-radius:6px;line-height:1.5"><strong>Hot Streak</strong> · fWAR≥65, ROS=Mid, lucky</div>
+                <div style="padding:8px 10px;background:var(--bg);border-radius:6px;line-height:1.5"><strong>Solid Performer</strong> · fWAR≥65, ROS=Mid</div>
+                <div style="padding:8px 10px;background:var(--bg);border-radius:6px;line-height:1.5"><strong>Sleeping Giant</strong> · fWAR&lt;45, ROS≥65</div>
+                <div style="padding:8px 10px;background:var(--bg);border-radius:6px;line-height:1.5"><strong>Unlucky Mid</strong> · fWAR&lt;45, ROS=Mid, unlucky</div>
+                <div style="padding:8px 10px;background:var(--bg);border-radius:6px;line-height:1.5"><strong>Talent Trap</strong> · fWAR&lt;45, Rating≥65</div>
+                <div style="padding:8px 10px;background:var(--bg);border-radius:6px;line-height:1.5"><strong>Rebuild</strong> · fWAR&lt;45, ROS&lt;45, Rating&lt;45</div>
+                <div style="padding:8px 10px;background:var(--bg);border-radius:6px;line-height:1.5"><strong>Rising</strong> · fWAR=Mid, ROS≥65</div>
+                <div style="padding:8px 10px;background:var(--bg);border-radius:6px;line-height:1.5"><strong>Fading</strong> · fWAR=Mid, ROS&lt;45</div>
+                <div style="padding:8px 10px;background:var(--bg);border-radius:6px;line-height:1.5"><strong>Lucky Mid</strong> · fWAR=Mid, ROS=Mid, lucky</div>
+                <div style="padding:8px 10px;background:var(--bg);border-radius:6px;line-height:1.5"><strong>Unlucky Mid</strong> · fWAR=Mid, ROS=Mid, unlucky</div>
+                <div style="padding:8px 10px;background:var(--bg);border-radius:6px;line-height:1.5"><strong>Middle of the Pack</strong> · fWAR=Mid, ROS=Mid</div>
+                <div style="padding:8px 10px;background:var(--bg);border-radius:6px;line-height:1.5"><strong>Mixed Signals</strong> · fallback</div>
+              </div>
+              <p style="font-size:12px;line-height:1.7;margin-top:10px;margin-bottom:0;color:var(--muted)">If ROS data isn't loaded, the card falls back to the legacy 27-cell ARCHETYPE_MAP indexed by fWAR-bucket / Rating-bucket / JOE-bucket. See the <strong>Team Archetype</strong> tab for that table.</p>
+            </div>
+
+            <div>
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Borderline detection</div>
+              <p style="font-size:12px;line-height:1.7;margin-bottom:0">After the rule cascade picks an archetype, the code re-runs the cascade with each input perturbed by ±4 points (just past the 3-point boundary window). If the perturbation produces a different archetype, that name is appended to the caption as <em>"· borderline with X"</em>. So a team with fWAR=43 (just below the Low/Mid cutoff at 45) and ROS=70 might show as <strong>Sleeping Giant · borderline with Rising</strong> — telling you the call could swing with a small input change. Teams firmly inside their archetype get no borderline suffix.</p>
+            </div>
+
+            <div>
               <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Trend outlook — calculation steps</div>
               <div style="display:flex;flex-direction:column;gap:6px">
-                <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 1</strong> — Trend Strength Score = |Gap| + (10 × |JOE Factor|)</div>
+                <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 1</strong> — Trend Strength = |fWAR − ROS| + (10 × |JOE|) when ROS is available; falls back to |fWAR − Rating| + (10 × |JOE|) otherwise</div>
                 <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 2</strong> — Classify strength: Strong ≥ 20 · Moderate ≥ 10 · Weak &lt; 10</div>
-                <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 3</strong> — Base direction from archetype (Up / Slight Up / Flat / Slight Down / Down)</div>
+                <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 3</strong> — Direction comes from the archetype rule that fired (Up / Slight Up / Flat / Slight Down / Down)</div>
                 <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 4</strong> — Combine: Strong Positive → "Strong positive outlook" · Moderate Positive → "Positive outlook" · Slight Positive → "Mild positive outlook" · Flat → "Stable outlook" · and mirrored negatives</div>
               </div>
+              <p style="font-size:12px;line-height:1.6;color:var(--muted);margin-top:8px;margin-bottom:0">Switching from |fWAR − Rating| to |fWAR − ROS| as the trend driver is meaningful: it directly answers "are current results above or below where they should end up?" Rating gap conflates two different things (current pace vs talent valuation); ROS gap is the cleaner signal.</p>
             </div>
 
             <div>
@@ -969,15 +1020,15 @@ td.neg { color: #c0392b; font-weight: 500; }
               <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
                 <div style="padding:12px 14px;background:var(--bg);border-radius:8px">
                   <div style="font-size:11px;font-weight:500;color:#1e6b3a;margin-bottom:6px">Primary move</div>
-                  <div style="font-size:11px;line-height:1.6;color:var(--muted)">Contender + Up/Slight Up → Hold / Buy<br>Contender + Flat → Optimize<br>Any + Down/Slight Down → Sell High / Rebalance<br>Middle archetype → Choose Direction<br>Weak/Rebuild archetype → Rebuild</div>
+                  <div style="font-size:11px;line-height:1.6;color:var(--muted)">Contender + Up → Hold / Buy<br>Contender + Flat → Optimize<br>Down direction → Sell High / Rebalance<br>Middle archetype → Choose Direction<br>Weak/Rebuild → Rebuild</div>
                 </div>
                 <div style="padding:12px 14px;background:var(--bg);border-radius:8px">
                   <div style="font-size:11px;font-weight:500;color:#c0392b;margin-bottom:6px">Do not do</div>
-                  <div style="font-size:11px;line-height:1.6;color:var(--muted)">JOE &lt; −0.4 → Do not sell core pieces<br>JOE &gt; +0.4 → Do not chase current production<br>|Gap| &gt; 15 → Do not ignore category imbalance<br>Otherwise → Avoid unnecessary roster churn</div>
+                  <div style="font-size:11px;line-height:1.6;color:var(--muted)">JOE &lt; −0.4 → Don't sell core pieces<br>JOE &gt; +0.4 → Don't chase current production<br>|fWAR − Rating| &gt; 15 → Don't ignore category imbalance<br>Otherwise → Avoid unnecessary churn</div>
                 </div>
                 <div style="padding:12px 14px;background:var(--bg);border-radius:8px">
                   <div style="font-size:11px;font-weight:500;color:#185fa5;margin-bottom:6px">Best upgrade type</div>
-                  <div style="font-size:11px;line-height:1.6;color:var(--muted)">Rating% &gt; fWAR% → High-impact upgrade<br>Pitching weaker than hitting → Bullpen help or ratio SP<br>Hitting weaker than pitching → Power bat or SB specialist<br>Pitching weakness = avg SP+RP rating &lt; avg IF+OF rating</div>
+                  <div style="font-size:11px;line-height:1.6;color:var(--muted)">Rating% &gt; fWAR% → High-impact upgrade available<br>Pitching weaker than hitting → Bullpen / ratio SP<br>Hitting weaker than pitching → Power bat or SB specialist<br>ROS% &gt; fWAR% → Buy-low signal</div>
                 </div>
               </div>
             </div>
