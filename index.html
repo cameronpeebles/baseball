@@ -3926,24 +3926,47 @@ function buildTeamRosterCharts(teamId) {
   var posStrength = GROUPS.map(function(g){ return countByGroup[g]?Math.round(ratingByGroup[g]/countByGroup[g]*100):0; });
 
   var teamZ = (S.zData||[]).find(function(d){ return d.teamId===teamId; });
-  function zToPct(z){ return Math.min(99,Math.max(1,Math.round((z+3)/6*100))); }
-  var hitPct = ['R','RBI','HR','SB','AVG'].map(function(k){ return teamZ ? zToPct(teamZ.batZ[k]||0) : 50; });
-  var pitPct = ['ERA','WHIP','W','K','SVH3'].map(function(k){ return teamZ ? zToPct(teamZ.pitZ[k]||0) : 50; });
+  // ── League-relative percentile for Curr% (replaces zToPct conversion) ──
+  // Rank this team within the league per category. Best=99, worst=1.
+  // Eliminates the prior issue where a Z of +2 mapped to 83 but +3 capped at 99,
+  // making most teams' counting stats max out. Now percentiles are uniform 1-99.
+  // ERA/WHIP are inverted (lower = better) before ranking.
+  function rankCurrPct(catKey, isHitter) {
+    var inverse = (catKey === 'ERA' || catKey === 'WHIP');
+    var allTeamsZ = (S.zData||[]);
+    if (!allTeamsZ.length) return 50;
+    var vals = allTeamsZ.map(function(t){
+      var v = isHitter ? (t.batZ||{})[catKey] : (t.pitZ||{})[catKey];
+      return { tid: t.teamId, v: v != null ? v : 0 };
+    });
+    vals.sort(function(a,b){ return inverse ? a.v - b.v : b.v - a.v; });
+    var idx = vals.findIndex(function(x){ return x.tid === teamId; });
+    if (idx < 0) return 50;
+    return Math.round(99 - (idx / Math.max(1, vals.length - 1)) * 98);
+  }
+  var hitPct = ['R','RBI','HR','SB','AVG'].map(function(k){ return rankCurrPct(k, true); });
+  var pitPct = ['ERA','WHIP','W','K','SVH3'].map(function(k){ return rankCurrPct(k, false); });
 
-  // fWAR% per category: use fWAR-weighted Z-scores converted to percentile
-  // This gives a per-category line that varies across the radar
-  var hitFwarPct = ['R','RBI','HR','SB','AVG'].map(function(k){
-    if (!teamZ) return 50;
-    var w = (FWAR.hitWeights && FWAR.hitWeights[k] != null) ? FWAR.hitWeights[k] : 1;
-    var z = (teamZ.batZ[k]||0) * w;
-    return zToPct(z);
-  });
-  var pitFwarPct = ['ERA','WHIP','W','K','SVH3'].map(function(k){
-    if (!teamZ) return 50;
-    var w = (FWAR.pitWeights && FWAR.pitWeights[k] != null) ? FWAR.pitWeights[k] : 1;
-    var z = (teamZ.pitZ[k]||0) * w;
-    return zToPct(z);
-  });
+  // fWAR-weighted percentile per category. Weight applied before ranking.
+  function rankFwarWtPct(catKey, isHitter) {
+    var inverse = (catKey === 'ERA' || catKey === 'WHIP');
+    var weights = isHitter ? FWAR.hitWeights : FWAR.pitWeights;
+    var w = (weights && weights[catKey] != null) ? weights[catKey] : 1;
+    var allTeamsZ = (S.zData||[]);
+    if (!allTeamsZ.length) return 50;
+    var vals = allTeamsZ.map(function(t){
+      var z = isHitter ? (t.batZ||{})[catKey] : (t.pitZ||{})[catKey];
+      return { tid: t.teamId, v: (z != null ? z : 0) * w };
+    });
+    vals.sort(function(a,b){ return inverse ? a.v - b.v : b.v - a.v; });
+    var idx = vals.findIndex(function(x){ return x.tid === teamId; });
+    if (idx < 0) return 50;
+    return Math.round(99 - (idx / Math.max(1, vals.length - 1)) * 98);
+  }
+  var hitFwarPct = ['R','RBI','HR','SB','AVG'].map(function(k){ return rankFwarWtPct(k, true); });
+  var pitFwarPct = ['ERA','WHIP','W','K','SVH3'].map(function(k){ return rankFwarWtPct(k, false); });
+
+  function zToPct(z){ return Math.min(99,Math.max(1,Math.round((z+3)/6*100))); }
 
   // ── ROS data aggregation ─────────────────────────────────────────────────
   // Sum per-category ROS SGP across rostered players for this team.
@@ -3969,11 +3992,48 @@ function buildTeamRosterCharts(teamId) {
       }
     });
   }
-  // Convert ROS per-cat sums into 0-100 pseudo-percentiles for the radar.
-  // Use a heuristic: 0 SGP = 50, +5 = 95, -5 = 5. Linear scaling capped.
-  function rosSgpToPct(v) { return Math.max(1, Math.min(99, Math.round(50 + v * 9))); }
-  var hitRosPct = ['R','RBI','HR','SB','AVG'].map(function(k){ return rosAvailable ? rosSgpToPct(hitRosByCat[k]||0) : null; });
-  var pitRosPct = ['ERA','WHIP','W','K','SVH3'].map(function(k){ return rosAvailable ? rosSgpToPct(pitRosByCat[k]||0) : null; });
+
+  // ── League-relative percentile conversion for radar ─────────────────────
+  // Sum every team's per-category ROS SGP, then rank this team within the league
+  // for each cat. Yields 0-100 values directly comparable to the existing
+  // zToPct percentiles for the Curr% line.
+  var hitRosPct = ['R','RBI','HR','SB','AVG'].map(function(){ return null; });
+  var pitRosPct = ['ERA','WHIP','W','K','SVH3'].map(function(){ return null; });
+  if (rosAvailable) {
+    var allTeamIds = Object.keys(S.teamInfo);
+    function teamRosCatTotals(tid) {
+      var hit = {R:0,RBI:0,HR:0,SB:0,AVG:0};
+      var pit = {W:0,K:0,SVH3:0,ERA:0,WHIP:0};
+      (TA.players||[]).filter(function(p){ return p.ftId === tid; }).forEach(function(p) {
+        var k = (typeof _normPlayerKey === 'function') ? _normPlayerKey(p.name) : normN(p.name);
+        var g = p.bestGroup || '';
+        var isH = (g === 'Infield' || g === 'Outfield');
+        var rc = isH ? (window._playerRosCatHit||{})[k] : (window._playerRosCatPit||{})[k];
+        if (!rc) return;
+        if (isH) Object.keys(hit).forEach(function(c){ if (rc[c] != null) hit[c] += rc[c]; });
+        else     Object.keys(pit).forEach(function(c){ if (rc[c] != null) pit[c] += rc[c]; });
+      });
+      return { hit: hit, pit: pit };
+    }
+    // Compute everyone's totals once
+    var allTotals = {};
+    allTeamIds.forEach(function(tid){ allTotals[tid] = teamRosCatTotals(tid); });
+    function rankPctInLeague(catKey, isHitter) {
+      var vals = allTeamIds.map(function(tid){
+        return { tid: tid, v: (isHitter ? allTotals[tid].hit : allTotals[tid].pit)[catKey] || 0 };
+      });
+      // For ERA/WHIP, lower is better — invert
+      var inverse = (catKey === 'ERA' || catKey === 'WHIP');
+      vals.sort(function(a,b){ return inverse ? a.v - b.v : b.v - a.v; });
+      // Find this team's rank
+      var idx = vals.findIndex(function(x){ return x.tid === teamId; });
+      if (idx < 0) return 50;
+      // Convert rank to percentile: best=99, worst=1
+      return Math.round(99 - (idx / Math.max(1, vals.length - 1)) * 98);
+    }
+    hitRosPct = ['R','RBI','HR','SB','AVG'].map(function(c){ return rankPctInLeague(c, true); });
+    pitRosPct = ['ERA','WHIP','W','K','SVH3'].map(function(c){ return rankPctInLeague(c, false); });
+  }
 
   var scatterPlayers = (TA.players||[]).filter(function(p){ return p.ftId===teamId; }).map(function(p){
     var k=normN(p.name);
@@ -3993,10 +4053,10 @@ function buildTeamRosterCharts(teamId) {
   var panels = [
     {id:'d1_'+uid,title:'Team fWAR by group · current',donut:true,fwLeg:true},
   ];
+  panels.push({id:'d2_'+uid,title:'Team positional strength by group',donut:true,fwLeg:false});
   if (rosAvailable) {
     panels.push({id:'d1r_'+uid,title:'Team ROS SGP by group · projected',donut:true,rosLeg:true});
   }
-  panels.push({id:'d2_'+uid,title:'Team positional strength by group',donut:true,fwLeg:false});
   panels.push({id:'d3_'+uid,title:'Hitting by category',radar:true});
   panels.push({id:'d4_'+uid,title:'Pitching by category',radar:true});
   panels.forEach(function(p) {
