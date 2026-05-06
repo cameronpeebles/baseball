@@ -8253,6 +8253,14 @@ function _buildPlayerSgpLookups() {
       var r = rosSgpForPitcher(p);
       rosPit[k] = isFinite(r.total) ? +r.total.toFixed(3) : null;
       rosCatPit[k] = r.perCat;
+      // Debug: log a few well-known SPs to verify computation
+      if (window._sgpDebug && (k.indexOf('skenes') !== -1 || k.indexOf('skubal') !== -1 || k.indexOf('ohtani') !== -1)) {
+        console.log('[SGP debug]', p.name, {
+          input: { IP: p.IP, K: p.K, W: p.W, SV: p.SV, ERA: p.ERA, WHIP: p.WHIP, pos: p.pos },
+          perCat: r.perCat,
+          total: r.total
+        });
+      }
     });
   }
 
