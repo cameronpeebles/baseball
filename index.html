@@ -9710,6 +9710,41 @@ function renderArchetypePage() {
     return { teamId:teamId, teamName:teamName, fwarRaw:fwarPctTotal, lgRaw:lgRatingTotal, joe:joeVal };
   });
 
+  // ── ROS% per team — mirror diagnostic ROS% ─────────────────────────────
+  // Sum raw Team ROS SGP per team across rostered players who pass the
+  // playing-time filter. Flat multipliers. Available only when FP data is loaded.
+  var rosAvailable = false;
+  (function computeRos() {
+    if (typeof _rosHitData === 'undefined' || !_rosHitData || !_rosHitData.length) return;
+    if (typeof _rosPitData === 'undefined' || !_rosPitData || !_rosPitData.length) return;
+    if (!window._rosRosterLookup || !Object.keys(window._rosRosterLookup).length) return;
+    if (typeof _rosHasMLBRole !== 'function') return;
+    function nm(n){ return (n||'').replace(/\s*\([^)]*\).*$/, '').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+    function pSGP(p, isHit, tid) {
+      var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
+      var ts = (window._rosTeamStats||{})[tid] || {R:0,HR:0,RBI:0,SB:0,AVG:null,AB:0,K:0,W:0,SVH3:0,ERA:null,WHIP:null,IP:0};
+      var t = 0;
+      if (isHit) {
+        t += ((p.R||0)/D2.r) + ((p.HR||0)/D2.hr) + ((p.RBI||0)/D2.rbi) + ((p.SB||0)/D2.sb);
+        var rH=(p.H>0?p.H:(p.AVG&&p.AB?p.AVG*p.AB:null));
+        if(rH&&p.AB>0&&ts.AVG!=null&&ts.AB>0){var cH=(ts.AVG||0)*(ts.AB||0),nH=cH+rH,nAB=(ts.AB||0)+(p.AB||0);t+=(nAB>0?((nH/nAB)-(ts.AVG||0)):0)/D2.avg;}
+      } else {
+        t += ((p.W||0)/D2.w) + ((p.K||0)/D2.k) + ((p.SV||0)/D2.svh3);
+        if(p.ERA!=null&&p.IP>0&&ts.ERA!=null&&ts.IP>0){var tER=(ts.ERA||0)*(ts.IP||0)/9,pER=p.ERA*(p.IP||0)/9,nIP=(ts.IP||0)+(p.IP||0);t+=(nIP>0?((ts.ERA||0)-(tER+pER)/nIP*9):0)/D2.era;}
+        if(p.WHIP!=null&&p.IP>0&&ts.WHIP!=null&&ts.IP>0){var tBR=(ts.WHIP||0)*(ts.IP||0),pBR=p.WHIP*(p.IP||0),nIP2=(ts.IP||0)+(p.IP||0);t+=(nIP2>0?((ts.WHIP||0)-(tBR+pBR)/nIP2):0)/D2.whip;}
+      }
+      var trust = isHit ? Math.min(1,(p.AB||0)/250) : ((p.pos||'').toUpperCase().indexOf('SP')!==-1?Math.min(1,(p.IP||0)/60):Math.min(1,(p.IP||0)/30));
+      return t * trust;
+    }
+    teamScores.forEach(function(t) {
+      var tot = 0;
+      _rosHitData.forEach(function(p){ var k=nm(p.name); var ri=window._rosRosterLookup[k]; if(!ri||ri.teamId!==t.teamId) return; if(!_rosHasMLBRole(p,true)) return; var s=pSGP(p,true,t.teamId); if(isFinite(s)) tot+=s; });
+      _rosPitData.forEach(function(p){ var k=nm(p.name); var ri=window._rosRosterLookup[k]; if(!ri||ri.teamId!==t.teamId) return; if(!_rosHasMLBRole(p,false)) return; var s=pSGP(p,false,t.teamId); if(isFinite(s)) tot+=s; });
+      t.rosRaw = tot;
+    });
+    rosAvailable = true;
+  })();
+
   // ── Rank fWAR% and LgRating% 0-100 across teams ──────────────────────────
   function rankTo100(teams, key) {
     var sorted = teams.slice().sort(function(a,b){ return a[key]-b[key]; });
@@ -9717,6 +9752,7 @@ function renderArchetypePage() {
   }
   rankTo100(teamScores, 'fwarRaw');
   rankTo100(teamScores, 'lgRaw');
+  if (rosAvailable) rankTo100(teamScores, 'rosRaw');
 
   // ── Bucket functions ──────────────────────────────────────────────────────
   function fwarBucket(v){ return v>=65?'High':v>=45?'Mid':'Low'; }
@@ -9742,23 +9778,61 @@ function renderArchetypePage() {
   function interpLabel(s){
     return s>=70?'True Contender':s>=55?'Playoff Caliber':s>=45?'Middling':'Weak Team';
   }
-  function archBadgeStyle(key){
-    if (!key) return 'background:var(--bg);color:var(--muted)';
-    var f=key.split('-')[0];
-    return f==='High'?'background:#e8f0eb;color:#1e6b3a':f==='Mid'?'background:#fef3e2;color:#b7791f':'background:#fce8e8;color:#c0392b';
+  function archBadgeStyle(score){
+    if (score == null) return 'background:var(--bg);color:var(--muted)';
+    if (score >= 70)   return 'background:#e8f0eb;color:#1e6b3a';
+    if (score >= 55)   return 'background:#f0f7ec;color:#4a9a68';
+    if (score >= 45)   return 'background:#fef3e2;color:#b7791f';
+    return 'background:#fce8e8;color:#c0392b';
   }
 
   // ── Expected score + rank ─────────────────────────────────────────────────
+  // ROS-aware classifier — same 15-rule cascade as the diagnostic card.
+  function _classifyArcRule(fw, ro, rt, j) {
+    var aH = fw >= 65, aM = fw >= 45 && fw < 65, aL = fw < 45;
+    var bH = ro >= 65, bM = ro >= 45 && ro < 65, bL = ro < 45;
+    var cH = rt >= 65, cL = rt < 45;
+    var lk = j >= 0.12, ul = j <= -0.12;
+    if (aH && bH && lk) return { arch:'Lucky Contender',   dir:'Slight Down', action:'Sell High'         };
+    if (aH && bH)        return { arch:'True Contender',    dir:'Flat',         action:'Hold / Optimize'   };
+    if (aH && bL)        return { arch:'Selling Window',    dir:'Down',         action:'Sell High'         };
+    if (aH && bM && lk)  return { arch:'Hot Streak',        dir:'Slight Down',  action:'Sell High'         };
+    if (aH && bM)        return { arch:'Solid Performer',   dir:'Slight Down',  action:'Optimize'          };
+    if (aL && bH)        return { arch:'Sleeping Giant',    dir:'Up',           action:'Hold / Buy'        };
+    if (aL && bM && ul)  return { arch:'Unlucky Mid',       dir:'Slight Up',    action:'Hold'              };
+    if (aL && cH)        return { arch:'Talent Trap',       dir:'Slight Up',    action:'Hold / Reassess'   };
+    if (aL && bL && rt < 45) return { arch:'Rebuild',       dir:'Flat',         action:'Rebuild'           };
+    if (aM && bH)        return { arch:'Rising',            dir:'Up',           action:'Hold / Buy'        };
+    if (aM && bL)        return { arch:'Fading',            dir:'Down',         action:'Sell High'         };
+    if (aM && bM && lk)  return { arch:'Lucky Mid',         dir:'Slight Down',  action:'Optimize / Sell'   };
+    if (aM && bM && ul)  return { arch:'Unlucky Mid',       dir:'Slight Up',    action:'Hold / Buy small'  };
+    if (aM && bM)        return { arch:'Middle of the Pack',dir:'Flat',         action:'Choose Direction'  };
+    return { arch:'Mixed Signals', dir:'Flat', action:'Reassess' };
+  }
+
   teamScores.forEach(function(t) {
     var joe = t.joe != null ? t.joe : 0;
     t.fwarPct  = t.fwarRawPct;
     t.lgPct    = t.lgRawPct;
-    t.expScore = parseFloat((0.55*t.fwarPct + 0.30*t.lgPct - 10*joe).toFixed(1));
+    t.rosPct   = rosAvailable ? t.rosRawPct : null;
+    // Expected score: new 4-input formula when ROS available, legacy fallback otherwise
+    if (t.rosPct != null) {
+      t.expScore = parseFloat((0.40*t.fwarPct + 0.20*t.lgPct + 0.30*t.rosPct - 10*joe).toFixed(1));
+    } else {
+      t.expScore = parseFloat((0.55*t.fwarPct + 0.30*t.lgPct - 10*joe).toFixed(1));
+    }
     t.fwarBkt  = fwarBucket(t.fwarPct);
     t.lgBkt    = lgBucket(t.lgPct);
+    t.rosBkt   = t.rosPct != null ? fwarBucket(t.rosPct) : null;
     t.joeBkt   = joeBucket(t.joe);
     t.arcKey   = t.fwarBkt+'-'+t.lgBkt+'-'+t.joeBkt;
-    var entry  = ARCHETYPE_MAP[t.arcKey] || {arch:'Unknown',dir:'Flat',action:'—'};
+    // Archetype: rule cascade when ROS available, ARCHETYPE_MAP fallback otherwise
+    var entry;
+    if (t.rosPct != null) {
+      entry = _classifyArcRule(t.fwarPct, t.rosPct, t.lgPct, joe);
+    } else {
+      entry = ARCHETYPE_MAP[t.arcKey] || {arch:'Unknown',dir:'Flat',action:'—'};
+    }
     t.archetype = entry.arch;
     t.direction = entry.dir;
     t.action    = entry.action;
@@ -9816,11 +9890,18 @@ function renderArchetypePage() {
   var html = '<div class="card" style="margin-bottom:16px">';
   html += '<div style="padding:10px 16px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">';
   html += '<span style="font-size:13px;font-weight:500">Team archetype diagnostic</span>';
-  html += '<span style="font-size:11px;color:var(--muted)">Expected Score = 0.55 \xd7 fWAR% + 0.30 \xd7 Lg Rating% \u2212 10 \xd7 JOE Factor</span>';
+  if (rosAvailable) {
+    html += '<span style="font-size:11px;color:var(--muted)">Expected Score = 0.40 \xd7 fWAR% + 0.20 \xd7 Rating% + 0.30 \xd7 ROS% \u2212 10 \xd7 JOE</span>';
+  } else {
+    html += '<span style="font-size:11px;color:var(--muted)">Expected Score = 0.55 \xd7 fWAR% + 0.30 \xd7 Lg Rating% \u2212 10 \xd7 JOE Factor</span>';
+  }
   html += '</div>';
   html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
   html += '<thead><tr>';
-  ['Team','fWAR%','Lg Rating%','JOE Factor','Expected Score','Interpretation','Expected Rank','Confidence Band','Archetype','Direction','Action'].forEach(function(h){
+  var headers = rosAvailable
+    ? ['Team','fWAR%','Lg Rating%','ROS%','JOE Factor','Expected Score','Interpretation','Expected Rank','Confidence Band','Archetype','Direction','Action']
+    : ['Team','fWAR%','Lg Rating%','JOE Factor','Expected Score','Interpretation','Expected Rank','Confidence Band','Archetype','Direction','Action'];
+  headers.forEach(function(h){
     html += '<th style="'+thStyle+'">'+h+'</th>';
   });
   html += '</tr></thead><tbody>';
@@ -9844,6 +9925,12 @@ function renderArchetypePage() {
     var lc = bucketColor(t.lgBkt);
     html += '<td style="'+tdStyle+'"><span style="font-weight:500;color:'+lc+'">'+t.lgPct+'</span> <span style="font-size:10px;color:var(--muted)">('+t.lgBkt+')</span></td>';
 
+    // ROS%
+    if (rosAvailable) {
+      var rc = bucketColor(t.rosBkt);
+      html += '<td style="'+tdStyle+'"><span style="font-weight:500;color:'+rc+'">'+t.rosPct+'</span> <span style="font-size:10px;color:var(--muted)">('+t.rosBkt+')</span></td>';
+    }
+
     // JOE Factor
     var jc = joeColor(t.joe);
     var jLabel = t.joeBkt;
@@ -9866,7 +9953,7 @@ function renderArchetypePage() {
     html += '<td style="'+tdStyle+';font-size:11px;color:var(--muted)">'+t.band+'</td>';
 
     // Archetype badge
-    html += '<td style="'+tdStyle+'"><span style="display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;'+archBadgeStyle(t.arcKey)+'">'+t.archetype+'</span></td>';
+    html += '<td style="'+tdStyle+'"><span style="display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;'+archBadgeStyle(t.expScore)+'">'+t.archetype+'</span></td>';
 
     // Direction
     html += '<td style="'+tdStyle+'">'+dirArrow(t.direction)+'</td>';
