@@ -5394,7 +5394,7 @@ function _rosUpdateModePill() {
   }
 }
 
-function _rosBuildTeamNeedHtml() {
+function _rosBuildTeamNeedHtml(dashMode) {
   if (!_rosSelectedTeam || !S.zData || !S.zData.length) return '';
   var teamName = (S.teamInfo[_rosSelectedTeam]||{}).shortName || (S.teamInfo[_rosSelectedTeam]||{}).name || '';
   var myZ = S.zData.find(function(d){ return d.teamId === _rosSelectedTeam; });
@@ -5477,13 +5477,17 @@ function _rosBuildTeamNeedHtml() {
   h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:12px">';
   h += '<div>';
   h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Team Need · ' + teamName + '</div>';
-  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Drives the need-weight multiplier in the simulator below.</div>';
+  if (!dashMode) {
+    h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Drives the need-weight multiplier in the simulator below.</div>';
+  }
   h += '</div>';
-  h += '<div style="display:flex;gap:6px;align-items:center;flex-shrink:0">';
-  h += '<div style="text-align:right"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">Total Z</div><div style="font-size:14px;font-weight:600;color:'+totalCol+'">'+totalStr+'</div></div>';
-  h += '<div style="width:1px;height:28px;background:var(--border);margin:0 6px"></div>';
-  h += '<div style="text-align:right"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">Rank</div><div style="font-size:14px;font-weight:600">'+(teamRank||'—')+'<span style="font-size:10px;color:var(--muted);font-weight:400">/'+S.zData.length+'</span></div></div>';
-  h += '</div>';
+  if (!dashMode) {
+    h += '<div style="display:flex;gap:6px;align-items:center;flex-shrink:0">';
+    h += '<div style="text-align:right"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">Total Z</div><div style="font-size:14px;font-weight:600;color:'+totalCol+'">'+totalStr+'</div></div>';
+    h += '<div style="width:1px;height:28px;background:var(--border);margin:0 6px"></div>';
+    h += '<div style="text-align:right"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">Rank</div><div style="font-size:14px;font-weight:600">'+(teamRank||'—')+'<span style="font-size:10px;color:var(--muted);font-weight:400">/'+S.zData.length+'</span></div></div>';
+    h += '</div>';
+  }
   h += '</div>';
 
   // ── Positional Strength row ───────────────────────────────────────
@@ -11211,6 +11215,16 @@ function assembleDashboard(teamId, el) {
 
   // ── Trend Outlook, Recommended Action, Model Inputs etc. ─────────────────
   html += buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posData, avgLuck);
+
+  // Team Need card — Positional Strength + Category Needs (reuses the ROS page builder)
+  // Only render if Z-score data is available; the builder bails gracefully if not.
+  if (typeof _rosBuildTeamNeedHtml === 'function' && S.zData && S.zData.length) {
+    var _savedRosTeam = _rosSelectedTeam;
+    _rosSelectedTeam = teamId;
+    try { html += _rosBuildTeamNeedHtml(true); }
+    catch(e) { console.warn('Team Need render failed on dashboard:', e); }
+    _rosSelectedTeam = _savedRosTeam;
+  }
 
   // Positional strength cards
   html += '<div class="card" style="margin-bottom:20px">';
