@@ -15384,37 +15384,41 @@ function computeSGPDenominators() {
   // Categories where lower is better — sort ascending so adjacent gaps still
   // represent "ranks adjacent to each other in this category"
   var lowGood = { era: true, whip: true };
-  function median(arr) {
-    if (!arr.length) return 0;
-    var s = arr.slice().sort(function(a,b){ return a-b; });
-    var m = Math.floor(s.length / 2);
-    return s.length % 2 ? s[m] : (s[m-1] + s[m]) / 2;
-  }
   var result = {};
   Object.keys(cats).forEach(function(cat) {
     var field = cats[cat];
     var inverse = !!lowGood[cat];
     var blended = 0, totalW = 0;
     Object.keys(weights).forEach(function(yr) {
-      // Sort by THIS stat (not by points-rank). Otherwise non-competitive
-      // teams whose point-rank differs from their stat-rank create huge
-      // bogus gaps. E.g. a partial-roster team ranked 4th in points but
-      // 8th in K gets adjacent-compared to its point-neighbors, not its
-      // K-neighbors, which creates 1000+ K gap outliers.
-      var teams = (HISTORIC_DATA[yr] || []).slice()
-        .filter(function(t){ return t[field] != null; })
-        .sort(function(a,b){ return inverse ? a[field] - b[field] : b[field] - a[field]; });
-      if (teams.length < 2) return;
+      // Sort teams by THIS stat (not by points-rank) so adjacent-stat gaps
+      // are actual neighbors. Then drop teams with non-competitive volume
+      // (partial-roster seasons distort the gap distribution).
+      var raw = (HISTORIC_DATA[yr] || []).slice().filter(function(t){ return t[field] != null; });
+      if (raw.length < 2) return;
+      // Filter out clearly non-competitive teams: drop any whose IP/AB is
+      // less than 60% of the median for that year. These are partial-roster
+      // teams whose stats don't represent a real season.
+      var ipVals = raw.map(function(t){ return t.ip || 0; }).filter(function(v){ return v>0; });
+      var abVals = raw.map(function(t){ return t.ab || 0; }).filter(function(v){ return v>0; });
+      function medianOf(a){ var s=a.slice().sort(function(x,y){return x-y;}); var m=Math.floor(s.length/2); return s.length%2?s[m]:(s[m-1]+s[m])/2; }
+      var ipMed = medianOf(ipVals), abMed = medianOf(abVals);
+      // Hitting cats (r,hr,rbi,sb,avg) → filter by AB; pitching cats → filter by IP
+      var isPitchCat = (cat==='w'||cat==='k'||cat==='svh3'||cat==='era'||cat==='whip');
+      var teams = raw.filter(function(t) {
+        if (isPitchCat) return (t.ip || 0) >= ipMed * 0.60;
+        return (t.ab || 0) >= abMed * 0.60;
+      });
+      if (teams.length < 2) teams = raw; // fallback if filter empties
+      teams.sort(function(a,b){ return inverse ? a[field] - b[field] : b[field] - a[field]; });
       var gaps = [];
       for (var i = 1; i < teams.length; i++)
         gaps.push(Math.abs(teams[i-1][field] - teams[i][field]));
       if (!gaps.length) return;
-      // Use median gap rather than mean — robust to non-competitive teams
-      // (partial-roster seasons with abandoned teams cause huge outlier gaps
-      // that inflate the mean by 2-3x). Median ignores those outliers.
-      var medGap = median(gaps);
-      if (medGap === 0) return;
-      blended += weights[yr] * medGap;
+      // Mean of gaps across the filtered, stat-sorted population.
+      // This is the standard SGP definition: average per-rank step in the cat.
+      var avgGap = gaps.reduce(function(s,v){return s+v;},0) / gaps.length;
+      if (avgGap === 0) return;
+      blended += weights[yr] * avgGap;
       totalW  += weights[yr];
     });
     result[cat] = totalW > 0 ? blended / totalW : null;
