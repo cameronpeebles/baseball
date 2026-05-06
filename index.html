@@ -4657,6 +4657,27 @@ function gvROS(cells, key, idx) {
 var rosRendered = false;
 var _rosHitData = null, _rosPitData = null;
 var _rosCurrentTab = 'hitters';
+
+// Playing-time filter — players below thresholds (e.g. minor-league stashes) are
+// excluded from positional aggregation, suggested moves, and roster strength views.
+// Source: current-season MLB stats from _rosCurrentStats (S.hitRows/S.pitRows).
+// Returns true if the player has enough MLB playing time to count toward team strength.
+// Pass an FP player object (will use _displayName or name to look up current stats).
+function _rosHasMLBRole(p, isHit) {
+  if (!p) return false;
+  var name = p._displayName || p.name || '';
+  // Strip "(MLB - POS)" suffix and normalize to match _rosCurrentStats keys
+  var key = name.replace(/\s*\([^)]*\).*$/, '').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+  var cs = (window._rosCurrentStats || {})[key];
+  if (!cs) return false; // No current-season MLB stats → not playing in MLB
+  if (isHit) {
+    var ab = (cs.AB == null || isNaN(cs.AB)) ? 0 : cs.AB;
+    return ab >= 10;
+  } else {
+    var ip = (cs.IP == null || isNaN(cs.IP)) ? 0 : cs.IP;
+    return ip >= 5;
+  }
+}
 var _rosSelectedTeam = null;
 var _rosPosFilter = 'ALL';
 var _rosRostFilter = 'ALL';
@@ -4878,8 +4899,10 @@ function _rosBuildSuggestedMovesHtml() {
   }
 
   // Build droppable roster pool. Protect top performers if enabled.
+  // Also exclude players without an MLB role (minor-league stashes, IR with no AB/IP).
   var rosterByPos = { hit: [], pit: [] };
   _rosAdRosterList.forEach(function(r) {
+    if (!_rosHasMLBRole(r, r.isHit)) return;
     (r.isHit ? rosterByPos.hit : rosterByPos.pit).push(r);
   });
   ['hit','pit'].forEach(function(grp) {
@@ -4899,6 +4922,8 @@ function _rosBuildSuggestedMovesHtml() {
   faList.forEach(function(addP) {
     var isHit = !!addP.isHit;
     if (!_rosSugPosMatchesFilter(addP._pos, _rosSugPos)) return;
+    // Playing-time filter — exclude minor-league stashes / fringe FAs with no MLB role
+    if (!_rosHasMLBRole(addP, isHit)) return;
     // Status filter: 'FA' = unrostered only; 'Rostered' = rostered on another team only;
     // 'ALL' = both. Always exclude players on the user's own selected team.
     var addLookupKey = normSugName(addP._displayName||'');
@@ -5398,6 +5423,8 @@ function _rosBuildTeamNeedHtml() {
     var k = _tnNormName(p.name);
     var ri = rosterLookup[k];
     if (!ri || !ri.teamId) return;
+    // Playing-time filter — exclude minor-league stashes / IR with no MLB role
+    if (!_rosHasMLBRole(p, isHit)) return;
     // FP data has positions embedded in the name string like "Aaron Judge (NYY - OF)" — extract.
     var posStr = p._pos || p.pos || '';
     if (!posStr) {
@@ -6056,9 +6083,12 @@ function _rosAdListHtml(players, side) {
     var avatarHtml = hs
       ? '<img src="'+hs+'" style="width:26px;height:26px;border-radius:50%;object-fit:cover;border:0.5px solid #ddd;flex-shrink:0" onerror="this.style.display=\'none\'">'
       : '<div style="width:26px;height:26px;border-radius:50%;background:#f0ede8;border:0.5px solid #ddd;flex-shrink:0"></div>';
+    var minorBadge = !_rosHasMLBRole(p, !!p.isHit)
+      ? '<span style="font-size:9px;font-weight:500;color:#854f0b;background:rgba(186,117,23,0.14);border:0.5px solid rgba(186,117,23,0.30);border-radius:8px;padding:1px 5px;margin-left:6px;white-space:nowrap">Minor</span>'
+      : '';
     return '<div onclick="rosAdSelect(\''+side+'\','+i+')" style="display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;border-bottom:0.5px solid #ece9e3;background:#fff" onmouseover="this.style.background=\'#f5f3ef\'" onmouseout="this.style.background=\'#fff\'">'
       + avatarHtml
-      + '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:500;color:#2c2a26;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+p._displayName+'</div>'
+      + '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:500;color:#2c2a26;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center">'+p._displayName+minorBadge+'</div>'
       + '<div style="font-size:10px;color:#888780">'+p._pos+' · '+(p._team||'')+'</div></div>'
       + '<span style="font-size:11px;font-weight:500;color:'+_rosAdCol(sgpV)+';flex-shrink:0">'+_rosAdFmt(sgpV)+'</span>'
       + '</div>';
@@ -16857,6 +16887,8 @@ function _tlBuildHeatmap() {
     if (!ri || !ri.teamId) return; // FAs not in heatmap (we only count rostered)
     var teamId = ri.teamId;
     if (!heatmap[teamId]) return;
+    // Playing-time filter — minor-league stashes / IR with no MLB role excluded
+    if (typeof _rosHasMLBRole === 'function' && !_rosHasMLBRole(p, isHit)) return;
     var sgp = _tlPlayerSGP(p, isHit, teamId);
     if (!isFinite(sgp)) return;
     // Determine fine positions this player is eligible at
