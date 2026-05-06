@@ -8230,7 +8230,18 @@ function _buildPlayerSgpLookups() {
       t += perCat.WHIP;
     }
     var pos = (p.pos||'').toUpperCase();
-    var trust = pos.indexOf('SP')!==-1 ? Math.min(1,(p.IP||0)/60) : Math.min(1,(p.IP||0)/30);
+    // FP JSON doesn't include a `pos` field. Infer SP vs RP from projection shape:
+    // - Any meaningful SV projection = RP
+    // - High projected IP (≥80) = SP; low projected IP = RP
+    var isSP, isRP;
+    if (pos) {
+      isSP = pos.indexOf('SP') !== -1;
+      isRP = !isSP && pos.indexOf('RP') !== -1;
+    } else {
+      isRP = (p.SV || 0) >= 5 || (p.IP || 0) < 80;
+      isSP = !isRP;
+    }
+    var trust = isSP ? Math.min(1,(p.IP||0)/60) : Math.min(1,(p.IP||0)/30);
     return { total: t * trust, perCat: perCat };
   }
 
@@ -15369,6 +15380,12 @@ function computeSGPDenominators() {
     avg:  'avg', w:    'w',   k:    'k',   svh3: 'sv',
     era:  'era', whip: 'whip'
   };
+  function median(arr) {
+    if (!arr.length) return 0;
+    var s = arr.slice().sort(function(a,b){ return a-b; });
+    var m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : (s[m-1] + s[m]) / 2;
+  }
   var result = {};
   Object.keys(cats).forEach(function(cat) {
     var field = cats[cat];
@@ -15380,9 +15397,12 @@ function computeSGPDenominators() {
       for (var i = 1; i < teams.length; i++)
         gaps.push(Math.abs(teams[i-1][field] - teams[i][field]));
       if (!gaps.length) return;
-      var avgGap = gaps.reduce(function(s,v){return s+v;},0) / gaps.length;
-      if (avgGap === 0) return;
-      blended += weights[yr] * avgGap;
+      // Use median gap rather than mean — robust to non-competitive teams
+      // (partial-roster seasons with abandoned teams cause huge outlier gaps
+      // that inflate the mean by 2-3x). Median ignores those outliers.
+      var medGap = median(gaps);
+      if (medGap === 0) return;
+      blended += weights[yr] * medGap;
       totalW  += weights[yr];
     });
     result[cat] = totalW > 0 ? blended / totalW : null;
