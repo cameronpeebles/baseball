@@ -5362,8 +5362,8 @@ window.showROSTab = function(tab, btn) {
   _rosPosFilter = 'ALL';
   _rosRostFilter = 'ALL';
   // Reset Add/Drop and Suggested Moves state since hitters and pitchers are disjoint pools
-  _rosAdSelected = null;
-  _rosDropSelected = null;
+  _rosAdSelected = []; _rosDropPlayerObjs = [];
+  _rosDropSelected = [];
   _rosAdPosPill = 'ALL';
   _rosDropPos = null;
   _rosSugPos = 'ALL';
@@ -5386,8 +5386,8 @@ window.showROSTab = function(tab, btn) {
 window.rosTeamChanged = function(sel) {
   _rosSelectedTeam = sel.value;
   // Reset add/drop simulator state when team changes
-  _rosAdSelected = null;
-  _rosDropSelected = null;
+  _rosAdSelected = []; _rosDropPlayerObjs = [];
+  _rosDropSelected = [];
   _rosAdPosPill = 'ALL';
   _rosDropPos = null;
   _rosSugActiveIdx = null;
@@ -5903,6 +5903,18 @@ window.rosSugTryThis = function(addEnc, dropEnc, idx) {
   var dropKey = decodeURIComponent(dropEnc);
   // Drop side first — rosAdSelect('drop') rebuilds lists from full roster
   _rosAdBuildLists();
+  // Clear any existing slot 1 contents before loading a fresh suggestion (it should be 1-for-1).
+  if (_rosAdSelected.length > 1) { _rosAdSelected = _rosAdSelected.slice(0,1); }
+  if (_rosDropSelected.length > 1) {
+    _rosDropSelected = _rosDropSelected.slice(0,1);
+    _rosDropPlayerObjs = _rosDropPlayerObjs.slice(0,1);
+  }
+  // Hide slot 2 wraps so the UI matches state
+  ['add','drop'].forEach(function(s){
+    var w = document.getElementById('ros-'+s+'-slot2-wrap'); if (w) w.style.display = 'none';
+    var c = document.getElementById('ros-'+s+'-card-2'); if (c) c.style.display = 'none';
+    var b = document.getElementById('ros-'+s+'-slot2-add'); if (b) b.style.display = 'none';
+  });
   // Make sure the rostered drop player exists in the filtered list at a known index
   _rosAdRostFiltered = _rosAdRosterList.slice();
   var dropIdx = _rosAdRostFiltered.findIndex(function(r){ return r._key === dropKey; });
@@ -5911,7 +5923,7 @@ window.rosSugTryThis = function(addEnc, dropEnc, idx) {
     return;
   }
   if (typeof rosAdSelect === 'function') {
-    rosAdSelect('drop', dropIdx);
+    rosAdSelect('drop', dropIdx, 0);
   }
   // Now the position filter is set from the drop player. Rebuild add filter
   // so addIdx is valid in _rosAdFAFiltered after the position constraint.
@@ -5922,7 +5934,7 @@ window.rosSugTryThis = function(addEnc, dropEnc, idx) {
     return;
   }
   if (typeof rosAdSelect === 'function') {
-    rosAdSelect('add', addIdx);
+    rosAdSelect('add', addIdx, 0);
   }
   // Track which suggestion is loaded — drives row highlighting & mode pill
   if (typeof idx === 'number') {
@@ -6367,13 +6379,24 @@ window.rosTradeSugTryThis = function(giveEnc, getEnc, isHit) {
   var getKey  = decodeURIComponent(getEnc);
   // Drop side (your player you're giving up) — must be on selected team's roster
   if (typeof _rosAdBuildLists === 'function') _rosAdBuildLists();
+  // Clear slot 1 from any prior selection (trade suggestions are 1-for-1)
+  if (_rosAdSelected.length > 1) { _rosAdSelected = _rosAdSelected.slice(0,1); }
+  if (_rosDropSelected.length > 1) {
+    _rosDropSelected = _rosDropSelected.slice(0,1);
+    _rosDropPlayerObjs = _rosDropPlayerObjs.slice(0,1);
+  }
+  ['add','drop'].forEach(function(s){
+    var w = document.getElementById('ros-'+s+'-slot2-wrap'); if (w) w.style.display = 'none';
+    var c = document.getElementById('ros-'+s+'-card-2'); if (c) c.style.display = 'none';
+    var b = document.getElementById('ros-'+s+'-slot2-add'); if (b) b.style.display = 'none';
+  });
   _rosAdRostFiltered = _rosAdRosterList.slice();
   var dropIdx = _rosAdRostFiltered.findIndex(function(r){ return r._key === giveKey; });
   if (dropIdx < 0) {
     alert('Could not load drop player into the simulator.');
     return;
   }
-  if (typeof rosAdSelect === 'function') rosAdSelect('drop', dropIdx);
+  if (typeof rosAdSelect === 'function') rosAdSelect('drop', dropIdx, 0);
   // Add side (player you're receiving from opponent) — find in projection pool
   _rosAdFAFiltered = _rosAdFAList.slice();
   // Match by their normalized key if possible, falling back to display name
@@ -6386,7 +6409,7 @@ window.rosTradeSugTryThis = function(giveEnc, getEnc, isHit) {
     alert('Could not load add player into the simulator.');
     return;
   }
-  if (typeof rosAdSelect === 'function') rosAdSelect('add', addIdx);
+  if (typeof rosAdSelect === 'function') rosAdSelect('add', addIdx, 0);
   // Scroll to simulator
   var simEl = document.getElementById('ros-mode-pill-row');
   if (simEl) simEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -6759,12 +6782,33 @@ function _rosAdBuildPanelHtml() {
   h += '<div id="ros-drop-card" style="display:none;margin-top:8px;background:var(--bg);border-radius:6px;padding:8px 10px">';
   h += '<div style="display:flex;align-items:center;gap:8px">';
   h += '<img id="ros-drop-hs" src="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">';
-  h += '<div style="flex:1"><div style="display:flex;justify-content:space-between;align-items:center"><div id="ros-drop-name" style="font-size:12px;font-weight:500;color:var(--text)"></div><button onclick="rosAdClear(&quot;drop&quot;)" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:0;line-height:1">&times;</button></div>';
+  h += '<div style="flex:1"><div style="display:flex;justify-content:space-between;align-items:center"><div id="ros-drop-name" style="font-size:12px;font-weight:500;color:var(--text)"></div><button onclick="rosAdClear(&quot;drop&quot;,0)" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:0;line-height:1">&times;</button></div>';
   h += '<div id="ros-drop-meta" style="font-size:10px;color:var(--muted)"></div>';
   h += '<div style="display:flex;gap:10px;margin-top:4px">';
   h += '<div><div style="font-size:9px;color:var(--muted)">Curr SGP</div><div id="ros-drop-curr" style="font-size:12px;font-weight:500"></div></div>';
   h += '<div><div style="font-size:9px;color:var(--muted)">ROS SGP</div><div id="ros-drop-raw" style="font-size:12px;font-weight:500"></div></div>';
-  h += '</div></div></div></div></div>';
+  h += '</div></div></div></div>';
+  // Slot 2 — appears as "+ Drop second player" link after slot 1 is filled
+  h += '<div id="ros-drop-slot2-add" style="display:none;margin-top:6px"><button onclick="rosAdRevealSlot2(&quot;drop&quot;)" style="background:none;border:none;color:#1D9E75;font-size:11px;cursor:pointer;padding:0;text-decoration:underline">+ Drop a second player</button></div>';
+  h += '<div id="ros-drop-slot2-wrap" style="display:none;margin-top:6px">';
+  h += '<div style="position:relative;z-index:100">';
+  h += '<div style="display:flex;gap:4px">';
+  h += '<input id="ros-drop-search-2" type="text" placeholder="Search your roster..." oninput="rosDropSearch(this.value, 1)" onfocus="rosAdShow(&quot;drop&quot;, 1)" onblur="rosAdHide(&quot;drop&quot;, 1)" style="' + inputStyle + ';flex:1">';
+  h += '<button onclick="rosAdToggle(&quot;drop&quot;, 1)" style="padding:0 10px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);cursor:pointer;font-size:12px;color:var(--muted);flex-shrink:0">&#9662;</button>';
+  h += '</div>';
+  h += '<div id="ros-drop-list-2" style="' + listStyle + '"></div>';
+  h += '</div>';
+  h += '<div id="ros-drop-card-2" style="display:none;margin-top:8px;background:var(--bg);border-radius:6px;padding:8px 10px">';
+  h += '<div style="display:flex;align-items:center;gap:8px">';
+  h += '<img id="ros-drop-hs-2" src="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">';
+  h += '<div style="flex:1"><div style="display:flex;justify-content:space-between;align-items:center"><div id="ros-drop-name-2" style="font-size:12px;font-weight:500;color:var(--text)"></div><button onclick="rosAdClear(&quot;drop&quot;,1)" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:0;line-height:1">&times;</button></div>';
+  h += '<div id="ros-drop-meta-2" style="font-size:10px;color:var(--muted)"></div>';
+  h += '<div style="display:flex;gap:10px;margin-top:4px">';
+  h += '<div><div style="font-size:9px;color:var(--muted)">Curr SGP</div><div id="ros-drop-curr-2" style="font-size:12px;font-weight:500"></div></div>';
+  h += '<div><div style="font-size:9px;color:var(--muted)">ROS SGP</div><div id="ros-drop-raw-2" style="font-size:12px;font-weight:500"></div></div>';
+  h += '</div></div></div></div>';
+  h += '</div>'; // end slot 2 wrap
+  h += '</div>';
 
   // CENTER
   h += '<div style="display:flex;flex-direction:column;align-items:center;padding-top:18px;gap:6px">';
@@ -6800,12 +6844,33 @@ function _rosAdBuildPanelHtml() {
   h += '<div id="ros-add-card" style="display:none;margin-top:8px;background:var(--bg);border-radius:6px;padding:8px 10px">';
   h += '<div style="display:flex;align-items:center;gap:8px">';
   h += '<img id="ros-add-hs" src="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">';
-  h += '<div style="flex:1"><div style="display:flex;justify-content:space-between;align-items:center"><div id="ros-add-name" style="font-size:12px;font-weight:500;color:var(--text)"></div><button onclick="rosAdClear(&quot;add&quot;)" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:0;line-height:1">&times;</button></div>';
+  h += '<div style="flex:1"><div style="display:flex;justify-content:space-between;align-items:center"><div id="ros-add-name" style="font-size:12px;font-weight:500;color:var(--text)"></div><button onclick="rosAdClear(&quot;add&quot;,0)" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:0;line-height:1">&times;</button></div>';
   h += '<div id="ros-add-meta" style="font-size:10px;color:var(--muted)"></div>';
   h += '<div style="display:flex;gap:10px;margin-top:4px">';
   h += '<div><div style="font-size:9px;color:var(--muted)">Raw ROS SGP</div><div id="ros-add-raw" style="font-size:12px;font-weight:500"></div></div>';
   h += '<div><div style="font-size:9px;color:var(--muted)">Team ROS SGP</div><div id="ros-add-team" style="font-size:12px;font-weight:500"></div></div>';
-  h += '</div></div></div></div></div>';
+  h += '</div></div></div></div>';
+  // Slot 2 — appears as "+ Add second player" link after slot 1 is filled
+  h += '<div id="ros-add-slot2-add" style="display:none;margin-top:6px"><button onclick="rosAdRevealSlot2(&quot;add&quot;)" style="background:none;border:none;color:#1D9E75;font-size:11px;cursor:pointer;padding:0;text-decoration:underline">+ Add a second player</button></div>';
+  h += '<div id="ros-add-slot2-wrap" style="display:none;margin-top:6px">';
+  h += '<div style="position:relative;z-index:100">';
+  h += '<div style="display:flex;gap:4px">';
+  h += '<input id="ros-add-search-2" type="text" placeholder="Search all players..." oninput="rosAdSearch(this.value, 1)" onfocus="rosAdShow(&quot;add&quot;, 1)" onblur="rosAdHide(&quot;add&quot;, 1)" style="' + inputStyle + ';flex:1">';
+  h += '<button onclick="rosAdToggle(&quot;add&quot;, 1)" style="padding:0 10px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);cursor:pointer;font-size:12px;color:var(--muted);flex-shrink:0">&#9662;</button>';
+  h += '</div>';
+  h += '<div id="ros-add-list-2" style="' + listStyle + '"></div>';
+  h += '</div>';
+  h += '<div id="ros-add-card-2" style="display:none;margin-top:8px;background:var(--bg);border-radius:6px;padding:8px 10px">';
+  h += '<div style="display:flex;align-items:center;gap:8px">';
+  h += '<img id="ros-add-hs-2" src="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">';
+  h += '<div style="flex:1"><div style="display:flex;justify-content:space-between;align-items:center"><div id="ros-add-name-2" style="font-size:12px;font-weight:500;color:var(--text)"></div><button onclick="rosAdClear(&quot;add&quot;,1)" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:0;line-height:1">&times;</button></div>';
+  h += '<div id="ros-add-meta-2" style="font-size:10px;color:var(--muted)"></div>';
+  h += '<div style="display:flex;gap:10px;margin-top:4px">';
+  h += '<div><div style="font-size:9px;color:var(--muted)">Raw ROS SGP</div><div id="ros-add-raw-2" style="font-size:12px;font-weight:500"></div></div>';
+  h += '<div><div style="font-size:9px;color:var(--muted)">Team ROS SGP</div><div id="ros-add-team-2" style="font-size:12px;font-weight:500"></div></div>';
+  h += '</div></div></div></div>';
+  h += '</div>'; // end slot 2 wrap
+  h += '</div>';
 
   h += '</div>'; // end grid
 
@@ -6826,8 +6891,17 @@ function _rosAdBuildPanelHtml() {
 }
 
 // ── Add/Drop Simulator ────────────────────────────────────────────────────
-var _rosAdSelected = null;   // selected FA player object
-var _rosDropSelected = null; // selected rostered player normName key
+// State is array-based to support up to 2 adds + 2 drops (package trades).
+// Slot 1 = index 0, Slot 2 = index 1. Single-slot operations use slot 0 by default.
+var _rosAdSelected = [];     // array of selected FA player objects (length 0–2)
+var _rosDropSelected = [];   // array of selected rostered player normName keys (length 0–2)
+var _rosDropPlayerObjs = []; // parallel array of full row objects (for stat lookups)
+
+function _rosAdHasAny() { return _rosAdSelected.length > 0 || _rosDropSelected.length > 0; }
+function _rosAdNextEmptyAddSlot() { return _rosAdSelected.length < 2 ? _rosAdSelected.length : null; }
+function _rosAdNextEmptyDropSlot() { return _rosDropSelected.length < 2 ? _rosDropSelected.length : null; }
+function _rosAdPrimaryAdd() { return _rosAdSelected[0] || null; }
+function _rosAdPrimaryDrop() { return _rosDropSelected[0] || null; }
 
 function _rosAdFmt(v){ return (v>=0?'+':'')+v.toFixed(2); }
 function _rosAdCol(v){ return v>0.05?'#1e6b3a':v>0?'#4a9a68':v<-0.05?'#c0392b':'#888780'; }
@@ -6936,7 +7010,7 @@ function _rosCurrSGP(cs, isHit) {
 function _rosAdRenderBars() {
   var barsEl = document.getElementById('ros-ad-bars');
   var netCard = document.getElementById('ros-net-card');
-  if (!_rosAdSelected && !_rosDropSelected) {
+  if (!_rosAdHasAny()) {
     if (barsEl) barsEl.style.display='none';
     var statsEl = document.getElementById('ros-ad-stats');
     if (statsEl) statsEl.style.display='none';
@@ -6944,7 +7018,9 @@ function _rosAdRenderBars() {
   }
   if (barsEl) barsEl.style.display='none'; // bar chart section hidden
 
-  var isHit = _rosAdSelected ? !!_rosAdSelected.isHit : true;
+  // Determine isHit from any selected player (all should be same group anyway)
+  var anyAdd = _rosAdPrimaryAdd();
+  var isHit = anyAdd ? !!anyAdd.isHit : true;
   var cats = isHit ? ['R','HR','RBI','SB','AVG'] : ['W','K','SVH3','ERA','WHIP'];
   var D2 = (typeof SGP_D!=='undefined')?SGP_D:{r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
   var ts = (window._rosTeamStats||{})[_rosSelectedTeam]||{};
@@ -6979,18 +7055,16 @@ function _rosAdRenderBars() {
     return 0;
   }
 
-  var cs = _rosDropSelected ? (window._rosCurrentStats||{})[_rosDropSelected] : null;
-  var dropFP = cs && cs._fp ? cs._fp : null;
-
-    // Net = Add Team ROS SGP - Drop Team ROS SGP (both _rosAdPlayerSGP: team context + need weights)
-  var addTotal = _rosAdSelected ? _rosAdPlayerSGP(_rosAdSelected, isHit) : 0;
+  // Net = Σ Add Team ROS SGP - Σ Drop Team ROS SGP (across slots)
+  var addTotal = 0;
+  _rosAdSelected.forEach(function(p){ addTotal += _rosAdPlayerSGP(p, isHit); });
   var dropRosTotal = 0;
-  if (_rosDropSelected) {
-    var dropR2 = _rosAdRosterList.find(function(r){return r._key===_rosDropSelected;});
+  _rosDropSelected.forEach(function(dropKey){
+    var dropR2 = _rosAdRosterList.find(function(r){return r._key===dropKey;});
     var dropFPObj = dropR2 ? dropR2._fp : null;
-    if (dropFPObj) dropRosTotal = _rosAdPlayerSGP(dropFPObj, isHit);
-    else if (dropR2 && dropR2._rosSGP!=null) dropRosTotal = dropR2._rosSGP;
-  }
+    if (dropFPObj) dropRosTotal += _rosAdPlayerSGP(dropFPObj, isHit);
+    else if (dropR2 && dropR2._rosSGP!=null) dropRosTotal += dropR2._rosSGP;
+  });
   var net = parseFloat((addTotal - dropRosTotal).toFixed(2));
 
   if (netCard) {
@@ -7022,18 +7096,17 @@ function _rosAdRenderBars() {
     if (breakdownEl) {
       breakdownEl.style.display = 'none';
       breakdownEl.innerHTML = '';
-      if (_rosAdSelected || _rosDropSelected) {
+      if (_rosAdHasAny()) {
         var allCats = isHit ? ['R','HR','RBI','SB','AVG'] : ['W','K','SVH3','ERA','WHIP'];
-        var addPbd = _rosAdSelected || null;
-        var dropPbd = (function(){
-          if (!_rosDropSelected) return null;
-          var dr = _rosAdRosterList.find(function(r){return r._key===_rosDropSelected;});
-          return dr ? dr._fp : null;
-        })();
-        // Compute per-cat Net (Add - Drop)
+        // Compute per-cat Net = Σ adds - Σ drops across slots
         var perCat = allCats.map(function(c) {
-          var ad = addPbd  ? (catSGPFA(addPbd, c)  || 0) : 0;
-          var dr = dropPbd ? (catSGPFA(dropPbd, c) || 0) : 0;
+          var ad = 0, dr = 0;
+          _rosAdSelected.forEach(function(p){ ad += (catSGPFA(p, c) || 0); });
+          _rosDropSelected.forEach(function(dropKey){
+            var dropR = _rosAdRosterList.find(function(r){return r._key===dropKey;});
+            var dropFp = dropR ? dropR._fp : null;
+            if (dropFp) dr += (catSGPFA(dropFp, c) || 0);
+          });
           return { cat: c, val: ad - dr };
         });
         // Find dominant cell — only highlight when |val| >= 1.0 AND |val|/|net| >= 0.50
@@ -7092,17 +7165,16 @@ function _rosAdRenderBars() {
       warnEl.innerHTML = '';
       if (Math.abs(net) >= 0.5) { // only worth flagging when verdict actually says something
         var rateCats = isHit ? ['AVG'] : ['ERA','WHIP'];
-        var addP = _rosAdSelected || null;
-        var dropPforNet = (function(){
-          if (!_rosDropSelected) return null;
-          var dropR3 = _rosAdRosterList.find(function(r){return r._key===_rosDropSelected;});
-          return dropR3 ? dropR3._fp : null;
-        })();
         var rateContrib = 0;
         var heaviestCat = null, heaviestAbs = 0;
         rateCats.forEach(function(rc) {
-          var addCatSgp  = addP        ? (catSGPFA(addP, rc) || 0)  : 0;
-          var dropCatSgp = dropPforNet ? (catSGPFA(dropPforNet, rc) || 0) : 0;
+          var addCatSgp = 0, dropCatSgp = 0;
+          _rosAdSelected.forEach(function(p){ addCatSgp += (catSGPFA(p, rc) || 0); });
+          _rosDropSelected.forEach(function(dropKey){
+            var dropR3 = _rosAdRosterList.find(function(r){return r._key===dropKey;});
+            var dropFp = dropR3 ? dropR3._fp : null;
+            if (dropFp) dropCatSgp += (catSGPFA(dropFp, rc) || 0);
+          });
           var d = addCatSgp - dropCatSgp;
           rateContrib += d;
           if (Math.abs(d) > heaviestAbs) { heaviestAbs = Math.abs(d); heaviestCat = rc; }
@@ -7124,13 +7196,18 @@ function _rosAdRenderBars() {
 function _rosAdRenderStats() {
   var el = document.getElementById('ros-ad-stats');
   if (!el) return;
-  if (!_rosAdSelected && !_rosDropSelected) { el.style.display='none'; return; }
+  if (!_rosAdHasAny()) { el.style.display='none'; return; }
   el.style.display = 'block';
 
-  var isHit = _rosAdSelected ? !!_rosAdSelected.isHit : true;
+  // Stats table shows slot-0 add vs slot-0 drop only (primary players).
+  // The Net SGP and per-cat breakdown above already aggregate across slots.
+  var addP   = _rosAdPrimaryAdd();
+  var _dropObj = _rosDropPlayerObjs[0] || (window._rosDropPlayerObj && _rosDropSelected[0] ? window._rosDropPlayerObj : null);
+  if (!_dropObj && _rosDropSelected[0]) {
+    _dropObj = _rosAdRosterList.find(function(r){return r._key===_rosDropSelected[0];});
+  }
+  var isHit = addP ? !!addP.isHit : (_dropObj ? !!_dropObj.isHit : true);
   var D2 = (typeof SGP_D!=='undefined')?SGP_D:{r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
-  var _dropObj = _rosDropSelected ? (window._rosDropPlayerObj || (function(){ return _rosAdRosterList.find(function(r){return r._key===_rosDropSelected;}); })()) : null;
-  var addP  = _rosAdSelected;
   var dropP = _dropObj ? _dropObj._fp : null;
   var addName  = addP  ? (addP._displayName||'Add')  : '—';
   var dropName = _dropObj ? (_dropObj._displayName||'Drop') : '—';
@@ -7139,7 +7216,7 @@ function _rosAdRenderStats() {
 
   function normN(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
   var addCurrStats  = addP  ? ((window._rosCurrentStats||{})[normN(addP._displayName||'')] || null) : null;
-  var dropCurrStats = _rosDropSelected ? (window._rosCurrentStats||{})[_rosDropSelected] : null;
+  var dropCurrStats = _rosDropSelected[0] ? (window._rosCurrentStats||{})[_rosDropSelected[0]] : null;
 
   var cats = isHit
     ? [{k:'R',  fmt:function(v){return Math.round(v);},            sgpFn:function(v){return +(v/D2.r).toFixed(2);},  better:'high'},
@@ -7379,8 +7456,9 @@ function _rosAdRenderStats() {
 }
 
 
-function _rosAdListHtml(players, side) {
+function _rosAdListHtml(players, side, slot) {
   if (!players.length) return '<div style="padding:10px 12px;font-size:12px;color:#888780;background:#fff">No players found</div>';
+  var slotArg = (slot && slot > 0) ? (','+slot) : '';
   return players.map(function(p, i) {
     var sgpV = side==='add' ? (p._teamSGP||0) : (p._rosSGP!=null ? p._rosSGP : (p._currSGP||0));
     var hs = p.hs || '';
@@ -7396,7 +7474,7 @@ function _rosAdListHtml(players, side) {
     } else if (!_rosHasMLBRole(p, !!p.isHit)) {
       statusBadge = '<span style="font-size:9px;font-weight:500;color:#854f0b;background:rgba(186,117,23,0.14);border:0.5px solid rgba(186,117,23,0.30);border-radius:8px;padding:1px 5px;margin-left:6px;white-space:nowrap">Minor</span>';
     }
-    return '<div onclick="rosAdSelect(\''+side+'\','+i+')" style="display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;border-bottom:0.5px solid #ece9e3;background:#fff" onmouseover="this.style.background=\'#f5f3ef\'" onmouseout="this.style.background=\'#fff\'">'
+    return '<div onclick="rosAdSelect(\''+side+'\','+i+slotArg+')" style="display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;border-bottom:0.5px solid #ece9e3;background:#fff" onmouseover="this.style.background=\'#f5f3ef\'" onmouseout="this.style.background=\'#fff\'">'
       + avatarHtml
       + '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:500;color:#2c2a26;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center">'+p._displayName+statusBadge+'</div>'
       + '<div style="font-size:10px;color:#888780">'+p._pos+' · '+(p._team||'')+'</div></div>'
@@ -7482,27 +7560,45 @@ window.rosAdSetPos = function(pos, btn) {
   if (btn) btn.classList.add('active');
   rosAdSearch(document.getElementById('ros-add-search') ? document.getElementById('ros-add-search').value : '');
 };
-window.rosAdToggle = function(side) {
-  var listEl = document.getElementById('ros-'+side+'-list');
+// Compute element-id suffix for slot. slot 0 → "", slot 1 → "-2"
+function _rosAdSlotSfx(slot) { return (slot && slot > 0) ? '-2' : ''; }
+
+window.rosAdRevealSlot2 = function(side) {
+  var addBtn = document.getElementById('ros-'+side+'-slot2-add');
+  var wrap   = document.getElementById('ros-'+side+'-slot2-wrap');
+  if (addBtn) addBtn.style.display = 'none';
+  if (wrap)   wrap.style.display = 'block';
+  setTimeout(function(){
+    var inp = document.getElementById('ros-'+side+'-search-2');
+    if (inp) inp.focus();
+  }, 50);
+};
+
+window.rosAdToggle = function(side, slot) {
+  var sfx = _rosAdSlotSfx(slot);
+  var listEl = document.getElementById('ros-'+side+'-list'+sfx);
   if (!listEl) return;
   if (listEl.style.display === 'block') {
     listEl.style.display = 'none';
   } else {
     _rosAdBuildLists();
-    var q = (document.getElementById('ros-'+side+'-search')||{}).value || '';
-    if (side==='add') rosAdSearch(q); else rosDropSearch(q);
+    var q = (document.getElementById('ros-'+side+'-search'+sfx)||{}).value || '';
+    if (side==='add') rosAdSearch(q, slot); else rosDropSearch(q, slot);
     listEl.style.display = 'block';
-    var searchEl = document.getElementById('ros-'+side+'-search');
+    var searchEl = document.getElementById('ros-'+side+'-search'+sfx);
     if (searchEl) searchEl.focus();
   }
 };
-window.rosAdHide = function(side) {
+window.rosAdHide = function(side, slot) {
+  var sfx = _rosAdSlotSfx(slot);
   setTimeout(function(){
-    var listEl = document.getElementById('ros-'+side+'-list');
+    var listEl = document.getElementById('ros-'+side+'-list'+sfx);
     if (listEl) listEl.style.display = 'none';
   }, 200);
 };
-window.rosAdClear = function(side) {
+window.rosAdClear = function(side, slot) {
+  // Default slot 0 if not specified (back-compat with single-slot callers)
+  if (slot == null) slot = 0;
   // Manual clear → switch to Custom mode
   if (_rosSugActiveIdx != null) {
     _rosSugActiveIdx = null;
@@ -7510,31 +7606,58 @@ window.rosAdClear = function(side) {
     var _sd = document.getElementById('ros-sug-card');
     if (_sd) _sd.innerHTML = _rosBuildSuggestedMovesHtml();
   }
+  var sfx = _rosAdSlotSfx(slot);
   if (side === 'add') {
-    _rosAdSelected = null;
-    var c = document.getElementById('ros-add-card'); if (c) c.style.display='none';
-    var i = document.getElementById('ros-add-search'); if (i) i.value='';
+    if (slot < _rosAdSelected.length) _rosAdSelected.splice(slot, 1);
+    var c = document.getElementById('ros-add-card'+sfx); if (c) c.style.display='none';
+    var i = document.getElementById('ros-add-search'+sfx); if (i) i.value='';
   } else {
-    _rosDropSelected = null;
-    window._rosDropPlayerObj = null;
-    _rosDropPos = null;
-    var c2 = document.getElementById('ros-drop-card'); if (c2) c2.style.display='none';
-    var i2 = document.getElementById('ros-drop-search'); if (i2) i2.value='';
-    var addInp2 = document.getElementById('ros-add-search');
-    if (addInp2) addInp2.placeholder = 'Search all players...';
+    if (slot < _rosDropSelected.length) {
+      _rosDropSelected.splice(slot, 1);
+      _rosDropPlayerObjs.splice(slot, 1);
+    }
+    if (slot === 0) {
+      window._rosDropPlayerObj = _rosDropPlayerObjs[0] || null;
+      _rosDropPos = (_rosDropPlayerObjs[0] && _rosDropPlayerObjs[0]._pos) || null;
+      var addInp2 = document.getElementById('ros-add-search');
+      if (addInp2) addInp2.placeholder = _rosDropPos ? ('Search ' + _rosDropPos + ' players...') : 'Search all players...';
+    }
+    var c2 = document.getElementById('ros-drop-card'+sfx); if (c2) c2.style.display='none';
+    var i2 = document.getElementById('ros-drop-search'+sfx); if (i2) i2.value='';
+  }
+  // If slot 1 is now empty, show the "+ second player" link again (if still applicable)
+  if (slot === 1) {
+    var addBtn = document.getElementById('ros-'+side+'-slot2-add');
+    var wrap   = document.getElementById('ros-'+side+'-slot2-wrap');
+    if (wrap) wrap.style.display = 'none';
+    var slot0Filled = (side==='add') ? (_rosAdSelected.length > 0) : (_rosDropSelected.length > 0);
+    if (addBtn) addBtn.style.display = slot0Filled ? 'block' : 'none';
+  } else if (slot === 0) {
+    // Slot 0 cleared — if slot 1 was filled, promote it to slot 0 so we keep the
+    // user's selection. Otherwise hide both add/wrap controls.
+    var s2card = document.getElementById('ros-'+side+'-card-2');
+    var s2filled = s2card && s2card.style.display !== 'none';
+    if (!s2filled) {
+      // Hide slot 2 add/wrap entirely since slot 0 is empty
+      var addBtnA = document.getElementById('ros-'+side+'-slot2-add');
+      var wrapA   = document.getElementById('ros-'+side+'-slot2-wrap');
+      if (addBtnA) addBtnA.style.display = 'none';
+      if (wrapA)   wrapA.style.display   = 'none';
+    }
   }
   _rosAdRenderBars();
 };
-window.rosAdShow = function(side) {
+window.rosAdShow = function(side, slot) {
   _rosAdBuildLists();
-  var listEl = document.getElementById('ros-'+side+'-list');
+  var sfx = _rosAdSlotSfx(slot);
+  var listEl = document.getElementById('ros-'+side+'-list'+sfx);
   if (!listEl) return;
-  var q = (document.getElementById('ros-'+side+'-search')||{}).value || '';
-  if (side==='add') rosAdSearch(q); else rosDropSearch(q);
+  var q = (document.getElementById('ros-'+side+'-search'+sfx)||{}).value || '';
+  if (side==='add') rosAdSearch(q, slot); else rosDropSearch(q, slot);
   listEl.style.display = 'block';
   setTimeout(function(){
     function handler(e){
-      if(!e.target.closest('#ros-'+side+'-search')&&!e.target.closest('#ros-'+side+'-list')){
+      if(!e.target.closest('#ros-'+side+'-search'+sfx)&&!e.target.closest('#ros-'+side+'-list'+sfx)){
         listEl.style.display='none';
         document.removeEventListener('click',handler);
       }
@@ -7543,13 +7666,12 @@ window.rosAdShow = function(side) {
   },0);
 };
 
-window.rosAdSearch = function(q) {
+window.rosAdSearch = function(q, slot) {
   _rosAdBuildLists();
   q = (q||'').toLowerCase();
   _rosAdFAFiltered = _rosAdFAList.filter(function(p){
     var matchesQ = !q || p._displayName.toLowerCase().indexOf(q)!==-1||p._pos.toLowerCase().indexOf(q)!==-1||(p._team||'').toLowerCase().indexOf(q)!==-1;
     if (!matchesQ) return false;
-    // Filter by position pill — exact token match
     function posHas(posStr, token) {
       var parts = posStr.toUpperCase().split(',').map(function(x){return x.trim();});
       if (token === 'OF') return parts.some(function(p){return p==='LF'||p==='CF'||p==='RF'||p==='OF';});
@@ -7558,7 +7680,6 @@ window.rosAdSearch = function(q) {
     if (_rosAdPosPill && _rosAdPosPill !== 'ALL') {
       if (!posHas(p._pos||'', _rosAdPosPill)) return false;
     }
-    // Also filter by drop player position if pill is ALL
     if (_rosDropPos && _rosDropPos !== '—' && _rosAdPosPill === 'ALL') {
       var dropParts = _rosDropPos.toUpperCase().split(',').map(function(x){return x.trim();});
       var overlap = dropParts.some(function(dp){ return posHas(p._pos||'', dp); });
@@ -7566,21 +7687,28 @@ window.rosAdSearch = function(q) {
     }
     return true;
   });
-  var listEl = document.getElementById('ros-add-list');
-  if(listEl && listEl.style.display!=='none') listEl.innerHTML = _rosAdListHtml(_rosAdFAFiltered,'add');
+  var sfx = _rosAdSlotSfx(slot);
+  var listEl = document.getElementById('ros-add-list'+sfx);
+  if(listEl && listEl.style.display!=='none') listEl.innerHTML = _rosAdListHtml(_rosAdFAFiltered,'add', slot);
 };
 
-window.rosDropSearch = function(q) {
+window.rosDropSearch = function(q, slot) {
   _rosAdBuildLists();
   q = (q||'').toLowerCase();
   _rosAdRostFiltered = _rosAdRosterList.filter(function(p){
     return p._displayName.toLowerCase().indexOf(q)!==-1||p._pos.toLowerCase().indexOf(q)!==-1;
   });
-  var listEl = document.getElementById('ros-drop-list');
-  if(listEl && listEl.style.display!=='none') listEl.innerHTML = _rosAdListHtml(_rosAdRostFiltered,'drop');
+  var sfx = _rosAdSlotSfx(slot);
+  var listEl = document.getElementById('ros-drop-list'+sfx);
+  if(listEl && listEl.style.display!=='none') listEl.innerHTML = _rosAdListHtml(_rosAdRostFiltered,'drop', slot);
 };
 
-window.rosAdSelect = function(side, idx) {
+window.rosAdSelect = function(side, idx, slot) {
+  if (slot == null) {
+    // No explicit slot — use next empty slot, default to 0
+    if (side === 'add')  slot = _rosAdNextEmptyAddSlot()  != null ? _rosAdNextEmptyAddSlot()  : 0;
+    else                 slot = _rosAdNextEmptyDropSlot() != null ? _rosAdNextEmptyDropSlot() : 0;
+  }
   // If this select didn't come from a suggestion-row click, switch to Custom mode
   if (!_rosSugTryInProgress && _rosSugActiveIdx != null) {
     _rosSugActiveIdx = null;
@@ -7588,19 +7716,22 @@ window.rosAdSelect = function(side, idx) {
     var sugDiv = document.getElementById('ros-sug-card');
     if (sugDiv) sugDiv.innerHTML = _rosBuildSuggestedMovesHtml();
   }
-  var listEl = document.getElementById('ros-'+side+'-list');
+  var sfx = _rosAdSlotSfx(slot);
+  var listEl = document.getElementById('ros-'+side+'-list'+sfx);
   if(listEl) listEl.style.display='none';
-  var searchEl = document.getElementById('ros-'+side+'-search');
+  var searchEl = document.getElementById('ros-'+side+'-search'+sfx);
   if(searchEl) setTimeout(function(){ searchEl.focus(); }, 50);
   if(side==='add'){
     var p = _rosAdFAFiltered[idx];
     if(!p) return;
-    _rosAdSelected = p;
-    document.getElementById('ros-add-search').value = p._displayName;
-    document.getElementById('ros-add-card').style.display='block';
-    document.getElementById('ros-add-hs').src = p.hs||'';
-    document.getElementById('ros-add-hs').style.display = p.hs?'block':'none';
-    document.getElementById('ros-add-name').textContent = p._displayName;
+    // Update array — write to slot, padding with nulls if necessary
+    while (_rosAdSelected.length < slot) _rosAdSelected.push(null);
+    _rosAdSelected[slot] = p;
+    document.getElementById('ros-add-search'+sfx).value = p._displayName;
+    document.getElementById('ros-add-card'+sfx).style.display='block';
+    document.getElementById('ros-add-hs'+sfx).src = p.hs||'';
+    document.getElementById('ros-add-hs'+sfx).style.display = p.hs?'block':'none';
+    document.getElementById('ros-add-name'+sfx).textContent = p._displayName;
     var addMetaName = (p._displayName||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
     var addMetaRoster = (window._rosRosterLookup||{})[addMetaName];
     var addMetaStatus;
@@ -7609,41 +7740,55 @@ window.rosAdSelect = function(side, idx) {
     } else {
       addMetaStatus = 'FA';
     }
-    document.getElementById('ros-add-meta').textContent = p._pos+' · '+(p._team||'')+' · '+addMetaStatus+' · '+(p.isHit?(Math.round(p.AB||0)+' AB'):(parseFloat(p.IP||0).toFixed(0)+' IP'));
+    document.getElementById('ros-add-meta'+sfx).textContent = p._pos+' · '+(p._team||'')+' · '+addMetaStatus+' · '+(p.isHit?(Math.round(p.AB||0)+' AB'):(parseFloat(p.IP||0).toFixed(0)+' IP'));
     var rawSGP = 0;
     var D2=(typeof SGP_D!=='undefined')?SGP_D:{r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
     if(p.isHit) rawSGP=((p.R||0)/D2.r)+((p.HR||0)/D2.hr)+((p.RBI||0)/D2.rbi)+((p.SB||0)/D2.sb);
     else rawSGP=((p.W||0)/D2.w)+((p.K||0)/D2.k)+((p.SV||0)/D2.svh3);
-    document.getElementById('ros-add-raw').innerHTML='<span style="color:'+_rosAdCol(rawSGP)+'">'+_rosAdFmt(rawSGP)+'</span>';
-    document.getElementById('ros-add-team').innerHTML='<span style="color:'+_rosAdCol(p._teamSGP)+'">'+_rosAdFmt(p._teamSGP)+'</span>';
+    document.getElementById('ros-add-raw'+sfx).innerHTML='<span style="color:'+_rosAdCol(rawSGP)+'">'+_rosAdFmt(rawSGP)+'</span>';
+    document.getElementById('ros-add-team'+sfx).innerHTML='<span style="color:'+_rosAdCol(p._teamSGP)+'">'+_rosAdFmt(p._teamSGP)+'</span>';
+    // Show "+ second player" link if slot 0 was just filled
+    if (slot === 0) {
+      var addBtnAdd = document.getElementById('ros-add-slot2-add');
+      var wrapAdd   = document.getElementById('ros-add-slot2-wrap');
+      if (addBtnAdd && (!wrapAdd || wrapAdd.style.display !== 'block')) addBtnAdd.style.display = 'block';
+    }
   } else {
     // Rebuild lists to ensure _fp is populated
     _rosAdBuildLists();
     var r = _rosAdRostFiltered[idx];
     if(!r) return;
-    _rosDropSelected = r._key;
-    window._rosDropPlayerObj = r; // store full object for stat table
-    // Set position filter for add side
-    _rosDropPos = r._pos || null;
-    // Update add search placeholder
-    var addInp = document.getElementById('ros-add-search');
-    if (addInp && _rosDropPos && _rosDropPos !== '—') {
-      addInp.placeholder = 'Search ' + _rosDropPos + ' players...';
+    while (_rosDropSelected.length < slot) { _rosDropSelected.push(null); _rosDropPlayerObjs.push(null); }
+    _rosDropSelected[slot] = r._key;
+    _rosDropPlayerObjs[slot] = r;
+    if (slot === 0) {
+      window._rosDropPlayerObj = r;
+      _rosDropPos = r._pos || null;
+      var addInp = document.getElementById('ros-add-search');
+      if (addInp && _rosDropPos && _rosDropPos !== '—') {
+        addInp.placeholder = 'Search ' + _rosDropPos + ' players...';
+      }
     }
-    document.getElementById('ros-drop-search').value = r._displayName;
-    document.getElementById('ros-drop-card').style.display='block';
-    document.getElementById('ros-drop-hs').src = r.hs||'';
-    document.getElementById('ros-drop-hs').style.display = r.hs?'block':'none';
-    document.getElementById('ros-drop-name').textContent = r._displayName;
+    document.getElementById('ros-drop-search'+sfx).value = r._displayName;
+    document.getElementById('ros-drop-card'+sfx).style.display='block';
+    document.getElementById('ros-drop-hs'+sfx).src = r.hs||'';
+    document.getElementById('ros-drop-hs'+sfx).style.display = r.hs?'block':'none';
+    document.getElementById('ros-drop-name'+sfx).textContent = r._displayName;
     var dropAB = (r._cs && r._cs.AB) ? Math.round(parseFloat(r._cs.AB)) : null;
     var dropIP = (r._cs && r._cs.IP) ? parseFloat(r._cs.IP).toFixed(0) : null;
     var dropSample = r.isHit ? (dropAB!=null?(dropAB+' AB'):'') : (dropIP!=null?(dropIP+' IP'):'');
-    document.getElementById('ros-drop-meta').textContent = r._pos+' · '+(r._team||'')+' · Rostered'+(dropSample?' · '+dropSample:'');
-    document.getElementById('ros-drop-curr').innerHTML='<span style="color:'+_rosAdCol(r._currSGP)+'">'+_rosAdFmt(r._currSGP)+'</span>';
-    var rawDropEl = document.getElementById('ros-drop-raw');
+    document.getElementById('ros-drop-meta'+sfx).textContent = r._pos+' · '+(r._team||'')+' · Rostered'+(dropSample?' · '+dropSample:'');
+    document.getElementById('ros-drop-curr'+sfx).innerHTML='<span style="color:'+_rosAdCol(r._currSGP)+'">'+_rosAdFmt(r._currSGP)+'</span>';
+    var rawDropEl = document.getElementById('ros-drop-raw'+sfx);
     if (rawDropEl) {
       var rawDropSGP = (r._rosSGP != null) ? r._rosSGP : 0;
       rawDropEl.innerHTML='<span style="color:'+_rosAdCol(rawDropSGP)+'">'+_rosAdFmt(rawDropSGP)+'</span>';
+    }
+    // Show "+ second player" link if slot 0 was just filled
+    if (slot === 0) {
+      var addBtnDrop = document.getElementById('ros-drop-slot2-add');
+      var wrapDrop   = document.getElementById('ros-drop-slot2-wrap');
+      if (addBtnDrop && (!wrapDrop || wrapDrop.style.display !== 'block')) addBtnDrop.style.display = 'block';
     }
   }
   _rosAdRenderBars();
