@@ -1126,7 +1126,7 @@
           "icons": [
             {
               "tooltip": "May 6, 8:24 AM: Williams (5-2) took the loss Tuesday...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -3233,7 +3233,7 @@
           "icons": [
             {
               "tooltip": "May 6, 8:26 AM: Misiorowski (hamstring) will start...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -39083,7 +39083,7 @@
             },
             {
               "tooltip": "Apr 30, 8:20 AM: The Cardinals optioned Fernandez to...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -103516,7 +103516,7 @@
       },
       {
         "scorer": {
-          "teamName": "Not on a team",
+          "teamName": "New York Yankees",
           "urlName": "brendan-beck",
           "scorerId": "05uce",
           "rank": 1626,
@@ -103528,10 +103528,6 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "Inactive",
-              "typeId": "7"
-            },
-            {
               "tooltip": "May 7, 7:50 AM: The Yankees selected Beck's contract...",
               "typeId": "14"
             }
@@ -103542,8 +103538,9 @@
           "posIds": [
             "017"
           ],
+          "teamId": "10030",
           "name": "Brendan Beck",
-          "teamShortName": "(N/A)",
+          "teamShortName": "NYY",
           "shortName": "B. Beck"
         },
         "cells": [
@@ -103558,7 +103555,33 @@
             "content": "27"
           },
           {
-            "content": ""
+            "content": "TEX<br/>Thu 10:35AM",
+            "eventId": "06j4f",
+            "popOver": {
+              "scorer": {
+                "urlName": "mackenzie-gore",
+                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04cd5_96_10.png",
+                "scorerId": "04cd5",
+                "upcomingEventStatusId": "1",
+                "team": false,
+                "icons": [
+                  {
+                    "tooltip": "In starting lineup",
+                    "typeId": "12"
+                  },
+                  {
+                    "tooltip": "LHP",
+                    "typeId": "16"
+                  }
+                ],
+                "rookie": false,
+                "minorsEligible": false,
+                "name": "MacKenzie Gore",
+                "shortName": "M. Gore"
+              },
+              "header": "Probable Starter for Texas:",
+              "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 34.2 &nbsp;<b>K</b> 45 &nbsp;<b>ERA</b> 4.67 &nbsp;<b>WHIP</b> 1.356 &nbsp;"
+            }
           },
           {
             "content": "0"
