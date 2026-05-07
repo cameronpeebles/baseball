@@ -1838,8 +1838,86 @@ td.neg { color: #c0392b; font-weight: 500; }
 
     <!-- Team Archetype Guide Tab -->
     <div id="guide-tab-archetype" class="trade-tab-content">
+
+      <!-- ROS-aware 4-input upgrade card -->
       <div class="card" style="margin-top:16px;max-width:900px">
-        <div class="card-header"><span class="card-title">Team Archetype — How it works</span></div>
+        <div class="card-header"><span class="card-title">Team Archetype — ROS-aware 4-input model</span><span style="font-size:12px;color:var(--muted)">Active when ROS projections are loaded</span></div>
+        <div class="card-body" style="padding:20px">
+          <div style="background:rgba(29,158,117,0.06);border:0.5px solid rgba(29,158,117,0.30);border-radius:8px;padding:11px 14px;margin-bottom:14px">
+            <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#1e6b3a;margin-bottom:4px">What's new</div>
+            <div style="font-size:12px;line-height:1.6">The Team Archetype model now uses <strong>four inputs</strong> instead of three. The legacy 3-input model (fWAR% / Rating% / JOE) remains as a fallback when ROS data hasn't loaded, but when available, the 4-input ROS-aware cascade takes over and produces more forward-looking archetype calls.</div>
+          </div>
+
+          <p style="font-size:13px;line-height:1.7;margin-bottom:14px">The upgraded model classifies your team using <strong>fWAR%</strong> (current production), <strong>ROS%</strong> (forward-looking projection), <strong>Rating%</strong> (roster talent), and <strong>JOE</strong> (schedule luck). Combining current results with future projection lets the cascade distinguish "currently great but projected to fade" from "genuinely elite" — a distinction the legacy model couldn't make.</p>
+
+          <div style="font-weight:600;font-size:13px;margin:20px 0 8px">The new ROS% input</div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:8px">
+            For each rostered player who passes the playing-time filter, look up their <strong>raw Team ROS SGP</strong> (player projected SGP, no need-weights). Sum across the team. Then rank all 10 teams — your percentile rank is the team's <strong>ROS%</strong>.
+          </div>
+          <div style="padding:10px 14px;background:#e8f0eb;border-radius:8px;font-size:12px;margin-bottom:20px;color:#1e4a28;font-family:monospace">ROS% = percentile_rank( Σ player_ROS_SGP across rostered players )</div>
+
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">15-rule ROS-aware cascade</div>
+          <p style="font-size:12px;line-height:1.7;margin-bottom:10px">Buckets are the same 45 / 65 thresholds as the legacy model: <strong>High ≥ 65, Mid 45–64, Low &lt; 45</strong>. JOE buckets stay <strong>Lucky / Neutral / Unlucky</strong> at ±0.12. Cascade fires the first matching rule top-to-bottom:</p>
+          <div style="overflow-x:auto;margin-bottom:14px">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead>
+              <tr style="background:var(--bg)">
+                <th style="padding:8px 10px;text-align:left;border-bottom:1.5px solid var(--border);white-space:nowrap">Trigger condition</th>
+                <th style="padding:8px 10px;text-align:left;border-bottom:1.5px solid var(--border);white-space:nowrap">Archetype</th>
+                <th style="padding:8px 10px;text-align:left;border-bottom:1.5px solid var(--border);white-space:nowrap">Direction</th>
+                <th style="padding:8px 10px;text-align:left;border-bottom:1.5px solid var(--border);white-space:nowrap">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:7px 10px;font-family:monospace;font-size:11px">fwH &amp; roH &amp; lucky</td><td style="padding:7px 10px;font-weight:500">Lucky Contender</td><td style="padding:7px 10px">Slight Down</td><td style="padding:7px 10px">Sell High</td></tr>
+              <tr style="border-bottom:1px solid var(--border);background:var(--bg)"><td style="padding:7px 10px;font-family:monospace;font-size:11px">fwH &amp; roH</td><td style="padding:7px 10px;font-weight:500;color:#1e6b3a">True Contender</td><td style="padding:7px 10px">Flat</td><td style="padding:7px 10px">Hold / Optimize</td></tr>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:7px 10px;font-family:monospace;font-size:11px">fwH &amp; roL</td><td style="padding:7px 10px;font-weight:500;color:#854f0b">Selling Window</td><td style="padding:7px 10px">Down</td><td style="padding:7px 10px">Sell High</td></tr>
+              <tr style="border-bottom:1px solid var(--border);background:var(--bg)"><td style="padding:7px 10px;font-family:monospace;font-size:11px">fwH &amp; roM &amp; lucky</td><td style="padding:7px 10px;font-weight:500">Hot Streak</td><td style="padding:7px 10px">Slight Down</td><td style="padding:7px 10px">Sell High</td></tr>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:7px 10px;font-family:monospace;font-size:11px">fwH &amp; roM</td><td style="padding:7px 10px;font-weight:500">Solid Performer</td><td style="padding:7px 10px">Slight Down</td><td style="padding:7px 10px">Optimize</td></tr>
+              <tr style="border-bottom:1px solid var(--border);background:var(--bg)"><td style="padding:7px 10px;font-family:monospace;font-size:11px">fwL &amp; roH</td><td style="padding:7px 10px;font-weight:500;color:#16a085">Sleeping Giant</td><td style="padding:7px 10px">Up</td><td style="padding:7px 10px">Hold / Buy</td></tr>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:7px 10px;font-family:monospace;font-size:11px">fwL &amp; roM &amp; unlucky</td><td style="padding:7px 10px;font-weight:500">Unlucky Mid</td><td style="padding:7px 10px">Slight Up</td><td style="padding:7px 10px">Hold</td></tr>
+              <tr style="border-bottom:1px solid var(--border);background:var(--bg)"><td style="padding:7px 10px;font-family:monospace;font-size:11px">fwL &amp; rtH</td><td style="padding:7px 10px;font-weight:500;color:#e67e22">Talent Trap</td><td style="padding:7px 10px">Slight Up</td><td style="padding:7px 10px">Hold / Reassess</td></tr>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:7px 10px;font-family:monospace;font-size:11px">fwL &amp; roL &amp; rtL</td><td style="padding:7px 10px;font-weight:500;color:#888">Rebuild</td><td style="padding:7px 10px">Flat</td><td style="padding:7px 10px">Rebuild</td></tr>
+              <tr style="border-bottom:1px solid var(--border);background:var(--bg)"><td style="padding:7px 10px;font-family:monospace;font-size:11px">fwM &amp; roH</td><td style="padding:7px 10px;font-weight:500;color:#8e44ad">Rising</td><td style="padding:7px 10px">Up</td><td style="padding:7px 10px">Hold / Buy</td></tr>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:7px 10px;font-family:monospace;font-size:11px">fwM &amp; roL</td><td style="padding:7px 10px;font-weight:500;color:#854f0b">Fading</td><td style="padding:7px 10px">Down</td><td style="padding:7px 10px">Sell High</td></tr>
+              <tr style="border-bottom:1px solid var(--border);background:var(--bg)"><td style="padding:7px 10px;font-family:monospace;font-size:11px">fwM &amp; roM &amp; lucky</td><td style="padding:7px 10px;font-weight:500">Lucky Mid</td><td style="padding:7px 10px">Slight Down</td><td style="padding:7px 10px">Optimize / Sell</td></tr>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:7px 10px;font-family:monospace;font-size:11px">fwM &amp; roM &amp; unlucky</td><td style="padding:7px 10px;font-weight:500">Unlucky Mid</td><td style="padding:7px 10px">Slight Up</td><td style="padding:7px 10px">Hold / Buy small</td></tr>
+              <tr style="border-bottom:1px solid var(--border);background:var(--bg)"><td style="padding:7px 10px;font-family:monospace;font-size:11px">fwM &amp; roM</td><td style="padding:7px 10px;font-weight:500">Middle of the Pack</td><td style="padding:7px 10px">Flat</td><td style="padding:7px 10px">Choose Direction</td></tr>
+              <tr><td style="padding:7px 10px;font-style:italic;color:var(--muted)">(default fallback)</td><td style="padding:7px 10px;font-style:italic;color:var(--muted)">Mixed Signals</td><td style="padding:7px 10px;font-style:italic;color:var(--muted)">Flat</td><td style="padding:7px 10px;font-style:italic;color:var(--muted)">Reassess</td></tr>
+            </tbody>
+          </table>
+          </div>
+
+          <div style="background:#fef3e2;border-radius:8px;border-left:4px solid #c8a96e;padding:12px 16px;margin-bottom:16px">
+            <div style="font-size:12px;font-weight:700;color:#b7791f;margin-bottom:6px">The key new distinctions ROS adds</div>
+            <ul style="font-size:12px;line-height:1.7;color:#7a5c2e;margin:0;padding-left:18px">
+              <li><strong>True Contender vs Selling Window</strong>: both have high fWAR%, but ROS distinguishes "elite that will stay elite" from "currently great but headed down."</li>
+              <li><strong>Sleeping Giant</strong>: low fWAR% but high ROS% — the buy-low signal the legacy model couldn't see directly.</li>
+              <li><strong>Rising vs Fading</strong>: same mid-tier fWAR%, but opposite trajectories on ROS.</li>
+              <li><strong>Solid Performer vs Hot Streak</strong>: high fWAR% with mid ROS%; the JOE input separates "you've earned it" from "luck inflated it."</li>
+            </ul>
+          </div>
+
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Borderline detection</div>
+          <p style="font-size:12px;line-height:1.7;margin-bottom:10px">After classifying, the cascade re-runs with each input perturbed ±3 around the bucket boundaries (45 / 65). If a different archetype would fire, the diagnostic appends a "borderline" note showing the alternate calls. Helps the user understand when the team is at a tipping point between archetypes vs firmly in one.</p>
+
+          <div style="font-weight:600;font-size:13px;margin:0 0 8px">Trust score (model confidence)</div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:8px">
+            With four inputs, trust is computed from the average of the three pairwise gaps:<br>
+            <span style="font-family:monospace"><strong>Trust = avg(|fwarPct − rosPct|, |fwarPct − lgPct|, |rosPct − lgPct|)</strong></span><br>
+            Lower gaps = higher trust (signals agree). Higher gaps = lower trust (signals diverge, archetype call is less stable).
+          </div>
+
+          <div style="background:#e8f0fe;border-radius:8px;border-left:4px solid #5b8db8;padding:12px 16px">
+            <div style="font-size:12px;font-weight:700;color:#1e4a7a;margin-bottom:6px">Fallback behavior</div>
+            <p style="font-size:12px;line-height:1.7;color:#1e4a7a;margin:0">When ROS data hasn't loaded yet (cold start, first session), the diagnostic falls back to the legacy 3-input model documented in the next card. The same 27-cell archetype map applies. Once ROS data lands, the diagnostic re-renders with the 4-input cascade output.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Legacy 3-input model -->
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Legacy 3-input model — fallback when ROS unavailable</span><span style="font-size:12px;color:var(--muted)">Used when FantasyPros data hasn't loaded</span></div>
         <div class="card-body" style="padding:20px">
           <p style="font-size:13px;line-height:1.7;margin-bottom:16px">Every team is classified into one of 27 archetypes based on three model inputs: <strong>fWAR%</strong> (actual fantasy production), <strong>Rating%</strong> (underlying roster talent), and <strong>JOE Factor</strong> (schedule luck). Each input is bucketed independently, and the three-bucket combination produces a unique key, a recommended direction, and an action.</p>
 
@@ -2458,6 +2536,84 @@ td.neg { color: #c0392b; font-weight: 500; }
             <strong>Try this &darr;</strong> loads the Add and Drop into the simulator below for the full per-category breakdown, radar chart, and Net verification. <strong>Hide</strong> dismisses the pair for the session (cleared on page refresh or team change).
           </div>
 
+        </div>
+      </div>
+
+      <!-- How pitchers can have negative ROS SGP -->
+      <div class="card" style="margin-top:16px;max-width:800px">
+        <div class="card-header"><span class="card-title">How a pitcher can have negative ROS SGP</span><span style="font-size:12px;color:var(--muted)">When rates outweigh counting stats</span></div>
+        <div class="card-body" style="padding:20px">
+          <p style="font-size:13px;line-height:1.7;margin-bottom:14px">A pitcher's ROS SGP sums contributions from five categories. The counting cats (W, K, SVH3) <strong>can only add</strong> — they're always non-negative. The rate cats (ERA, WHIP) compare the player against a neutral pool baseline (3.90 ERA / 1.20 WHIP) and <strong>can go negative</strong> when the player's projected rate is worse than the pool. A bad-rate pitcher's ERA + WHIP penalties can exceed his counting-stat gains, producing a net negative.</p>
+
+          <div style="background:var(--bg);border-radius:8px;padding:14px 16px;margin-bottom:14px">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Per-category formulas</div>
+            <div style="font-family:monospace;font-size:11px;background:var(--surface);padding:10px 12px;border-radius:5px;line-height:1.8">
+              W&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= projected_W&nbsp;&nbsp; / D2.w<br>
+              K&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= projected_K&nbsp;&nbsp; / D2.k<br>
+              SVH3&nbsp;&nbsp;&nbsp;= projected_SV / D2.svh3<br>
+              <span style="color:#c0392b">ERA&nbsp;&nbsp;&nbsp;&nbsp;= (POOL_ERA &minus; blended_ERA)&nbsp;&nbsp;/ D2.era</span><br>
+              <span style="color:#c0392b">WHIP&nbsp;&nbsp;&nbsp;= (POOL_WHIP &minus; blended_WHIP) / D2.whip</span>
+            </div>
+            <p style="font-size:11px;color:var(--muted);line-height:1.7;margin:8px 0 0 0">When the player's projected ERA &gt; 3.90 (pool baseline), <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">blended_ERA</code> rises above the pool, and the formula returns negative. Same for WHIP &gt; 1.20.</p>
+          </div>
+
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Worked example — Mitch Keller</div>
+          <p style="font-size:12px;line-height:1.7;margin-bottom:8px">FP ROS projection: ~80 IP, 4 W, 75 K, 4.40 ERA, 1.35 WHIP</p>
+          <table style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:14px">
+            <thead>
+              <tr style="background:var(--bg);border-bottom:1px solid var(--border)">
+                <th style="padding:6px 10px;text-align:left;font-weight:600">Category</th>
+                <th style="padding:6px 10px;text-align:right;font-weight:600">Calculation</th>
+                <th style="padding:6px 10px;text-align:right;font-weight:600">Contribution</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:6px 10px">W</td>
+                <td style="padding:6px 10px;text-align:right;font-family:monospace;font-size:11px">4 / 15.3</td>
+                <td style="padding:6px 10px;text-align:right;color:#1e6b3a;font-weight:600">+0.26</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);background:var(--bg)">
+                <td style="padding:6px 10px">K</td>
+                <td style="padding:6px 10px;text-align:right;font-family:monospace;font-size:11px">75 / 216.8</td>
+                <td style="padding:6px 10px;text-align:right;color:#1e6b3a;font-weight:600">+0.35</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:6px 10px">SVH3</td>
+                <td style="padding:6px 10px;text-align:right;font-family:monospace;font-size:11px">0 / 18.5</td>
+                <td style="padding:6px 10px;text-align:right;color:var(--muted)">0.00</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);background:var(--bg)">
+                <td style="padding:6px 10px;color:#c0392b">ERA</td>
+                <td style="padding:6px 10px;text-align:right;font-family:monospace;font-size:11px">(3.90 &minus; 3.93) / 0.106</td>
+                <td style="padding:6px 10px;text-align:right;color:#c0392b;font-weight:600">&minus;0.31</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:6px 10px;color:#c0392b">WHIP</td>
+                <td style="padding:6px 10px;text-align:right;font-family:monospace;font-size:11px">(1.20 &minus; 1.213) / 0.0191</td>
+                <td style="padding:6px 10px;text-align:right;color:#c0392b;font-weight:600">&minus;0.66</td>
+              </tr>
+              <tr style="border-top:2px solid var(--border);font-weight:600">
+                <td style="padding:8px 10px" colspan="2">Net total ROS SGP</td>
+                <td style="padding:8px 10px;text-align:right;color:#c0392b;font-size:14px">&minus;0.36</td>
+              </tr>
+            </tbody>
+          </table>
+          <p style="font-size:12px;line-height:1.7;margin-bottom:14px;color:var(--muted)">The +0.61 from W and K isn't enough to offset the &minus;0.97 from ERA and WHIP. Net contribution to your team's standings is <strong style="color:#c0392b">negative</strong> — meaning he actively hurts your standings position even after accounting for his strikeouts.</p>
+
+          <div style="background:#fef3e2;border-radius:8px;border-left:4px solid #c8a96e;padding:12px 16px;margin-bottom:14px">
+            <div style="font-size:12px;font-weight:700;color:#b7791f;margin-bottom:6px">What this means in practice</div>
+            <p style="font-size:12px;line-height:1.7;color:#7a5c2e;margin:0">A negative-SGP pitcher is <strong>actively hurting your standings</strong>. Even a 4-win, 75-K projection isn't enough if his rates dilute team ERA / WHIP. <strong>Better to start a streamer or leave the slot empty</strong> than activate him in a real start. The archetype cascade catches this — pitchers with high current fWAR but low ROS SGP get tagged "Sell High" — trade them while their value still reflects past performance.</p>
+          </div>
+
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">A subtle asymmetry — counting vs rate</div>
+          <p style="font-size:12px;line-height:1.7;margin-bottom:10px">Counting stats (R, HR, RBI, SB, W, K, SVH3) <strong>can only add to SGP</strong>. Rate stats (AVG, ERA, WHIP) <strong>can both add and subtract</strong>. This produces a clear pattern:</p>
+          <ul style="font-size:12px;line-height:1.8;padding-left:20px;margin:0 0 14px 0">
+            <li>A great pitcher (200 K, 2.50 ERA) has both K and ERA pulling up — strongly positive SGP.</li>
+            <li>An average pitcher (150 K, 3.90 ERA) has only K contributing — modestly positive.</li>
+            <li>A bad pitcher (100 K, 4.50 ERA) has K pulling up modestly but ERA pulling down hard — net negative.</li>
+          </ul>
+          <p style="font-size:11px;color:var(--muted);line-height:1.7;margin:0">Hitters almost never go meaningfully negative because their rate cat (AVG) gets a playing-time sub-trust factor (<code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">min(1, AB/350)</code>) that dampens partial-season AVG impact. You'd need a regular starter hitting around .180 to push a hitter's overall SGP negative. Pitchers face no such damping on ERA/WHIP, so negative ROS SGP is far more common on the pitching side.</p>
         </div>
       </div>
 
