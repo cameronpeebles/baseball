@@ -1191,6 +1191,63 @@ td.neg { color: #c0392b; font-weight: 500; }
         </div>
       </div>
 
+      <!-- Team Roster Radar — fWAR line meaning -->
+      <div class="card" style="margin-top:16px;max-width:800px">
+        <div class="card-header"><span class="card-title">Team Roster Radar — what "Team fWAR" actually shows</span><span style="font-size:12px;color:var(--muted)">Per-category breakdown across the rostered players</span></div>
+        <div class="card-body" style="padding:20px">
+          <p style="font-size:13px;line-height:1.7;margin-bottom:14px">The radar charts on the Team Roster page show three lines per category — <strong>Team Pos Rating</strong>, <strong>Team fWAR</strong>, and <strong>Team ROS SGP</strong>. Each is a 0-100 percentile showing how this team ranks against the other 9 in that category. The <strong>Team fWAR</strong> line is built from per-player z-scores and is more nuanced than it sounds.</p>
+
+          <div style="background:var(--bg);border-radius:8px;padding:14px 16px;margin-bottom:14px">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">How the Team fWAR per-cat line is computed</div>
+            <div style="font-family:monospace;font-size:11px;background:var(--surface);padding:8px 10px;border-radius:5px;line-height:1.7;margin-bottom:10px">team_score[cat] = Σ (player.z[cat] × player.ptWeight × cat_weight)</div>
+            <p style="font-size:12px;line-height:1.7;margin:0">Sums each rostered player's per-category z-score (from the FWAR model), weighted by their playing-time fraction and the league's fWAR category weight. Then teams are ranked league-wide for that category and the rank is converted to a 1-99 percentile: best team gets 99, worst gets 1, others spread evenly.</p>
+          </div>
+
+          <div style="background:#fef3e2;border-radius:8px;border-left:4px solid #c8a96e;padding:12px 16px;margin-bottom:14px">
+            <div style="font-size:12px;font-weight:700;color:#b7791f;margin-bottom:6px">Reading example</div>
+            <p style="font-size:12px;line-height:1.7;color:#7a5c2e;margin:0">If team WOO shows <strong>77 on the HR axis</strong>, that means: <strong>WOO ranks 3rd of 10 teams in HR-derived fWAR contribution from rostered players</strong>. The conversion: percentile 77 → idx ≈ (99-77)/98 × 9 ≈ 2 → 3rd place.</p>
+          </div>
+
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Why this differs from "77th percentile of HR totals"</div>
+          <p style="font-size:12px;line-height:1.7;margin-bottom:10px">It's not "77th percentile of all teams' HR totals." It's "77th percentile of the <em>player-fWAR-z-score sum for HR</em> among teams." The distinction matters:</p>
+          <ul style="font-size:12px;line-height:1.8;padding-left:20px;margin:0 0 14px 0">
+            <li>A team with a few HR studs (high individual z-scores) playing every day will score high.</li>
+            <li>A team with many average HR contributors might rank similarly in standings totals but lower here.</li>
+            <li>The metric weights by playing time and league weight, so a concentrated-power roster outperforms a "spread the HR around" roster with the same team total.</li>
+          </ul>
+
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Three similarly-named things to keep straight</div>
+          <table style="width:100%;font-size:12px;border-collapse:collapse">
+            <thead>
+              <tr style="background:var(--bg);border-bottom:1px solid var(--border)">
+                <th style="padding:8px 10px;text-align:left;font-weight:600">Name</th>
+                <th style="padding:8px 10px;text-align:left;font-weight:600">What it shows</th>
+                <th style="padding:8px 10px;text-align:left;font-weight:600">Per-cat?</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:8px 10px;font-weight:500">Team fWAR donut</td>
+                <td style="padding:8px 10px;line-height:1.5">Sum of <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">p.fWAR</code> by group (IF/OF/SP/RP)</td>
+                <td style="padding:8px 10px">No — group totals</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);background:var(--bg)">
+                <td style="padding:8px 10px;font-weight:500">Player Data: fWAR% column</td>
+                <td style="padding:8px 10px;line-height:1.5">League-relative percentile of a single player's overall fWAR vs others in their pool</td>
+                <td style="padding:8px 10px">No — overall</td>
+              </tr>
+              <tr>
+                <td style="padding:8px 10px;font-weight:500">Radar "Team fWAR" line</td>
+                <td style="padding:8px 10px;line-height:1.5">Team's per-cat z-score sum, ranked vs league</td>
+                <td style="padding:8px 10px"><strong style="color:#1e6b3a">Yes — per category</strong></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p style="font-size:11px;color:var(--muted);line-height:1.7;margin-top:14px;margin-bottom:0">The radar line uses the per-category z-scores under the hood (the <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">p.z[cat]</code> values that feed INTO computing fWAR), not the fWAR number itself. fWAR alone is one number per player; the radar needs 5 axes per side, so it builds from the per-cat z-score components.</p>
+        </div>
+      </div>
+
     </div>
 
     <!-- Player Data -->
@@ -3373,8 +3430,8 @@ function drawPlayers(type) {
       if (v == null) return '-';
       return (v >= 0 ? '+' : '') + v.toFixed(2);
     }
-    html += '<td style="font-weight:600;color:'+_sgpCol(currSgpVal)+';font-size:11px;background:rgba(29,158,117,0.04)">'+_sgpFmt(currSgpVal)+'</td>';
-    html += '<td style="font-weight:600;color:'+_sgpCol(rosSgpVal)+';font-size:11px;background:rgba(29,158,117,0.04)">'+_sgpFmt(rosSgpVal)+'</td>';
+    html += '<td style="font-weight:600;color:'+_sgpCol(currSgpVal)+';font-size:11px">'+_sgpFmt(currSgpVal)+'</td>';
+    html += '<td style="font-weight:600;color:'+_sgpCol(rosSgpVal)+';font-size:11px">'+_sgpFmt(rosSgpVal)+'</td>';
 
     // Archetype cell
     var fpctA = fwarPctLookup[nameLow];
@@ -3527,8 +3584,8 @@ function showRoster(teamId) {
     }
     html += '<th style="color:#5b8db8;font-weight:700;white-space:nowrap;font-size:11px">Pos Rating</th>';
     html += '<th style="color:#2d7a5a;font-weight:700;white-space:nowrap;font-size:11px">League Rating</th>';
-    html += '<th style="color:#1e6b3a;font-weight:700;white-space:nowrap;font-size:11px;background:rgba(29,158,117,0.04)">Curr SGP</th>';
-    html += '<th style="color:#1e6b3a;font-weight:700;white-space:nowrap;font-size:11px;background:rgba(29,158,117,0.04)">ROS SGP</th>';
+    html += '<th style="color:#1e6b3a;font-weight:700;white-space:nowrap;font-size:11px">Curr SGP</th>';
+    html += '<th style="color:#1e6b3a;font-weight:700;white-space:nowrap;font-size:11px">ROS SGP</th>';
     html += '<th style="color:#c0392b;font-weight:700;white-space:nowrap;font-size:11px">Archetype</th>';
     var statHeaders = headers.filter(function(h) { return ['age','opponent'].indexOf(h.key || '') === -1; });
     statHeaders.forEach(function(h) { html += '<th>' + (h.shortName || h.name || '') + '</th>'; });
@@ -3645,8 +3702,8 @@ function showRoster(teamId) {
         return '#c0392b';
       }
       function _rsSgpFmt(v) { return v == null ? '—' : (v >= 0 ? '+' : '') + v.toFixed(2); }
-      html += '<td style="font-weight:600;color:'+_rsSgpCol(currSgpV)+';white-space:nowrap;background:rgba(29,158,117,0.04)">'+_rsSgpFmt(currSgpV)+'</td>';
-      html += '<td style="font-weight:600;color:'+_rsSgpCol(rosSgpV) +';white-space:nowrap;background:rgba(29,158,117,0.04)">'+_rsSgpFmt(rosSgpV) +'</td>';
+      html += '<td style="font-weight:600;color:'+_rsSgpCol(currSgpV)+';white-space:nowrap">'+_rsSgpFmt(currSgpV)+'</td>';
+      html += '<td style="font-weight:600;color:'+_rsSgpCol(rosSgpV) +';white-space:nowrap">'+_rsSgpFmt(rosSgpV) +'</td>';
       // Archetype using the same 9-rule cascade as Player Data
       var fpctRos = isHitSection
         ? ((window._fwarPctLookupHit||window._fwarPctLookup||{})[normN3] != null
