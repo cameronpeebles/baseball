@@ -3930,17 +3930,18 @@ function buildTeamRosterCharts(teamId) {
 
   var teamZ = (S.zData||[]).find(function(d){ return d.teamId===teamId; });
   // ── League-relative percentile for Curr% (team standings rank per cat) ──
-  // This is "how does this team rank in this category in the standings" —
-  // a function of TEAM totals, not player-level data. Direct, intuitive.
+  // Rank this team within the league per category. Best=99, worst=1.
+  // NOTE: S.zData is computed from rotisserie POINT TOTALS, not raw stats.
+  // In points form, higher = better for EVERY category, including ERA/WHIP.
+  // So no inversion needed for ERA/WHIP — sort descending for all cats.
   function rankCurrPct(catKey, isHitter) {
-    var inverse = (catKey === 'ERA' || catKey === 'WHIP');
     var allTeamsZ = (S.zData||[]);
     if (!allTeamsZ.length) return 50;
     var vals = allTeamsZ.map(function(t){
       var v = isHitter ? (t.batZ||{})[catKey] : (t.pitZ||{})[catKey];
       return { tid: t.teamId, v: v != null ? v : 0 };
     });
-    vals.sort(function(a,b){ return inverse ? a.v - b.v : b.v - a.v; });
+    vals.sort(function(a,b){ return b.v - a.v; });
     var idx = vals.findIndex(function(x){ return x.tid === teamId; });
     if (idx < 0) return 50;
     return Math.round(99 - (idx / Math.max(1, vals.length - 1)) * 98);
@@ -3955,13 +3956,13 @@ function buildTeamRosterCharts(teamId) {
   // standings totals — a team with a few stars vs one with many average
   // contributors will score differently here even if their team totals are
   // similar.
+  // NOTE: ERA/WHIP z-scores in FWAR model are already pre-negated (lower ERA =
+  // higher z), so we sort descending for ALL cats — no inversion needed.
   function rankPlayerFwarPct(catKey, isHitter) {
-    var inverse = (catKey === 'ERA' || catKey === 'WHIP');
     var allFW = isHitter ? FWAR.hitResults : FWAR.pitResults;
     if (!allFW || !allFW.length) return 50;
     var weights = isHitter ? FWAR.hitWeights : FWAR.pitWeights;
     var w = (weights && weights[catKey] != null) ? weights[catKey] : 1;
-    // Sum player-level z-score × playing-time × weight per team
     var teamSums = {};
     Object.keys(S.teamInfo||{}).forEach(function(tid){ teamSums[tid] = 0; });
     allFW.forEach(function(p) {
@@ -3972,7 +3973,8 @@ function buildTeamRosterCharts(teamId) {
     });
     var vals = Object.keys(teamSums).map(function(tid){ return { tid: tid, v: teamSums[tid] }; });
     if (!vals.length) return 50;
-    vals.sort(function(a,b){ return inverse ? a.v - b.v : b.v - a.v; });
+    // Higher = better for all cats since FWAR pre-negates ERA/WHIP
+    vals.sort(function(a,b){ return b.v - a.v; });
     var idx = vals.findIndex(function(x){ return x.tid === teamId; });
     if (idx < 0) return 50;
     return Math.round(99 - (idx / Math.max(1, vals.length - 1)) * 98);
@@ -4036,13 +4038,11 @@ function buildTeamRosterCharts(teamId) {
       var vals = allTeamIds.map(function(tid){
         return { tid: tid, v: (isHitter ? allTotals[tid].hit : allTotals[tid].pit)[catKey] || 0 };
       });
-      // For ERA/WHIP, lower is better — invert
-      var inverse = (catKey === 'ERA' || catKey === 'WHIP');
-      vals.sort(function(a,b){ return inverse ? a.v - b.v : b.v - a.v; });
-      // Find this team's rank
+      // perCat ERA/WHIP values are already pre-inverted in rosSgpForPitcher
+      // (positive value = ERA improvement vs pool), so higher = better for all cats.
+      vals.sort(function(a,b){ return b.v - a.v; });
       var idx = vals.findIndex(function(x){ return x.tid === teamId; });
       if (idx < 0) return 50;
-      // Convert rank to percentile: best=99, worst=1
       return Math.round(99 - (idx / Math.max(1, vals.length - 1)) * 98);
     }
     hitRosPct = ['R','RBI','HR','SB','AVG'].map(function(c){ return rankPctInLeague(c, true); });
@@ -5748,6 +5748,41 @@ function _rosBuildTeamNeedHtml(dashMode) {
     ranks[cat] = pos >= 0 ? pos + 1 : null;
   });
 
+  // ── Projected ranks (forward-looking) ─────────────────────────────────────
+  // Sum each team's rostered players' per-cat ROS SGP contributions, rank teams.
+  // perCat values for ERA/WHIP are pre-inverted (positive = improvement vs pool),
+  // so higher = better for ALL cats — no inversion needed.
+  var projRanks = {};
+  var rosAvail = !!(window._playerRosCatHit && window._playerRosCatPit && window.TA && TA.players);
+  if (rosAvail) {
+    var teamProjTotals = {};
+    var allTids = Object.keys(S.teamInfo||{});
+    allTids.forEach(function(tid) {
+      var hit = {R:0,HR:0,RBI:0,SB:0,AVG:0};
+      var pit = {W:0,K:0,SVH3:0,ERA:0,WHIP:0};
+      (TA.players||[]).filter(function(p){ return p.ftId === tid; }).forEach(function(p) {
+        var k = (typeof _normPlayerKey === 'function') ? _normPlayerKey(p.name) : (p.name||'').toLowerCase();
+        var g = p.bestGroup || '';
+        var isH = (g === 'Infield' || g === 'Outfield');
+        var rc = isH ? (window._playerRosCatHit||{})[k] : (window._playerRosCatPit||{})[k];
+        if (!rc) return;
+        if (isH) Object.keys(hit).forEach(function(c){ if (rc[c] != null) hit[c] += rc[c]; });
+        else     Object.keys(pit).forEach(function(c){ if (rc[c] != null) pit[c] += rc[c]; });
+      });
+      teamProjTotals[tid] = { hit: hit, pit: pit };
+    });
+    allCats.forEach(function(cat) {
+      var isBat = BAT_Z_CATS.indexOf(cat) !== -1;
+      var vals = allTids.map(function(tid) {
+        var src = isBat ? teamProjTotals[tid].hit : teamProjTotals[tid].pit;
+        return { tid: tid, v: src[cat] || 0 };
+      });
+      vals.sort(function(a,b){ return b.v - a.v; });
+      var idx = vals.findIndex(function(x){ return x.tid === _rosSelectedTeam; });
+      projRanks[cat] = idx >= 0 ? idx + 1 : null;
+    });
+  }
+
   function needMult(rank) {
     if (rank == null) return 1.0;
     if (rank <= 2) return 0.5;
@@ -5806,7 +5841,7 @@ function _rosBuildTeamNeedHtml(dashMode) {
   h += '<div>';
   h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Team Need · ' + teamName + '</div>';
   if (!dashMode) {
-    h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Drives the need-weight multiplier in the simulator below.</div>';
+    h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Ranks reflect <strong>current standings</strong>. Drives the need-weight multiplier in the simulator below.</div>';
   }
   h += '</div>';
   if (!dashMode) {
@@ -5936,18 +5971,30 @@ function _rosBuildTeamNeedHtml(dashMode) {
   h += '</div>';
 
   // Sub-header for category tiles
-  h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Category Needs &middot; drives simulator multipliers</div>';
+  h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Category Needs &middot; current standings rank · drives simulator multipliers</div>';
 
   // Tile grid
   h += '<div style="display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px;margin-bottom:14px">';
   sorted.forEach(function(cat) {
     var rank = ranks[cat];
+    var pRank = projRanks[cat];
     var t = TIER[tier(rank)];
     var mult = needMult(rank);
     h += '<div style="background:'+t.bg+';border:0.5px solid '+t.border+';border-radius:6px;padding:7px 4px;text-align:center">';
     h += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px">'+cat+'</div>';
     h += '<div style="font-size:13px;font-weight:600;color:'+t.text+'">'+(rank||'—')+'</div>';
-    h += '<div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-top:1px">Rank</div>';
+    h += '<div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-top:1px">Curr Rank</div>';
+    // Projected rank with delta indicator (lower rank = better)
+    if (pRank != null && rank != null) {
+      var delta = rank - pRank; // positive = improvement (lower rank), negative = regression
+      var arrow = delta >= 1 ? '↑' : delta <= -1 ? '↓' : '·';
+      var arrowCol = delta >= 1 ? '#1e6b3a' : delta <= -1 ? '#c0392b' : 'var(--muted)';
+      h += '<div style="font-size:10px;color:'+arrowCol+';font-weight:500;margin-top:3px">'+arrow+' '+pRank+'</div>';
+      h += '<div style="font-size:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">Proj Rank</div>';
+    } else {
+      h += '<div style="font-size:10px;color:var(--muted);margin-top:3px">·</div>';
+      h += '<div style="font-size:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">Proj —</div>';
+    }
     h += '<div style="font-size:9px;color:'+t.text+';font-weight:500;margin-top:3px;background:'+t.chipBg+';border-radius:3px;padding:1px 0">×'+mult.toFixed(1)+'</div>';
     h += '</div>';
   });
