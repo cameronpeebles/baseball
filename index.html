@@ -5950,32 +5950,48 @@ function _rosTradeSugPerCat(playerKey, isHit) {
 }
 
 // Apply need-weights (only for "your" side) to a perCat object → weighted total
-function _rosTradeSugWeightedTotal(perCat, useNeed) {
+// Apply category-multipliers (need-weights) to a perCat object → weighted total.
+// Pass null/undefined for `mults` to get raw (unweighted) total.
+function _rosTradeSugWeightedTotal(perCat, mults) {
   if (!perCat) return 0;
-  var mults = useNeed ? (window._rosCatMultipliers||{}) : {};
+  var m = mults || {};
   var total = 0;
   ['R','HR','RBI','SB','AVG','W','K','SVH3','ERA','WHIP'].forEach(function(c){
     var v = perCat[c];
     if (v == null) return;
-    var m = (mults[c] != null) ? mults[c] : 1;
-    total += v * m;
+    var w = (m[c] != null) ? m[c] : 1;
+    total += v * w;
   });
   return total;
 }
 
-// Given a team's current rostered players (keys), compute total weighted ROS SGP
-// after a hypothetical swap (replace dropKey with addKey).
-function _rosTradeSugTeamSGPAfterSwap(rosterKeys, dropKey, addKey, isHit, useNeed) {
-  var total = 0;
-  rosterKeys.forEach(function(k){
-    if (k === dropKey) return; // skip dropped
-    var perCat = _rosTradeSugPerCat(k, isHit);
-    total += _rosTradeSugWeightedTotal(perCat, useNeed);
+// Compute need-multipliers for ANY team (mirrors the renderRosCard logic at
+// line ~7704 which only computes them for _rosSelectedTeam). zData is points-
+// based so higher Z = better in every cat (no inversion needed).
+function _rosTradeSugTeamMults(teamId) {
+  var mults = { R:1.0, HR:1.0, RBI:1.0, SB:1.0, AVG:1.0, W:1.0, K:1.0, SVH3:1.0, ERA:1.0, WHIP:1.0 };
+  if (!teamId || !S.zData || !S.zData.length) return mults;
+  function needMultiplier(rank) {
+    if (rank <= 2) return 0.5;
+    if (rank <= 4) return 0.8;
+    if (rank <= 6) return 1.0;
+    if (rank <= 8) return 1.4;
+    return 1.8;
+  }
+  var BAT_Z_CATS = ['R','HR','RBI','SB','AVG'];
+  var PIT_Z_CATS = ['W','K','SVH3','ERA','WHIP'];
+  var allCats = BAT_Z_CATS.concat(PIT_Z_CATS);
+  allCats.forEach(function(cat) {
+    var isBat = BAT_Z_CATS.indexOf(cat) !== -1;
+    var zKey = isBat ? 'batZ' : 'pitZ';
+    var scores = S.zData.map(function(d){
+      return { teamId: d.teamId, z: (d[zKey] && d[zKey][cat] != null) ? d[zKey][cat] : 0 };
+    });
+    scores.sort(function(a,b){ return b.z - a.z; });
+    var rank = scores.findIndex(function(s){ return s.teamId === teamId; }) + 1;
+    if (rank > 0) mults[cat] = needMultiplier(rank);
   });
-  // Add the added player's contribution
-  var addCat = _rosTradeSugPerCat(addKey, isHit);
-  total += _rosTradeSugWeightedTotal(addCat, useNeed);
-  return total;
+  return mults;
 }
 
 // Build keys of rostered players for a team, for a given hit/pit type.
@@ -6045,39 +6061,30 @@ function _rosTradeSugScanPairs(myTeamId) {
     var myRoster  = _rosTradeSugTeamRoster(myTeamId, isHit);
     if (debug) console.log('[TradeSug] grp='+grp+' myRoster size:', myRoster.length, myRoster.slice(0,3));
     if (!myRoster.length) return;
-    // Pre-compute my baseline weighted SGP (need-weighted)
-    var myBaseline = 0;
-    var myMissing = 0;
-    myRoster.forEach(function(k){
-      var pc = _rosTradeSugPerCat(k, isHit);
-      if (!pc) myMissing++;
-      myBaseline += _rosTradeSugWeightedTotal(pc, true);
-    });
-    if (debug) console.log('[TradeSug] grp='+grp+' myBaseline:', myBaseline.toFixed(2), 'missing perCat:', myMissing+'/'+myRoster.length);
+    // Use the cached selected-team mults (already computed by ROS card render)
+    // for "your" side. Each opponent team's mults are computed below.
+    var myMults = window._rosCatMultipliers || _rosTradeSugTeamMults(myTeamId);
+    if (debug) console.log('[TradeSug] grp='+grp+' my mults:', myMults);
 
     oppTeamIds.forEach(function(oppTid){
       var oppRoster = _rosTradeSugTeamRoster(oppTid, isHit);
       if (!oppRoster.length) return;
-      // Pre-compute their baseline raw (un-need-weighted) SGP
-      var theirBaseline = 0;
-      oppRoster.forEach(function(k){
-        theirBaseline += _rosTradeSugWeightedTotal(_rosTradeSugPerCat(k, isHit), false);
-      });
+      var theirMults = _rosTradeSugTeamMults(oppTid);
 
       myRoster.forEach(function(myKey){
         var myDropPerCat = _rosTradeSugPerCat(myKey, isHit);
         if (!myDropPerCat) return;
-        var myDropWeighted = _rosTradeSugWeightedTotal(myDropPerCat, true);
+        var myDropMyWeighted    = _rosTradeSugWeightedTotal(myDropPerCat, myMults);    // your value of your player
+        var myDropTheirWeighted = _rosTradeSugWeightedTotal(myDropPerCat, theirMults); // their value of your player
         oppRoster.forEach(function(oppKey){
           var oppDropPerCat = _rosTradeSugPerCat(oppKey, isHit);
           if (!oppDropPerCat) return;
-          var oppDropWeighted    = _rosTradeSugWeightedTotal(oppDropPerCat, true);
-          var oppDropRaw         = _rosTradeSugWeightedTotal(oppDropPerCat, false);
-          var myDropRaw          = _rosTradeSugWeightedTotal(myDropPerCat,  false);
-          // myDelta = (what I gain) − (what I lose), need-weighted
-          // theirDelta = (what they gain raw) − (what they lose raw)
-          var myDelta    = oppDropWeighted - myDropWeighted;
-          var theirDelta = myDropRaw - oppDropRaw;
+          var oppDropMyWeighted    = _rosTradeSugWeightedTotal(oppDropPerCat, myMults);    // your value of their player
+          var oppDropTheirWeighted = _rosTradeSugWeightedTotal(oppDropPerCat, theirMults); // their value of their player
+          // myDelta: you GET their player (your weighting), you LOSE your player (your weighting)
+          var myDelta    = oppDropMyWeighted    - myDropMyWeighted;
+          // theirDelta: they GET your player (their weighting), they LOSE their player (their weighting)
+          var theirDelta = myDropTheirWeighted  - oppDropTheirWeighted;
 
           // Their positional perception: rating of player they receive vs player they give
           var receivedPosR = _rosTradeSugPosRating(myKey);   // they're getting MY player
@@ -6167,7 +6174,7 @@ function _rosBuildTradeSuggestionsHtml() {
   h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:12px">';
   h += '<div>';
   h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Trade Suggestions &middot; ROS-driven</div>';
-  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">1-for-1 swaps with other teams. <strong>Mutual</strong>: both gain ROS SGP. <strong>Sneaky</strong>: you gain &ge;1.0, they perceive a positional upgrade. Your &Delta; uses need-weighting; their &Delta; uses raw SGP.</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">1-for-1 swaps with other teams. <strong>Mutual</strong>: both teams gain by their own need-weighting. <strong>Sneaky</strong>: you gain &ge;1.0, they perceive a positional upgrade. Each team\'s &Delta; uses their own current-standings need-weights.</div>';
   h += '</div>';
   h += '</div>';
 
