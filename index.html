@@ -3929,11 +3929,9 @@ function buildTeamRosterCharts(teamId) {
   var posStrength = GROUPS.map(function(g){ return countByGroup[g]?Math.round(ratingByGroup[g]/countByGroup[g]*100):0; });
 
   var teamZ = (S.zData||[]).find(function(d){ return d.teamId===teamId; });
-  // ── League-relative percentile for Curr% (replaces zToPct conversion) ──
-  // Rank this team within the league per category. Best=99, worst=1.
-  // Eliminates the prior issue where a Z of +2 mapped to 83 but +3 capped at 99,
-  // making most teams' counting stats max out. Now percentiles are uniform 1-99.
-  // ERA/WHIP are inverted (lower = better) before ranking.
+  // ── League-relative percentile for Curr% (team standings rank per cat) ──
+  // This is "how does this team rank in this category in the standings" —
+  // a function of TEAM totals, not player-level data. Direct, intuitive.
   function rankCurrPct(catKey, isHitter) {
     var inverse = (catKey === 'ERA' || catKey === 'WHIP');
     var allTeamsZ = (S.zData||[]);
@@ -3950,24 +3948,37 @@ function buildTeamRosterCharts(teamId) {
   var hitPct = ['R','RBI','HR','SB','AVG'].map(function(k){ return rankCurrPct(k, true); });
   var pitPct = ['ERA','WHIP','W','K','SVH3'].map(function(k){ return rankCurrPct(k, false); });
 
-  // fWAR-weighted percentile per category. Weight applied before ranking.
-  function rankFwarWtPct(catKey, isHitter) {
+  // ── Player-aggregated fWAR% per cat ─────────────────────────────────────
+  // Sum rostered players' per-category fWAR z-scores (weighted by playing time
+  // and category weight), then rank teams. Differs from Curr% because it's
+  // built from player-level fantasy-production signal rather than team
+  // standings totals — a team with a few stars vs one with many average
+  // contributors will score differently here even if their team totals are
+  // similar.
+  function rankPlayerFwarPct(catKey, isHitter) {
     var inverse = (catKey === 'ERA' || catKey === 'WHIP');
+    var allFW = isHitter ? FWAR.hitResults : FWAR.pitResults;
+    if (!allFW || !allFW.length) return 50;
     var weights = isHitter ? FWAR.hitWeights : FWAR.pitWeights;
     var w = (weights && weights[catKey] != null) ? weights[catKey] : 1;
-    var allTeamsZ = (S.zData||[]);
-    if (!allTeamsZ.length) return 50;
-    var vals = allTeamsZ.map(function(t){
-      var z = isHitter ? (t.batZ||{})[catKey] : (t.pitZ||{})[catKey];
-      return { tid: t.teamId, v: (z != null ? z : 0) * w };
+    // Sum player-level z-score × playing-time × weight per team
+    var teamSums = {};
+    Object.keys(S.teamInfo||{}).forEach(function(tid){ teamSums[tid] = 0; });
+    allFW.forEach(function(p) {
+      if (!p.ftId || teamSums[p.ftId] == null) return;
+      var z = p.z && p.z[catKey] != null ? p.z[catKey] : 0;
+      var pt = p.ptWeight != null ? p.ptWeight : 1;
+      teamSums[p.ftId] += z * pt * w;
     });
+    var vals = Object.keys(teamSums).map(function(tid){ return { tid: tid, v: teamSums[tid] }; });
+    if (!vals.length) return 50;
     vals.sort(function(a,b){ return inverse ? a.v - b.v : b.v - a.v; });
     var idx = vals.findIndex(function(x){ return x.tid === teamId; });
     if (idx < 0) return 50;
     return Math.round(99 - (idx / Math.max(1, vals.length - 1)) * 98);
   }
-  var hitFwarPct = ['R','RBI','HR','SB','AVG'].map(function(k){ return rankFwarWtPct(k, true); });
-  var pitFwarPct = ['ERA','WHIP','W','K','SVH3'].map(function(k){ return rankFwarWtPct(k, false); });
+  var hitFwarPct = ['R','RBI','HR','SB','AVG'].map(function(k){ return rankPlayerFwarPct(k, true); });
+  var pitFwarPct = ['ERA','WHIP','W','K','SVH3'].map(function(k){ return rankPlayerFwarPct(k, false); });
 
   function zToPct(z){ return Math.min(99,Math.max(1,Math.round((z+3)/6*100))); }
 
@@ -4093,10 +4104,10 @@ function buildTeamRosterCharts(teamId) {
     } else if(p.radar){
       h += '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">';
       var radarLineCol = p.id.indexOf('d3_')===0 ? '#1a1f5e' : '#5ab88a';
-      h += '<span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)"><span style="width:10px;height:2px;background:'+radarLineCol+';display:inline-block"></span>Curr%</span>';
-      h += '<span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><span style="width:10px;border-top:2px dashed #c0392b;display:inline-block"></span>fWAR-wt%</span>';
+      h += '<span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted)"><span style="width:10px;height:2px;background:'+radarLineCol+';display:inline-block"></span>Team Pos Rating</span>';
+      h += '<span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><span style="width:10px;border-top:2px dashed #c0392b;display:inline-block"></span>Team fWAR</span>';
       if (rosAvailable) {
-        h += '<span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><span style="width:10px;height:2px;background:#1e6b3a;display:inline-block"></span>ROS%</span>';
+        h += '<span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><span style="width:10px;height:2px;background:#1e6b3a;display:inline-block"></span>Team ROS SGP</span>';
       }
       h += '</div>';
     }
