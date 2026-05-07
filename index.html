@@ -6032,16 +6032,28 @@ function _rosTradeSugScanPairs(myTeamId) {
 
   var allCandidates = [];
   var oppTeamIds = Object.keys(S.teamInfo||{}).filter(function(tid){ return tid !== myTeamId; });
+  var debug = window._rosTradeSugDebug;
+  if (debug) {
+    console.log('[TradeSug] myTeam', myTeamId, 'opps', oppTeamIds.length);
+    console.log('[TradeSug] _playerRosCatHit keys:', Object.keys(window._playerRosCatHit||{}).length);
+    console.log('[TradeSug] _playerRosCatPit keys:', Object.keys(window._playerRosCatPit||{}).length);
+    console.log('[TradeSug] _rosCurrentStats keys:', Object.keys(window._rosCurrentStats||{}).length);
+  }
 
   ['hit','pit'].forEach(function(grp){
     var isHit = (grp === 'hit');
     var myRoster  = _rosTradeSugTeamRoster(myTeamId, isHit);
+    if (debug) console.log('[TradeSug] grp='+grp+' myRoster size:', myRoster.length, myRoster.slice(0,3));
     if (!myRoster.length) return;
     // Pre-compute my baseline weighted SGP (need-weighted)
     var myBaseline = 0;
+    var myMissing = 0;
     myRoster.forEach(function(k){
-      myBaseline += _rosTradeSugWeightedTotal(_rosTradeSugPerCat(k, isHit), true);
+      var pc = _rosTradeSugPerCat(k, isHit);
+      if (!pc) myMissing++;
+      myBaseline += _rosTradeSugWeightedTotal(pc, true);
     });
+    if (debug) console.log('[TradeSug] grp='+grp+' myBaseline:', myBaseline.toFixed(2), 'missing perCat:', myMissing+'/'+myRoster.length);
 
     oppTeamIds.forEach(function(oppTid){
       var oppRoster = _rosTradeSugTeamRoster(oppTid, isHit);
@@ -6069,6 +6081,18 @@ function _rosTradeSugScanPairs(myTeamId) {
           var isMutual = (myDelta >= 0.5) && (theirDelta >= 0.5) && (Math.abs(myDelta - theirDelta) < 1.0);
           var isSneaky = (myDelta >= 1.0) && (theirDelta >= -0.3 && theirDelta <= 0.5) &&
                          (theirPosDelta != null && theirPosDelta >= 5);
+          // Debug: capture top "near miss" gains so we can see what's happening
+          if (debug && myDelta >= 0.3 && !isMutual && !isSneaky) {
+            window._rosTradeSugNearMiss = window._rosTradeSugNearMiss || [];
+            if (window._rosTradeSugNearMiss.length < 10) {
+              window._rosTradeSugNearMiss.push({
+                vs: (S.teamInfo[oppTid]||{}).shortName,
+                give: myKey, get: oppKey,
+                myD: myDelta.toFixed(2), theirD: theirDelta.toFixed(2),
+                posD: theirPosDelta != null ? theirPosDelta.toFixed(0) : 'n/a'
+              });
+            }
+          }
           if (!isMutual && !isSneaky) return;
 
           var giveInfo = _rosTradeSugPlayerInfo(myKey);
@@ -6097,6 +6121,17 @@ function _rosTradeSugScanPairs(myTeamId) {
   // Sort by my ΔSGP desc, take top 3 in each bucket — but only one row per
   // (give-player, get-player) pair, with mutual taking priority.
   allCandidates.sort(function(a,b){ return b.myDelta - a.myDelta; });
+  if (debug) {
+    console.log('[TradeSug] total candidates passing filter:', allCandidates.length);
+    if (allCandidates.length) {
+      console.log('[TradeSug] top 5 by myDelta:', allCandidates.slice(0,5).map(function(c){
+        return { vs: c.oppName, give: c.give.name, get: c.get.name,
+                 myD: c.myDelta.toFixed(2), theirD: c.theirDelta.toFixed(2),
+                 posD: c.theirPosDelta != null ? c.theirPosDelta.toFixed(0) : 'n/a',
+                 mutual: c.isMutual, sneaky: c.isSneaky };
+      }));
+    }
+  }
   var mutual = [], sneaky = [];
   var seen = {};
   allCandidates.forEach(function(c){
