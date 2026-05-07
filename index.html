@@ -5437,7 +5437,8 @@ function renderROSPage() {
         AVG:gv3('AVG'), AB:gv3('AB'), H:gv3('H'),
         K:gv3('K'), W:gv3('W'), SVH3:gv3('SVH3'),
         ERA:gv3('ERA'), WHIP:gv3('WHIP'), IP:gv3('IP'),
-        pos: sc.posShortNames || '', isHit: isHitter
+        pos: sc.posShortNames || '', isHit: isHitter,
+        name: name, mlb: sc.teamShortName || '', hs: sc.headshotUrl || ''
       };
 
     });
@@ -5935,6 +5936,308 @@ function _rosUpdateModePill() {
   }
 }
 
+// ── Trade Suggestions · ROS-driven engine ─────────────────────────────────
+// Scans every other team's roster for 1-for-1 swaps that are either mutually
+// beneficial (both teams gain ROS SGP) or "sneaky" (you gain meaningfully,
+// they're roughly neutral but their positional rating goes up so they'd
+// likely accept). Limited to hitter-for-hitter and pitcher-for-pitcher.
+// Filters out IL/minor (uses _rosHasMLBRole, ≥10 AB / ≥5 IP).
+
+// Get player's per-cat ROS perCat object (ERA/WHIP pre-inverted: positive = good)
+function _rosTradeSugPerCat(playerKey, isHit) {
+  if (isHit) return (window._playerRosCatHit||{})[playerKey] || null;
+  return (window._playerRosCatPit||{})[playerKey] || null;
+}
+
+// Apply need-weights (only for "your" side) to a perCat object → weighted total
+function _rosTradeSugWeightedTotal(perCat, useNeed) {
+  if (!perCat) return 0;
+  var mults = useNeed ? (window._rosCatMultipliers||{}) : {};
+  var total = 0;
+  ['R','HR','RBI','SB','AVG','W','K','SVH3','ERA','WHIP'].forEach(function(c){
+    var v = perCat[c];
+    if (v == null) return;
+    var m = (mults[c] != null) ? mults[c] : 1;
+    total += v * m;
+  });
+  return total;
+}
+
+// Given a team's current rostered players (keys), compute total weighted ROS SGP
+// after a hypothetical swap (replace dropKey with addKey).
+function _rosTradeSugTeamSGPAfterSwap(rosterKeys, dropKey, addKey, isHit, useNeed) {
+  var total = 0;
+  rosterKeys.forEach(function(k){
+    if (k === dropKey) return; // skip dropped
+    var perCat = _rosTradeSugPerCat(k, isHit);
+    total += _rosTradeSugWeightedTotal(perCat, useNeed);
+  });
+  // Add the added player's contribution
+  var addCat = _rosTradeSugPerCat(addKey, isHit);
+  total += _rosTradeSugWeightedTotal(addCat, useNeed);
+  return total;
+}
+
+// Build keys of rostered players for a team, for a given hit/pit type.
+// Filters by MLB role (≥10 AB / ≥5 IP).
+function _rosTradeSugTeamRoster(teamId, isHit) {
+  var out = [];
+  var curStats = window._rosCurrentStats || {};
+  var rosterLookup = window._rosRosterLookup || {};
+  Object.keys(curStats).forEach(function(k){
+    var cs = curStats[k];
+    if (!cs || cs.isHit !== isHit) return;
+    var ri = rosterLookup[k] || {};
+    if (ri.teamId !== teamId) return;
+    if (typeof _rosHasMLBRole === 'function' && !_rosHasMLBRole(cs, isHit)) return;
+    out.push(k);
+  });
+  return out;
+}
+
+// Look up positional rating for a player (0–100 percentile)
+function _rosTradeSugPosRating(playerKey) {
+  var v = (window._posRatingLookup||{})[playerKey];
+  return v != null ? v : null;
+}
+
+// Lookup raw ROS SGP (un-need-weighted absolute) for a player
+function _rosTradeSugRawSgp(playerKey, isHit) {
+  if (isHit) {
+    var v = (window._playerRosSgpHit||{})[playerKey];
+    return v != null ? v : null;
+  }
+  var v2 = (window._playerRosSgpPit||{})[playerKey];
+  return v2 != null ? v2 : null;
+}
+
+// Lookup display info from _rosCurrentStats
+function _rosTradeSugPlayerInfo(playerKey) {
+  var cs = (window._rosCurrentStats||{})[playerKey];
+  if (!cs) return null;
+  return {
+    key:  playerKey,
+    name: cs.name || playerKey,
+    pos:  cs.pos  || '—',
+    mlb:  cs.mlb  || '',
+    hs:   cs.hs   || ''
+  };
+}
+
+// Main scan — returns {mutual:[...], sneaky:[...]} ranked by your ΔSGP desc.
+// Each item: {oppTid, oppName, give, get, myDelta, theirDelta, theirPosDelta, isHit}
+function _rosTradeSugScanPairs(myTeamId) {
+  if (!myTeamId) return { mutual: [], sneaky: [] };
+  if (!window._playerRosCatHit || !window._playerRosCatPit) return { mutual: [], sneaky: [] };
+
+  var allCandidates = [];
+  var oppTeamIds = Object.keys(S.teamInfo||{}).filter(function(tid){ return tid !== myTeamId; });
+
+  ['hit','pit'].forEach(function(grp){
+    var isHit = (grp === 'hit');
+    var myRoster  = _rosTradeSugTeamRoster(myTeamId, isHit);
+    if (!myRoster.length) return;
+    // Pre-compute my baseline weighted SGP (need-weighted)
+    var myBaseline = 0;
+    myRoster.forEach(function(k){
+      myBaseline += _rosTradeSugWeightedTotal(_rosTradeSugPerCat(k, isHit), true);
+    });
+
+    oppTeamIds.forEach(function(oppTid){
+      var oppRoster = _rosTradeSugTeamRoster(oppTid, isHit);
+      if (!oppRoster.length) return;
+      // Pre-compute their baseline raw (un-need-weighted) SGP
+      var theirBaseline = 0;
+      oppRoster.forEach(function(k){
+        theirBaseline += _rosTradeSugWeightedTotal(_rosTradeSugPerCat(k, isHit), false);
+      });
+
+      myRoster.forEach(function(myKey){
+        oppRoster.forEach(function(oppKey){
+          // Simulate swap: my drop = myKey, my add = oppKey. Vice versa for them.
+          var myAfter    = _rosTradeSugTeamSGPAfterSwap(myRoster,  myKey,  oppKey, isHit, true);
+          var theirAfter = _rosTradeSugTeamSGPAfterSwap(oppRoster, oppKey, myKey,  isHit, false);
+          var myDelta    = myAfter    - myBaseline;
+          var theirDelta = theirAfter - theirBaseline;
+
+          // Their positional perception: rating of player they receive vs player they give
+          var receivedPosR = _rosTradeSugPosRating(myKey);   // they're getting MY player
+          var sentPosR     = _rosTradeSugPosRating(oppKey);  // they're sending THEIR player
+          var theirPosDelta = (receivedPosR != null && sentPosR != null) ? (receivedPosR - sentPosR) : null;
+
+          // Classify
+          var isMutual = (myDelta >= 0.5) && (theirDelta >= 0.5) && (Math.abs(myDelta - theirDelta) < 1.0);
+          var isSneaky = (myDelta >= 1.0) && (theirDelta >= -0.3 && theirDelta <= 0.5) &&
+                         (theirPosDelta != null && theirPosDelta >= 5);
+          if (!isMutual && !isSneaky) return;
+
+          var giveInfo = _rosTradeSugPlayerInfo(myKey);
+          var getInfo  = _rosTradeSugPlayerInfo(oppKey);
+          if (!giveInfo || !getInfo) return;
+
+          allCandidates.push({
+            oppTid: oppTid,
+            oppName: (S.teamInfo[oppTid]||{}).shortName || (S.teamInfo[oppTid]||{}).name || oppTid,
+            give: { key: myKey,  name: giveInfo.name, pos: giveInfo.pos, mlb: giveInfo.mlb, hs: giveInfo.hs,
+                    rawSgp: _rosTradeSugRawSgp(myKey,  isHit), posR: sentPosR },
+            get:  { key: oppKey, name: getInfo.name,  pos: getInfo.pos,  mlb: getInfo.mlb,  hs: getInfo.hs,
+                    rawSgp: _rosTradeSugRawSgp(oppKey, isHit), posR: receivedPosR },
+            myDelta: myDelta,
+            theirDelta: theirDelta,
+            theirPosDelta: theirPosDelta,
+            isHit: isHit,
+            isMutual: isMutual,
+            isSneaky: isSneaky
+          });
+        });
+      });
+    });
+  });
+
+  // Sort by my ΔSGP desc, take top 3 in each bucket — but only one row per
+  // (give-player, get-player) pair, with mutual taking priority.
+  allCandidates.sort(function(a,b){ return b.myDelta - a.myDelta; });
+  var mutual = [], sneaky = [];
+  var seen = {};
+  allCandidates.forEach(function(c){
+    var sig = c.give.key + '|' + c.get.key;
+    if (seen[sig]) return;
+    if (c.isMutual && mutual.length < 3) { mutual.push(c); seen[sig] = true; }
+    else if (c.isSneaky && sneaky.length < 3) { sneaky.push(c); seen[sig] = true; }
+  });
+  return { mutual: mutual, sneaky: sneaky };
+}
+
+// ── Trade Suggestions card markup ─────────────────────────────────────────
+function _rosBuildTradeSuggestionsHtml() {
+  if (!_rosSelectedTeam) return '';
+  if (!window._playerRosCatHit || !window._playerRosCatPit) return '';
+
+  var teamName = (S.teamInfo[_rosSelectedTeam]||{}).shortName || (S.teamInfo[_rosSelectedTeam]||{}).name || '';
+  var results = _rosTradeSugScanPairs(_rosSelectedTeam);
+
+  var h = '<div class="card" style="padding:14px 16px;margin-bottom:14px;overflow:visible">';
+
+  // Header
+  h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:12px">';
+  h += '<div>';
+  h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Trade Suggestions &middot; ROS-driven</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">1-for-1 swaps with other teams. <strong>Mutual</strong>: both gain ROS SGP. <strong>Sneaky</strong>: you gain &ge;1.0, they perceive a positional upgrade. Your &Delta; uses need-weighting; their &Delta; uses raw SGP.</div>';
+  h += '</div>';
+  h += '</div>';
+
+  // Two-column layout
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
+
+  // ── MUTUAL column ──
+  h += '<div>';
+  h += '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#1e6b3a;margin-bottom:6px;padding:4px 8px;background:rgba(29,158,117,0.08);border-left:3px solid #1e6b3a;border-radius:0 4px 4px 0">Mutual &middot; both gain</div>';
+  if (!results.mutual.length) {
+    h += '<div style="font-size:11px;color:var(--muted);padding:14px 10px;text-align:center;background:var(--bg);border-radius:6px">No clear mutually-beneficial 1-for-1 trades found right now. Try the simulator below to test specific pairs.</div>';
+  } else {
+    results.mutual.forEach(function(c, i){ h += _rosTradeSugRow(c, i, 'mutual'); });
+  }
+  h += '</div>';
+
+  // ── SNEAKY column ──
+  h += '<div>';
+  h += '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#854f0b;margin-bottom:6px;padding:4px 8px;background:rgba(186,117,23,0.08);border-left:3px solid #c8a96e;border-radius:0 4px 4px 0">Sneaky &middot; positional perception hook</div>';
+  if (!results.sneaky.length) {
+    h += '<div style="font-size:11px;color:var(--muted);padding:14px 10px;text-align:center;background:var(--bg);border-radius:6px">No sneaky-trade candidates right now. Sneaky requires you gain &ge;1.0 with their pos rating up &ge;5 while their ROS SGP stays roughly neutral.</div>';
+  } else {
+    results.sneaky.forEach(function(c, i){ h += _rosTradeSugRow(c, i, 'sneaky'); });
+  }
+  h += '</div>';
+
+  h += '</div>'; // grid
+
+  h += '</div>'; // card
+  return h;
+}
+
+// Single trade-suggestion row
+function _rosTradeSugRow(c, idx, kind) {
+  var giveEnc = encodeURIComponent(c.give.key);
+  var getEnc  = encodeURIComponent(c.get.key);
+  var myDeltaCol    = c.myDelta    >= 0 ? '#1e6b3a' : '#c0392b';
+  var theirDeltaCol = c.theirDelta >= 0 ? '#4a9a68' : '#c0392b';
+  function fmtSgn(v){ return (v>=0?'+':'')+v.toFixed(2); }
+  function fmtRaw(v){ return v != null ? (v>=0?'+':'')+v.toFixed(2) : '\u2014'; }
+
+  var rowBg = idx % 2 === 1 ? 'var(--bg)' : 'var(--card)';
+  var h = '';
+  h += '<div onclick="rosTradeSugTryThis(\''+giveEnc+'\',\''+getEnc+'\','+(c.isHit?'true':'false')+')" style="background:'+rowBg+';border:0.5px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:5px;cursor:pointer;transition:background 0.1s" onmouseover="this.style.background=\'rgba(29,158,117,0.06)\'" onmouseout="this.style.background=\''+rowBg+'\'">';
+
+  // Top row: opponent + my delta
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">';
+  h += '<div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted)">vs '+c.oppName+'</div>';
+  h += '<div style="display:flex;gap:8px;align-items:center">';
+  h += '<div style="font-size:10px;color:var(--muted)">You:&nbsp;<strong style="color:'+myDeltaCol+'">'+fmtSgn(c.myDelta)+'</strong></div>';
+  h += '<div style="font-size:10px;color:var(--muted)">Them:&nbsp;<strong style="color:'+theirDeltaCol+'">'+fmtSgn(c.theirDelta)+'</strong></div>';
+  h += '</div>';
+  h += '</div>';
+
+  // Trade row: Give → Get
+  h += '<div style="display:grid;grid-template-columns:minmax(0,1fr) 14px minmax(0,1fr);gap:6px;align-items:center">';
+  // Give
+  h += '<div style="min-width:0">';
+  h += '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:1px">You give</div>';
+  h += '<div style="font-size:12px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+c.give.name+'">'+c.give.name+'</div>';
+  h += '<div style="font-size:9px;color:var(--muted)">'+(c.give.pos||'—')+(c.give.mlb?' &middot; '+c.give.mlb:'')+' &middot; ROS '+fmtRaw(c.give.rawSgp)+'</div>';
+  h += '</div>';
+  // Arrow
+  h += '<div style="text-align:center;color:var(--muted);font-size:13px">&#8644;</div>';
+  // Get
+  h += '<div style="min-width:0">';
+  h += '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:1px">You get</div>';
+  h += '<div style="font-size:12px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+c.get.name+'">'+c.get.name+'</div>';
+  h += '<div style="font-size:9px;color:var(--muted)">'+(c.get.pos||'—')+(c.get.mlb?' &middot; '+c.get.mlb:'')+' &middot; ROS '+fmtRaw(c.get.rawSgp)+'</div>';
+  h += '</div>';
+  h += '</div>';
+
+  // Why-tag for sneaky
+  if (kind === 'sneaky' && c.theirPosDelta != null) {
+    h += '<div style="margin-top:5px;font-size:9px;color:#854f0b;background:rgba(186,117,23,0.08);border-radius:4px;padding:3px 7px;display:inline-block">Their pos rating &uarr; '+c.theirPosDelta.toFixed(0)+'pts</div>';
+  }
+
+  // Try this hint
+  h += '<div style="margin-top:5px;font-size:9px;color:var(--muted);font-style:italic">Click to load into simulator below &darr;</div>';
+
+  h += '</div>';
+  return h;
+}
+
+// Click handler — load both players into the existing simulator
+window.rosTradeSugTryThis = function(giveEnc, getEnc, isHit) {
+  var giveKey = decodeURIComponent(giveEnc);
+  var getKey  = decodeURIComponent(getEnc);
+  // Drop side (your player you're giving up) — must be on selected team's roster
+  if (typeof _rosAdBuildLists === 'function') _rosAdBuildLists();
+  _rosAdRostFiltered = _rosAdRosterList.slice();
+  var dropIdx = _rosAdRostFiltered.findIndex(function(r){ return r._key === giveKey; });
+  if (dropIdx < 0) {
+    alert('Could not load drop player into the simulator.');
+    return;
+  }
+  if (typeof rosAdSelect === 'function') rosAdSelect('drop', dropIdx);
+  // Add side (player you're receiving from opponent) — find in projection pool
+  _rosAdFAFiltered = _rosAdFAList.slice();
+  // Match by their normalized key if possible, falling back to display name
+  var addIdx = _rosAdFAFiltered.findIndex(function(p){
+    var nm = (p._displayName||p.name||'');
+    var k  = (typeof _normPlayerKey === 'function') ? _normPlayerKey(nm) : nm.toLowerCase();
+    return k === getKey;
+  });
+  if (addIdx < 0) {
+    alert('Could not load add player into the simulator.');
+    return;
+  }
+  if (typeof rosAdSelect === 'function') rosAdSelect('add', addIdx);
+  // Scroll to simulator
+  var simEl = document.getElementById('ros-mode-pill-row');
+  if (simEl) simEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
 function _rosBuildTeamNeedHtml(dashMode) {
   if (!_rosSelectedTeam || !S.zData || !S.zData.length) return '';
   var teamName = (S.teamInfo[_rosSelectedTeam]||{}).shortName || (S.teamInfo[_rosSelectedTeam]||{}).name || '';
@@ -6361,6 +6664,10 @@ function _rosAdBuildPanelHtml() {
   h += '</div>'; // end right pane wrapper
   h += '</div>'; // end master/detail grid
   h += '</div>'; // end combined card
+
+  // ── Trade Suggestions · ROS-driven (new card below Workshop) ─────────────
+  h += _rosBuildTradeSuggestionsHtml();
+
   return h;
 }
 
