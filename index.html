@@ -6058,6 +6058,11 @@ function _rosTradeSugScanPairs(myTeamId) {
 
   ['hit','pit'].forEach(function(grp){
     var isHit = (grp === 'hit');
+    // Only scan the group matching the currently active tab — hitting tab
+    // shouldn't surface pitcher trades and vice versa.
+    var activeTab = (typeof _rosCurrentTab !== 'undefined') ? _rosCurrentTab : 'hitters';
+    if (activeTab === 'hitters' && !isHit) return;
+    if (activeTab === 'pitchers' && isHit) return;
     var myRoster  = _rosTradeSugTeamRoster(myTeamId, isHit);
     if (debug) console.log('[TradeSug] grp='+grp+' myRoster size:', myRoster.length, myRoster.slice(0,3));
     if (!myRoster.length) return;
@@ -6090,11 +6095,26 @@ function _rosTradeSugScanPairs(myTeamId) {
           var receivedPosR = _rosTradeSugPosRating(myKey);   // they're getting MY player
           var sentPosR     = _rosTradeSugPosRating(oppKey);  // they're sending THEIR player
           var theirPosDelta = (receivedPosR != null && sentPosR != null) ? (receivedPosR - sentPosR) : null;
+          // Their league-rating perception (compares against full pool; captures
+          // "name brand" / market-perception signal that can differ from positional rating).
+          var receivedLgR = (window._lgRatingLookup||{})[myKey];
+          var sentLgR     = (window._lgRatingLookup||{})[oppKey];
+          // _lgRatingLookup stores values as 0-1 fraction; scale to 0-100 for the delta
+          if (receivedLgR != null && receivedLgR <= 1) receivedLgR *= 100;
+          if (sentLgR     != null && sentLgR     <= 1) sentLgR     *= 100;
+          var theirLgDelta = (receivedLgR != null && sentLgR != null) ? (receivedLgR - sentLgR) : null;
+          // The "perception bump" is the BEST of pos delta and lg delta — either
+          // signal indicates the other team would view the trade favorably.
+          var theirPerceptDelta = Math.max(
+            theirPosDelta != null ? theirPosDelta : -999,
+            theirLgDelta  != null ? theirLgDelta  : -999
+          );
+          if (theirPerceptDelta === -999) theirPerceptDelta = null;
 
           // Classify
           var isMutual = (myDelta >= 0.5) && (theirDelta >= 0.5) && (Math.abs(myDelta - theirDelta) < 1.0);
           var isSneaky = (myDelta >= 1.0) && (theirDelta >= -0.3 && theirDelta <= 0.5) &&
-                         (theirPosDelta != null && theirPosDelta >= 5);
+                         (theirPerceptDelta != null && theirPerceptDelta >= 3);
           // Debug: capture top "near miss" gains so we can see what's happening
           if (debug && myDelta >= 0.3 && !isMutual && !isSneaky) {
             window._rosTradeSugNearMiss = window._rosTradeSugNearMiss || [];
@@ -6121,6 +6141,8 @@ function _rosTradeSugScanPairs(myTeamId) {
             myDelta: myDelta,
             theirDelta: theirDelta,
             theirPosDelta: theirPosDelta,
+            theirLgDelta: theirLgDelta,
+            theirPerceptDelta: theirPerceptDelta,
             isHit: isHit,
             isMutual: isMutual,
             isSneaky: isSneaky
@@ -6130,19 +6152,12 @@ function _rosTradeSugScanPairs(myTeamId) {
     });
   });
 
-  // Sort by my ΔSGP desc, take top 3 in each bucket — but only one row per
-  // (give-player, get-player) pair, with mutual taking priority.
+  // Sort by my ΔSGP desc. Return ALL valid candidates from each bucket so the
+  // refresh button can cycle through them. De-dup by (give-key, get-key) and
+  // give Mutual priority over Sneaky for any pair that qualifies for both.
   allCandidates.sort(function(a,b){ return b.myDelta - a.myDelta; });
   if (debug) {
     console.log('[TradeSug] total candidates passing filter:', allCandidates.length);
-    if (allCandidates.length) {
-      console.log('[TradeSug] top 5 by myDelta:', allCandidates.slice(0,5).map(function(c){
-        return { vs: c.oppName, give: c.give.name, get: c.get.name,
-                 myD: c.myDelta.toFixed(2), theirD: c.theirDelta.toFixed(2),
-                 posD: c.theirPosDelta != null ? c.theirPosDelta.toFixed(0) : 'n/a',
-                 mutual: c.isMutual, sneaky: c.isSneaky };
-      }));
-    }
     var nm = window._rosTradeSugNearMiss || [];
     nm.sort(function(a,b){ return b.myD - a.myD; });
     console.log('[TradeSug] top 10 NEAR MISSES (myD≥0.3, did not pass filter):');
@@ -6154,11 +6169,31 @@ function _rosTradeSugScanPairs(myTeamId) {
   allCandidates.forEach(function(c){
     var sig = c.give.key + '|' + c.get.key;
     if (seen[sig]) return;
-    if (c.isMutual && mutual.length < 3) { mutual.push(c); seen[sig] = true; }
-    else if (c.isSneaky && sneaky.length < 3) { sneaky.push(c); seen[sig] = true; }
+    if (c.isMutual)      { mutual.push(c); seen[sig] = true; }
+    else if (c.isSneaky) { sneaky.push(c); seen[sig] = true; }
   });
   return { mutual: mutual, sneaky: sneaky };
 }
+
+// Cycling state — refresh button advances through batches of 3
+var _rosTradeSugMutualCursor = 0;
+var _rosTradeSugSneakyCursor = 0;
+// Cache the last scan so refresh doesn't re-run the engine
+var _rosTradeSugCache = null;
+var _rosTradeSugCacheKey = null;
+
+window.rosTradeSugRefresh = function() {
+  var key = _rosTradeSugCacheKey;
+  if (!_rosTradeSugCache) return;
+  var mutCount = _rosTradeSugCache.mutual.length;
+  var sneCount = _rosTradeSugCache.sneaky.length;
+  // Advance both cursors by 3, wrap when past end
+  if (mutCount > 3) _rosTradeSugMutualCursor = (_rosTradeSugMutualCursor + 3) % mutCount;
+  if (sneCount > 3) _rosTradeSugSneakyCursor = (_rosTradeSugSneakyCursor + 3) % sneCount;
+  // Re-render just this card
+  var el = document.getElementById('ros-trade-sug-card');
+  if (el) el.outerHTML = _rosBuildTradeSuggestionsHtml();
+};
 
 // ── Trade Suggestions card markup ─────────────────────────────────────────
 function _rosBuildTradeSuggestionsHtml() {
@@ -6166,16 +6201,48 @@ function _rosBuildTradeSuggestionsHtml() {
   if (!window._playerRosCatHit || !window._playerRosCatPit) return '';
 
   var teamName = (S.teamInfo[_rosSelectedTeam]||{}).shortName || (S.teamInfo[_rosSelectedTeam]||{}).name || '';
-  var results = _rosTradeSugScanPairs(_rosSelectedTeam);
 
-  var h = '<div class="card" style="padding:14px 16px;margin-bottom:14px;overflow:visible">';
+  // Cache scan results: re-run only when team or tab changes, not on refresh clicks.
+  var activeTab = (typeof _rosCurrentTab !== 'undefined') ? _rosCurrentTab : 'hitters';
+  var cacheKey = _rosSelectedTeam + '|' + activeTab;
+  if (_rosTradeSugCacheKey !== cacheKey) {
+    _rosTradeSugCache = _rosTradeSugScanPairs(_rosSelectedTeam);
+    _rosTradeSugCacheKey = cacheKey;
+    _rosTradeSugMutualCursor = 0;
+    _rosTradeSugSneakyCursor = 0;
+  }
+  var results = _rosTradeSugCache;
 
-  // Header
+  // Slice into the visible batch of 3, wrapping past the end.
+  function batchOf3(arr, cursor) {
+    if (!arr.length) return [];
+    if (arr.length <= 3) return arr;
+    var out = [];
+    for (var i = 0; i < 3 && i < arr.length; i++) {
+      out.push(arr[(cursor + i) % arr.length]);
+    }
+    return out;
+  }
+  var mutualVisible = batchOf3(results.mutual, _rosTradeSugMutualCursor);
+  var sneakyVisible = batchOf3(results.sneaky, _rosTradeSugSneakyCursor);
+
+  var h = '<div id="ros-trade-sug-card" class="card" style="padding:14px 16px;margin-bottom:14px;overflow:visible">';
+
+  // Header (with refresh button)
   h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:12px">';
   h += '<div>';
   h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Trade Suggestions &middot; ROS-driven</div>';
-  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">1-for-1 swaps with other teams. <strong>Mutual</strong>: both teams gain by their own need-weighting. <strong>Sneaky</strong>: you gain &ge;1.0, they perceive a positional upgrade. Each team\'s &Delta; uses their own current-standings need-weights.</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">1-for-1 swaps with other teams. <strong>Mutual</strong>: both teams gain by their own need-weighting. <strong>Sneaky</strong>: you gain &ge;1.0, they perceive a positional or league-rating upgrade. Each team\'s &Delta; uses their own current-standings need-weights.</div>';
   h += '</div>';
+  // Refresh button — only shows when there are >3 candidates in either bucket
+  var canRefresh = (results.mutual.length > 3) || (results.sneaky.length > 3);
+  if (canRefresh) {
+    var totalShown = mutualVisible.length + sneakyVisible.length;
+    var totalAvail = results.mutual.length + results.sneaky.length;
+    h += '<button onclick="rosTradeSugRefresh()" style="padding:6px 12px;font-size:11px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--muted);cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px;flex-shrink:0" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'var(--card)\'" title="Cycle to next batch of suggestions">';
+    h += '<span style="font-size:13px">&#x21bb;</span>Next 3 <span style="font-size:9px;color:var(--muted)">('+totalShown+'/'+totalAvail+')</span>';
+    h += '</button>';
+  }
   h += '</div>';
 
   // Two-column layout
@@ -6183,21 +6250,25 @@ function _rosBuildTradeSuggestionsHtml() {
 
   // ── MUTUAL column ──
   h += '<div>';
-  h += '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#1e6b3a;margin-bottom:6px;padding:4px 8px;background:rgba(29,158,117,0.08);border-left:3px solid #1e6b3a;border-radius:0 4px 4px 0">Mutual &middot; both gain</div>';
-  if (!results.mutual.length) {
+  var mutLabel = 'Mutual &middot; both gain';
+  if (results.mutual.length > 3) mutLabel += ' &middot; '+results.mutual.length+' total';
+  h += '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#1e6b3a;margin-bottom:6px;padding:4px 8px;background:rgba(29,158,117,0.08);border-left:3px solid #1e6b3a;border-radius:0 4px 4px 0">'+mutLabel+'</div>';
+  if (!mutualVisible.length) {
     h += '<div style="font-size:11px;color:var(--muted);padding:14px 10px;text-align:center;background:var(--bg);border-radius:6px">No clear mutually-beneficial 1-for-1 trades found right now. Try the simulator below to test specific pairs.</div>';
   } else {
-    results.mutual.forEach(function(c, i){ h += _rosTradeSugRow(c, i, 'mutual'); });
+    mutualVisible.forEach(function(c, i){ h += _rosTradeSugRow(c, i, 'mutual'); });
   }
   h += '</div>';
 
   // ── SNEAKY column ──
   h += '<div>';
-  h += '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#854f0b;margin-bottom:6px;padding:4px 8px;background:rgba(186,117,23,0.08);border-left:3px solid #c8a96e;border-radius:0 4px 4px 0">Sneaky &middot; positional perception hook</div>';
-  if (!results.sneaky.length) {
-    h += '<div style="font-size:11px;color:var(--muted);padding:14px 10px;text-align:center;background:var(--bg);border-radius:6px">No sneaky-trade candidates right now. Sneaky requires you gain &ge;1.0 with their pos rating up &ge;5 while their ROS SGP stays roughly neutral.</div>';
+  var sneLabel = 'Sneaky &middot; positional perception hook';
+  if (results.sneaky.length > 3) sneLabel += ' &middot; '+results.sneaky.length+' total';
+  h += '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#854f0b;margin-bottom:6px;padding:4px 8px;background:rgba(186,117,23,0.08);border-left:3px solid #c8a96e;border-radius:0 4px 4px 0">'+sneLabel+'</div>';
+  if (!sneakyVisible.length) {
+    h += '<div style="font-size:11px;color:var(--muted);padding:14px 10px;text-align:center;background:var(--bg);border-radius:6px">No sneaky-trade candidates right now. Sneaky requires you gain &ge;1.0 with their pos or Lg rating up &ge;3 while their need-weighted SGP stays roughly neutral.</div>';
   } else {
-    results.sneaky.forEach(function(c, i){ h += _rosTradeSugRow(c, i, 'sneaky'); });
+    sneakyVisible.forEach(function(c, i){ h += _rosTradeSugRow(c, i, 'sneaky'); });
   }
   h += '</div>';
 
@@ -6247,9 +6318,20 @@ function _rosTradeSugRow(c, idx, kind) {
   h += '</div>';
   h += '</div>';
 
-  // Why-tag for sneaky
-  if (kind === 'sneaky' && c.theirPosDelta != null) {
-    h += '<div style="margin-top:5px;font-size:9px;color:#854f0b;background:rgba(186,117,23,0.08);border-radius:4px;padding:3px 7px;display:inline-block">Their pos rating &uarr; '+c.theirPosDelta.toFixed(0)+'pts</div>';
+  // Why-tag for sneaky — show whichever perception signal triggered
+  if (kind === 'sneaky') {
+    var posD = c.theirPosDelta;
+    var lgD  = c.theirLgDelta;
+    var lbl, val;
+    if (posD != null && lgD != null) {
+      // Both available — pick whichever is bigger
+      if (posD >= lgD) { lbl = 'Their pos rating'; val = posD; }
+      else             { lbl = 'Their Lg rating';  val = lgD; }
+    } else if (posD != null) { lbl = 'Their pos rating'; val = posD; }
+    else if (lgD != null)    { lbl = 'Their Lg rating';  val = lgD; }
+    if (lbl != null && val != null) {
+      h += '<div style="margin-top:5px;font-size:9px;color:#854f0b;background:rgba(186,117,23,0.08);border-radius:4px;padding:3px 7px;display:inline-block">'+lbl+' &uarr; '+val.toFixed(0)+'pts</div>';
+    }
   }
 
   // Try this hint
