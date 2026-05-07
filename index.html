@@ -3177,7 +3177,9 @@ function drawPlayers(type) {
       var posRA2  = window._posRatingLookup ? window._posRatingLookup[nameLow] : null;
       var lgRA2   = window._lgRatingLookup  ? window._lgRatingLookup[nameLow]  : null;
       var rosPA2  = isHit ? (window._playerRosPctHit||{})[nameLow] : (window._playerRosPctPit||{})[nameLow];
-      var arch2   = getArchetype(fpctA2 != null ? fpctA2 / 100 : null, posRA2, lgRA2, rosPA2 != null ? rosPA2 / 100 : null);
+      var rosSA2  = isHit ? (window._playerRosSgpHit||{})[nameLow] : (window._playerRosSgpPit||{})[nameLow];
+      var arch2   = getArchetype(fpctA2 != null ? fpctA2 / 100 : null, posRA2, lgRA2, rosPA2 != null ? rosPA2 / 100 : null,
+        { kind: isHit ? 'hit' : 'pit', rosSgp: rosSA2, name: e.scorer && e.scorer.name });
       if (!arch2 || arch2.name !== archFilter) return false;
     }
     return true;
@@ -3377,8 +3379,9 @@ function drawPlayers(type) {
     // Archetype cell
     var fpctA = fwarPctLookup[nameLow];
     var rosPA = isHit ? (window._playerRosPctHit||{})[sgpKey] : (window._playerRosPctPit||{})[sgpKey];
+    var rosSgpForArch = isHit ? (window._playerRosSgpHit||{})[sgpKey] : (window._playerRosSgpPit||{})[sgpKey];
     var arch  = getArchetype(fpctA != null ? fpctA / 100 : null, ratings.posRating, ratings.lgRating, rosPA != null ? rosPA / 100 : null,
-      { AB: isHit ? stats2['AB'] : null, IP: isHit ? null : stats2['IP'], name: name });
+      { AB: isHit ? stats2['AB'] : null, IP: isHit ? null : stats2['IP'], name: name, rosSgp: rosSgpForArch });
     if (arch) {
       html += '<td style="white-space:nowrap"><span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:' + arch.color + '22;color:' + arch.color + ';border:1px solid ' + arch.color + '44">' + arch.name + '</span></td>';
     } else {
@@ -3661,7 +3664,7 @@ function showRoster(teamId) {
       }
       var archRos = (typeof getArchetype === 'function')
         ? getArchetype(fpctRos != null ? fpctRos / 100 : null, posR, lgR, rosPctV2 != null ? rosPctV2 / 100 : null,
-            { AB: isHitSection ? rowAB : null, IP: isHitSection ? null : rowIP, name: name })
+            { AB: isHitSection ? rowAB : null, IP: isHitSection ? null : rowIP, name: name, rosSgp: rosSgpV })
         : null;
       if (archRos) {
         html += '<td style="white-space:nowrap"><span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:'+archRos.color+'22;color:'+archRos.color+';border:1px solid '+archRos.color+'44">'+archRos.name+'</span></td>';
@@ -8345,10 +8348,25 @@ function getArchetype(fwarPct, posRating, lgRating, rosPct, opts) {
   // When ROS data is available, classify using fwar / rating(=lg) / ros so
   // archetype reflects forward-looking expectation, not just current results.
   if (rp != null) {
+    // Detect hitter vs pitcher from opts.kind first, fall back to AB/IP presence.
+    // (Some callers don't have AB/IP — for those, kind: 'hit' or 'pit' is required
+    // for the role-specific soft thresholds to apply correctly.)
+    var isHit = (opts.kind === 'hit') || (opts.AB != null && opts.IP == null);
+    var isPit = (opts.kind === 'pit') || (opts.IP != null && opts.AB == null);
+    // Hitter Lg threshold for "High" drops from 65 → 60. In deep hitting
+    // leagues, top players land in 60-65 Lg Rating despite being clearly elite.
+    var lgHighThresh = isHit ? 60 : 65;
     var aH = fp >= 65, aM = fp >= 45 && fp < 65, aL = fp < 45;
     var bH = rp >= 65, bM = rp >= 45 && rp < 65, bL = rp < 45;
-    var cH = lr >= 65, cM = lr >= 45 && lr < 65, cL = lr < 45;
-    if (aH && bH && cH)  return { name: 'True Elite',            color: '#1e6b3a', action: 'Untouchable cornerstone',  desc: 'Production, projection, and talent all elite.' };
+    var cH = lr >= lgHighThresh, cM = lr >= 45 && lr < lgHighThresh, cL = lr < 45;
+    // Pitcher absolute-magnitude check for True Elite. ROS% can fire High on
+    // a +0.09 SGP player when most of the pitcher pool is negative — that's
+    // not actually elite. Require ≥1.0 absolute ROS SGP for True Elite tier.
+    var rosAbs = (opts.rosSgp != null) ? opts.rosSgp : null;
+    var pitcherEliteOk = !isPit || (rosAbs == null) || rosAbs >= 1.0;
+
+    if (aH && bH && cH && pitcherEliteOk) return { name: 'True Elite',           color: '#1e6b3a', action: 'Untouchable cornerstone',  desc: 'Production, projection, and talent all elite.' };
+    if (aH && bH && cH && !pitcherEliteOk)return { name: 'Solid Performer',      color: '#2d7a5a', action: 'Hold / mild monitor',      desc: 'High percentile rank but modest absolute ROS production.' };
     if (aH && bH && cM)  return { name: 'Solid Performer',       color: '#2d7a5a', action: 'Hold / mild monitor',      desc: 'High results and ROS, talent valuation merely solid.' };
     if (aH && bL)        return { name: 'Sell High',             color: '#854f0b', action: 'Trade while value is up',  desc: 'Producing now but ROS projects regression.' };
     if (aH && cL)        return { name: 'Format Mismatch Star',  color: '#2980b9', action: 'Hold / slight sell-high',  desc: 'Producing here, but talent valuation lower league-wide.' };
@@ -8847,7 +8865,10 @@ function drawFARatings() {
       var lgPool = isBat ? pools.lgHitPool : (primaryPos(p.pos||'')==='SP' ? pools.lgSpPool : pools.lgRpPool);
       lgRat = window._calcRating(p.stats||{}, pCats, lgPool, p.pos||'');
     }
-    return { fwarVal:fwarVal, fwarPct:fwarPct, posRat:posRat, lgRat:lgRat, rosPct: (isBat ? (window._playerRosPctHit||{})[k] : (window._playerRosPctPit||{})[k]) };
+    return { fwarVal:fwarVal, fwarPct:fwarPct, posRat:posRat, lgRat:lgRat,
+      rosPct: (isBat ? (window._playerRosPctHit||{})[k] : (window._playerRosPctPit||{})[k]),
+      rosSgp: (isBat ? (window._playerRosSgpHit||{})[k] : (window._playerRosSgpPit||{})[k]),
+      isBat: isBat, name: p.name };
   }
   function fwarSortVal(p, isBat) {
     var m = getFAMetrics(p, isBat);
@@ -8858,7 +8879,8 @@ function drawFARatings() {
     function rCol(v){ if(v==null)return'var(--muted)'; var p=v>1?v:v*100; return p>=65?'#1e6b3a':p>=50?'#4a9a68':p>=35?'#b7791f':'#c0392b'; }
     var fwCol = m.fwarVal==null?'var(--text)':m.fwarVal>=3?'#1e6b3a':m.fwarVal>=1?'#4a9a68':m.fwarVal>=-1?'var(--text)':'#c0392b';
     var fwarPctNorm = m.fwarPct!=null?m.fwarPct/100:null;
-    var arch = getArchetype(fwarPctNorm, m.posRat, m.lgRat, m.rosPct!=null?m.rosPct/100:null);
+    var arch = getArchetype(fwarPctNorm, m.posRat, m.lgRat, m.rosPct!=null?m.rosPct/100:null,
+      { kind: m.isBat ? 'hit' : 'pit', rosSgp: m.rosSgp, name: m.name });
     var h='';
     h += '<td><strong style="color:'+fwCol+'">'+(m.fwarVal!=null?(m.fwarVal>=0?'+':'')+m.fwarVal.toFixed(2):'-')+'</strong></td>';
     h += '<td><strong style="color:'+rCol(fwarPctNorm)+'">'+(m.fwarPct!=null?Math.round(m.fwarPct):'-')+'</strong></td>';
@@ -9333,7 +9355,9 @@ window.showFAFixer = function(teamId) {
       html += '<td><strong style="color:' + rCol(posRat) + '">' + rFmt(posRat) + '</strong></td>';
       html += '<td><strong style="color:' + rCol(lgRat) + '">' + rFmt(lgRat) + '</strong></td>';
       var rosPctA = isBat ? (window._playerRosPctHit||{})[nameLow] : (window._playerRosPctPit||{})[nameLow];
-      var arch1 = getArchetype(fwarPct!=null?fwarPct/100:null, posRat, lgRat, rosPctA!=null?rosPctA/100:null);
+      var rosSgpA = isBat ? (window._playerRosSgpHit||{})[nameLow] : (window._playerRosSgpPit||{})[nameLow];
+      var arch1 = getArchetype(fwarPct!=null?fwarPct/100:null, posRat, lgRat, rosPctA!=null?rosPctA/100:null,
+        { kind: isBat ? 'hit' : 'pit', rosSgp: rosSgpA, name: p.name });
       html += arch1 ? '<td style="white-space:nowrap"><span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:'+arch1.color+'22;color:'+arch1.color+';border:1px solid '+arch1.color+'44">'+arch1.name+'</span></td>' : '<td style="color:var(--muted);font-size:11px">-</td>';
       html += '</tr>';
     });
@@ -13764,8 +13788,11 @@ window.showFWARProfile = function(name, type) {
   var posRatVal  = window._posRatingLookup ? (window._posRatingLookup[nameLow2] != null ? window._posRatingLookup[nameLow2] : null) : null;
   var lgRatVal   = window._lgRatingLookup  ? (window._lgRatingLookup[nameLow2]  != null ? window._lgRatingLookup[nameLow2]  : null) : null;
   var rosPctMap  = isHit ? (window._playerRosPctHit||{}) : (window._playerRosPctPit||{});
+  var rosSgpMap  = isHit ? (window._playerRosSgpHit||{}) : (window._playerRosSgpPit||{});
   var rosPctRaw  = rosPctMap[nameLow2];
-  var arch = getArchetype(fpctVal != null ? fpctVal / 100 : null, posRatVal, lgRatVal, rosPctRaw != null ? rosPctRaw / 100 : null);
+  var rosSgpRaw  = rosSgpMap[nameLow2];
+  var arch = getArchetype(fpctVal != null ? fpctVal / 100 : null, posRatVal, lgRatVal, rosPctRaw != null ? rosPctRaw / 100 : null,
+    { kind: isHit ? 'hit' : 'pit', rosSgp: rosSgpRaw, name: name });
 
   // ── Strengths / Weaknesses from category deviations ──────────────────────
   var lgData = buildCatData(lgPool);
