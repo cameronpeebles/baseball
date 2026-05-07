@@ -6065,12 +6065,19 @@ function _rosTradeSugScanPairs(myTeamId) {
       });
 
       myRoster.forEach(function(myKey){
+        var myDropPerCat = _rosTradeSugPerCat(myKey, isHit);
+        if (!myDropPerCat) return;
+        var myDropWeighted = _rosTradeSugWeightedTotal(myDropPerCat, true);
         oppRoster.forEach(function(oppKey){
-          // Simulate swap: my drop = myKey, my add = oppKey. Vice versa for them.
-          var myAfter    = _rosTradeSugTeamSGPAfterSwap(myRoster,  myKey,  oppKey, isHit, true);
-          var theirAfter = _rosTradeSugTeamSGPAfterSwap(oppRoster, oppKey, myKey,  isHit, false);
-          var myDelta    = myAfter    - myBaseline;
-          var theirDelta = theirAfter - theirBaseline;
+          var oppDropPerCat = _rosTradeSugPerCat(oppKey, isHit);
+          if (!oppDropPerCat) return;
+          var oppDropWeighted    = _rosTradeSugWeightedTotal(oppDropPerCat, true);
+          var oppDropRaw         = _rosTradeSugWeightedTotal(oppDropPerCat, false);
+          var myDropRaw          = _rosTradeSugWeightedTotal(myDropPerCat,  false);
+          // myDelta = (what I gain) − (what I lose), need-weighted
+          // theirDelta = (what they gain raw) − (what they lose raw)
+          var myDelta    = oppDropWeighted - myDropWeighted;
+          var theirDelta = myDropRaw - oppDropRaw;
 
           // Their positional perception: rating of player they receive vs player they give
           var receivedPosR = _rosTradeSugPosRating(myKey);   // they're getting MY player
@@ -6084,14 +6091,12 @@ function _rosTradeSugScanPairs(myTeamId) {
           // Debug: capture top "near miss" gains so we can see what's happening
           if (debug && myDelta >= 0.3 && !isMutual && !isSneaky) {
             window._rosTradeSugNearMiss = window._rosTradeSugNearMiss || [];
-            if (window._rosTradeSugNearMiss.length < 10) {
-              window._rosTradeSugNearMiss.push({
-                vs: (S.teamInfo[oppTid]||{}).shortName,
-                give: myKey, get: oppKey,
-                myD: myDelta.toFixed(2), theirD: theirDelta.toFixed(2),
-                posD: theirPosDelta != null ? theirPosDelta.toFixed(0) : 'n/a'
-              });
-            }
+            window._rosTradeSugNearMiss.push({
+              vs: (S.teamInfo[oppTid]||{}).shortName,
+              give: myKey, get: oppKey,
+              myD: +myDelta.toFixed(2), theirD: +theirDelta.toFixed(2),
+              posD: theirPosDelta != null ? +theirPosDelta.toFixed(0) : null
+            });
           }
           if (!isMutual && !isSneaky) return;
 
@@ -6131,6 +6136,11 @@ function _rosTradeSugScanPairs(myTeamId) {
                  mutual: c.isMutual, sneaky: c.isSneaky };
       }));
     }
+    var nm = window._rosTradeSugNearMiss || [];
+    nm.sort(function(a,b){ return b.myD - a.myD; });
+    console.log('[TradeSug] top 10 NEAR MISSES (myD≥0.3, did not pass filter):');
+    console.table(nm.slice(0,10));
+    console.log('[TradeSug] total near-miss count:', nm.length);
   }
   var mutual = [], sneaky = [];
   var seen = {};
