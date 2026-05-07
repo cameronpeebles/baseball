@@ -8113,20 +8113,27 @@ function buildROSTable() {
   if (!wrap) return;
 
   // On Trades tab, hide the ROS Projections table — it's a Waivers feature.
-  // (Commit 2 will reorganize this table to show hitters + pitchers stacked.)
   if (_rosCurrentTab === 'trades') {
     wrap.innerHTML = '';
     return;
   }
 
-  // Default to hitter projections on Waivers tab. Pitcher table will be added
-  // in Commit 2 alongside this one.
-  var isHit = true;
-  var players = _rosHitData||[];
+  // Render BOTH hitter and pitcher tables stacked (Waivers tab only).
+  var hitHtml = _buildOneROSTable(true,  _rosHitData||[]);
+  var pitHtml = _buildOneROSTable(false, _rosPitData||[]);
 
+  // Stack with a divider between them
+  var html = '';
+  html += '<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Hitters</div>';
+  html += hitHtml;
+  html += '<div style="margin-top:24px;font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Pitchers</div>';
+  html += pitHtml;
+  wrap.innerHTML = html;
+}
+
+function _buildOneROSTable(isHit, players) {
   if (!players.length) {
-    wrap.innerHTML = '<div class="error-msg">No projection data. Run the GitHub Action to fetch FantasyPros data.</div>';
-    return;
+    return '<div class="error-msg">No projection data. Run the GitHub Action to fetch FantasyPros data.</div>';
   }
 
   // Get SGP denominators
@@ -8502,7 +8509,7 @@ function buildROSTable() {
   });
 
   html += '</tbody></table></div></div>';
-  wrap.innerHTML = html;
+  return html;
 }
 
 window.showMatrixWeek = function(wk, btn) {
