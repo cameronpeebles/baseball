@@ -8191,7 +8191,6 @@ function _normPlayerKey(n) {
 
 function _buildPlayerSgpLookups() {
   var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
-  if (window._sgpDebug) console.log('[SGP debug] D2 (denominators in use):', D2);
   // League-average team rate-stat pool (so a player's AVG/ERA/WHIP impact uses a
   // neutral baseline, not a specific team's context). 4000 AB / 1300 IP at .260/3.90/1.20.
   var POOL_AB=4000, POOL_AVG=0.260, POOL_IP=1300, POOL_ERA=3.90, POOL_WHIP=1.20;
@@ -8265,14 +8264,6 @@ function _buildPlayerSgpLookups() {
       var r = rosSgpForPitcher(p);
       rosPit[k] = isFinite(r.total) ? +r.total.toFixed(3) : null;
       rosCatPit[k] = r.perCat;
-      // Debug: log a few well-known SPs to verify computation
-      if (window._sgpDebug && (k.indexOf('skenes') !== -1 || k.indexOf('skubal') !== -1 || k.indexOf('ohtani') !== -1 || k.indexOf('degrom') !== -1 || k.indexOf('holmes') !== -1 || k.indexOf('davis martin') !== -1)) {
-        console.log('[SGP debug]', p.name, {
-          input: { IP: p.IP, K: p.K, W: p.W, SV: p.SV, ERA: p.ERA, WHIP: p.WHIP, pos: p.pos },
-          perCat: r.perCat,
-          total: r.total
-        });
-      }
     });
   }
 
@@ -8301,13 +8292,6 @@ function _buildPlayerSgpLookups() {
       var p = { W: gv('W')||0, K: gv('K')||0, SV: gv('SVH3')||0, ERA: gv('ERA'), WHIP: gv('WHIP'), IP: gv('IP')||0, pos: (sc.posShortNames||sc.pos||'') };
       var r = rosSgpForPitcher(p);
       currPit[k] = isFinite(r.total) ? +r.total.toFixed(3) : null;
-      if (window._sgpDebug && (k.indexOf('davis martin') !== -1 || k.indexOf('skenes') !== -1 || k.indexOf('clay holmes') !== -1)) {
-        console.log('[Curr SGP debug]', name, {
-          input: p,
-          perCat: r.perCat,
-          total: r.total
-        });
-      }
     });
   }
 
@@ -15433,19 +15417,26 @@ function computeSGPDenominators() {
   return result;
 }
 
-var SGP_D_HIST = computeSGPDenominators();
+// Canonical SGP denominators — match the Historic League Data page exactly.
+// These were pre-calculated from full historical league data with the correct
+// methodology; they are the authoritative values shown to the user on the
+// Historic page, so the rest of the app must use these to stay consistent.
 var SGP_D = {
-  r:    SGP_D_HIST.r    || 65.4,
-  hr:   SGP_D_HIST.hr   || 21.2,
-  rbi:  SGP_D_HIST.rbi  || 54.8,
-  sb:   SGP_D_HIST.sb   || 17.0,
-  avg:  SGP_D_HIST.avg  || 0.008,
-  w:    SGP_D_HIST.w    || 15.3,
-  k:    SGP_D_HIST.k    || 216.8,
-  svh3: SGP_D_HIST.svh3 || 18.5,
-  era:  SGP_D_HIST.era  || 0.106,
-  whip: SGP_D_HIST.whip || 0.0191
+  r:    65.4,
+  hr:   21.2,
+  rbi:  54.8,
+  sb:   17.0,
+  avg:  0.008,
+  w:    15.3,
+  k:    216.8,
+  svh3: 18.5,
+  era:  0.106,
+  whip: 0.0191
 };
+// Runtime-computed denominators are kept for reference/debug only.
+// Do NOT use SGP_D_HIST in calculations — values can differ from the canonical
+// set due to partial-roster seasons in HISTORIC_DATA distorting gap distributions.
+var SGP_D_HIST = computeSGPDenominators();
 
 var SEASON_GAMES = 162;
 
