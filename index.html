@@ -13738,6 +13738,12 @@ function renderFWARPage() {
   fwarRendered = true;
   window._fwarRendered = true;
   buildFWARModelInputs();
+  // Auto-populate the "Weights applied from correlations" card on first render
+  // so users always see the current correlations without needing to click the
+  // Auto-weight button. Only runs if season data is loaded.
+  if (typeof autoWeightFromCorrelations === 'function' && S.seasonData) {
+    try { autoWeightFromCorrelations(); } catch(e) { console.warn('autoWeight failed:', e); }
+  }
   // If player data is already loaded, run initial calculation
   if (S.hitRows.length && S.pitRows.length) recalculateFWAR();
 }
