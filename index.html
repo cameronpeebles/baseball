@@ -3075,6 +3075,20 @@ function init() {
             if (typeof buildTeamRosterCharts === 'function' && document.getElementById('teamroster-charts')) buildTeamRosterCharts(activeRosterTeam);
           }
         } catch(e) { console.warn('Roster refresh after ROS load failed:', e); }
+        // Refresh the ROS page panel if a team is selected so the Trade
+        // Suggestions card can populate (it returns empty until ROS lookups
+        // are built — without this hook the user has to click between tabs
+        // to trigger a panel rebuild).
+        try {
+          var rosPanel = document.getElementById('ros-addrop-panel');
+          if (rosPanel && rosPanel.style.display !== 'none' && _rosSelectedTeam &&
+              typeof _rosAdBuildPanelHtml === 'function') {
+            // Invalidate cache so the trade card re-scans with the freshly built lookups
+            _rosTradeSugCacheKey = null;
+            _rosTradeSugCache = null;
+            rosPanel.innerHTML = _rosAdBuildPanelHtml();
+          }
+        } catch(e) { console.warn('ROS panel refresh after ROS load failed:', e); }
       }
       loadJSON('fantasypros_hitters.json')
         .then(function(d){ _rosHitData = d || []; hitDone = true; maybeRefresh(); })
@@ -6234,12 +6248,18 @@ function _rosBuildTradeSuggestionsHtml() {
   h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Trade Suggestions &middot; ROS-driven</div>';
   h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">1-for-1 swaps with other teams. <strong>Mutual</strong>: both teams gain by their own need-weighting. <strong>Sneaky</strong>: you gain &ge;1.0, they perceive a positional or league-rating upgrade. Each team\'s &Delta; uses their own current-standings need-weights.</div>';
   h += '</div>';
-  // Refresh button — only shows when there are >3 candidates in either bucket
-  var canRefresh = (results.mutual.length > 3) || (results.sneaky.length > 3);
-  if (canRefresh) {
+  // Refresh button — always render when there's at least 1 candidate.
+  // Disabled when both buckets have ≤3 (nothing to cycle).
+  var totalAvail = results.mutual.length + results.sneaky.length;
+  var canCycle = (results.mutual.length > 3) || (results.sneaky.length > 3);
+  if (totalAvail > 0) {
     var totalShown = mutualVisible.length + sneakyVisible.length;
-    var totalAvail = results.mutual.length + results.sneaky.length;
-    h += '<button onclick="rosTradeSugRefresh()" style="padding:6px 12px;font-size:11px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--muted);cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px;flex-shrink:0" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'var(--card)\'" title="Cycle to next batch of suggestions">';
+    var btnDisabled = !canCycle;
+    var btnStyle = 'padding:6px 12px;font-size:11px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:'+(btnDisabled?'var(--muted)':'var(--text)')+';cursor:'+(btnDisabled?'not-allowed':'pointer')+';white-space:nowrap;display:flex;align-items:center;gap:5px;flex-shrink:0;opacity:'+(btnDisabled?'0.5':'1');
+    var btnTitle = btnDisabled ? 'No more candidates to cycle through' : 'Cycle to next batch of suggestions';
+    var btnAction = btnDisabled ? '' : 'onclick="rosTradeSugRefresh()"';
+    var btnHover  = btnDisabled ? '' : 'onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'var(--card)\'"';
+    h += '<button '+btnAction+' '+btnHover+' style="'+btnStyle+'" title="'+btnTitle+'"'+(btnDisabled?' disabled':'')+'>';
     h += '<span style="font-size:13px">&#x21bb;</span>Next 3 <span style="font-size:9px;color:var(--muted)">('+totalShown+'/'+totalAvail+')</span>';
     h += '</button>';
   }
@@ -9093,13 +9113,17 @@ function getArchetype(fwarPct, posRating, lgRating, rosPct, opts) {
   }
 
   // ── Dev-mode warning when ROS is missing despite player data being present
-  // Surfaces name-matching bugs (e.g. "Jazz Chisholm Jr." not matching FP feed)
-  if (typeof window !== 'undefined' && window._rosHitData && window._rosHitData.length && opts && opts.name && !window._rosArchetypeWarnings) {
-    window._rosArchetypeWarnings = {};
-  }
-  if (typeof window !== 'undefined' && window._rosHitData && window._rosHitData.length && opts && opts.name && window._rosArchetypeWarnings && !window._rosArchetypeWarnings[opts.name]) {
-    window._rosArchetypeWarnings[opts.name] = true;
-    console.warn('[archetype] no ROS% lookup for "' + opts.name + '" — falling back to legacy cascade. Likely name-mismatch in FP feed.');
+  // Surfaces name-matching bugs (e.g. "Jazz Chisholm Jr." not matching FP feed).
+  // Silenced by default — set window._rosArchetypeWarningsEnabled = true to log.
+  // Most "missing" players are fringe/IL guys FP just doesn't project — not bugs.
+  if (typeof window !== 'undefined' && window._rosHitData && window._rosHitData.length && opts && opts.name) {
+    window._rosArchetypeWarnings = window._rosArchetypeWarnings || {};
+    if (!window._rosArchetypeWarnings[opts.name]) {
+      window._rosArchetypeWarnings[opts.name] = true;
+      if (window._rosArchetypeWarningsEnabled) {
+        console.warn('[archetype] no ROS% lookup for "' + opts.name + '" — falling back to legacy cascade. Likely name-mismatch in FP feed.');
+      }
+    }
   }
 
   // ── Legacy 9-rule cascade (no ROS) ─────────────────────────────────────
