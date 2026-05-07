@@ -7199,24 +7199,135 @@ function _rosAdRenderStats() {
   if (!_rosAdHasAny()) { el.style.display='none'; return; }
   el.style.display = 'block';
 
-  // Stats table shows slot-0 add vs slot-0 drop only (primary players).
-  // The Net SGP and per-cat breakdown above already aggregate across slots.
-  var addP   = _rosAdPrimaryAdd();
-  var _dropObj = _rosDropPlayerObjs[0] || (window._rosDropPlayerObj && _rosDropSelected[0] ? window._rosDropPlayerObj : null);
-  if (!_dropObj && _rosDropSelected[0]) {
-    _dropObj = _rosAdRosterList.find(function(r){return r._key===_rosDropSelected[0];});
+  // Build aggregated "virtual" add and drop objects that sum across both slots.
+  // Counting stats sum directly; rate stats (ERA/WHIP/AVG) use IP/AB-weighted
+  // blending to produce a true combined rate for the package.
+  function aggregatePlayers(players, isHit) {
+    var valid = players.filter(function(p){ return !!p; });
+    if (!valid.length) return null;
+    if (valid.length === 1) return valid[0]; // pass-through for single
+    var combined = {
+      _displayName: valid.map(function(p){ return p._displayName||p.name||'?'; }).join(' + '),
+      hs: valid[0].hs || '',
+      _pos: valid.map(function(p){ return p._pos||''; }).filter(Boolean).join(' / '),
+      _team: '',
+      isHit: isHit
+    };
+    if (isHit) {
+      var totAB = 0, totH = 0;
+      valid.forEach(function(p){
+        combined.R   = (combined.R||0)   + (parseFloat(p.R)   || 0);
+        combined.HR  = (combined.HR||0)  + (parseFloat(p.HR)  || 0);
+        combined.RBI = (combined.RBI||0) + (parseFloat(p.RBI) || 0);
+        combined.SB  = (combined.SB||0)  + (parseFloat(p.SB)  || 0);
+        var ab = parseFloat(p.AB) || 0;
+        var h  = (p.H && p.H > 0) ? parseFloat(p.H) : (p.AVG && ab ? parseFloat(p.AVG) * ab : 0);
+        totAB += ab;
+        totH  += h;
+      });
+      combined.AB  = totAB;
+      combined.H   = totH;
+      combined.AVG = totAB > 0 ? totH / totAB : 0;
+    } else {
+      var totIP = 0, totER = 0, totBR = 0;
+      valid.forEach(function(p){
+        combined.W    = (combined.W||0)    + (parseFloat(p.W)    || 0);
+        combined.K    = (combined.K||0)    + (parseFloat(p.K)    || 0);
+        combined.SV   = (combined.SV||0)   + (parseFloat(p.SV)   || 0);
+        combined.SVH3 = (combined.SVH3||0) + (parseFloat(p.SVH3 || p.SV) || 0);
+        var ip = parseFloat(p.IP) || 0;
+        if (ip > 0) {
+          totIP += ip;
+          totER += (parseFloat(p.ERA) || 0) * ip / 9;
+          totBR += (parseFloat(p.WHIP) || 0) * ip;
+        }
+      });
+      combined.IP   = totIP;
+      combined.ERA  = totIP > 0 ? (totER * 9 / totIP) : 0;
+      combined.WHIP = totIP > 0 ? (totBR / totIP) : 0;
+    }
+    return combined;
   }
-  var isHit = addP ? !!addP.isHit : (_dropObj ? !!_dropObj.isHit : true);
+
+  // Same aggregation for current-season stats (used to compute Curr SGP / Curr Rtg)
+  function aggregateCurrStats(csList, isHit) {
+    var valid = csList.filter(function(c){ return !!c; });
+    if (!valid.length) return null;
+    if (valid.length === 1) return valid[0];
+    var combined = { pos: valid[0].pos || '' };
+    if (isHit) {
+      var totAB = 0, totH = 0;
+      valid.forEach(function(c){
+        combined.R   = (combined.R||0)   + (parseFloat(c.R)   || 0);
+        combined.HR  = (combined.HR||0)  + (parseFloat(c.HR)  || 0);
+        combined.RBI = (combined.RBI||0) + (parseFloat(c.RBI) || 0);
+        combined.SB  = (combined.SB||0)  + (parseFloat(c.SB)  || 0);
+        var ab = parseFloat(c.AB) || 0;
+        var h  = (c.H && c.H > 0) ? parseFloat(c.H) : (c.AVG && ab ? parseFloat(c.AVG) * ab : 0);
+        totAB += ab;
+        totH  += h;
+      });
+      combined.AB  = totAB;
+      combined.AVG = totAB > 0 ? totH / totAB : 0;
+    } else {
+      var totIP = 0, totER = 0, totBR = 0;
+      valid.forEach(function(c){
+        combined.W    = (combined.W||0)    + (parseFloat(c.W)    || 0);
+        combined.K    = (combined.K||0)    + (parseFloat(c.K)    || 0);
+        combined.SV   = (combined.SV||0)   + (parseFloat(c.SV)   || 0);
+        combined.SVH3 = (combined.SVH3||0) + (parseFloat(c.SVH3 || c.SV) || 0);
+        var ip = parseFloat(c.IP) || 0;
+        if (ip > 0) {
+          totIP += ip;
+          totER += (parseFloat(c.ERA) || 0) * ip / 9;
+          totBR += (parseFloat(c.WHIP) || 0) * ip;
+        }
+      });
+      combined.IP   = totIP;
+      combined.ERA  = totIP > 0 ? (totER * 9 / totIP) : 0;
+      combined.WHIP = totIP > 0 ? (totBR / totIP) : 0;
+    }
+    return combined;
+  }
+
+  // Determine isHit early — needed for aggregation
+  var anyAddForHit = _rosAdSelected.find(function(p){ return !!p; });
+  var anyDropForHit = _rosDropPlayerObjs.find(function(p){ return !!p; });
+  var isHit = anyAddForHit ? !!anyAddForHit.isHit : (anyDropForHit ? !!anyDropForHit.isHit : true);
+
+  // Aggregate Add side (FP projection objects from _rosAdSelected)
+  var addP = aggregatePlayers(_rosAdSelected, isHit);
+
+  // Aggregate Drop side (use roster row objects which have _fp for projections)
+  var dropPlayers = _rosDropPlayerObjs.filter(function(p){ return !!p; });
+  if (dropPlayers.length === 0 && _rosDropSelected.length) {
+    // Fall back to looking up by key
+    dropPlayers = _rosDropSelected.map(function(k){
+      return _rosAdRosterList.find(function(r){ return r._key===k; });
+    }).filter(Boolean);
+  }
+  var dropFpObjs = dropPlayers.map(function(r){ return r._fp; }).filter(Boolean);
+  var dropP = aggregatePlayers(dropFpObjs, isHit);
+  // For display purposes (header)
+  var _dropObj = dropPlayers[0] || null;
+
   var D2 = (typeof SGP_D!=='undefined')?SGP_D:{r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
-  var dropP = _dropObj ? _dropObj._fp : null;
-  var addName  = addP  ? (addP._displayName||'Add')  : '—';
-  var dropName = _dropObj ? (_dropObj._displayName||'Drop') : '—';
+  var addName  = addP  ? (_rosAdSelected.length > 1 ? (_rosAdSelected[0]._displayName + ' + 1 other') : (addP._displayName||'Add'))  : '—';
+  var dropName = dropPlayers.length > 1 ? (dropPlayers[0]._displayName + ' + 1 other') : (dropPlayers.length === 1 ? (dropPlayers[0]._displayName||'Drop') : '—');
   var addHs  = addP  ? (addP.hs||'') : '';
-  var dropHs = _dropObj ? (_dropObj.hs||'') : '';
+  var dropHs = dropPlayers.length > 0 ? (dropPlayers[0].hs||'') : '';
 
   function normN(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
-  var addCurrStats  = addP  ? ((window._rosCurrentStats||{})[normN(addP._displayName||'')] || null) : null;
-  var dropCurrStats = _rosDropSelected[0] ? (window._rosCurrentStats||{})[_rosDropSelected[0]] : null;
+  // Aggregate current stats across all slot-positioned add players (looked up from FP names)
+  var addCurrList = _rosAdSelected.filter(function(p){return !!p;}).map(function(p){
+    return (window._rosCurrentStats||{})[normN(p._displayName||'')] || null;
+  });
+  var addCurrStats  = aggregateCurrStats(addCurrList, isHit);
+  // Aggregate current stats for drop side from selected keys
+  var dropCurrList  = _rosDropSelected.filter(function(k){return !!k;}).map(function(k){
+    return (window._rosCurrentStats||{})[k] || null;
+  });
+  var dropCurrStats = aggregateCurrStats(dropCurrList, isHit);
 
   var cats = isHit
     ? [{k:'R',  fmt:function(v){return Math.round(v);},            sgpFn:function(v){return +(v/D2.r).toFixed(2);},  better:'high'},
