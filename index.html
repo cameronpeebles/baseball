@@ -651,11 +651,12 @@ td.neg { color: #c0392b; font-weight: 500; }
   <div class="page" id="page-ros">
     <div class="page-title">ROS Projections</div>
     <div class="page-subtitle">FantasyPros consensus rest-of-season projections for all players.</div>
-    <div class="trade-tabs" id="ros-tabs">
-      <button class="trade-tab active" onclick="showROSTab('hitters',this)">Hitters</button>
-      <button class="trade-tab" onclick="showROSTab('pitchers',this)">Pitchers</button>
-    </div>
     <div id="ros-team-dropdown" style="margin-bottom:10px"></div>
+    <div id="ros-team-need-top" style="margin-bottom:14px"></div>
+    <div class="trade-tabs" id="ros-tabs">
+      <button class="trade-tab active" onclick="showROSTab('waivers',this)">Waiver Wire</button>
+      <button class="trade-tab" onclick="showROSTab('trades',this)">Trades</button>
+    </div>
     <div id="ros-addrop-panel" style="display:none;margin-bottom:14px;overflow:visible"></div>
     <div id="ros-body"><div class="loading">Loading...</div></div>
   </div>
@@ -3087,6 +3088,11 @@ function init() {
             _rosTradeSugCacheKey = null;
             _rosTradeSugCache = null;
             rosPanel.innerHTML = _rosAdBuildPanelHtml();
+            // Also refresh the always-visible Team Need card at the top
+            var tnTopEl = document.getElementById('ros-team-need-top');
+            if (tnTopEl && typeof _rosBuildTeamNeedHtml === 'function') {
+              tnTopEl.innerHTML = _rosBuildTeamNeedHtml();
+            }
           }
         } catch(e) { console.warn('ROS panel refresh after ROS load failed:', e); }
       }
@@ -5329,7 +5335,18 @@ function gvROS(cells, key, idx) {
 }
 var rosRendered = false;
 var _rosHitData = null, _rosPitData = null;
-var _rosCurrentTab = 'hitters';
+var _rosCurrentTab = 'waivers'; // 'waivers' or 'trades'
+
+// Derived "isHit" from current simulator selections. When nothing's selected,
+// returns null (caller should show both). When slot 0 is filled on either side,
+// returns true/false based on that player's type.
+function _rosDerivedIsHit() {
+  var p0 = _rosAdSelected && _rosAdSelected[0];
+  if (p0) return !!p0.isHit;
+  var d0 = _rosDropPlayerObjs && _rosDropPlayerObjs[0];
+  if (d0) return !!d0.isHit;
+  return null; // no constraint — show all
+}
 
 // Playing-time filter — players below thresholds (e.g. minor-league stashes) are
 // excluded from positional aggregation, suggested moves, and roster strength views.
@@ -5361,7 +5378,7 @@ window.showROSTab = function(tab, btn) {
   _rosCurrentTab = tab;
   _rosPosFilter = 'ALL';
   _rosRostFilter = 'ALL';
-  // Reset Add/Drop and Suggested Moves state since hitters and pitchers are disjoint pools
+  // Reset Add/Drop and Suggested Moves state when tabs change
   _rosAdSelected = []; _rosDropPlayerObjs = [];
   _rosDropSelected = [];
   _rosAdPosPill = 'ALL';
@@ -5373,12 +5390,24 @@ window.showROSTab = function(tab, btn) {
   _rosAdFAList = [];
   _rosAdFAFiltered = [];
   _rosAdRostFiltered = [];
+  // Invalidate trade-suggestion cache so the new tab re-scans
+  if (typeof _rosTradeSugCacheKey !== 'undefined') _rosTradeSugCacheKey = null;
   document.querySelectorAll('#ros-tabs .trade-tab').forEach(function(b){ b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
-  // Rebuild the Add/Drop + Suggested Moves panel for the new tab
+  // Render Team Need card to its always-visible spot above the tabs
+  var tnTop = document.getElementById('ros-team-need-top');
+  if (tnTop && _rosSelectedTeam) tnTop.innerHTML = _rosBuildTeamNeedHtml();
+  // Show/hide the Workshop simulator panel based on tab.
+  // Waivers tab → simulator visible. Trades tab → simulator hidden (Trade Suggestions card has its own).
   var panelDiv = document.getElementById('ros-addrop-panel');
-  if (panelDiv && panelDiv.style.display !== 'none') {
-    panelDiv.innerHTML = _rosAdBuildPanelHtml();
+  if (panelDiv) {
+    if (tab === 'waivers') {
+      panelDiv.style.display = 'block';
+      panelDiv.innerHTML = _rosAdBuildPanelHtml();
+    } else {
+      panelDiv.style.display = 'block';
+      panelDiv.innerHTML = _rosAdBuildPanelHtml(); // includes Trade Suggestions card
+    }
   }
   buildROSTable();
 };
@@ -5395,6 +5424,11 @@ window.rosTeamChanged = function(sel) {
   _rosAdFAList = [];
   _rosAdFAFiltered = [];
   _rosAdRostFiltered = [];
+  // Invalidate trade-suggestion cache for new team
+  if (typeof _rosTradeSugCacheKey !== 'undefined') _rosTradeSugCacheKey = null;
+  // Render Team Need card to its always-visible spot above the tabs
+  var tnTop = document.getElementById('ros-team-need-top');
+  if (tnTop && _rosSelectedTeam) tnTop.innerHTML = _rosBuildTeamNeedHtml();
   var panelDiv = document.getElementById('ros-addrop-panel');
   if (panelDiv && panelDiv.style.display !== 'none') {
     panelDiv.innerHTML = _rosAdBuildPanelHtml();
@@ -5487,6 +5521,9 @@ function renderROSPage() {
       panelDiv.style.display = 'block';
       panelDiv.innerHTML = _rosAdBuildPanelHtml();
     }
+    // Render Team Need card to its always-visible spot above the tabs
+    var tnTop = document.getElementById('ros-team-need-top');
+    if (tnTop && _rosSelectedTeam) tnTop.innerHTML = _rosBuildTeamNeedHtml();
     buildROSTable();
   }
 
@@ -5685,10 +5722,8 @@ function _rosBuildSuggestedMovesHtml() {
   h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Top swaps · ranked by '+((_rosSugSortCat === 'TOTAL') ? 'Net SGP' : (_rosSugSortCat + ' Net'))+'</div>';
   h += '</div>';
 
-  // Filter bar
-  var posPills = (_rosCurrentTab === 'hitters')
-    ? ['ALL','C','1B','2B','3B','SS','OF','DH']
-    : ['ALL','SP','RP'];
+  // Filter bar — show all positions (combined hitters + pitchers)
+  var posPills = ['ALL','C','1B','2B','3B','SS','OF','DH','SP','RP'];
   h += '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px;padding-bottom:11px;border-bottom:0.5px solid var(--border)">';
   h += '<span style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-right:4px">Position</span>';
   posPills.forEach(function(pos) {
@@ -5728,8 +5763,8 @@ function _rosBuildSuggestedMovesHtml() {
   h += '<span>Protect top performers</span></label>';
   h += '</div>';
 
-  // Sort by category pill row
-  var sortCats = (_rosCurrentTab === 'hitters') ? BAT_CATS : PIT_CATS;
+  // Sort by category pill row — combined hitting + pitching cats
+  var sortCats = BAT_CATS.concat(PIT_CATS);
   h += '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px;padding-bottom:11px;border-bottom:0.5px solid var(--border)">';
   h += '<span style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-right:4px">Sort by</span>';
   function sortPillStyle(active, tier) {
@@ -6084,11 +6119,8 @@ function _rosTradeSugScanPairs(myTeamId) {
 
   ['hit','pit'].forEach(function(grp){
     var isHit = (grp === 'hit');
-    // Only scan the group matching the currently active tab — hitting tab
-    // shouldn't surface pitcher trades and vice versa.
-    var activeTab = (typeof _rosCurrentTab !== 'undefined') ? _rosCurrentTab : 'hitters';
-    if (activeTab === 'hitters' && !isHit) return;
-    if (activeTab === 'pitchers' && isHit) return;
+    // Always scan both hitter and pitcher groups (the Trades tab now shows both
+    // in separate sub-sections rather than splitting by tab).
     var myRoster  = _rosTradeSugTeamRoster(myTeamId, isHit);
     if (debug) console.log('[TradeSug] grp='+grp+' myRoster size:', myRoster.length, myRoster.slice(0,3));
     if (!myRoster.length) return;
@@ -6178,9 +6210,8 @@ function _rosTradeSugScanPairs(myTeamId) {
     });
   });
 
-  // Sort by my ΔSGP desc. Return ALL valid candidates from each bucket so the
-  // refresh button can cycle through them. De-dup by (give-key, get-key) and
-  // give Mutual priority over Sneaky for any pair that qualifies for both.
+  // Sort by my ΔSGP desc. Return ALL valid candidates split by group so
+  // the builder can sub-section them. De-dup by (give-key, get-key).
   allCandidates.sort(function(a,b){ return b.myDelta - a.myDelta; });
   if (debug) {
     console.log('[TradeSug] total candidates passing filter:', allCandidates.length);
@@ -6188,123 +6219,150 @@ function _rosTradeSugScanPairs(myTeamId) {
     nm.sort(function(a,b){ return b.myD - a.myD; });
     console.log('[TradeSug] top 10 NEAR MISSES (myD≥0.3, did not pass filter):');
     console.table(nm.slice(0,10));
-    console.log('[TradeSug] total near-miss count:', nm.length);
   }
-  var mutual = [], sneaky = [];
+  var hitMutual = [], hitSneaky = [], pitMutual = [], pitSneaky = [];
   var seen = {};
   allCandidates.forEach(function(c){
     var sig = c.give.key + '|' + c.get.key;
     if (seen[sig]) return;
-    if (c.isMutual)      { mutual.push(c); seen[sig] = true; }
-    else if (c.isSneaky) { sneaky.push(c); seen[sig] = true; }
+    if (c.isHit) {
+      if (c.isMutual)      { hitMutual.push(c); seen[sig] = true; }
+      else if (c.isSneaky) { hitSneaky.push(c); seen[sig] = true; }
+    } else {
+      if (c.isMutual)      { pitMutual.push(c); seen[sig] = true; }
+      else if (c.isSneaky) { pitSneaky.push(c); seen[sig] = true; }
+    }
   });
-  return { mutual: mutual, sneaky: sneaky };
+  return {
+    mutual: hitMutual.concat(pitMutual),    // back-compat (combined)
+    sneaky: hitSneaky.concat(pitSneaky),    // back-compat
+    hitMutual: hitMutual, hitSneaky: hitSneaky,
+    pitMutual: pitMutual, pitSneaky: pitSneaky
+  };
 }
 
-// Cycling state — refresh button advances through batches of 3
-var _rosTradeSugMutualCursor = 0;
-var _rosTradeSugSneakyCursor = 0;
+// Cycling state — per-group cursors so hit and pit sub-sections cycle independently
+var _rosTradeSugCursors = { hitMutual: 0, hitSneaky: 0, pitMutual: 0, pitSneaky: 0 };
 // Cache the last scan so refresh doesn't re-run the engine
 var _rosTradeSugCache = null;
 var _rosTradeSugCacheKey = null;
 
-window.rosTradeSugRefresh = function() {
-  var key = _rosTradeSugCacheKey;
+window.rosTradeSugRefresh = function(group) {
   if (!_rosTradeSugCache) return;
-  var mutCount = _rosTradeSugCache.mutual.length;
-  var sneCount = _rosTradeSugCache.sneaky.length;
-  // Advance both cursors by 3, wrap when past end
-  if (mutCount > 3) _rosTradeSugMutualCursor = (_rosTradeSugMutualCursor + 3) % mutCount;
-  if (sneCount > 3) _rosTradeSugSneakyCursor = (_rosTradeSugSneakyCursor + 3) % sneCount;
+  // Advance the two cursors for this group (hit or pit) by 3, wrap when past end.
+  var muKey = group + 'Mutual';
+  var snKey = group + 'Sneaky';
+  var muCount = (_rosTradeSugCache[muKey] || []).length;
+  var snCount = (_rosTradeSugCache[snKey] || []).length;
+  if (muCount > 3) _rosTradeSugCursors[muKey] = ((_rosTradeSugCursors[muKey] || 0) + 3) % muCount;
+  if (snCount > 3) _rosTradeSugCursors[snKey] = ((_rosTradeSugCursors[snKey] || 0) + 3) % snCount;
   // Re-render just this card
   var el = document.getElementById('ros-trade-sug-card');
   if (el) el.outerHTML = _rosBuildTradeSuggestionsHtml();
 };
+
+// Slice into a batch of 3 starting at cursor, wrapping past the end.
+function _rosTradeSugBatchOf3(arr, cursor) {
+  if (!arr || !arr.length) return [];
+  if (arr.length <= 3) return arr;
+  var out = [];
+  for (var i = 0; i < 3 && i < arr.length; i++) {
+    out.push(arr[(cursor + i) % arr.length]);
+  }
+  return out;
+}
+
+// Build a single sub-section (hit or pit) with mutual + sneaky columns
+function _rosTradeSugSection(group, results) {
+  var label = (group === 'hit') ? 'Hitter swaps' : 'Pitcher swaps';
+  var muList  = results[group + 'Mutual'] || [];
+  var snList  = results[group + 'Sneaky'] || [];
+  var muCur   = _rosTradeSugCursors[group + 'Mutual'] || 0;
+  var snCur   = _rosTradeSugCursors[group + 'Sneaky'] || 0;
+  var muVis   = _rosTradeSugBatchOf3(muList, muCur);
+  var snVis   = _rosTradeSugBatchOf3(snList, snCur);
+
+  var h = '<div style="margin-bottom:14px">';
+
+  // Sub-section header with refresh button
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:6px;border-bottom:0.5px solid var(--border)">';
+  h += '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text)">'+label+'</div>';
+  // Refresh button — enabled if either bucket has >3 candidates
+  var totalAvail = muList.length + snList.length;
+  var canCycle = (muList.length > 3) || (snList.length > 3);
+  if (totalAvail > 0) {
+    var totalShown = muVis.length + snVis.length;
+    var btnDisabled = !canCycle;
+    var btnStyle = 'padding:5px 10px;font-size:10px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:'+(btnDisabled?'var(--muted)':'var(--text)')+';cursor:'+(btnDisabled?'not-allowed':'pointer')+';white-space:nowrap;display:flex;align-items:center;gap:4px;opacity:'+(btnDisabled?'0.5':'1');
+    var btnTitle = btnDisabled ? 'No more candidates to cycle' : 'Cycle to next batch';
+    var btnAction = btnDisabled ? '' : 'onclick="rosTradeSugRefresh(\''+group+'\')"';
+    h += '<button '+btnAction+' style="'+btnStyle+'" title="'+btnTitle+'"'+(btnDisabled?' disabled':'')+'>';
+    h += '<span style="font-size:11px">&#x21bb;</span>Next 3 <span style="font-size:9px;color:var(--muted)">('+totalShown+'/'+totalAvail+')</span>';
+    h += '</button>';
+  } else {
+    h += '<span style="font-size:10px;color:var(--muted)">No candidates</span>';
+  }
+  h += '</div>';
+
+  // Two-column layout (mutual / sneaky)
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
+
+  // Mutual
+  h += '<div>';
+  var mutLabel = 'Mutual &middot; both gain';
+  if (muList.length > 3) mutLabel += ' &middot; '+muList.length+' total';
+  h += '<div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#1e6b3a;margin-bottom:6px;padding:4px 8px;background:rgba(29,158,117,0.08);border-left:3px solid #1e6b3a;border-radius:0 4px 4px 0">'+mutLabel+'</div>';
+  if (!muVis.length) {
+    h += '<div style="font-size:11px;color:var(--muted);padding:10px 10px;text-align:center;background:var(--bg);border-radius:6px">No clear mutually-beneficial 1-for-1 '+(group==='hit'?'hitter':'pitcher')+' trades right now.</div>';
+  } else {
+    muVis.forEach(function(c, i){ h += _rosTradeSugRow(c, i, 'mutual'); });
+  }
+  h += '</div>';
+
+  // Sneaky
+  h += '<div>';
+  var sneLabel = 'Sneaky &middot; perception hook';
+  if (snList.length > 3) sneLabel += ' &middot; '+snList.length+' total';
+  h += '<div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#854f0b;margin-bottom:6px;padding:4px 8px;background:rgba(186,117,23,0.08);border-left:3px solid #c8a96e;border-radius:0 4px 4px 0">'+sneLabel+'</div>';
+  if (!snVis.length) {
+    h += '<div style="font-size:11px;color:var(--muted);padding:10px 10px;text-align:center;background:var(--bg);border-radius:6px">No sneaky-trade candidates for '+(group==='hit'?'hitters':'pitchers')+'.</div>';
+  } else {
+    snVis.forEach(function(c, i){ h += _rosTradeSugRow(c, i, 'sneaky'); });
+  }
+  h += '</div>';
+
+  h += '</div>'; // grid
+  h += '</div>'; // section
+  return h;
+}
 
 // ── Trade Suggestions card markup ─────────────────────────────────────────
 function _rosBuildTradeSuggestionsHtml() {
   if (!_rosSelectedTeam) return '';
   if (!window._playerRosCatHit || !window._playerRosCatPit) return '';
 
-  var teamName = (S.teamInfo[_rosSelectedTeam]||{}).shortName || (S.teamInfo[_rosSelectedTeam]||{}).name || '';
-
-  // Cache scan results: re-run only when team or tab changes, not on refresh clicks.
-  var activeTab = (typeof _rosCurrentTab !== 'undefined') ? _rosCurrentTab : 'hitters';
-  var cacheKey = _rosSelectedTeam + '|' + activeTab;
+  // Cache scan results: re-run only when team changes (no longer per-tab since
+  // the scan now always returns both groups).
+  var cacheKey = _rosSelectedTeam;
   if (_rosTradeSugCacheKey !== cacheKey) {
     _rosTradeSugCache = _rosTradeSugScanPairs(_rosSelectedTeam);
     _rosTradeSugCacheKey = cacheKey;
-    _rosTradeSugMutualCursor = 0;
-    _rosTradeSugSneakyCursor = 0;
+    _rosTradeSugCursors = { hitMutual: 0, hitSneaky: 0, pitMutual: 0, pitSneaky: 0 };
   }
   var results = _rosTradeSugCache;
 
-  // Slice into the visible batch of 3, wrapping past the end.
-  function batchOf3(arr, cursor) {
-    if (!arr.length) return [];
-    if (arr.length <= 3) return arr;
-    var out = [];
-    for (var i = 0; i < 3 && i < arr.length; i++) {
-      out.push(arr[(cursor + i) % arr.length]);
-    }
-    return out;
-  }
-  var mutualVisible = batchOf3(results.mutual, _rosTradeSugMutualCursor);
-  var sneakyVisible = batchOf3(results.sneaky, _rosTradeSugSneakyCursor);
-
   var h = '<div id="ros-trade-sug-card" class="card" style="padding:14px 16px;margin-bottom:14px;overflow:visible">';
 
-  // Header (with refresh button)
-  h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:12px">';
-  h += '<div>';
+  // Header
+  h += '<div style="margin-bottom:14px">';
   h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Trade Suggestions &middot; ROS-driven</div>';
   h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">1-for-1 swaps with other teams. <strong>Mutual</strong>: both teams gain by their own need-weighting. <strong>Sneaky</strong>: you gain &ge;1.0, they perceive a positional or league-rating upgrade. Each team\'s &Delta; uses their own current-standings need-weights.</div>';
   h += '</div>';
-  // Refresh button — always render when there's at least 1 candidate.
-  // Disabled when both buckets have ≤3 (nothing to cycle).
-  var totalAvail = results.mutual.length + results.sneaky.length;
-  var canCycle = (results.mutual.length > 3) || (results.sneaky.length > 3);
-  if (totalAvail > 0) {
-    var totalShown = mutualVisible.length + sneakyVisible.length;
-    var btnDisabled = !canCycle;
-    var btnStyle = 'padding:6px 12px;font-size:11px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:'+(btnDisabled?'var(--muted)':'var(--text)')+';cursor:'+(btnDisabled?'not-allowed':'pointer')+';white-space:nowrap;display:flex;align-items:center;gap:5px;flex-shrink:0;opacity:'+(btnDisabled?'0.5':'1');
-    var btnTitle = btnDisabled ? 'No more candidates to cycle through' : 'Cycle to next batch of suggestions';
-    var btnAction = btnDisabled ? '' : 'onclick="rosTradeSugRefresh()"';
-    var btnHover  = btnDisabled ? '' : 'onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'var(--card)\'"';
-    h += '<button '+btnAction+' '+btnHover+' style="'+btnStyle+'" title="'+btnTitle+'"'+(btnDisabled?' disabled':'')+'>';
-    h += '<span style="font-size:13px">&#x21bb;</span>Next 3 <span style="font-size:9px;color:var(--muted)">('+totalShown+'/'+totalAvail+')</span>';
-    h += '</button>';
-  }
-  h += '</div>';
 
-  // Two-column layout
-  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
-
-  // ── MUTUAL column ──
-  h += '<div>';
-  var mutLabel = 'Mutual &middot; both gain';
-  if (results.mutual.length > 3) mutLabel += ' &middot; '+results.mutual.length+' total';
-  h += '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#1e6b3a;margin-bottom:6px;padding:4px 8px;background:rgba(29,158,117,0.08);border-left:3px solid #1e6b3a;border-radius:0 4px 4px 0">'+mutLabel+'</div>';
-  if (!mutualVisible.length) {
-    h += '<div style="font-size:11px;color:var(--muted);padding:14px 10px;text-align:center;background:var(--bg);border-radius:6px">No clear mutually-beneficial 1-for-1 trades found right now. Try the simulator below to test specific pairs.</div>';
-  } else {
-    mutualVisible.forEach(function(c, i){ h += _rosTradeSugRow(c, i, 'mutual'); });
-  }
-  h += '</div>';
-
-  // ── SNEAKY column ──
-  h += '<div>';
-  var sneLabel = 'Sneaky &middot; positional perception hook';
-  if (results.sneaky.length > 3) sneLabel += ' &middot; '+results.sneaky.length+' total';
-  h += '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#854f0b;margin-bottom:6px;padding:4px 8px;background:rgba(186,117,23,0.08);border-left:3px solid #c8a96e;border-radius:0 4px 4px 0">'+sneLabel+'</div>';
-  if (!sneakyVisible.length) {
-    h += '<div style="font-size:11px;color:var(--muted);padding:14px 10px;text-align:center;background:var(--bg);border-radius:6px">No sneaky-trade candidates right now. Sneaky requires you gain &ge;1.0 with their pos or Lg rating up &ge;3 while their need-weighted SGP stays roughly neutral.</div>';
-  } else {
-    sneakyVisible.forEach(function(c, i){ h += _rosTradeSugRow(c, i, 'sneaky'); });
-  }
-  h += '</div>';
-
-  h += '</div>'; // grid
+  // Hitter sub-section
+  h += _rosTradeSugSection('hit', results);
+  // Pitcher sub-section
+  h += _rosTradeSugSection('pit', results);
 
   h += '</div>'; // card
   return h;
@@ -6739,8 +6797,18 @@ function _rosBuildTeamNeedHtml(dashMode) {
 }
 
 function _rosAdBuildPanelHtml() {
-  var h = _rosBuildTeamNeedHtml();
+  // Team Need card now lives in #ros-team-need-top (rendered separately).
+  // Don't include it here — kept always-visible above the tabs.
+  var h = '';
 
+  // Branch by tab
+  if (_rosCurrentTab === 'trades') {
+    // Trades tab — only the ROS-driven Trade Suggestions card (no simulator)
+    h += _rosBuildTradeSuggestionsHtml();
+    return h;
+  }
+
+  // Waivers tab — Trade & Drop Workshop with simulator
   // ── Combined "Trade & Drop Workshop" card ───────────────────────────────
   // Suggestions list (left, 340px) + Add/Drop Simulator (right, fluid).
   h += '<div class="card" style="padding:14px 16px;margin-bottom:14px;overflow:visible">';
@@ -6824,10 +6892,9 @@ function _rosAdBuildPanelHtml() {
   // RIGHT: Add (All Players)
   h += '<div>';
   h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px">Add Player</div>';
-  // Position pills (filtered by current tab)
-  var addPills = (_rosCurrentTab === 'hitters')
-    ? ['ALL','C','1B','2B','3B','SS','OF','DH']
-    : ['ALL','SP','RP'];
+  // Position pills — all 10 always shown. Selecting a hitter pos auto-filters
+  // to hitters; selecting a pitcher pos auto-filters to pitchers (via search).
+  var addPills = ['ALL','C','1B','2B','3B','SS','OF','DH','SP','RP'];
   h += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">';
   addPills.forEach(function(pos){
     var active = (_rosAdPosPill===pos) ? 'active' : '';
@@ -6884,8 +6951,7 @@ function _rosAdBuildPanelHtml() {
   h += '</div>'; // end master/detail grid
   h += '</div>'; // end combined card
 
-  // ── Trade Suggestions · ROS-driven (new card below Workshop) ─────────────
-  h += _rosBuildTradeSuggestionsHtml();
+  // (Trade Suggestions card lives on the Trades tab now — not here)
 
   return h;
 }
@@ -7597,24 +7663,20 @@ function _rosAdListHtml(players, side, slot) {
 var _rosAdFAList = [], _rosAdRosterList = [], _rosAdFAFiltered = [], _rosAdRostFiltered = [];
 
 function _rosAdBuildLists() {
-  var isHit = _rosCurrentTab === 'hitters';
   var curStats = window._rosCurrentStats || {};
   var rosterLookup = window._rosRosterLookup || {};
-
-  // FA list from _rosHitData / _rosPitData
-  var fpData = isHit ? (_rosHitData||[]) : (_rosPitData||[]);
+  var derivedIsHit = _rosDerivedIsHit(); // null = show both
+  var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
+  var mults = window._rosCatMultipliers || {};
+  var ts = (window._rosTeamStats||{})[_rosSelectedTeam] || {};
   function normFP(n){ return (n||'').replace(/\s*\([^)]*\).*$/, '').trim().toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
-  _rosAdFAList = fpData.filter(function(p){
-    return true; // All players - FA and rostered
-  }).map(function(p){
-    var key = normFP(p.name||'');
+
+  // Helper to enrich an FP entry with display fields and team-context SGP
+  function enrich(p, isHit) {
     var posFromName = '';
     var nm = (p.name||'').match(/\(([^)]+)\)/);
     if(nm){var pts=nm[1].split(' - ');if(pts.length>=2)posFromName=pts.slice(1).join(',');}
-    var teamSGP = 0; // compute approximate
-    var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
-    var mults = window._rosCatMultipliers || {};
-    var ts = (window._rosTeamStats||{})[_rosSelectedTeam] || {};
+    var teamSGP = 0;
     if(isHit){
       teamSGP += ((p.R||0)/D2.r)*(mults.R||1)+((p.HR||0)/D2.hr)*(mults.HR||1)+((p.RBI||0)/D2.rbi)*(mults.RBI||1)+((p.SB||0)/D2.sb)*(mults.SB||1);
       var rH=p.H>0?p.H:(p.AVG&&p.AB?p.AVG*p.AB:null);
@@ -7631,32 +7693,40 @@ function _rosAdBuildLists() {
     p._teamSGP = teamSGP;
     p.isHit = isHit;
     return p;
-  }).sort(function(a,b){return b._teamSGP-a._teamSGP;});
+  }
 
-  // Build fp lookup from ALL fp data (including rostered players)
+  // Build a combined FA list of hitters AND pitchers, optionally filtered by derivedIsHit
+  var hitFAList = (_rosHitData||[]).map(function(p){ return enrich(p, true); });
+  var pitFAList = (_rosPitData||[]).map(function(p){ return enrich(p, false); });
+  var combined = [];
+  if (derivedIsHit === null || derivedIsHit === true)  combined = combined.concat(hitFAList);
+  if (derivedIsHit === null || derivedIsHit === false) combined = combined.concat(pitFAList);
+  _rosAdFAList = combined.sort(function(a,b){return b._teamSGP-a._teamSGP;});
+
+  // Build fp lookup from BOTH hit and pit data so combined roster can find _fp
   var fpLookup2 = {};
-  fpData.forEach(function(p){
-    var k2 = normFP(p.name||'');
-    fpLookup2[k2] = p;
-  });
+  (_rosHitData||[]).forEach(function(p){ fpLookup2[normFP(p.name||'')] = p; });
+  (_rosPitData||[]).forEach(function(p){ fpLookup2[normFP(p.name||'')] = p; });
 
-  // Roster list from _rosCurrentStats filtered to selected team
+  // Roster list — combined hitters + pitchers from selected team, optionally
+  // filtered by derivedIsHit
   _rosAdRosterList = [];
   var selTeamName = _rosSelectedTeam ? ((S.teamInfo[_rosSelectedTeam]||{}).shortName||(S.teamInfo[_rosSelectedTeam]||{}).name||'') : '';
   Object.keys(curStats).forEach(function(key) {
     var cs = curStats[key];
     if (!cs) return;
-    if (cs.isHit !== isHit) return;
+    var rIsHit = !!cs.isHit;
+    if (derivedIsHit !== null && derivedIsHit !== rIsHit) return;
     var ri = rosterLookup[key] || {};
     if (!ri.teamId || ri.teamId !== _rosSelectedTeam) return;
-    var currSGP = _rosCurrSGP(cs, isHit);
+    var currSGP = _rosCurrSGP(cs, rIsHit);
     var fpP2 = fpLookup2[key] || null;
-    var rosSGP2 = fpP2 ? _rosAdPlayerSGP(fpP2, isHit) : null;
+    var rosSGP2 = fpP2 ? _rosAdPlayerSGP(fpP2, rIsHit) : null;
     if (fpP2) cs._fp = fpP2; // store for stat table
     _rosAdRosterList.push({
       _key: key, _displayName: cs.name||key, _pos: cs.pos||'—',
       _team: selTeamName, _currSGP: currSGP, _rosSGP: rosSGP2,
-      hs: cs.hs||'', isHit: isHit, _cs: cs, _fp: fpP2
+      hs: cs.hs||'', isHit: rIsHit, _cs: cs, _fp: fpP2
     });
   });
   _rosAdRosterList.sort(function(a,b){ return (b._rosSGP||b._currSGP||0)-(a._rosSGP||a._currSGP||0); });
@@ -8042,8 +8112,17 @@ function buildROSTable() {
   var wrap = document.getElementById('ros-table-wrap');
   if (!wrap) return;
 
-  var isHit = (_rosCurrentTab === 'hitters');
-  var players = isHit ? (_rosHitData||[]) : (_rosPitData||[]);
+  // On Trades tab, hide the ROS Projections table — it's a Waivers feature.
+  // (Commit 2 will reorganize this table to show hitters + pitchers stacked.)
+  if (_rosCurrentTab === 'trades') {
+    wrap.innerHTML = '';
+    return;
+  }
+
+  // Default to hitter projections on Waivers tab. Pitcher table will be added
+  // in Commit 2 alongside this one.
+  var isHit = true;
+  var players = _rosHitData||[];
 
   if (!players.length) {
     wrap.innerHTML = '<div class="error-msg">No projection data. Run the GitHub Action to fetch FantasyPros data.</div>';
