@@ -13365,7 +13365,8 @@ function assembleDashboard(teamId, el) {
       html += '<div class="dash-schedule-row">';
       html += '<span style="font-size:11px;color:var(--muted);width:28px">P' + m.period + '</span>';
       html += '<span class="dash-opp">' + (isAway ? '@ ' : 'vs ') + opp + '</span>';
-      html += '<span style="font-size:12px;color:var(--muted)">' + myPts.toFixed(1) + '–' + oppPts.toFixed(1) + '</span>';
+      var ptsStr = (myPts != null && oppPts != null) ? (myPts.toFixed(1) + '–' + oppPts.toFixed(1)) : '—';
+      html += '<span style="font-size:12px;color:var(--muted)">' + ptsStr + '</span>';
       html += '<span class="dash-pred ' + predCls + '">' + predLbl + '</span>';
       html += '</div>';
     });
