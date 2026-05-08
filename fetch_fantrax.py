@@ -1431,3 +1431,122 @@ fp_pitchers = fetch_fantasypros(
 )
 print(f"  {len(fp_pitchers)} pitchers fetched")
 save("fantasypros_pitchers.json", fp_pitchers)
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# MLB Probable Pitchers (today + next 7 days)
+#
+# Pulls today's probable starting pitchers and the next-7-day team schedule
+# from statsapi.mlb.com (free, no auth required). Output drives the Lineup
+# Organizer's matchup adjustment: hitters get bucketed by opp SP quality,
+# SPs get bucketed by opposing lineup strength.
+#
+# Output: data/probables.json
+#   {
+#     "fetched": "2026-05-08T18:33:00Z",
+#     "today":   "2026-05-08",
+#     "games":   [{ "home":"PIT", "away":"CHC",
+#                   "homeSP":{"id":681347,"name":"Mike Burrows"},
+#                   "awaySP":{"id":...,   "name":"Shota Imanaga"} }, ...],
+#     "schedule": {                # next 7 days, off-day detection
+#       "PIT": ["2026-05-08","2026-05-09","2026-05-10",...],
+#       "CHC": [...], ...
+#     }
+#   }
+# ─────────────────────────────────────────────────────────────────────────
+print("Fetching MLB probable pitchers...")
+
+import datetime as _dt
+
+# MLB Stats API uses 3-letter abbreviations (e.g. "TB", "CWS"). Map to whatever
+# Fantrax uses (mostly identical but TB→TBR sometimes, AZ→ARI, etc.). Keep the
+# mapping small and pass through anything not in it.
+_MLB_TO_FANTRAX_TEAM = {
+    # If divergence appears, add overrides here. Empty for now — most codes match.
+}
+
+def _norm_mlb_team(abbr):
+    if not abbr:
+        return ""
+    return _MLB_TO_FANTRAX_TEAM.get(abbr, abbr)
+
+try:
+    today_dt    = _dt.date.today()
+    end_dt      = today_dt + _dt.timedelta(days=7)
+    today_str   = today_dt.strftime("%Y-%m-%d")
+    end_str     = end_dt.strftime("%Y-%m-%d")
+
+    url = (
+        "https://statsapi.mlb.com/api/v1/schedule"
+        f"?sportId=1&startDate={today_str}&endDate={end_str}"
+        "&hydrate=probablePitcher,team"
+    )
+    resp = requests.get(url, timeout=30)
+    resp.raise_for_status()
+    sched_data = resp.json()
+
+    games_today = []
+    schedule_by_team = {}
+
+    for date_block in sched_data.get("dates", []):
+        date_str = date_block.get("date", "")
+        for g in date_block.get("games", []):
+            home = (g.get("teams", {}).get("home", {}) or {})
+            away = (g.get("teams", {}).get("away", {}) or {})
+            home_team = home.get("team", {}) or {}
+            away_team = away.get("team", {}) or {}
+            home_abbr = _norm_mlb_team(home_team.get("abbreviation", ""))
+            away_abbr = _norm_mlb_team(away_team.get("abbreviation", ""))
+            if not home_abbr or not away_abbr:
+                continue
+
+            # Track schedule per team (which dates each team has a game).
+            schedule_by_team.setdefault(home_abbr, []).append(date_str)
+            schedule_by_team.setdefault(away_abbr, []).append(date_str)
+
+            # Today's probables only — for the matchup multiplier.
+            if date_str == today_str:
+                home_sp = home.get("probablePitcher") or {}
+                away_sp = away.get("probablePitcher") or {}
+                games_today.append({
+                    "home": home_abbr,
+                    "away": away_abbr,
+                    "gameTime": g.get("gameDate", ""),
+                    "status": (g.get("status") or {}).get("abstractGameState", ""),
+                    "homeSP": {
+                        "id":   home_sp.get("id"),
+                        "name": home_sp.get("fullName", "")
+                    } if home_sp.get("id") else None,
+                    "awaySP": {
+                        "id":   away_sp.get("id"),
+                        "name": away_sp.get("fullName", "")
+                    } if away_sp.get("id") else None
+                })
+
+    # Deduplicate schedule dates per team (a team can only play once a day,
+    # but doubleheaders would otherwise produce duplicates).
+    for team in schedule_by_team:
+        schedule_by_team[team] = sorted(set(schedule_by_team[team]))
+
+    probables_payload = {
+        "fetched":  _dt.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "today":    today_str,
+        "games":    games_today,
+        "schedule": schedule_by_team
+    }
+    save("probables.json", probables_payload)
+
+    sp_count = sum(1 for g in games_today if g.get("homeSP") and g.get("awaySP"))
+    print(f"  {len(games_today)} games today, {sp_count} with both SPs announced, "
+          f"{len(schedule_by_team)} teams in 7-day window")
+
+except Exception as _e:
+    print(f"  WARN: probables fetch failed: {_e}")
+    # Save an empty payload so the JS knows the fetch was attempted.
+    save("probables.json", {
+        "fetched":  _dt.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "today":    _dt.date.today().strftime("%Y-%m-%d"),
+        "games":    [],
+        "schedule": {},
+        "error":    str(_e)
+    })
