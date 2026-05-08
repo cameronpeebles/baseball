@@ -6505,8 +6505,20 @@ function _rosTradeSugRow(c, idx, kind) {
 window.rosTradeSugTryThis = function(giveEnc, getEnc, isHit) {
   var giveKey = decodeURIComponent(giveEnc);
   var getKey  = decodeURIComponent(getEnc);
-  // Drop side (your player you're giving up) — must be on selected team's roster
+
+  // ── STEP 1: Reveal the verify wrapper FIRST (Trades tab only) ──────────
+  // Doing this up-front means the cards inside become visible regardless of
+  // any downstream lookup hiccups, and the user sees something happen.
+  if (_rosCurrentTab === 'trades') {
+    var emptyEl0 = document.getElementById('ros-trades-verify-empty');
+    var cardsEl0 = document.getElementById('ros-trades-verify-cards');
+    if (emptyEl0) emptyEl0.style.display = 'none';
+    if (cardsEl0) cardsEl0.style.display = 'block';
+  }
+
+  // ── STEP 2: Make sure FA + roster lists are populated ──────────────────
   if (typeof _rosAdBuildLists === 'function') _rosAdBuildLists();
+
   // Clear slot 1 from any prior selection (trade suggestions are 1-for-1)
   if (_rosAdSelected.length > 1) { _rosAdSelected = _rosAdSelected.slice(0,1); }
   if (_rosDropSelected.length > 1) {
@@ -6518,33 +6530,44 @@ window.rosTradeSugTryThis = function(giveEnc, getEnc, isHit) {
     var c = document.getElementById('ros-'+s+'-card-2'); if (c) c.style.display = 'none';
     var b = document.getElementById('ros-'+s+'-slot2-add'); if (b) b.style.display = 'none';
   });
-  _rosAdRostFiltered = _rosAdRosterList.slice();
-  var dropIdx = _rosAdRostFiltered.findIndex(function(r){ return r._key === giveKey; });
-  if (dropIdx < 0) {
-    alert('Could not load drop player into the simulator.');
-    return;
+
+  // Helper: given a key from _rosCurrentStats (no Jr/Sr stripping), produce
+  // the normalized form _normPlayerKey would emit (Jr/Sr stripped).
+  function stripSuffix(k) {
+    return (k||'').replace(/\s+(jr|sr|ii|iii|iv)$/, '').trim();
   }
-  if (typeof rosAdSelect === 'function') rosAdSelect('drop', dropIdx, 0);
-  // Add side (player you're receiving from opponent) — find in projection pool
+  var giveKeyAlt = stripSuffix(giveKey);
+  var getKeyAlt  = stripSuffix(getKey);
+
+  // ── STEP 3: Drop side ──────────────────────────────────────────────────
+  _rosAdRostFiltered = _rosAdRosterList.slice();
+  var dropIdx = _rosAdRostFiltered.findIndex(function(r){
+    return r._key === giveKey || stripSuffix(r._key) === giveKeyAlt;
+  });
+  if (dropIdx < 0) {
+    console.warn('[TradeSug] drop player not found in roster list. giveKey=', giveKey);
+  } else {
+    if (typeof rosAdSelect === 'function') rosAdSelect('drop', dropIdx, 0);
+  }
+
+  // ── STEP 4: Add side ───────────────────────────────────────────────────
+  // Match by normalized FantasyPros displayName against the trade-sug key.
+  // Try several normalizations so common name-suffix mismatches still work.
   _rosAdFAFiltered = _rosAdFAList.slice();
-  // Match by their normalized key if possible, falling back to display name
   var addIdx = _rosAdFAFiltered.findIndex(function(p){
     var nm = (p._displayName||p.name||'');
     var k  = (typeof _normPlayerKey === 'function') ? _normPlayerKey(nm) : nm.toLowerCase();
-    return k === getKey;
+    return k === getKey || k === getKeyAlt || stripSuffix(k) === getKeyAlt;
   });
   if (addIdx < 0) {
-    alert('Could not load add player into the simulator.');
-    return;
+    console.warn('[TradeSug] add player not found in FA list. getKey=', getKey,
+                 'firstFew=', _rosAdFAFiltered.slice(0,3).map(function(p){ return p._displayName; }));
+  } else {
+    if (typeof rosAdSelect === 'function') rosAdSelect('add', addIdx, 0);
   }
-  if (typeof rosAdSelect === 'function') rosAdSelect('add', addIdx, 0);
-  // On Trades tab, reveal the verification panel and scroll to it.
-  // On Waivers tab, scroll to the simulator mode-pill-row.
+
+  // ── STEP 5: Scroll into view ───────────────────────────────────────────
   if (_rosCurrentTab === 'trades') {
-    var emptyEl = document.getElementById('ros-trades-verify-empty');
-    var cardsEl = document.getElementById('ros-trades-verify-cards');
-    if (emptyEl) emptyEl.style.display = 'none';
-    if (cardsEl) cardsEl.style.display = 'block';
     var verifyEl = document.getElementById('ros-trades-verify-card');
     if (verifyEl) verifyEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } else {
