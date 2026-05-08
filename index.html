@@ -260,6 +260,7 @@ td.neg { color: #c0392b; font-weight: 500; }
   <button onclick="showPage('teamroster',this)">Team Roster</button>
   <button onclick="showPage('archetype',this)">Team Archetype</button>
   <button onclick="showPage('ros',this)">ROS</button>
+  <button onclick="showPage('lineuporg',this)">Lineup Organizer</button>
   <button onclick="showPage('fwar',this)">Player Data</button>
   <button onclick="showPage('targets',this)">Trade Waiver Wire Targets</button>
 </nav>
@@ -657,6 +658,17 @@ td.neg { color: #c0392b; font-weight: 500; }
     </div>
     <div id="ros-addrop-panel" style="display:none;margin-bottom:14px;overflow:visible"></div>
     <div id="ros-body"><div class="loading">Loading...</div></div>
+  </div>
+
+  <div class="page" id="page-lineuporg">
+    <div class="page-title">Lineup Organizer</div>
+    <div class="page-subtitle">Set today's starters &mdash; ranked per slot by adjusted ROS-SGP-per-game.</div>
+    <div id="lineuporg-controls" style="margin-bottom:14px"></div>
+    <div class="trade-tabs" id="lineuporg-tabs">
+      <button class="trade-tab active" onclick="showLineupOrgTab('hit',this)">Hitters</button>
+      <button class="trade-tab" onclick="showLineupOrgTab('pit',this)">Pitchers</button>
+    </div>
+    <div id="lineuporg-body"><div class="loading">Loading...</div></div>
   </div>
 
   <div class="page" id="page-leaders">
@@ -2686,6 +2698,7 @@ function showPage(name, btn) {
   if (name === 'archetype') renderArchetypePage();
   if (name === 'fantrax') { if (!fantraxRendered) { fantraxRendered = true; } }
   if (name === 'ros') renderROSPage();
+  if (name === 'lineuporg') renderLineupOrgPage();
   if (name === 'combined') renderCombinedPage();
   if (name === 'zscores') renderZScores();
   if (name === 'joe') renderJOEFactor();
@@ -2702,7 +2715,7 @@ function showPage(name, btn) {
   if (name === 'teamroster') buildTeamRosterSelector();
   if (name === 'guide') {} // static content, no render needed
   // Expand main to full width for wide-table pages
-  document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'models' || name === 'rosters' || name === 'teamroster' || name === 'historic' || name === 'targets' || name === 'sgp' || name === 'tradelab') ? 'none' : '';
+  document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'models' || name === 'rosters' || name === 'teamroster' || name === 'historic' || name === 'targets' || name === 'sgp' || name === 'tradelab' || name === 'lineuporg') ? 'none' : '';
   if (name === 'trade' && (TA.activeTab === 'sgp-hit' || TA.activeTab === 'sgp-pit')) {
     document.querySelector('main').style.maxWidth = 'none';
   }
@@ -7186,6 +7199,527 @@ function _rosCurrSGP(cs, isHit) {
   }
   return total;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LINEUP ORGANIZER — daily lineup builder with ranked-per-slot UI.
+// Data deps: _rosHitData, _rosPitData, _rosCurrentStats, _rosRosterLookup,
+//            S.teamInfo. Reuses _rosAdPlayerSGP for SGP math.
+// ═══════════════════════════════════════════════════════════════════════════
+
+var _loSelectedTeam = null;
+var _loActiveTab = 'hit';
+
+// League slot config (the user's league: 14 hitting + 9 pitching).
+// Order matters — fill scarcity-ordered (single-pos before flex).
+var _LO_HIT_SLOTS = [
+  {id:'C',  label:'C',  eligible:['C']},
+  {id:'1B', label:'1B', eligible:['1B']},
+  {id:'2B', label:'2B', eligible:['2B']},
+  {id:'3B', label:'3B', eligible:['3B']},
+  {id:'SS', label:'SS', eligible:['SS']},
+  {id:'CI', label:'CI', eligible:['1B','3B']},
+  {id:'MI', label:'MI', eligible:['2B','SS']},
+  {id:'OF1',label:'OF', eligible:['OF']},
+  {id:'OF2',label:'OF', eligible:['OF']},
+  {id:'OF3',label:'OF', eligible:['OF']},
+  {id:'OF4',label:'OF', eligible:['OF']},
+  {id:'OF5',label:'OF', eligible:['OF']},
+  {id:'UT', label:'UT', eligible:['C','1B','2B','3B','SS','OF','DH','UT']}
+];
+var _LO_PIT_SLOTS = (function(){
+  var s = []; for (var i=1;i<=9;i++) s.push({id:'P'+i, label:'P', eligible:['SP','RP','P']}); return s;
+})();
+
+// Parse a Fantrax position string ("OF,1B" / "SP" / "RP/SP") into uppercase tokens.
+function _loParsePos(posStr) {
+  if (!posStr) return [];
+  return (posStr+'').toUpperCase().split(/[,\/\s]+/).filter(Boolean);
+}
+
+// Is `posList` eligible for `slotEligible` array? "UT" eligible accepts everything.
+function _loSlotAccepts(slotEligible, posList) {
+  if (!posList || !posList.length) return false;
+  for (var i=0;i<slotEligible.length;i++) {
+    var se = slotEligible[i];
+    if (se === 'UT') return true;
+    if (posList.indexOf(se) !== -1) return true;
+    // OF slot accepts any OF subtype
+    if (se === 'OF' && (posList.indexOf('LF')!==-1||posList.indexOf('CF')!==-1||posList.indexOf('RF')!==-1)) return true;
+    // P slot accepts SP or RP
+    if (se === 'P' && (posList.indexOf('SP')!==-1||posList.indexOf('RP')!==-1)) return true;
+  }
+  return false;
+}
+
+// Build the team's roster as an array of player objects with FP projection,
+// position eligibility, today-score, and a stable display key.
+function _loBuildRoster(teamId, isHit) {
+  var rosterLookup = window._rosRosterLookup || {};
+  var curStats = window._rosCurrentStats || {};
+  var fpData = isHit ? (_rosHitData||[]) : (_rosPitData||[]);
+  // Index FP data by normalized name for fast lookup.
+  var fpByKey = {};
+  fpData.forEach(function(p){
+    var nm = p._displayName || p.name || '';
+    var k = (typeof _normPlayerKey === 'function') ? _normPlayerKey(nm) : nm.toLowerCase();
+    if (k) fpByKey[k] = p;
+  });
+  // Build list of this team's players with the right hit/pit type.
+  var out = [];
+  Object.keys(rosterLookup).forEach(function(key){
+    var entry = rosterLookup[key];
+    if (!entry || entry.teamId !== teamId) return;
+    var cs = curStats[key]; if (!cs) return;
+    if (!!cs.isHit !== !!isHit) return;
+    var posList = _loParsePos(cs.pos);
+    if (!posList.length) return;
+    // Find FP projection — try multiple normalizations.
+    var stripSuf = function(k){ return (k||'').replace(/\s+(jr|sr|ii|iii|iv)$/, '').trim(); };
+    var fp = fpByKey[key] || fpByKey[stripSuf(key)];
+    if (!fp) {
+      Object.keys(fpByKey).some(function(fk){
+        if (stripSuf(fk) === stripSuf(key)) { fp = fpByKey[fk]; return true; }
+        return false;
+      });
+    }
+    if (!fp) return; // no projection, skip
+    out.push({
+      key: key,
+      name: cs.name || fp._displayName || fp.name || key,
+      mlb: cs.mlb || '',
+      hs: cs.hs || '',
+      pos: posList,
+      posStr: cs.pos || '',
+      fp: fp,
+      isHit: !!isHit
+    });
+  });
+  return out;
+}
+
+// Compute today-score for one player.
+//   isHit=true: ROS-SGP × (AB/3.7 ÷ 162) × team-plays-today × matchup-mult
+//   isHit=false: pitchers — see _loPitToday
+// Returns { score, raw, multLabel, multValue, oppDesc, plays, perGame }.
+function _loTodayHit(pl, ctx) {
+  var rosSGP = _rosAdPlayerSGP(pl.fp, true) || 0;
+  // Estimate games-per-season from AB. Empirically AB ≈ 3.7 × G for hitters.
+  var ab = parseFloat(pl.fp.AB || 0);
+  var games = ab > 0 ? Math.max(1, ab / 3.7) : 150;
+  var perGame = rosSGP / games;
+  var plays = ctx.teamPlaysToday[pl.mlb] !== false; // default true (no schedule data → assume plays)
+  var oppSP = ctx.oppSPByMLB[pl.mlb] || null;
+  // Matchup multiplier (coarse 4-bucket; bullpen-discounted to ±9% / ±3%)
+  var mlt = 1.0, lbl = 'Avg', oppDesc = '';
+  if (oppSP && ctx.spQuartiles && ctx.spQuartiles.length === 3) {
+    var sgp = oppSP._teamSGP;
+    if      (sgp >= ctx.spQuartiles[2]) { mlt = 0.91; lbl = 'Tough'; }
+    else if (sgp >= ctx.spQuartiles[1]) { mlt = 0.97; lbl = 'Above-avg'; }
+    else if (sgp >= ctx.spQuartiles[0]) { mlt = 1.03; lbl = 'Avg'; }
+    else                                 { mlt = 1.09; lbl = 'Plus'; }
+    oppDesc = 'vs ' + (oppSP._displayName || oppSP.name || '');
+  } else {
+    lbl = 'Matchup TBD';
+  }
+  var score = perGame * (plays ? 1 : 0) * mlt;
+  return { score: score, raw: perGame, multLabel: lbl, multValue: mlt, oppDesc: oppDesc, plays: plays, perGame: perGame };
+}
+
+function _loTodayPit(pl, ctx) {
+  var rosSGP = _rosAdPlayerSGP(pl.fp, false) || 0;
+  var posUp = (pl.posStr||'').toUpperCase();
+  var isSP = posUp.indexOf('SP') !== -1;
+  var perUnit, plays, mlt = 1.0, lbl = 'Avg', oppDesc = '';
+  if (isSP) {
+    // SP: per-start. Use GS if available, else estimate from IP/6.
+    var gs = parseFloat(pl.fp.GS || 0);
+    var ip = parseFloat(pl.fp.IP || 0);
+    var starts = gs > 0 ? gs : (ip > 0 ? ip / 6 : 25);
+    perUnit = rosSGP / starts;
+    plays = ctx.spProbableByMLB[pl.mlb] === pl.key; // is this guy specifically the probable today?
+    // Lineup-strength matchup
+    if (plays && ctx.lineupQuartiles && ctx.lineupQuartiles.length === 3) {
+      var oppMlb = ctx.opponentByMLB[pl.mlb] || '';
+      var ls = ctx.lineupStrengthByMLB[oppMlb];
+      if (ls != null) {
+        if      (ls >= ctx.lineupQuartiles[2]) { mlt = 0.85; lbl = 'Tough'; }
+        else if (ls >= ctx.lineupQuartiles[1]) { mlt = 0.95; lbl = 'Above-avg'; }
+        else if (ls >= ctx.lineupQuartiles[0]) { mlt = 1.05; lbl = 'Avg'; }
+        else                                    { mlt = 1.15; lbl = 'Plus'; }
+        oppDesc = 'vs ' + oppMlb + ' lineup';
+      }
+    } else if (!plays) {
+      lbl = 'Not probable';
+    }
+  } else {
+    // RP: per-game appearance, no matchup adjustment.
+    var g = parseFloat(pl.fp.G || 0);
+    var rpApp = g > 0 ? g : 50;
+    perUnit = rosSGP / rpApp;
+    // RP plays whenever team plays (rough heuristic — actually ~40% of games).
+    plays = ctx.teamPlaysToday[pl.mlb] !== false;
+    perUnit *= 0.4; // downweight RPs since they don't appear every game
+    lbl = 'RP';
+  }
+  var score = perUnit * (plays ? 1 : 0) * mlt;
+  return { score: score, raw: perUnit, multLabel: lbl, multValue: mlt, oppDesc: oppDesc, plays: plays, perGame: perUnit, isSP: isSP };
+}
+
+// Build the optimization context: schedule, probables, quartile cutoffs.
+// Reads window._loProbables (populated by lazy load in renderLineupOrgPage).
+// If absent, falls back to "no schedule data" mode where every team plays
+// today and the matchup multiplier is 1.0 (UI shows "Matchup TBD").
+function _loBuildContext() {
+  var probables = window._loProbables || null;
+  var ctx = {
+    teamPlaysToday: {},      // MLB code → bool (default true if no schedule)
+    opponentByMLB: {},       // MLB code → opponent MLB code
+    oppSPByMLB: {},          // MLB code → opponent's probable SP (FP object) facing this team's hitters
+    spProbableByMLB: {},     // MLB code → key of the probable SP today (so own SP gets the slot)
+    lineupStrengthByMLB: {}, // MLB code → sum of top-9 hitter ROS-SGP-per-game
+    spQuartiles: null,       // [Q1,Q2,Q3] cutoffs of SP _teamSGP across qualified SPs
+    lineupQuartiles: null    // [Q1,Q2,Q3] cutoffs of team lineup strength
+  };
+  // Compute season-long SP quartile cutoffs from _rosPitData (qualified = IP >= 15).
+  // Also indexes SPs by name so we can resolve probables → FP object.
+  var spByName = {};
+  if (_rosPitData && _rosPitData.length) {
+    var sps = _rosPitData.filter(function(p){
+      var posUp = (p.pos || p._posShort || '').toUpperCase();
+      return posUp.indexOf('SP') !== -1 && parseFloat(p.IP||0) >= 15;
+    }).map(function(p){
+      var sgp = _rosAdPlayerSGP(p, false) || 0;
+      var gs = parseFloat(p.GS||0) || (parseFloat(p.IP||0)/6);
+      p._teamSGP = gs > 0 ? sgp/gs : 0;
+      var nm = p._displayName || p.name || '';
+      var k = (typeof _normPlayerKey === 'function') ? _normPlayerKey(nm) : nm.toLowerCase();
+      if (k) spByName[k] = p;
+      return p._teamSGP;
+    }).sort(function(a,b){ return a-b; });
+    if (sps.length >= 4) {
+      ctx.spQuartiles = [sps[Math.floor(sps.length*0.25)], sps[Math.floor(sps.length*0.5)], sps[Math.floor(sps.length*0.75)]];
+    }
+  }
+  // Compute season-long lineup-strength quartiles. Per MLB team, sum top-9
+  // hitters' ROS-SGP-per-game.
+  if (_rosHitData && _rosHitData.length) {
+    var byMLB = {};
+    _rosHitData.forEach(function(p){
+      var nm = p._displayName || p.name || '';
+      var k = (typeof _normPlayerKey === 'function') ? _normPlayerKey(nm) : nm.toLowerCase();
+      var cs = (window._rosCurrentStats||{})[k]; if (!cs || !cs.mlb) return;
+      var sgp = _rosAdPlayerSGP(p, true) || 0;
+      var ab = parseFloat(p.AB||0); var g = ab > 0 ? Math.max(1, ab/3.7) : 150;
+      var perGame = sgp / g;
+      if (!byMLB[cs.mlb]) byMLB[cs.mlb] = [];
+      byMLB[cs.mlb].push(perGame);
+    });
+    Object.keys(byMLB).forEach(function(mlb){
+      var arr = byMLB[mlb].sort(function(a,b){ return b-a; }).slice(0,9);
+      ctx.lineupStrengthByMLB[mlb] = arr.reduce(function(a,b){return a+b;}, 0);
+    });
+    var ls = Object.keys(ctx.lineupStrengthByMLB).map(function(k){ return ctx.lineupStrengthByMLB[k]; }).sort(function(a,b){ return a-b; });
+    if (ls.length >= 4) {
+      ctx.lineupQuartiles = [ls[Math.floor(ls.length*0.25)], ls[Math.floor(ls.length*0.5)], ls[Math.floor(ls.length*0.75)]];
+    }
+  }
+  // ── Wire today's probables + schedule ──────────────────────────────────
+  if (probables && probables.games) {
+    var todayStr = probables.today;
+    // Mark every team in the schedule as "plays today" if they have a game today.
+    // Anything not in the schedule defaults to "off" — but only mark teams that
+    // appear in the broader schedule map so we can distinguish "off day" from
+    // "missing data".
+    Object.keys(probables.schedule || {}).forEach(function(mlb){
+      ctx.teamPlaysToday[mlb] = (probables.schedule[mlb].indexOf(todayStr) !== -1);
+    });
+    // For each game today, capture opponent + probable SPs.
+    probables.games.forEach(function(g){
+      ctx.opponentByMLB[g.home] = g.away;
+      ctx.opponentByMLB[g.away] = g.home;
+      // Resolve probable SPs to FP objects (if we have them in our data).
+      function resolveSP(sp) {
+        if (!sp || !sp.name) return null;
+        var k = (typeof _normPlayerKey === 'function') ? _normPlayerKey(sp.name) : sp.name.toLowerCase();
+        return spByName[k] || null;
+      }
+      var homeSP = resolveSP(g.homeSP);
+      var awaySP = resolveSP(g.awaySP);
+      // Hitter matchup: away team's hitters face home SP, home team's hitters face away SP.
+      if (homeSP) ctx.oppSPByMLB[g.away] = homeSP;
+      if (awaySP) ctx.oppSPByMLB[g.home] = awaySP;
+      // Pitcher matchup: own SP gets matched to opposing lineup.
+      if (g.homeSP && g.homeSP.name) {
+        var hk = (typeof _normPlayerKey === 'function') ? _normPlayerKey(g.homeSP.name) : g.homeSP.name.toLowerCase();
+        ctx.spProbableByMLB[g.home] = hk;
+      }
+      if (g.awaySP && g.awaySP.name) {
+        var ak = (typeof _normPlayerKey === 'function') ? _normPlayerKey(g.awaySP.name) : g.awaySP.name.toLowerCase();
+        ctx.spProbableByMLB[g.away] = ak;
+      }
+    });
+  }
+  return ctx;
+}
+
+// Greedy slot assignment maximizing total today-score across all hitting slots.
+// Returns { byPlayer: {key→{slotId, isStart}}, perSlot: [{slot, ranked:[players], picked, alternates}] }
+// "ranked" is sorted by today-score; "picked" is the chosen player; "alternates"
+// are eligible-but-not-picked players for that slot.
+function _loAssignHit(roster, ctx) {
+  // Decorate each player with today-score & sort once.
+  roster.forEach(function(p){ p._today = _loTodayHit(p, ctx); });
+  // Try all combinations? 14 slots, ~14-16 hitters, exponential. Use greedy
+  // ordered scarcity-first, then OF brute-force on remaining surplus, then UT.
+  var assigned = {};   // key → slotId
+  var perSlot = [];
+  var available = roster.slice();
+  // Score-descending sort helper.
+  function byScore(a,b){ return b._today.score - a._today.score; }
+
+  _LO_HIT_SLOTS.forEach(function(slot){
+    var elig = available.filter(function(p){ return _loSlotAccepts(slot.eligible, p.pos) && !assigned[p.key]; });
+    elig.sort(byScore);
+    // Only pick players who actually play today. If everyone in the list is off,
+    // leave the slot unfilled (picked=null) but still show them in the ranked list.
+    var picked = elig.find(function(p){ return p._today.plays && p._today.score > 0; }) || null;
+    if (picked) assigned[picked.key] = slot.id;
+    perSlot.push({ slot: slot, ranked: elig, picked: picked });
+  });
+
+  // Bench: players with no slot assignment.
+  var bench = roster.filter(function(p){ return !assigned[p.key]; }).sort(byScore);
+  return { perSlot: perSlot, bench: bench, assigned: assigned };
+}
+
+function _loAssignPit(roster, ctx) {
+  roster.forEach(function(p){ p._today = _loTodayPit(p, ctx); });
+  function byScore(a,b){ return b._today.score - a._today.score; }
+  var assigned = {};
+  var perSlot = [];
+  // P slots are all identical — assign top 9 active-today by score, but keep
+  // off-day players in the ranked list at the bottom (visually distinguished).
+  var sorted = roster.slice().sort(byScore);
+  // Among the sorted list, only players with score>0 are eligible to "fill" a slot.
+  var fillable = sorted.filter(function(p){ return p._today.score > 0; });
+  var pickedArr = fillable.slice(0, 9);
+  pickedArr.forEach(function(p, i){ assigned[p.key] = 'P'+(i+1); });
+  perSlot.push({ slot: {id:'P', label:'P (×9)', eligible:['SP','RP','P']}, ranked: sorted, picked: pickedArr, allFlex: true });
+  var bench = sorted.filter(function(p){ return !assigned[p.key]; });
+  return { perSlot: perSlot, bench: bench, assigned: assigned };
+}
+
+// ── Renderers ────────────────────────────────────────────────────────────
+
+function renderLineupOrgPage() {
+  var body = document.getElementById('lineuporg-body');
+  var ctrl = document.getElementById('lineuporg-controls');
+  if (!body || !ctrl) return;
+  // Readiness: require not just FP data but also that _rosCurrentStats has been
+  // fully populated (with mlb + isHit) by the ROS page's tryRender. The early
+  // preloadRosData sets pos only; we need the full record for matchup math.
+  var cs = window._rosCurrentStats || {};
+  var csKeys = Object.keys(cs);
+  var fullyLoaded = csKeys.length > 0 && csKeys.some(function(k){ return cs[k] && cs[k].mlb && (cs[k].isHit !== undefined); });
+  var ready = _rosHitData && _rosPitData && fullyLoaded;
+  if (!ready) {
+    body.innerHTML = '<div class="loading">Loading projections...</div>';
+    if (typeof renderROSPage === 'function') renderROSPage();
+    setTimeout(renderLineupOrgPage, 600);
+    return;
+  }
+  // Lazy-load probables.json once. _loProbablesLoadState: undefined → not started,
+  // 'pending' → in flight, 'done' → finished (success or 404 with fallback).
+  if (window._loProbablesLoadState === undefined) {
+    window._loProbablesLoadState = 'pending';
+    loadJSON('probables.json')
+      .then(function(d){ window._loProbables = d || null; window._loProbablesLoadState = 'done'; renderLineupOrgPage(); })
+      .catch(function(){ window._loProbables = null; window._loProbablesLoadState = 'done'; renderLineupOrgPage(); });
+    body.innerHTML = '<div class="loading">Loading probables...</div>';
+    return;
+  }
+  if (window._loProbablesLoadState === 'pending') {
+    body.innerHTML = '<div class="loading">Loading probables...</div>';
+    return;
+  }
+  if (!_loSelectedTeam) _loSelectedTeam = _rosSelectedTeam || Object.keys(S.teamInfo||{})[0] || null;
+  // Team selector + matchup-data status banner
+  var teams = Object.keys(S.teamInfo||{}).map(function(id){ return {id:id, name:(S.teamInfo[id].shortName||S.teamInfo[id].name||id)}; }).sort(function(a,b){ return a.name.localeCompare(b.name); });
+  var selHtml = '<select id="lo-team-select" onchange="window._loTeamChanged(this)" style="padding:6px 10px;font-size:13px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text)">';
+  teams.forEach(function(t){ selHtml += '<option value="'+t.id+'"'+(t.id===_loSelectedTeam?' selected':'')+'>'+_loEsc(t.name)+'</option>'; });
+  selHtml += '</select>';
+  var probables = window._loProbables;
+  var statusPill;
+  if (probables && probables.games && probables.games.length > 0) {
+    var spCount = probables.games.filter(function(g){ return g.homeSP && g.awaySP; }).length;
+    statusPill = '<span style="font-size:10px;padding:3px 8px;border-radius:10px;background:rgba(45,90,61,0.10);color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;font-weight:500" title="'+probables.games.length+' games today, '+spCount+' with both SPs announced. Fetched '+probables.fetched+'.">Matchup data on</span>';
+  } else if (probables && probables.error) {
+    statusPill = '<span style="font-size:10px;padding:3px 8px;border-radius:10px;background:rgba(186,117,23,0.10);color:#854f0b;text-transform:uppercase;letter-spacing:0.06em;font-weight:500" title="probables.json fetch failed: '+_loEsc(probables.error)+'">Matchup data error</span>';
+  } else if (probables && probables.games && probables.games.length === 0) {
+    statusPill = '<span style="font-size:10px;padding:3px 8px;border-radius:10px;background:var(--bg);color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:500">No games today</span>';
+  } else {
+    statusPill = '<span style="font-size:10px;padding:3px 8px;border-radius:10px;background:rgba(186,117,23,0.10);color:#854f0b;text-transform:uppercase;letter-spacing:0.06em;font-weight:500" title="data/probables.json not found. Run fetch_fantrax.py to populate.">Matchup data missing</span>';
+  }
+  ctrl.innerHTML = '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="font-size:13px;font-weight:500;color:var(--muted)">Team:</span>'+selHtml+statusPill+'<span style="font-size:11px;color:var(--muted);margin-left:auto">'+_loFmtDate(new Date())+'</span></div>';
+  _loRender();
+}
+
+window._loTeamChanged = function(sel) {
+  _loSelectedTeam = sel.value;
+  _loRender();
+};
+
+window.showLineupOrgTab = function(tab, btn) {
+  _loActiveTab = tab;
+  document.querySelectorAll('#lineuporg-tabs .trade-tab').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  _loRender();
+};
+
+function _loFmtDate(d) {
+  var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return days[d.getDay()]+', '+months[d.getMonth()]+' '+d.getDate();
+}
+
+function _loRender() {
+  var body = document.getElementById('lineuporg-body');
+  if (!body || !_loSelectedTeam) return;
+  var isHit = _loActiveTab === 'hit';
+  var roster = _loBuildRoster(_loSelectedTeam, isHit);
+  var ctx = _loBuildContext();
+  var result = isHit ? _loAssignHit(roster, ctx) : _loAssignPit(roster, ctx);
+  body.innerHTML = _loBuildGridHtml(result, isHit);
+}
+
+function _loBuildGridHtml(result, isHit) {
+  var h = '';
+  // Summary banner
+  var slotCount = isHit ? 13 : 9;
+  var rosterSize = result.perSlot.reduce(function(s,r){
+    return s + (Array.isArray(r.picked) ? r.picked.length : (r.picked?1:0));
+  }, 0) + result.bench.length;
+  var unfilledCount = result.perSlot.filter(function(r){
+    return Array.isArray(r.picked) ? r.picked.length < (r.slot.label.indexOf('×9')!==-1?9:1) : !r.picked;
+  }).length;
+  h += '<div style="margin-bottom:12px;font-size:12px;color:var(--muted)">';
+  h += rosterSize + ' eligible '+(isHit?'hitters':'pitchers')+' &middot; '+(slotCount-unfilledCount)+' of '+slotCount+' slots filled';
+  if (result.bench.length > 0) h += ' &middot; '+result.bench.length+' on bench';
+  h += '</div>';
+  // Per-slot rows
+  result.perSlot.forEach(function(rs){
+    h += _loBuildSlotRowHtml(rs, isHit);
+  });
+  // Bench
+  if (result.bench.length) {
+    h += '<div style="margin-top:18px;padding-top:14px;border-top:0.5px solid var(--border)">';
+    h += '<div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Bench &middot; '+result.bench.length+'</div>';
+    h += '<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">';
+    result.bench.forEach(function(p){ h += _loCardHtml(p, false, false, isHit, null); });
+    h += '</div></div>';
+  }
+  // Footnote
+  h += '<div style="margin-top:18px;padding-top:12px;border-top:0.5px solid var(--border);font-size:10px;color:var(--muted);line-height:1.5">';
+  h += 'Score = ROS-SGP-per-'+(isHit?'game':'start/appearance')+' &times; today\'s play chance &times; matchup multiplier. ';
+  h += isHit
+    ? 'Hitter matchup buckets opp SP into season-long quartiles (top &rarr; Tough &minus;9%, bottom &rarr; Plus +9%; bullpen-discounted from raw &plusmn;15%).'
+    : 'SP matchup buckets opposing lineup strength into quartiles (top &rarr; Tough &minus;15%, bottom &rarr; Plus +15%). RPs not adjusted.';
+  h += '</div>';
+  return h;
+}
+
+function _loBuildSlotRowHtml(rs, isHit) {
+  var slot = rs.slot;
+  var ranked = rs.ranked || [];
+  var picked = rs.picked;
+  var pickedKeys = {};
+  if (Array.isArray(picked)) picked.forEach(function(p){ pickedKeys[p.key] = true; });
+  else if (picked) pickedKeys[picked.key] = true;
+  // Surplus detection: more eligible than slots (only meaningful for single-slot rows)
+  var surplus = !rs.allFlex && ranked.length > 1;
+  // OF row callout — count OF slots remaining when we get to this slot.
+  var slotBoxStyle = surplus
+    ? 'background:rgba(186,117,23,0.08);border:0.5px solid rgba(186,117,23,0.30)'
+    : 'background:var(--bg);border:0.5px solid var(--border)';
+  var labelColor = surplus ? '#854f0b' : 'var(--muted)';
+  var sub = rs.allFlex
+    ? '9 slots &middot; '+ranked.length+' eligible'
+    : ranked.length + ' eligible';
+  var h = '';
+  h += '<div style="display:grid;grid-template-columns:88px minmax(0,1fr);gap:8px;align-items:stretch;margin-bottom:8px">';
+  h += '<div style="padding:10px 8px;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;'+slotBoxStyle+'">';
+  h += '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:'+labelColor+'">'+slot.label+'</div>';
+  h += '<div style="font-size:9px;color:'+labelColor+'">'+sub+'</div>';
+  h += '</div>';
+  h += '<div style="display:flex;gap:6px;overflow-x:auto;padding:2px 0 6px 0">';
+  if (!ranked.length) {
+    h += '<div style="font-size:11px;color:var(--muted);padding:10px 6px;font-style:italic">No eligible players for this slot.</div>';
+  } else {
+    ranked.forEach(function(p, i){
+      var isPick = !!pickedKeys[p.key];
+      // Toss-up: top non-pick within 0.05 SGP of the pick (or 2nd pick close to 3rd in flex row).
+      var tossUp = false;
+      if (rs.allFlex && Array.isArray(picked) && picked.length === 9) {
+        if (i === 8) tossUp = ranked[9] && Math.abs(ranked[8]._today.score - ranked[9]._today.score) < 0.02;
+        if (i === 9) tossUp = ranked[8] && Math.abs(ranked[8]._today.score - ranked[9]._today.score) < 0.02;
+      } else if (!rs.allFlex && picked && i === 1) {
+        tossUp = ranked[1] && Math.abs(ranked[0]._today.score - ranked[1]._today.score) < 0.05;
+      }
+      h += _loCardHtml(p, isPick, tossUp, isHit, slot);
+    });
+  }
+  h += '</div></div>';
+  return h;
+}
+
+function _loCardHtml(p, isPick, tossUp, isHit, slot) {
+  var t = p._today;
+  var bg = isPick ? '#E1F5EE' : 'var(--bg)';
+  var borderStyle = isPick ? '1px solid #5DCAA5' : (tossUp ? '1px dashed #5DCAA5' : '0.5px solid var(--border)');
+  var opacity = (!t.plays) ? 0.5 : 1.0;
+  var scoreCol = t.score >= 0.5 ? '#0F6E56' : (t.score >= 0.25 ? '#4a9a68' : (t.score > 0 ? 'var(--text)' : 'var(--muted)'));
+  // Tier pill
+  var tierBg = 'var(--bg)', tierFg = 'var(--muted)';
+  if (t.multLabel === 'Tough') { tierBg = 'rgba(186,117,23,0.12)'; tierFg = '#854f0b'; }
+  else if (t.multLabel === 'Plus') { tierBg = 'rgba(29,158,117,0.14)'; tierFg = '#1D9E75'; }
+  else if (t.multLabel === 'Above-avg') { tierBg = 'rgba(186,117,23,0.06)'; tierFg = '#a06a1f'; }
+  // Multi-eligibility hint
+  var posHint = '';
+  if (p.pos.length > 1) posHint = p.pos.slice(0,3).join('/');
+  // Header line
+  var teamGame = (p.mlb || '')+(t.oppDesc?(' &middot; '+t.oppDesc):'');
+  var h = '';
+  h += '<div style="background:'+bg+';border:'+borderStyle+';border-radius:8px;padding:8px 10px;min-width:200px;max-width:220px;cursor:pointer;opacity:'+opacity+';position:relative;flex-shrink:0">';
+  if (tossUp) h += '<div style="position:absolute;top:4px;right:6px;font-size:8px;color:#854f0b;font-weight:500;text-transform:uppercase;letter-spacing:0.04em">Toss-up</div>';
+  h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">';
+  h += '<div style="font-size:12px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">'+_loEsc(p.name)+'</div>';
+  h += '<div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0">';
+  h += '<div style="font-size:13px;font-weight:600;color:'+scoreCol+';line-height:1">'+(t.score>0?'+':'')+t.score.toFixed(2)+'</div>';
+  if (Math.abs(t.score - t.raw) > 0.005) {
+    h += '<div style="font-size:8px;color:var(--muted);text-decoration:line-through;line-height:1.2">'+(t.raw>0?'+':'')+t.raw.toFixed(2)+'</div>';
+  } else {
+    h += '<div style="font-size:8px;color:var(--muted);line-height:1.2">raw</div>';
+  }
+  h += '</div></div>';
+  h += '<div style="font-size:10px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_loEsc(teamGame)+(posHint?(' &middot; '+posHint):'')+'</div>';
+  if (!t.plays && t.multLabel === 'Not probable') {
+    h += '<div style="font-size:9px;color:var(--muted);font-style:italic;margin-top:3px">Not probable today</div>';
+  } else if (!t.plays) {
+    h += '<div style="font-size:9px;color:var(--muted);font-style:italic;margin-top:3px">'+(p.mlb||'Team')+' off day</div>';
+  } else {
+    h += '<div style="display:flex;gap:4px;margin-top:4px;align-items:center;flex-wrap:wrap">';
+    h += '<span style="font-size:8px;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;padding:1px 5px;border-radius:3px;background:'+tierBg+';color:'+tierFg+'">'+_loEsc(t.multLabel)+'</span>';
+    h += '</div>';
+  }
+  if (isPick) {
+    h += '<div style="font-size:9px;color:#0F6E56;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;margin-top:4px">In lineup</div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+function _loEsc(s) { return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
 
 function _rosAdRenderBars() {
   var barsEl = document.getElementById('ros-ad-bars');
