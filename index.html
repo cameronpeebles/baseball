@@ -6335,6 +6335,74 @@ function _rosTradeSugSection(group, results) {
 }
 
 // ── Trade Suggestions card markup ─────────────────────────────────────────
+// ── Trades tab verification panel ─────────────────────────────────────────
+// Read-only readout of an in-progress trade suggestion. Uses the same DOM IDs
+// as the Waivers tab simulator so the existing rosAdSelect / _rosAdRenderBars /
+// _rosAdRenderStats functions write to it without changes. No search inputs,
+// no clear buttons — populated entirely by clicking a Trade Suggestion below.
+function _rosBuildTradesVerificationPanelHtml() {
+  if (!_rosSelectedTeam) return '';
+  var h = '<div class="card" id="ros-trades-verify-card" style="padding:14px 16px;margin-bottom:14px;overflow:visible">';
+  h += '<div style="margin-bottom:10px">';
+  h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Trade Verification</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Click a suggested trade below to see the per-category breakdown, radar chart, and Net SGP impact on your team.</div>';
+  h += '</div>';
+
+  // Empty state — shown until a suggestion is clicked
+  h += '<div id="ros-trades-verify-empty" style="font-size:12px;color:var(--muted);text-align:center;padding:30px 20px;background:var(--bg);border-radius:8px">';
+  h += 'Click a suggested trade &darr; below to load it here for verification.';
+  h += '</div>';
+
+  // Player cards row — read-only versions, hidden initially
+  h += '<div id="ros-trades-verify-cards" style="display:none">';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">';
+
+  // Drop side (left)
+  h += '<div>';
+  h += '<div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px">You give &middot; Drop</div>';
+  // slot 0 — same IDs as the Waivers simulator. No × button.
+  h += '<div id="ros-drop-card" style="display:none;background:var(--bg);border-radius:6px;padding:8px 10px">';
+  h += '<div style="display:flex;align-items:center;gap:8px">';
+  h += '<img id="ros-drop-hs" src="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">';
+  h += '<div style="flex:1"><div id="ros-drop-name" style="font-size:12px;font-weight:500;color:var(--text)"></div>';
+  h += '<div id="ros-drop-meta" style="font-size:10px;color:var(--muted)"></div>';
+  h += '<div style="display:flex;gap:10px;margin-top:4px">';
+  h += '<div><div style="font-size:9px;color:var(--muted)">Curr SGP</div><div id="ros-drop-curr" style="font-size:12px;font-weight:500"></div></div>';
+  h += '<div><div style="font-size:9px;color:var(--muted)">ROS SGP</div><div id="ros-drop-raw" style="font-size:12px;font-weight:500"></div></div>';
+  h += '</div></div></div></div>';
+  h += '</div>';
+
+  // Add side (right)
+  h += '<div>';
+  h += '<div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px">You get &middot; Add</div>';
+  h += '<div id="ros-add-card" style="display:none;background:var(--bg);border-radius:6px;padding:8px 10px">';
+  h += '<div style="display:flex;align-items:center;gap:8px">';
+  h += '<img id="ros-add-hs" src="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">';
+  h += '<div style="flex:1"><div id="ros-add-name" style="font-size:12px;font-weight:500;color:var(--text)"></div>';
+  h += '<div id="ros-add-meta" style="font-size:10px;color:var(--muted)"></div>';
+  h += '<div style="display:flex;gap:10px;margin-top:4px">';
+  h += '<div><div style="font-size:9px;color:var(--muted)">Raw ROS SGP</div><div id="ros-add-raw" style="font-size:12px;font-weight:500"></div></div>';
+  h += '<div><div style="font-size:9px;color:var(--muted)">Team ROS SGP</div><div id="ros-add-team" style="font-size:12px;font-weight:500"></div></div>';
+  h += '</div></div></div></div>';
+  h += '</div>';
+
+  h += '</div>'; // end player cards grid
+
+  // Net SGP card — same DOM ID as Waivers simulator
+  h += '<div id="ros-net-card" style="display:none;width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 8px 11px;text-align:center;margin-top:2px"></div>';
+  // Rate-stat warning placeholder
+  h += '<div id="ros-net-warning" style="display:none;font-size:11px;color:#854f0b;background:rgba(186,117,23,0.08);border-radius:6px;padding:6px 10px;margin-top:6px"></div>';
+  // Per-category bars / breakdown
+  h += '<div id="ros-ad-bars" style="display:none;margin-top:12px;padding-top:10px;border-top:0.5px solid var(--border)"></div>';
+  // Detailed stats comparison table
+  h += '<div id="ros-ad-stats" style="display:none;margin-top:12px;padding-top:10px;border-top:0.5px solid var(--border)"></div>';
+
+  h += '</div>'; // end ros-trades-verify-cards
+  h += '</div>'; // end card
+  return h;
+}
+
+// ── Trade Suggestions card markup ─────────────────────────────────────────
 function _rosBuildTradeSuggestionsHtml() {
   if (!_rosSelectedTeam) return '';
   if (!window._playerRosCatHit || !window._playerRosCatPit) return '';
@@ -6466,9 +6534,19 @@ window.rosTradeSugTryThis = function(giveEnc, getEnc, isHit) {
     return;
   }
   if (typeof rosAdSelect === 'function') rosAdSelect('add', addIdx, 0);
-  // Scroll to simulator
-  var simEl = document.getElementById('ros-mode-pill-row');
-  if (simEl) simEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // On Trades tab, reveal the verification panel and scroll to it.
+  // On Waivers tab, scroll to the simulator mode-pill-row.
+  if (_rosCurrentTab === 'trades') {
+    var emptyEl = document.getElementById('ros-trades-verify-empty');
+    var cardsEl = document.getElementById('ros-trades-verify-cards');
+    if (emptyEl) emptyEl.style.display = 'none';
+    if (cardsEl) cardsEl.style.display = 'block';
+    var verifyEl = document.getElementById('ros-trades-verify-card');
+    if (verifyEl) verifyEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else {
+    var simEl = document.getElementById('ros-mode-pill-row');
+    if (simEl) simEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 };
 
 function _rosBuildTeamNeedHtml(dashMode) {
@@ -6801,7 +6879,11 @@ function _rosAdBuildPanelHtml() {
 
   // Branch by tab
   if (_rosCurrentTab === 'trades') {
-    // Trades tab — only the ROS-driven Trade Suggestions card (no simulator)
+    // Trades tab — verification panel (read-only) + Trade Suggestions card.
+    // The verification panel uses the SAME DOM IDs the simulator uses on the
+    // Waivers tab so the existing render functions (rosAdSelect, _rosAdRenderBars,
+    // _rosAdRenderStats) write to it without modification.
+    h += _rosBuildTradesVerificationPanelHtml();
     h += _rosBuildTradeSuggestionsHtml();
     return h;
   }
@@ -7906,7 +7988,8 @@ window.rosAdSelect = function(side, idx, slot) {
     // Update array — write to slot, padding with nulls if necessary
     while (_rosAdSelected.length < slot) _rosAdSelected.push(null);
     _rosAdSelected[slot] = p;
-    document.getElementById('ros-add-search'+sfx).value = p._displayName;
+    var searchEl_a = document.getElementById('ros-add-search'+sfx);
+    if (searchEl_a) searchEl_a.value = p._displayName;
     document.getElementById('ros-add-card'+sfx).style.display='block';
     document.getElementById('ros-add-hs'+sfx).src = p.hs||'';
     document.getElementById('ros-add-hs'+sfx).style.display = p.hs?'block':'none';
@@ -7948,7 +8031,8 @@ window.rosAdSelect = function(side, idx, slot) {
         addInp.placeholder = 'Search ' + _rosDropPos + ' players...';
       }
     }
-    document.getElementById('ros-drop-search'+sfx).value = r._displayName;
+    var searchEl_d = document.getElementById('ros-drop-search'+sfx);
+    if (searchEl_d) searchEl_d.value = r._displayName;
     document.getElementById('ros-drop-card'+sfx).style.display='block';
     document.getElementById('ros-drop-hs'+sfx).src = r.hs||'';
     document.getElementById('ros-drop-hs'+sfx).style.display = r.hs?'block':'none';
