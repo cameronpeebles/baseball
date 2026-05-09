@@ -18654,72 +18654,103 @@ function renderLeadersPage() {
 
   html += '</div>';
 
-  // ── Hitting leaders ───────────────────────────────────────────────────────
+  // ── Top-5 grid card builder ──────────────────────────────────────────────
+  // Renders a single column: header bar (cat label + full name) + 5 ranked
+  // rows (rank #, name, team, value). Top row's value highlighted dark green.
+  function topFiveCard(cat, leaders) {
+    var h = '';
+    h += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">';
+    // Header
+    h += '<div style="padding:10px 12px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:baseline">';
+    h += '<span style="font-size:12px;font-weight:600;letter-spacing:0.05em;color:var(--text)">'+cat.key+'</span>';
+    h += '<span style="font-size:9px;color:var(--muted);text-transform:uppercase">'+cat.label+'</span>';
+    h += '</div>';
+    // Body — up to 5 ranked rows
+    h += '<div style="padding:4px 0">';
+    if (!leaders.length) {
+      h += '<div style="padding:14px 12px;font-size:11px;color:var(--muted);font-style:italic">No qualifiers</div>';
+    } else {
+      leaders.forEach(function(p, i) {
+        var ti = S.teamInfo[p.ftId] || {};
+        var teamShort = ti.shortName || ti.name || '';
+        var isLast = i === leaders.length - 1;
+        var sep = isLast ? '' : ';border-bottom:0.5px solid var(--border)';
+        var valColor = (i === 0) ? '#0F6E56' : 'var(--text)';
+        var valWeight = (i === 0) ? '600' : '500';
+        h += '<div style="display:flex;align-items:center;padding:6px 12px;gap:8px'+sep+'">';
+        h += '<span style="font-size:10px;color:var(--muted);width:10px;font-weight:500">'+(i+1)+'</span>';
+        h += '<div style="flex:1;min-width:0">';
+        h += '<div style="font-size:12px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(p.name)+'</div>';
+        h += '<div style="font-size:9px;color:var(--muted)">'+escHtml(teamShort)+'</div>';
+        h += '</div>';
+        h += '<span style="font-size:13px;font-weight:'+valWeight+';color:'+valColor+'">'+cat.fmt(p.val)+'</span>';
+        h += '</div>';
+      });
+    }
+    h += '</div></div>';
+    return h;
+  }
+
+  function escHtml(s){ return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // Helper: pick top N players (with qualifier filter) from a row set + cat config
+  function topNFor(cat, rows, idx, n, ascending) {
+    var qualified = [];
+    rows.forEach(function(row) {
+      var cells = row.cells || [];
+      var scorer = row.scorer || {};
+      var val = gv(cells, cat.key, idx);
+      if (val == null) return;
+      if (cat.min && cat.minKey) {
+        var qualifier = gv(cells, cat.minKey, idx) || 0;
+        if (qualifier < cat.min) return;
+      }
+      qualified.push({
+        name: scorer.name || '',
+        ftId: (cells[1] && cells[1].teamId) || '',
+        hs: scorer.headshotUrl || '',
+        pos: scorer.posShortNames || '',
+        val: val
+      });
+    });
+    qualified.sort(function(a,b){ return ascending ? a.val - b.val : b.val - a.val; });
+    return qualified.slice(0, n);
+  }
+
+  // ── Hitting top-5 grid ───────────────────────────────────────────────────
   html += '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Hitting</div>';
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:24px">';
+  html += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:24px">';
 
   var HIT_CATS = [
-    {key:'HR',  label:'Home Runs',    color:RED,    fmt:function(v){return Math.round(v);},    min:0},
-    {key:'R',   label:'Runs',         color:ACCENT, fmt:function(v){return Math.round(v);},    min:0},
-    {key:'RBI', label:'RBI',          color:ACCENT, fmt:function(v){return Math.round(v);},    min:0},
-    {key:'SB',  label:'Stolen Bases', color:'#8e44ad', fmt:function(v){return Math.round(v);}, min:0},
-    {key:'AVG', label:'Batting Avg',  color:BLUE,   fmt:function(v){return v.toFixed(3);},     min:20, minKey:'AB'},
-    {key:'H',   label:'Hits',         color:ACCENT, fmt:function(v){return Math.round(v);},    min:0},
-    {key:'AB',  label:'At Bats',      color:'var(--muted)', fmt:function(v){return Math.round(v);}, min:0}
+    {key:'R',   label:'Runs',         fmt:function(v){return Math.round(v);},    min:0,  hi:true},
+    {key:'HR',  label:'Home Runs',    fmt:function(v){return Math.round(v);},    min:0,  hi:true},
+    {key:'RBI', label:'Runs Batted In', fmt:function(v){return Math.round(v);},  min:0,  hi:true},
+    {key:'SB',  label:'Stolen Bases', fmt:function(v){return Math.round(v);},    min:0,  hi:true},
+    {key:'AVG', label:'Average',      fmt:function(v){return v.toFixed(3);},     min:20, minKey:'AB', hi:true}
   ];
 
   HIT_CATS.forEach(function(cat) {
-    var best = null, bestVal = -Infinity;
-    rosteredHitters.forEach(function(row) {
-      var cells = row.cells || [];
-      var scorer = row.scorer || {};
-      var val = gv(cells, cat.key, hitIdx);
-      if (val == null) return;
-      if (cat.min && cat.minKey) {
-        var qualifier = gv(cells, cat.minKey, hitIdx) || 0;
-        if (qualifier < cat.min) return;
-      }
-      if (val > bestVal) {
-        bestVal = val;
-        best = { name: scorer.name||'', ftId: (cells[1]&&cells[1].teamId)||'', hs: scorer.headshotUrl||'', pos: scorer.posShortNames||'' };
-      }
-    });
-    if (best) html += playerTile(cat.label, cat.color, best.name, cat.fmt(bestVal), best.ftId, best.hs, best.pos);
+    var top5 = topNFor(cat, rosteredHitters, hitIdx, 5, !cat.hi);
+    html += topFiveCard(cat, top5);
   });
 
   html += '</div>';
 
-  // ── Pitching leaders ──────────────────────────────────────────────────────
+  // ── Pitching top-5 grid ──────────────────────────────────────────────────
   html += '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Pitching</div>';
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:32px">';
+  html += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:32px">';
 
   var PIT_CATS = [
-    {key:'K',    label:'Strikeouts', color:RED,    fmt:function(v){return Math.round(v);},  min:0,  hi:true},
-    {key:'W',    label:'Wins',       color:ACCENT, fmt:function(v){return Math.round(v);},  min:0,  hi:true},
-    {key:'SVH3', label:'SVH3',       color:'#8e44ad', fmt:function(v){return v.toFixed(1);}, min:0, hi:true},
-    {key:'ERA',  label:'ERA',        color:BLUE,   fmt:function(v){return v.toFixed(2);},   min:5,  hi:false, minKey:'IP'},
-    {key:'WHIP', label:'WHIP',       color:BLUE,   fmt:function(v){return v.toFixed(2);},   min:5,  hi:false, minKey:'IP'},
-    {key:'IP',   label:'Innings Pitched', color:'var(--muted)', fmt:function(v){return v.toFixed(1);}, min:0, hi:true}
+    {key:'W',    label:'Wins',          fmt:function(v){return Math.round(v);},  min:0, hi:true},
+    {key:'K',    label:'Strikeouts',    fmt:function(v){return Math.round(v);},  min:0, hi:true},
+    {key:'SVH3', label:'Sv + Hld',      fmt:function(v){return v.toFixed(1);},   min:0, hi:true},
+    {key:'ERA',  label:'Earned Run Avg',fmt:function(v){return v.toFixed(2);},   min:5, minKey:'IP', hi:false},
+    {key:'WHIP', label:'Walks+Hits/IP', fmt:function(v){return v.toFixed(2);},   min:5, minKey:'IP', hi:false}
   ];
 
   PIT_CATS.forEach(function(cat) {
-    var best = null, bestVal = cat.hi ? -Infinity : Infinity;
-    rosteredPitchers.forEach(function(row) {
-      var cells = row.cells || [];
-      var scorer = row.scorer || {};
-      var val = gv(cells, cat.key, pitIdx);
-      if (val == null) return;
-      if (cat.min && cat.minKey) {
-        var qualifier = gv(cells, cat.minKey, pitIdx) || 0;
-        if (qualifier < cat.min) return;
-      }
-      var better = cat.hi ? val > bestVal : val < bestVal;
-      if (better) {
-        bestVal = val;
-        best = { name: scorer.name||'', ftId: (cells[1]&&cells[1].teamId)||'', hs: scorer.headshotUrl||'', pos: scorer.posShortNames||'' };
-      }
-    });
-    if (best) html += playerTile(cat.label, cat.color, best.name, cat.fmt(bestVal), best.ftId, best.hs, best.pos);
+    var top5 = topNFor(cat, rosteredPitchers, pitIdx, 5, !cat.hi);
+    html += topFiveCard(cat, top5);
   });
 
   html += '</div>';
