@@ -5489,9 +5489,9 @@ window.appendJoeWeeklyCharts = function() {
     return { teamId:teamId, teamName:r.team, joe:r.joe };
   });
 
-  function joeAvgCol(v) { return v > 0 ? '#1D9E75' : v < 0 ? '#E24B4A' : '#EF9F27'; }
-  function joePtCol(v)  { return v > 0 ? '#1D9E75' : v < 0 ? '#E24B4A' : '#EF9F27'; }
-  function joePtStr(v)  { return v > 0 ? '#0F6E56' : v < 0 ? '#A32D2D' : '#854F0B'; }
+  function joeAvgCol(v) { return v >= 0.12 ? '#1D9E75' : v <= -0.12 ? '#E24B4A' : '#EF9F27'; }
+  function joePtCol(v)  { return v >= 0.12 ? '#1D9E75' : v <= -0.12 ? '#E24B4A' : '#EF9F27'; }
+  function joePtStr(v)  { return v >= 0.12 ? '#0F6E56' : v <= -0.12 ? '#A32D2D' : '#854F0B'; }
 
   var uid = 'joe-wk-' + Date.now();
   var html = '<div class="card" style="margin-top:20px;padding:16px">';
@@ -12612,6 +12612,37 @@ function renderArchetypePage() {
     teamScores.forEach(function(t){ t.actualRank = rankById[t.teamId] || null; });
   })();
 
+  // ── Actual H2H from Fantrax Standings (main H2H Rotisserie table) ──────
+  // Mirrors per-team diagnostic logic: take main standings table, sort by
+  // W desc → PTS desc → that's the H2H rank for each team.
+  (function attachActualH2H() {
+    var stTables = (S.standingsData && S.standingsData.data && S.standingsData.data.tableList) || [];
+    var stMain = null;
+    for (var i = 0; i < stTables.length; i++) {
+      if (stTables[i].tableType === 'SECTION_HEADING') continue;
+      if ((stTables[i].rows || []).length > 0) { stMain = stTables[i]; break; }
+    }
+    if (!stMain) return;
+    var hIdx = {};
+    var vh = (stMain.header && stMain.header.cells) || [];
+    vh.forEach(function(h, i) {
+      if (h.key) hIdx[h.key.toUpperCase()] = i;
+      if (h.shortName) hIdx[h.shortName.toUpperCase()] = i;
+    });
+    var wi = hIdx['W'], pi = hIdx['PTS'];
+    if (wi == null) return;
+    var rows = (stMain.rows || []).map(function(row) {
+      var fc = row.fixedCells || [], cells = row.cells || [];
+      var id = ''; fc.forEach(function(c){ if (c.teamId) id = c.teamId; });
+      var w = parseFloat((cells[wi] || {}).content) || 0;
+      var pts = (pi != null) ? (parseFloat((cells[pi] || {}).content) || 0) : 0;
+      return { id: id, w: w, pts: pts };
+    }).sort(function(a, b){ return b.w - a.w || b.pts - a.pts; });
+    var h2hById = {};
+    rows.forEach(function(r, idx){ if (r.id) h2hById[r.id] = idx + 1; });
+    teamScores.forEach(function(t){ t.actualH2H = h2hById[t.teamId] || null; });
+  })();
+
   // ── ROS% per team — mirror diagnostic ROS% ─────────────────────────────
   // Sum raw Team ROS SGP per team across rostered players who pass the
   // playing-time filter. Flat multipliers. Available only when FP data is loaded.
@@ -12801,8 +12832,8 @@ function renderArchetypePage() {
   html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
   html += '<thead><tr>';
   var headers = rosAvailable
-    ? ['Team','fWAR%','Lg Rating%','ROS%','JOE Factor','Expected Score','Interpretation','Actual Rank','Expected Rank','Confidence Band','Archetype','Direction','Action']
-    : ['Team','fWAR%','Lg Rating%','JOE Factor','Expected Score','Interpretation','Actual Rank','Expected Rank','Confidence Band','Archetype','Direction','Action'];
+    ? ['Team','fWAR%','Lg Rating%','ROS%','JOE Factor','Expected Score','Interpretation','Actual Rank','Actual H2H','Expected Rank','Confidence Band','Archetype','Direction','Action']
+    : ['Team','fWAR%','Lg Rating%','JOE Factor','Expected Score','Interpretation','Actual Rank','Actual H2H','Expected Rank','Confidence Band','Archetype','Direction','Action'];
   headers.forEach(function(h){
     html += '<th style="'+thStyle+'">'+h+'</th>';
   });
@@ -12861,6 +12892,18 @@ function renderArchetypePage() {
       html += '<td style="'+tdStyle+';font-size:12px;color:var(--muted)">&mdash;</td>';
     }
 
+    // Actual H2H (from Fantrax Standings main table, sorted by W desc / PTS desc)
+    if (t.actualH2H != null) {
+      var deltaH = t.rank - t.actualH2H;
+      var deltaColH = 'var(--muted)';
+      var deltaTxtH = '';
+      if (deltaH > 0)      { deltaColH = '#1e6b3a'; deltaTxtH = ' &uarr;'+deltaH; }
+      else if (deltaH < 0) { deltaColH = '#c0392b'; deltaTxtH = ' &darr;'+Math.abs(deltaH); }
+      html += '<td style="'+tdStyle+';font-size:12px;color:var(--text);font-weight:500">'+ordinal(t.actualH2H)+'<span style="font-size:10px;color:'+deltaColH+';font-weight:500">'+deltaTxtH+'</span></td>';
+    } else {
+      html += '<td style="'+tdStyle+';font-size:12px;color:var(--muted)">&mdash;</td>';
+    }
+
     // Expected Rank
     html += '<td style="'+tdStyle+';font-size:12px;color:var(--muted)">'+ordinal(t.rank)+'</td>';
 
@@ -12889,9 +12932,11 @@ function renderArchetypePage() {
   setTimeout(function() {
     if (typeof Chart === 'undefined') return;
 
-    function joeAvgCol(v) { return v > 0 ? '#1D9E75' : v < 0 ? '#E24B4A' : '#EF9F27'; }
-    function joePtCol(v)  { return v > 0 ? '#1D9E75' : v < 0 ? '#E24B4A' : '#EF9F27'; }
-    function joePtStr(v)  { return v > 0 ? '#0F6E56' : v < 0 ? '#A32D2D' : '#854F0B'; }
+    // Lucky/Neutral/Unlucky bucketing matches the row-level joeBucket thresholds
+    // (±0.12) so the scatter dot colors agree with the legend labels.
+    function joeAvgCol(v) { return v >= 0.12 ? '#1D9E75' : v <= -0.12 ? '#E24B4A' : '#EF9F27'; }
+    function joePtCol(v)  { return v >= 0.12 ? '#1D9E75' : v <= -0.12 ? '#E24B4A' : '#EF9F27'; }
+    function joePtStr(v)  { return v >= 0.12 ? '#0F6E56' : v <= -0.12 ? '#A32D2D' : '#854F0B'; }
 
     // ── Scatter chart ────────────────────────────────────────────────────────
     var scEl = document.getElementById(scatterUid);
