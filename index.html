@@ -7209,6 +7209,74 @@ function _rosCurrSGP(cs, isHit) {
 var _loSelectedTeam = null;
 var _loActiveTab = 'hit';
 
+// MLB team code normalization. Fantrax and statsapi.mlb.com agree on most
+// abbreviations but diverge for ~5 teams. Map every known variant to a single
+// canonical form so lookups in either direction work.
+var _LO_TEAM_ALIASES = {
+  // Tampa Bay
+  'TB':'TB', 'TBR':'TB',
+  // Chicago White Sox
+  'CWS':'CWS', 'CHW':'CWS', 'WSX':'CWS',
+  // Washington
+  'WSH':'WSH', 'WAS':'WSH',
+  // Arizona
+  'AZ':'ARI', 'ARI':'ARI',
+  // Kansas City
+  'KC':'KC', 'KCR':'KC',
+  // San Diego
+  'SD':'SD', 'SDP':'SD',
+  // San Francisco
+  'SF':'SF', 'SFG':'SF',
+  // Chicago Cubs
+  'CHC':'CHC', 'CUB':'CHC'
+};
+function _loNormTeam(code) {
+  if (!code) return '';
+  var u = (code+'').toUpperCase().trim();
+  return _LO_TEAM_ALIASES[u] || u;
+}
+
+// Console diagnostic — paste in DevTools to see what's mismatched.
+// Usage: _loDiagnostics()
+window._loDiagnostics = function() {
+  var pr = window._loProbables;
+  var cs = window._rosCurrentStats || {};
+  var fantraxTeams = {};
+  Object.keys(cs).forEach(function(k){ if (cs[k] && cs[k].mlb) fantraxTeams[cs[k].mlb] = (fantraxTeams[cs[k].mlb]||0)+1; });
+  console.log('[LO] Fantrax MLB codes in roster:', Object.keys(fantraxTeams).sort().join(', '));
+  if (pr && pr.schedule) {
+    console.log('[LO] MLB API codes in probables.schedule:', Object.keys(pr.schedule).sort().join(', '));
+    var ftSet = {}; Object.keys(fantraxTeams).forEach(function(t){ ftSet[_loNormTeam(t)] = t; });
+    var prSet = {}; Object.keys(pr.schedule).forEach(function(t){ prSet[_loNormTeam(t)] = t; });
+    var unmatchedFt = Object.keys(ftSet).filter(function(t){ return !prSet[t]; });
+    var unmatchedPr = Object.keys(prSet).filter(function(t){ return !ftSet[t]; });
+    if (unmatchedFt.length) console.warn('[LO] Fantrax codes with no probables match:', unmatchedFt.map(function(t){return ftSet[t]+'→'+t;}));
+    if (unmatchedPr.length) console.warn('[LO] Probables codes with no Fantrax match:', unmatchedPr.map(function(t){return prSet[t]+'→'+t;}));
+    if (!unmatchedFt.length && !unmatchedPr.length) console.log('[LO] All team codes resolve. ✓');
+  } else {
+    console.warn('[LO] No probables loaded. Run fetch_probables.py first.');
+  }
+  if (pr && pr.games) {
+    console.log('[LO] Today: '+pr.games.length+' games, '+pr.games.filter(function(g){return g.homeSP&&g.awaySP;}).length+' with both SPs.');
+    var spNames = []; pr.games.forEach(function(g){ if (g.homeSP) spNames.push(g.homeSP.name); if (g.awaySP) spNames.push(g.awaySP.name); });
+    console.log('[LO] Probable SPs today:', spNames.join(', '));
+    // Check how many resolve to FP data
+    var spByName = {};
+    (_rosPitData||[]).forEach(function(p){
+      var nm = p._displayName || p.name || '';
+      var k = (typeof _normPlayerKey === 'function') ? _normPlayerKey(nm) : nm.toLowerCase();
+      if (k) spByName[k] = p;
+    });
+    var resolved = 0, unresolved = [];
+    spNames.forEach(function(nm){
+      var k = (typeof _normPlayerKey === 'function') ? _normPlayerKey(nm) : nm.toLowerCase();
+      if (spByName[k]) resolved++; else unresolved.push(nm);
+    });
+    console.log('[LO] '+resolved+' of '+spNames.length+' SPs resolved to FP projection data.');
+    if (unresolved.length) console.warn('[LO] Unresolved SPs:', unresolved);
+  }
+};
+
 // League slot config (the user's league: 14 hitting + 9 pitching).
 // Order matters — fill scarcity-ordered (single-pos before flex).
 var _LO_HIT_SLOTS = [
@@ -7286,7 +7354,7 @@ function _loBuildRoster(teamId, isHit) {
     out.push({
       key: key,
       name: cs.name || fp._displayName || fp.name || key,
-      mlb: cs.mlb || '',
+      mlb: _loNormTeam(cs.mlb || ''),
       hs: cs.hs || '',
       pos: posList,
       posStr: cs.pos || '',
@@ -7322,7 +7390,26 @@ function _loTodayHit(pl, ctx) {
     lbl = 'Matchup TBD';
   }
   var score = perGame * (plays ? 1 : 0) * mlt;
-  return { score: score, raw: perGame, multLabel: lbl, multValue: mlt, oppDesc: oppDesc, plays: plays, perGame: perGame };
+  // Build oppSP info object the card uses to render the strip.
+  // Pull current-season stats (ERA/WHIP/IP/K) from _rosCurrentStats to avoid
+  // showing ROS projections (less timely for matchup decisions).
+  var oppSPInfo = null;
+  if (oppSP && plays) {
+    var oppName = oppSP._displayName || oppSP.name || '';
+    var oppKey = (typeof _normPlayerKey === 'function') ? _normPlayerKey(oppName) : oppName.toLowerCase();
+    var oppCur = (window._rosCurrentStats||{})[oppKey] || null;
+    // Handedness: try oppSP.throws if FantasyPros has it, else look up _rosCurrentStats.
+    var hand = '';
+    if (oppSP.throws) hand = oppSP.throws;
+    else if (oppCur && oppCur.throws) hand = oppCur.throws;
+    var era = oppCur && oppCur.ERA != null ? oppCur.ERA : (oppSP.ERA != null ? oppSP.ERA : null);
+    var whip = oppCur && oppCur.WHIP != null ? oppCur.WHIP : (oppSP.WHIP != null ? oppSP.WHIP : null);
+    var ip = oppCur && oppCur.IP != null ? oppCur.IP : (oppSP.IP != null ? oppSP.IP : null);
+    var k = oppCur && oppCur.K != null ? oppCur.K : (oppSP.K != null ? oppSP.K : null);
+    var k9 = (k != null && ip > 0) ? (k / ip * 9) : null;
+    oppSPInfo = { name: oppName, hand: hand, era: era, whip: whip, k9: k9, hasStats: era != null || whip != null };
+  }
+  return { score: score, raw: perGame, multLabel: lbl, multValue: mlt, oppDesc: oppDesc, plays: plays, perGame: perGame, oppSPInfo: oppSPInfo };
 }
 
 function _loTodayPit(pl, ctx) {
@@ -7411,8 +7498,9 @@ function _loBuildContext() {
       var sgp = _rosAdPlayerSGP(p, true) || 0;
       var ab = parseFloat(p.AB||0); var g = ab > 0 ? Math.max(1, ab/3.7) : 150;
       var perGame = sgp / g;
-      if (!byMLB[cs.mlb]) byMLB[cs.mlb] = [];
-      byMLB[cs.mlb].push(perGame);
+      var canon = _loNormTeam(cs.mlb);
+      if (!byMLB[canon]) byMLB[canon] = [];
+      byMLB[canon].push(perGame);
     });
     Object.keys(byMLB).forEach(function(mlb){
       var arr = byMLB[mlb].sort(function(a,b){ return b-a; }).slice(0,9);
@@ -7426,18 +7514,16 @@ function _loBuildContext() {
   // ── Wire today's probables + schedule ──────────────────────────────────
   if (probables && probables.games) {
     var todayStr = probables.today;
-    // Mark every team in the schedule as "plays today" if they have a game today.
-    // Anything not in the schedule defaults to "off" — but only mark teams that
-    // appear in the broader schedule map so we can distinguish "off day" from
-    // "missing data".
+    // Normalize every team code on the way in so lookups by Fantrax MLB codes
+    // (also normalized in _loBuildRoster) can match.
     Object.keys(probables.schedule || {}).forEach(function(mlb){
-      ctx.teamPlaysToday[mlb] = (probables.schedule[mlb].indexOf(todayStr) !== -1);
+      var canon = _loNormTeam(mlb);
+      ctx.teamPlaysToday[canon] = (probables.schedule[mlb].indexOf(todayStr) !== -1);
     });
-    // For each game today, capture opponent + probable SPs.
     probables.games.forEach(function(g){
-      ctx.opponentByMLB[g.home] = g.away;
-      ctx.opponentByMLB[g.away] = g.home;
-      // Resolve probable SPs to FP objects (if we have them in our data).
+      var home = _loNormTeam(g.home), away = _loNormTeam(g.away);
+      ctx.opponentByMLB[home] = away;
+      ctx.opponentByMLB[away] = home;
       function resolveSP(sp) {
         if (!sp || !sp.name) return null;
         var k = (typeof _normPlayerKey === 'function') ? _normPlayerKey(sp.name) : sp.name.toLowerCase();
@@ -7446,16 +7532,16 @@ function _loBuildContext() {
       var homeSP = resolveSP(g.homeSP);
       var awaySP = resolveSP(g.awaySP);
       // Hitter matchup: away team's hitters face home SP, home team's hitters face away SP.
-      if (homeSP) ctx.oppSPByMLB[g.away] = homeSP;
-      if (awaySP) ctx.oppSPByMLB[g.home] = awaySP;
+      if (homeSP) ctx.oppSPByMLB[away] = homeSP;
+      if (awaySP) ctx.oppSPByMLB[home] = awaySP;
       // Pitcher matchup: own SP gets matched to opposing lineup.
       if (g.homeSP && g.homeSP.name) {
         var hk = (typeof _normPlayerKey === 'function') ? _normPlayerKey(g.homeSP.name) : g.homeSP.name.toLowerCase();
-        ctx.spProbableByMLB[g.home] = hk;
+        ctx.spProbableByMLB[home] = hk;
       }
       if (g.awaySP && g.awaySP.name) {
         var ak = (typeof _normPlayerKey === 'function') ? _normPlayerKey(g.awaySP.name) : g.awaySP.name.toLowerCase();
-        ctx.spProbableByMLB[g.away] = ak;
+        ctx.spProbableByMLB[away] = ak;
       }
     });
   }
@@ -7686,10 +7772,8 @@ function _loCardHtml(p, isPick, tossUp, isHit, slot) {
   // Multi-eligibility hint
   var posHint = '';
   if (p.pos.length > 1) posHint = p.pos.slice(0,3).join('/');
-  // Header line
-  var teamGame = (p.mlb || '')+(t.oppDesc?(' &middot; '+t.oppDesc):'');
   var h = '';
-  h += '<div style="background:'+bg+';border:'+borderStyle+';border-radius:8px;padding:8px 10px;min-width:200px;max-width:220px;cursor:pointer;opacity:'+opacity+';position:relative;flex-shrink:0">';
+  h += '<div style="background:'+bg+';border:'+borderStyle+';border-radius:8px;padding:8px 10px;min-width:220px;max-width:240px;cursor:pointer;opacity:'+opacity+';position:relative;flex-shrink:0">';
   if (tossUp) h += '<div style="position:absolute;top:4px;right:6px;font-size:8px;color:#854f0b;font-weight:500;text-transform:uppercase;letter-spacing:0.04em">Toss-up</div>';
   h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">';
   h += '<div style="font-size:12px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">'+_loEsc(p.name)+'</div>';
@@ -7701,14 +7785,45 @@ function _loCardHtml(p, isPick, tossUp, isHit, slot) {
     h += '<div style="font-size:8px;color:var(--muted);line-height:1.2">raw</div>';
   }
   h += '</div></div>';
-  h += '<div style="font-size:10px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_loEsc(teamGame)+(posHint?(' &middot; '+posHint):'')+'</div>';
+  h += '<div style="font-size:10px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_loEsc(p.mlb || '')+(p.mlb && t.plays ? ' '+_loEsc(_loGameLabel(p, t)) : '')+(posHint?(' &middot; '+posHint):'')+'</div>';
   if (!t.plays && t.multLabel === 'Not probable') {
     h += '<div style="font-size:9px;color:var(--muted);font-style:italic;margin-top:3px">Not probable today</div>';
   } else if (!t.plays) {
     h += '<div style="font-size:9px;color:var(--muted);font-style:italic;margin-top:3px">'+(p.mlb||'Team')+' off day</div>';
+  } else if (isHit && t.oppSPInfo) {
+    // Full opp-pitcher strip: avatar (initials) · "vs Name (RHP)" stats · tier pill
+    var sp = t.oppSPInfo;
+    var initials = sp.name.split(/\s+/).map(function(part){ return part.charAt(0).toUpperCase(); }).slice(0,2).join('');
+    // Format last name with initial: "N. Eovaldi"
+    var nameParts = sp.name.split(/\s+/);
+    var lastDisplay = nameParts.length > 1
+      ? (nameParts[0].charAt(0)+'. '+nameParts.slice(1).join(' '))
+      : sp.name;
+    var statsLine = '';
+    if (sp.hasStats) {
+      var bits = [];
+      if (sp.era != null)  bits.push(sp.era.toFixed(2)+' ERA');
+      if (sp.whip != null) bits.push(sp.whip.toFixed(2)+' WHIP');
+      if (sp.k9 != null)   bits.push(sp.k9.toFixed(1)+' K/9');
+      statsLine = bits.join(' &middot; ');
+    } else {
+      statsLine = 'No current stats';
+    }
+    h += '<div style="margin-top:6px;padding-top:6px;border-top:0.5px dashed var(--border);display:flex;align-items:center;gap:6px">';
+    h += '<div style="width:22px;height:22px;border-radius:50%;background:var(--bg);border:0.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:500;color:var(--text)">'+_loEsc(initials)+'</div>';
+    h += '<div style="flex:1;min-width:0">';
+    h += '<div style="font-size:10px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">vs '+_loEsc(lastDisplay)+(sp.hand?(' <span style="color:var(--muted);font-weight:400">'+_loEsc(sp.hand)+'</span>'):'')+'</div>';
+    h += '<div style="font-size:9px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+statsLine+'</div>';
+    h += '</div>';
+    h += '<span style="font-size:8px;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;padding:1px 5px;border-radius:3px;background:'+tierBg+';color:'+tierFg+';white-space:nowrap;flex-shrink:0">'+_loEsc(t.multLabel)+'</span>';
+    h += '</div>';
   } else {
+    // Pitcher cards or hitters with no SP info: simple tier pill row.
     h += '<div style="display:flex;gap:4px;margin-top:4px;align-items:center;flex-wrap:wrap">';
     h += '<span style="font-size:8px;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;padding:1px 5px;border-radius:3px;background:'+tierBg+';color:'+tierFg+'">'+_loEsc(t.multLabel)+'</span>';
+    if (isHit && !t.oppSPInfo && t.plays) {
+      h += '<span style="font-size:9px;color:var(--muted)">vs TBD</span>';
+    }
     h += '</div>';
   }
   if (isPick) {
@@ -7719,6 +7834,23 @@ function _loCardHtml(p, isPick, tossUp, isHit, slot) {
 }
 
 function _loEsc(s) { return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Build the home/away game label like "vs CHC" or "@ STL" using the
+// opponent map in the build context. Falls back to '' if unknown.
+function _loGameLabel(p, t) {
+  // Need to know home/away — derive it from the global opponent map plus
+  // probables.games (where home/away are explicit). Caller has already
+  // verified t.plays, so we know there's a game.
+  var probables = window._loProbables;
+  if (!probables || !probables.games) return '';
+  var canon = _loNormTeam(p.mlb);
+  for (var i = 0; i < probables.games.length; i++) {
+    var g = probables.games[i];
+    if (_loNormTeam(g.home) === canon) return 'vs '+_loNormTeam(g.away);
+    if (_loNormTeam(g.away) === canon) return '@ '+_loNormTeam(g.home);
+  }
+  return '';
+}
 
 
 function _rosAdRenderBars() {
