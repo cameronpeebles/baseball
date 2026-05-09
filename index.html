@@ -7481,15 +7481,31 @@ window._loDiagnostics = function() {
     var s = (rl[k] && rl[k].statusId != null) ? String(rl[k].statusId) : '?';
     byStatus[s] = (byStatus[s]||0) + 1;
   });
-  console.log('[LO] statusId distribution across all roster entries:', byStatus);
-  if (_loSelectedTeam) {
-    var teamIL = [];
-    Object.keys(rl).forEach(function(k){
-      if (rl[k] && rl[k].teamId === _loSelectedTeam && String(rl[k].statusId) === '3') {
-        teamIL.push(k);
-      }
+  console.log('[LO] _rosRosterLookup statusId distribution (often unreliable for IL):', byStatus);
+
+  // Reliable IL source: rosters.json via S.rosterRaw.
+  if (S && S.rosterRaw && S.rosterRaw.data && S.rosterRaw.data.rosters) {
+    var rostersData = S.rosterRaw.data.rosters;
+    var rByStatus = {};
+    var teamIL_real = [];
+    Object.keys(rostersData).forEach(function(tid) {
+      var tables = (rostersData[tid].data && rostersData[tid].data.tables) || [];
+      tables.forEach(function(tbl) {
+        (tbl.rows || []).forEach(function(row) {
+          var sid = String(row.statusId || '1');
+          rByStatus[sid] = (rByStatus[sid]||0) + 1;
+          if (tid === _loSelectedTeam && sid === '3') {
+            teamIL_real.push((row.scorer && row.scorer.name) || '?');
+          }
+        });
+      });
     });
-    console.log('[LO] Selected team IL players (statusId="3"):', teamIL);
+    console.log('[LO] rosters.json statusId distribution (RELIABLE):', rByStatus);
+    if (_loSelectedTeam) {
+      console.log('[LO] Selected team IL players (from rosters.json):', teamIL_real);
+    }
+  } else {
+    console.warn('[LO] S.rosterRaw not loaded — cannot verify IL status from rosters.json');
   }
 };
 
@@ -7550,11 +7566,42 @@ function _loBuildRoster(teamId, isHit) {
   // Build list of this team's players with the right hit/pit type.
   // IL players (statusId='3') are excluded — they can't start, so they
   // shouldn't displace eligible bodies or clutter the bench row.
+  // 
+  // _rosRosterLookup's statusId is unreliable here because it's populated
+  // from the stats tables (S.hitRows/S.pitRows), which don't actually carry
+  // statusId for every player. The reliable source is S.rosterRaw — the
+  // rosters.json data — so we build a name→statusId lookup from that and
+  // consult it directly.
+  var statusByName = (function buildStatusMap() {
+    var m = {};
+    var rosters = S && S.rosterRaw && S.rosterRaw.data && S.rosterRaw.data.rosters;
+    if (!rosters) return m;
+    Object.keys(rosters).forEach(function(tid) {
+      if (tid !== teamId) return; // only need the selected team
+      var tables = (rosters[tid].data && rosters[tid].data.tables) || [];
+      tables.forEach(function(tbl) {
+        (tbl.rows || []).forEach(function(row) {
+          var nm = (row.scorer && row.scorer.name) || '';
+          if (!nm) return;
+          var nk = (typeof _normPlayerKey === 'function') ? _normPlayerKey(nm) : nm.toLowerCase();
+          if (nk) m[nk] = String(row.statusId || '1');
+        });
+      });
+    });
+    return m;
+  })();
+
   var out = [];
   Object.keys(rosterLookup).forEach(function(key){
     var entry = rosterLookup[key];
     if (!entry || entry.teamId !== teamId) return;
-    if (String(entry.statusId) === '3') return;  // skip IL (handle int or string)
+    // IL filter: prefer the name-keyed status from rosters.json over the
+    // potentially-empty entry.statusId. _normPlayerKey is used on both sides
+    // to align accents/suffixes.
+    var nameKey = (typeof _normPlayerKey === 'function') ? _normPlayerKey(key) : key;
+    var statusFromRosters = statusByName[nameKey] || statusByName[key];
+    var effStatus = statusFromRosters || String(entry.statusId || '1');
+    if (effStatus === '3') return;  // skip IL
     var cs = curStats[key]; if (!cs) return;
     if (!!cs.isHit !== !!isHit) return;
     var posList = _loParsePos(cs.pos);
