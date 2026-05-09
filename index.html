@@ -21,6 +21,9 @@ header { background: var(--accent); color: white; padding: 0 32px; display: flex
 .logo { font-family: var(--font-display); font-size: 22px; color: white; display: flex; align-items: center; gap: 10px; }
 .logo-dot { width: 8px; height: 8px; background: var(--accent2); border-radius: 50%; }
 .updated { font-size: 11px; color: rgba(255,255,255,0.55); font-weight: 300; }
+/* Pitcher grid cards: override the inline min/max-width from _loCardHtml so
+   each card fills its 3-column grid cell instead of being a fixed 220-240px. */
+.lo-pit-grid > div { min-width: 0 !important; max-width: none !important; }
 nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 32px; display: flex; overflow-x: auto; align-items: stretch; position: sticky; top: 56px; z-index: 99; }
 nav .nav-group { display: flex; flex-direction: column; padding: 8px 0 0; border-right: 1px solid var(--border); }
 nav .nav-group:last-child { border-right: none; }
@@ -7767,7 +7770,7 @@ function _loBuildContext() {
     opponentByMLB: {},       // MLB code → opponent MLB code
     oppSPByMLB: {},          // MLB code → opponent's probable SP (FP object) facing this team's hitters
     spProbableByMLB: {},     // MLB code → key of the probable SP today (so own SP gets the slot)
-    lineupStrengthByMLB: {}, // MLB code → sum of top-9 hitter ROS-SGP-per-game
+    lineupStrengthByMLB: {}, // MLB code → sum of top-9 hitter current-SGP-per-game
     spQuartiles: null,       // [Q1,Q2,Q3] cutoffs of SP _teamSGP across qualified SPs
     lineupQuartiles: null    // [Q1,Q2,Q3] cutoffs of team lineup strength
   };
@@ -7809,18 +7812,22 @@ function _loBuildContext() {
       ];
     }
   }
-  // Compute season-long lineup-strength quartiles. Per MLB team, sum top-9
-  // hitters' ROS-SGP-per-game.
-  if (_rosHitData && _rosHitData.length) {
+  // Compute lineup-strength quartiles using CURRENT-SEASON SGP per hitter.
+  // Mirrors the hitter-side approach (which uses opp SP's current ERA): both
+  // tier systems now reflect what's actually happening this season, not what
+  // FantasyPros projects forward. Per MLB team: sum top-9 hitters'
+  // current-season SGP-per-game.
+  if (window._rosCurrentStats && typeof _rosCurrSGP === 'function') {
     var byMLB = {};
-    _rosHitData.forEach(function(p){
-      var nm = p._displayName || p.name || '';
-      var k = (typeof _normPlayerKey === 'function') ? _normPlayerKey(nm) : nm.toLowerCase();
-      var cs = (window._rosCurrentStats||{})[k]; if (!cs || !cs.mlb) return;
-      var sgp = _rosAdPlayerSGP(p, true) || 0;
-      var ab = parseFloat(p.AB||0); var g = ab > 0 ? Math.max(1, ab/3.7) : 150;
-      var perGame = sgp / g;
-      var canon = _loNormTeam(cs.mlb);
+    var curStats = window._rosCurrentStats;
+    Object.keys(curStats).forEach(function(k) {
+      var row = curStats[k];
+      if (!row || !row.mlb || !row.isHit) return;
+      var ab = parseFloat(row.AB || 0);
+      if (ab <= 0) return; // no current sample
+      var sgp = _rosCurrSGP(row, true) || 0;
+      var perGame = sgp / Math.max(1, ab / 3.7);
+      var canon = _loNormTeam(row.mlb);
       if (!byMLB[canon]) byMLB[canon] = [];
       byMLB[canon].push(perGame);
     });
@@ -7828,9 +7835,9 @@ function _loBuildContext() {
       var arr = byMLB[mlb].sort(function(a,b){ return b-a; }).slice(0,9);
       ctx.lineupStrengthByMLB[mlb] = arr.reduce(function(a,b){return a+b;}, 0);
     });
-    var ls = Object.keys(ctx.lineupStrengthByMLB).map(function(k){ return ctx.lineupStrengthByMLB[k]; }).sort(function(a,b){ return a-b; });
-    if (ls.length >= 4) {
-      ctx.lineupQuartiles = [ls[Math.floor(ls.length*0.25)], ls[Math.floor(ls.length*0.5)], ls[Math.floor(ls.length*0.75)]];
+    var lsArr = Object.keys(ctx.lineupStrengthByMLB).map(function(k){ return ctx.lineupStrengthByMLB[k]; }).sort(function(a,b){ return a-b; });
+    if (lsArr.length >= 4) {
+      ctx.lineupQuartiles = [lsArr[Math.floor(lsArr.length*0.25)], lsArr[Math.floor(lsArr.length*0.5)], lsArr[Math.floor(lsArr.length*0.75)]];
     }
   }
   // ── Wire today's probables + schedule ──────────────────────────────────
@@ -8040,24 +8047,75 @@ function _loBuildGridHtml(result, isHit) {
   h += rosterSize + ' eligible '+(isHit?'hitters':'pitchers')+' &middot; '+(slotCount-unfilledCount)+' of '+slotCount+' slots filled';
   if (result.bench.length > 0) h += ' &middot; '+result.bench.length+' on bench';
   h += '</div>';
-  // Per-slot rows
-  result.perSlot.forEach(function(rs){
-    h += _loBuildSlotRowHtml(rs, isHit);
-  });
-  // Bench
-  if (result.bench.length) {
-    h += '<div style="margin-top:18px;padding-top:14px;border-top:0.5px solid var(--border)">';
-    h += '<div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Bench &middot; '+result.bench.length+'</div>';
-    h += '<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">';
-    result.bench.forEach(function(p){ h += _loCardHtml(p, false, false, isHit, null); });
-    h += '</div></div>';
+
+  if (!isHit) {
+    // ── Pitcher 3×3 grid layout ───────────────────────────────────────────
+    // 9 P slots are interchangeable in this league, so render them as a single
+    // 3-column grid (rows wrap automatically) instead of a horizontal scroller.
+    // Bench follows in the same column structure for visual continuity.
+    var rs = result.perSlot[0]; // pitchers always have a single perSlot entry
+    var picked = Array.isArray(rs.picked) ? rs.picked : [];
+    var ranked = rs.ranked || [];
+    var pickedKeys = {}; picked.forEach(function(p, i){ pickedKeys[p.key] = 'P' + (i+1); });
+    // Toss-up: top non-pick within 0.05 SGP of the cutoff line.
+    var cutoffIdx = picked.length - 1;
+    var cutoffScore = ranked[cutoffIdx] ? ranked[cutoffIdx]._today.score : null;
+    var nextScore   = ranked[cutoffIdx+1] ? ranked[cutoffIdx+1]._today.score : null;
+    var cutoffAmbiguous = (cutoffScore != null && nextScore != null && Math.abs(cutoffScore - nextScore) < 0.05);
+
+    h += '<div style="margin-bottom:8px;display:flex;align-items:center;gap:10px">';
+    h += '<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Lineup &middot; 9 slots</span>';
+    h += '<span style="font-size:11px;color:var(--muted)">'+(picked.length)+' of 9 filled</span>';
+    h += '</div>';
+    h += '<div class="lo-pit-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px">';
+    picked.forEach(function(p, i) {
+      // Toss-up only flags the last picked card if cutoff is ambiguous.
+      var tossUp = cutoffAmbiguous && i === cutoffIdx;
+      h += _loCardHtml(p, true, tossUp, false, rs.slot, pickedKeys[p.key]);
+    });
+    // Pad the grid with empty placeholders if <9 picks (e.g. light slate).
+    for (var pi = picked.length; pi < 9; pi++) {
+      h += '<div style="background:var(--bg);border:0.5px dashed var(--border);border-radius:8px;padding:8px 10px;display:flex;align-items:center;justify-content:center;min-height:90px">';
+      h += '<span style="font-size:11px;color:var(--muted);font-style:italic">Slot empty</span>';
+      h += '</div>';
+    }
+    h += '</div>';
+
+    // Bench: everything in `ranked` past the cutoff (already includes off-day SPs since they're scored 0).
+    var benchCards = ranked.slice(picked.length);
+    if (benchCards.length) {
+      h += '<div style="margin-bottom:8px;display:flex;align-items:center;gap:10px">';
+      h += '<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Bench &middot; '+benchCards.length+'</span>';
+      h += '</div>';
+      h += '<div class="lo-pit-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">';
+      benchCards.forEach(function(p, i) {
+        // Toss-up the FIRST bench card if it's within 0.05 of the cutoff.
+        var tossUp = cutoffAmbiguous && i === 0;
+        h += _loCardHtml(p, false, tossUp, false, rs.slot, null);
+      });
+      h += '</div>';
+    }
+  } else {
+    // ── Hitter view: per-slot rows (existing layout) ─────────────────────
+    result.perSlot.forEach(function(rs){
+      h += _loBuildSlotRowHtml(rs, isHit);
+    });
+    // Bench
+    if (result.bench.length) {
+      h += '<div style="margin-top:18px;padding-top:14px;border-top:0.5px solid var(--border)">';
+      h += '<div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Bench &middot; '+result.bench.length+'</div>';
+      h += '<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">';
+      result.bench.forEach(function(p){ h += _loCardHtml(p, false, false, isHit, null); });
+      h += '</div></div>';
+    }
   }
+
   // Footnote
   h += '<div style="margin-top:18px;padding-top:12px;border-top:0.5px solid var(--border);font-size:10px;color:var(--muted);line-height:1.5">';
-  h += 'Score = ROS-SGP-per-'+(isHit?'game':'start/appearance')+' &times; today\'s play chance &times; matchup multiplier. ';
+  h += 'Score = SGP-per-'+(isHit?'game':'start/appearance')+' (50% ROS + 50% current-season blend) &times; today\'s play chance &times; matchup multiplier. ';
   h += isHit
-    ? 'Hitter matchup buckets opp SP into season-long quartiles (top &rarr; Tough &minus;9%, bottom &rarr; Plus +9%; bullpen-discounted from raw &plusmn;15%).'
-    : 'SP matchup buckets opposing lineup strength into quartiles (top &rarr; Tough &minus;15%, bottom &rarr; Plus +15%). RPs not adjusted.';
+    ? 'Hitter matchup buckets opp SP\'s current-season ERA into quartiles (lowest ERA &rarr; Tough &minus;9%, highest &rarr; Easy +9%; bullpen-discounted from raw &plusmn;15%).'
+    : 'SP matchup buckets opposing lineup\'s current-season SGP into quartiles (top lineup &rarr; Tough &minus;15%, bottom &rarr; Easy +15%). RPs not adjusted.';
   h += '</div>';
   return h;
 }
