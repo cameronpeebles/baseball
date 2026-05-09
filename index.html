@@ -12531,6 +12531,26 @@ function renderArchetypePage() {
     return { teamId:teamId, teamName:teamName, fwarRaw:fwarPctTotal, lgRaw:lgRatingTotal, joe:joeVal };
   });
 
+  // ── Actual Rank from Fantrax Standings - Point Totals table ────────────
+  // Mirrors the lookup the per-team diagnostic uses: the season stats blob
+  // has a 'point total' table whose row order IS the league rank.
+  (function attachActualRank() {
+    var seasonTables = (S.seasonData && S.seasonData.data && S.seasonData.data.tableList) || [];
+    var ptTable = null;
+    for (var i = 0; i < seasonTables.length; i++) {
+      var cap = (seasonTables[i].caption || '').toLowerCase();
+      if (cap.indexOf('point total') !== -1) { ptTable = seasonTables[i]; break; }
+    }
+    if (!ptTable) return;
+    var rankById = {};
+    (ptTable.rows || []).forEach(function(row, idx) {
+      var fc = row.fixedCells || [];
+      var id = (fc[1] && fc[1].teamId) || '';
+      if (id) rankById[id] = idx + 1;
+    });
+    teamScores.forEach(function(t){ t.actualRank = rankById[t.teamId] || null; });
+  })();
+
   // ── ROS% per team — mirror diagnostic ROS% ─────────────────────────────
   // Sum raw Team ROS SGP per team across rostered players who pass the
   // playing-time filter. Flat multipliers. Available only when FP data is loaded.
@@ -12720,8 +12740,8 @@ function renderArchetypePage() {
   html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
   html += '<thead><tr>';
   var headers = rosAvailable
-    ? ['Team','fWAR%','Lg Rating%','ROS%','JOE Factor','Expected Score','Interpretation','Expected Rank','Confidence Band','Archetype','Direction','Action']
-    : ['Team','fWAR%','Lg Rating%','JOE Factor','Expected Score','Interpretation','Expected Rank','Confidence Band','Archetype','Direction','Action'];
+    ? ['Team','fWAR%','Lg Rating%','ROS%','JOE Factor','Expected Score','Interpretation','Actual Rank','Expected Rank','Confidence Band','Archetype','Direction','Action']
+    : ['Team','fWAR%','Lg Rating%','JOE Factor','Expected Score','Interpretation','Actual Rank','Expected Rank','Confidence Band','Archetype','Direction','Action'];
   headers.forEach(function(h){
     html += '<th style="'+thStyle+'">'+h+'</th>';
   });
@@ -12766,8 +12786,21 @@ function renderArchetypePage() {
     // Interpretation
     html += '<td style="'+tdStyle+'"><span style="font-size:11px;font-weight:500;color:'+ic+'">'+interpLabel(t.expScore)+'</span></td>';
 
-    // Expected Rank
+    // Actual Rank (from Fantrax Standings - Point Totals)
     function ordinal(n){ return n+(n===1?'st':n===2?'nd':n===3?'rd':'th'); }
+    if (t.actualRank != null) {
+      // Show delta vs expected rank: negative delta = overperforming (better than expected)
+      var delta = t.rank - t.actualRank;  // positive = beating expectations
+      var deltaCol = 'var(--muted)';
+      var deltaTxt = '';
+      if (delta > 0)      { deltaCol = '#1e6b3a'; deltaTxt = ' &uarr;'+delta; }   // beating expectations
+      else if (delta < 0) { deltaCol = '#c0392b'; deltaTxt = ' &darr;'+Math.abs(delta); } // underperforming
+      html += '<td style="'+tdStyle+';font-size:12px;color:var(--text);font-weight:500">'+ordinal(t.actualRank)+'<span style="font-size:10px;color:'+deltaCol+';font-weight:500">'+deltaTxt+'</span></td>';
+    } else {
+      html += '<td style="'+tdStyle+';font-size:12px;color:var(--muted)">&mdash;</td>';
+    }
+
+    // Expected Rank
     html += '<td style="'+tdStyle+';font-size:12px;color:var(--muted)">'+ordinal(t.rank)+'</td>';
 
     // Confidence Band
