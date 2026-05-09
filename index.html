@@ -7614,10 +7614,13 @@ function _loBuildRoster(teamId, isHit) {
     if (k) fpByKey[k] = p;
   });
   // Build list of this team's players with the right hit/pit type.
+  // IL players (statusId='3') are excluded — they can't start, so they
+  // shouldn't displace eligible bodies or clutter the bench row.
   var out = [];
   Object.keys(rosterLookup).forEach(function(key){
     var entry = rosterLookup[key];
     if (!entry || entry.teamId !== teamId) return;
+    if (entry.statusId === '3') return;  // skip IL
     var cs = curStats[key]; if (!cs) return;
     if (!!cs.isHit !== !!isHit) return;
     var posList = _loParsePos(cs.pos);
