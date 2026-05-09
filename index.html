@@ -776,6 +776,7 @@ td.neg { color: #c0392b; font-weight: 500; }
       <button class="trade-tab" onclick="showGuideTab('changelog',this)">Changelog</button>
       <button class="trade-tab" onclick="showGuideTab('archetype',this)">Team Archetype</button>
       <button class="trade-tab" onclick="showGuideTab('ros',this)">ROS</button>
+      <button class="trade-tab" onclick="showGuideTab('lineup',this)">Lineup</button>
     </div>
 
     <!-- Getting Started -->
@@ -2629,6 +2630,286 @@ td.neg { color: #c0392b; font-weight: 500; }
       </div>
 
     </div>
+
+    <!-- Lineup Organizer -->
+    <div id="guide-tab-lineup" class="trade-tab-content">
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">What the Lineup Organizer does</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <p>Daily lineup builder. For each starting slot in your league (C, 1B, 2B, 3B, SS, CI, MI, 5&times;OF, UT, 9&times;P), it ranks every eligible player on your roster by their expected SGP contribution <em>today</em> &mdash; weighted by whether their team plays, and adjusted for who they're facing. The top eligible player at each slot gets the green &quot;In lineup&quot; tag. Everyone left over lands on the bench row.</p>
+          <p style="margin-top:10px"><strong>What it isn't:</strong> the optimizer doesn't know what your actual Fantrax lineup currently is. It generates a recommendation from your full roster every time. &quot;In lineup&quot; means &quot;the optimizer's pick&quot;, not &quot;currently starting on Fantrax.&quot;</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Today-score formula</span><span style="font-size:12px;color:var(--muted)">Hitters and pitchers, end-to-end</span></div>
+        <div class="card-body" style="padding:20px">
+          <p style="font-size:13px;line-height:1.7;margin-bottom:14px">Each card's big number is the &quot;today-score&quot; &mdash; the expected SGP gain from starting this player today. The struck-through smaller number below is the same calculation <em>without</em> the matchup multiplier, so you can see exactly how much the opposing pitcher (or lineup) moved the needle.</p>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+            <div style="padding:14px;background:var(--bg);border-radius:8px;border-top:3px solid #1e6b3a">
+              <div style="font-weight:700;font-size:12px;color:#1e6b3a;margin-bottom:6px">HITTERS</div>
+              <div style="font-family:monospace;font-size:11px;line-height:1.7;background:var(--surface);padding:8px 10px;border-radius:4px;margin-bottom:8px">
+                ros_sgp     = _rosAdPlayerSGP(p, true)<br>
+                games_proj  = max(1, AB / 3.7)<br>
+                per_game    = ros_sgp / games_proj<br>
+                plays_today = team in today's MLB schedule<br>
+                <br>
+                score = per_game &times; plays_today &times; mult
+              </div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.6">AB / 3.7 estimates full-season games (a typical hitter gets ~3.7 AB per game). FantasyPros doesn't include G in their hitter projection, so this proxy is the best available signal for playing-time scaling.</div>
+            </div>
+            <div style="padding:14px;background:var(--bg);border-radius:8px;border-top:3px solid #1e6b3a">
+              <div style="font-weight:700;font-size:12px;color:#1e6b3a;margin-bottom:6px">PITCHERS</div>
+              <div style="font-family:monospace;font-size:11px;line-height:1.7;background:var(--surface);padding:8px 10px;border-radius:4px;margin-bottom:8px">
+                ros_sgp = _rosAdPlayerSGP(p, false)<br>
+                <br>
+                if SP:<br>
+                &nbsp;&nbsp;starts   = GS || (IP / 6)<br>
+                &nbsp;&nbsp;per_unit = ros_sgp / starts<br>
+                &nbsp;&nbsp;plays    = (probable today)<br>
+                <br>
+                if RP:<br>
+                &nbsp;&nbsp;per_unit = ros_sgp / G &times; 0.4<br>
+                &nbsp;&nbsp;plays    = team_plays_today<br>
+                <br>
+                score = per_unit &times; plays &times; mult
+              </div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.6">SPs only contribute on days they actually start &mdash; the probables data tells us this exactly. RPs are downweighted to 40% of per-game value since they only appear in ~40% of their team's games.</div>
+            </div>
+          </div>
+
+          <p style="font-size:12px;line-height:1.6;color:var(--muted);margin-top:8px"><strong style="color:var(--text)">Why per-game / per-start?</strong> ROS SGP is a season-aggregate counting number &mdash; for a daily decision we need rate, not volume. A player with 2.0 season ROS SGP and 162 games projects to ~0.012 SGP/game; a 1-start ace with 3.0 ROS SGP across 25 starts projects to ~0.12 SGP/start. That's the apples-to-apples comparison the optimizer needs.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Matchup adjustment (the multiplier)</span><span style="font-size:12px;color:var(--muted)">Quartile-based, season-long, stable</span></div>
+        <div class="card-body" style="padding:20px">
+          <p style="font-size:13px;line-height:1.7;margin-bottom:14px">Once the per-game/per-start raw score is computed, it's scaled by a multiplier based on the quality of who they're facing. Two separate quartile systems &mdash; one for hitters facing pitchers, one for pitchers facing lineups.</p>
+
+          <div style="margin-bottom:14px">
+            <div style="font-weight:600;font-size:13px;margin-bottom:8px">Hitters: opp SP quality buckets</div>
+            <p style="font-size:12px;line-height:1.6;margin-bottom:10px;color:var(--muted)">Every pitcher's <strong style="color:var(--text)">current-season ERA</strong> is sorted across the league and split into quartiles &mdash; what the SP is actually doing right now, not what FantasyPros projects forward. No IP minimum, so even rookies in their first start get bucketed. <strong style="color:var(--text)">Lower ERA = better pitcher = tougher matchup for the hitter.</strong></p>
+            <div style="font-family:monospace;font-size:11px;background:var(--surface);padding:10px 12px;border-radius:6px;line-height:1.8;margin-bottom:8px">
+              opp_sp_ERA &le; Q1 (25th)  &rarr;  Tough     &rarr;  &times; 0.91&nbsp;&nbsp;<span style="color:#854f0b">(&minus;9%)</span><br>
+              opp_sp_ERA &le; Q2 (50th)  &rarr;  Above-avg &rarr;  &times; 0.97&nbsp;&nbsp;<span style="color:#a06a1f">(&minus;3%)</span><br>
+              opp_sp_ERA &le; Q3 (75th)  &rarr;  Avg       &rarr;  &times; 1.03&nbsp;&nbsp;<span style="color:var(--muted)">(+3%)</span><br>
+              opp_sp_ERA &gt; Q3          &rarr;  Plus      &rarr;  &times; 1.09&nbsp;&nbsp;<span style="color:#1D9E75">(+9%)</span>
+            </div>
+            <p style="font-size:11px;color:var(--muted);line-height:1.6;margin:0 0 8px 0"><strong style="color:var(--text)">Why &plusmn;9% instead of the &plusmn;15% the quartile labels suggest?</strong> Bullpen discount. Modern starters average ~5.5 IP, so only ~60% of a hitter's PAs face the listed SP. The other 40% face a generic bullpen, where matchup is essentially neutral. Final swing: <code style="background:var(--surface);padding:1px 4px;border-radius:3px">1 + 0.6 &times; (raw_mult &minus; 1)</code>.</p>
+            <p style="font-size:11px;color:var(--muted);line-height:1.6;margin:0"><strong style="color:var(--text)">Why ERA, not ROS-SGP?</strong> Current ERA reflects how the SP is performing <em>now</em>. ROS projections regress hard toward league mean for unproven arms, so a rookie throwing 2.50 ERA across 3 starts gets projected as below-replacement going forward &mdash; making them look like a "Plus" matchup even though hitters are actually getting carved up. Trusting current production solves that.</p>
+          </div>
+
+          <div style="margin-bottom:14px">
+            <div style="font-weight:600;font-size:13px;margin-bottom:8px">Pitchers: opp lineup strength buckets</div>
+            <p style="font-size:12px;line-height:1.6;margin-bottom:10px;color:var(--muted)">For each MLB team, the top 9 hitters' ROS-SGP-per-game is summed. All 30 teams sorted, split into quartiles. Today's SP faces the opposing team's lineup tier.</p>
+            <div style="font-family:monospace;font-size:11px;background:var(--surface);padding:10px 12px;border-radius:6px;line-height:1.8;margin-bottom:8px">
+              lineup_strength &ge; Q3  &rarr;  Tough     &rarr;  &times; 0.85&nbsp;&nbsp;<span style="color:#854f0b">(&minus;15%)</span><br>
+              lineup_strength &ge; Q2  &rarr;  Above-avg &rarr;  &times; 0.95&nbsp;&nbsp;<span style="color:#a06a1f">(&minus;5%)</span><br>
+              lineup_strength &ge; Q1  &rarr;  Avg       &rarr;  &times; 1.05&nbsp;&nbsp;<span style="color:var(--muted)">(+5%)</span><br>
+              lineup_strength &lt; Q1   &rarr;  Plus      &rarr;  &times; 1.15&nbsp;&nbsp;<span style="color:#1D9E75">(+15%)</span>
+            </div>
+            <p style="font-size:11px;color:var(--muted);line-height:1.6;margin:0">Pitchers get the full &plusmn;15% &mdash; no bullpen discount because they face the entire lineup directly. <strong style="color:var(--text)">RPs are not adjusted</strong> &mdash; their PA samples per appearance are too small for matchup quality to matter consistently.</p>
+          </div>
+
+          <div style="padding:12px 14px;background:var(--accent-light);border-radius:8px;border-left:4px solid var(--accent);font-size:12px;line-height:1.6">
+            <strong>Why season-long quartiles instead of today's slate?</strong> Today's 12-15 probables are too small a sample to define stable cutoffs &mdash; the line between &quot;ace&quot; and &quot;above-avg&quot; would shift meaningfully day-to-day. Season-long quartiles (computed from your existing FantasyPros pitcher data) give a stable answer to &quot;is this guy a top-25% starter?&quot; that doesn't drift with the slate.
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Slot assignment algorithm</span><span style="font-size:12px;color:var(--muted)">Greedy, scarcity-ordered</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <p style="margin-bottom:14px">After every player has a today-score, slots are filled in <strong>scarcity order</strong> &mdash; single-position slots first, flex slots last. At each step, the highest-scoring unassigned eligible player wins the slot.</p>
+
+          <div style="font-family:monospace;font-size:11px;background:var(--surface);padding:12px 14px;border-radius:6px;line-height:1.8;margin-bottom:14px">
+            for slot in [C, 1B, 2B, 3B, SS, CI, MI,<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;OF1, OF2, OF3, OF4, OF5, UT]:<br>
+            &nbsp;&nbsp;eligible = [p for p in roster<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if p not assigned<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;and p.pos &cap; slot.eligible<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;and p.plays_today]<br>
+            &nbsp;&nbsp;eligible.sort(by score desc)<br>
+            &nbsp;&nbsp;slot.picked = eligible[0]
+          </div>
+
+          <p style="margin-bottom:10px;color:var(--muted);font-size:12px"><strong style="color:var(--text)">Why scarcity order?</strong> If you fill OF first and a player is eligible at both OF and 2B, they might steal an OF slot from someone less flexible &mdash; leaving 2B unfilled when a competent 2B was available. Going single-position first (where flexibility is lowest) makes sure rare-eligibility players land in the rare slots.</p>
+
+          <p style="margin-bottom:0;color:var(--muted);font-size:12px"><strong style="color:var(--text)">Off-day skip:</strong> A player whose MLB team isn't on today's schedule is excluded from the &quot;eligible&quot; pool entirely &mdash; they don't displace someone who is playing. They still appear in the ranked list (dimmed) so you can see the full bench.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Pitcher slots</span><span style="font-size:12px;color:var(--muted)">9 flexible P slots</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <p>The league's 9 P slots accept any pitcher type (SP/RP/P), so the optimizer ignores per-slot eligibility for pitchers entirely. It just sorts every pitcher on the roster by today-score and takes the top 9 with score &gt; 0. Players with <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">score = 0</code> (off day or SP not probable today) drop to the bench.</p>
+          <p style="margin-top:10px;color:var(--muted);font-size:12px">In practice this means probable SPs almost always win slots over RPs, and on light slate days (4 probable SPs) the 5 leftover slots fill with the highest-scoring RPs whose teams play.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Probables data &mdash; pipeline</span><span style="font-size:12px;color:var(--muted)">statsapi.mlb.com &rarr; data/probables.json</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <p style="margin-bottom:14px">The matchup multiplier needs to know who's pitching today. <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">fetch_fantrax.py</code> appends a block that hits MLB's free Stats API for the next 7 days of games with probable pitchers hydrated.</p>
+
+          <div style="font-family:monospace;font-size:11px;background:var(--surface);padding:10px 12px;border-radius:6px;line-height:1.6;margin-bottom:14px;overflow-x:auto">
+            GET https://statsapi.mlb.com/api/v1/schedule<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;?sportId=1&amp;startDate={today}&amp;endDate={today+7}<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&amp;hydrate=probablePitcher,team
+          </div>
+
+          <p style="margin-bottom:10px"><strong>Output: <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">data/probables.json</code></strong></p>
+          <div style="font-family:monospace;font-size:11px;background:var(--surface);padding:10px 12px;border-radius:6px;line-height:1.6;margin-bottom:14px;overflow-x:auto">
+            {<br>
+            &nbsp;&nbsp;&quot;fetched&quot;:  &quot;2026-05-08T18:33:00Z&quot;,<br>
+            &nbsp;&nbsp;&quot;today&quot;:    &quot;2026-05-08&quot;,<br>
+            &nbsp;&nbsp;&quot;games&quot;: [{<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&quot;home&quot;: &quot;PIT&quot;, &quot;away&quot;: &quot;CHC&quot;,<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&quot;homeSP&quot;: { &quot;id&quot;:..., &quot;name&quot;: &quot;Mike Burrows&quot; },<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&quot;awaySP&quot;: { &quot;id&quot;:..., &quot;name&quot;: &quot;Shota Imanaga&quot; }<br>
+            &nbsp;&nbsp;}, ...],<br>
+            &nbsp;&nbsp;&quot;schedule&quot;: { &quot;PIT&quot;:[&quot;2026-05-08&quot;,...], &quot;CHC&quot;:[...], ... }<br>
+            }
+          </div>
+
+          <p style="margin-bottom:0;color:var(--muted);font-size:12px"><strong style="color:var(--text)">Failure mode:</strong> if the MLB API call fails, the script writes an empty payload with an <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">error</code> field rather than blowing up the whole pipeline. The Lineup Organizer's status pill reflects this: green &quot;Matchup data on&quot; / amber &quot;Matchup data error&quot; / amber &quot;Matchup data missing&quot;.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Cross-source matching</span><span style="font-size:12px;color:var(--muted)">Three independent ID systems</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <p style="margin-bottom:14px">The Lineup Organizer joins three disjoint data sources. Getting them to agree took a few non-obvious bridges:</p>
+
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
+            <div style="display:flex;align-items:stretch">
+              <div style="width:4px;background:#1e6b3a;flex-shrink:0;border-radius:4px 0 0 4px"></div>
+              <div style="padding:12px 16px;background:var(--bg);flex:1;font-size:12px;line-height:1.6;border-radius:0 8px 8px 0;border:1px solid var(--border);border-left:none">
+                <strong>Fantrax roster</strong> &mdash; gives us <code style="background:var(--surface);padding:1px 5px;border-radius:3px">_rosRosterLookup[normRos(name)]</code> with team membership, and <code style="background:var(--surface);padding:1px 5px;border-radius:3px">_rosCurrentStats[key].mlb</code> with the player's MLB short code (e.g. &quot;NYY&quot;).
+              </div>
+            </div>
+            <div style="display:flex;align-items:stretch">
+              <div style="width:4px;background:#1e6b3a;flex-shrink:0;border-radius:4px 0 0 4px"></div>
+              <div style="padding:12px 16px;background:var(--bg);flex:1;font-size:12px;line-height:1.6;border-radius:0 8px 8px 0;border:1px solid var(--border);border-left:none">
+                <strong>FantasyPros ROS projections</strong> &mdash; <code style="background:var(--surface);padding:1px 5px;border-radius:3px">_rosHitData</code> / <code style="background:var(--surface);padding:1px 5px;border-radius:3px">_rosPitData</code>, keyed by <code style="background:var(--surface);padding:1px 5px;border-radius:3px">_normPlayerKey(_displayName)</code>. Has G/AB for hitters, GS/IP for pitchers.
+              </div>
+            </div>
+            <div style="display:flex;align-items:stretch">
+              <div style="width:4px;background:#1e6b3a;flex-shrink:0;border-radius:4px 0 0 4px"></div>
+              <div style="padding:12px 16px;background:var(--bg);flex:1;font-size:12px;line-height:1.6;border-radius:0 8px 8px 0;border:1px solid var(--border);border-left:none">
+                <strong>MLB Stats API probables</strong> &mdash; <code style="background:var(--surface);padding:1px 5px;border-radius:3px">probables.json</code>, with team abbreviations and SP <code style="background:var(--surface);padding:1px 5px;border-radius:3px">fullName</code>. Indexed by team abbreviation.
+              </div>
+            </div>
+          </div>
+
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px;margin-top:16px">Bridge 1: name normalization</div>
+          <p style="margin-bottom:10px;font-size:12px;color:var(--muted)">Names disagree across sources due to: accented characters (Jes&uacute;s vs Jesus), suffixes (Jr/Sr/II/III), and inconsistent punctuation. <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">_normPlayerKey()</code> handles all three:</p>
+          <div style="font-family:monospace;font-size:11px;background:var(--surface);padding:10px 12px;border-radius:6px;line-height:1.7;margin-bottom:14px">
+            // 1. NFD-decompose to split &eacute; &rarr; e + combining acute<br>
+            //    Then strip combining marks (U+0300&ndash;U+036F)<br>
+            raw = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '')<br>
+            <br>
+            // 2. Lowercase, drop non-letters, collapse whitespace<br>
+            k = raw.toLowerCase().replace(/[^a-z ]/g, '')<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.replace(/\s+/g, ' ').trim()<br>
+            <br>
+            // 3. Strip suffix tokens<br>
+            k = k.replace(/\s+(jr|sr|ii|iii|iv)$/, '').trim()
+          </div>
+
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px">Bridge 2: team-code aliasing</div>
+          <p style="margin-bottom:10px;font-size:12px;color:var(--muted)">Fantrax and MLB Stats API use the same 3-letter code for ~25 of 30 teams, but diverge on a few. <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">_LO_TEAM_ALIASES</code> maps every known variant to one canonical form:</p>
+          <div style="font-family:monospace;font-size:11px;background:var(--surface);padding:10px 12px;border-radius:6px;line-height:1.7;margin-bottom:14px">
+            'TBR' &rarr; 'TB',&nbsp;&nbsp; 'CHW' &rarr; 'CWS',<br>
+            'AZ'  &rarr; 'ARI', 'WAS' &rarr; 'WSH',<br>
+            'KCR' &rarr; 'KC',&nbsp;&nbsp; 'SDP' &rarr; 'SD',<br>
+            'SFG' &rarr; 'SF',&nbsp;&nbsp; 'CUB' &rarr; 'CHC'
+          </div>
+          <p style="margin-bottom:0;font-size:12px;color:var(--muted)">Both sides canonicalize before any lookup. New mismatches can be added to the table without other code changes.</p>
+
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px;margin-top:16px">Bridge 3: current-season ERA attached to FP records</div>
+          <p style="margin-bottom:10px;font-size:12px;color:var(--muted)">The matchup tier comes from the SP's current-season ERA &mdash; not their FP ROS projection. ERA lives in <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">_rosCurrentStats</code>, but lookups go through FP records (which is where the SP-by-name index is built). So at index time, each FP record gets a copy of its current-season ERA attached:</p>
+          <div style="font-family:monospace;font-size:11px;background:var(--surface);padding:10px 12px;border-radius:6px;line-height:1.7">
+            // Index every SP, attach current-season ERA<br>
+            cs = _rosCurrentStats[k]<br>
+            p._currERA = (cs.IP &gt; 0) ? cs.ERA : null<br>
+            spByName[k] = p<br>
+            <br>
+            // Quartiles from current ERA, no IP filter<br>
+            allERAs = pitchers.filter(_currERA != null).map(_currERA)<br>
+            quartiles = percentiles(sorted(allERAs))
+          </div>
+          <p style="margin-top:8px;margin-bottom:0;font-size:12px;color:var(--muted)">Pitchers with no current-season IP (haven't appeared yet) fall through to a neutral "Avg" label rather than skewing the cutoffs.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Card anatomy</span><span style="font-size:12px;color:var(--muted)">What every visual element means</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <p style="margin-bottom:14px">Each player card packs a lot of state into ~220px. Reading from top to bottom:</p>
+
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;font-size:12px">
+            <div><strong>Name + score</strong> &mdash; left, right. Score color: dark green &ge; 0.50, medium green &ge; 0.25, default text otherwise. Below the score, struck-through is the raw (no-multiplier) score for comparison; if matchup didn't move things by &ge; 0.005, it just says &quot;raw.&quot;</div>
+            <div><strong>Team line</strong> &mdash; e.g. &quot;NYY vs TEX&quot; (home) or &quot;ATL @ LAD&quot; (away). For off-day cards: just the team plus &quot;off day.&quot;</div>
+            <div><strong>Opp-pitcher strip (hitters only)</strong> &mdash; small avatar with SP initials, &quot;vs Last Name&quot; with handedness pill, current-season ERA / WHIP / K/9, then the matchup-tier pill (Tough/Above-avg/Avg/Plus). Full strip is hidden if the team is off, the SP isn't announced yet, or it's a pitcher card.</div>
+            <div><strong>Tier pill (pitchers, fallback for hitters)</strong> &mdash; same color scheme: Tough = amber, Plus = green, Avg = neutral. RP cards always say &quot;RP&quot; (no adjustment).</div>
+            <div><strong>Status tag</strong> &mdash; bottom of card. Green &quot;In lineup&quot; if optimizer picked them. Amber &quot;Toss-up&quot; if the next-best option is within 0.05 SGP. Italic gray &quot;Off day&quot; or &quot;Not probable today&quot; if they can't contribute.</div>
+          </div>
+
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6;border-left:3px solid var(--accent)">
+            <strong>OF surplus row</strong> &mdash; when you have more than 5 OF-eligible players, the OF slot label box gets an amber tint to flag that the optimizer's bench-bottom decisions matter most here. Same applies to any single-slot row with multiple eligible bodies.
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Diagnostic helper</span><span style="font-size:12px;color:var(--muted)">DevTools console</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <p style="margin-bottom:10px">If matchup labels look wrong (widespread &quot;Matchup TBD&quot;, scores not changing, or a team's hitters all show no opp SP), open DevTools &rarr; Console on the Lineup Organizer page and run:</p>
+          <div style="font-family:monospace;font-size:12px;background:var(--surface);padding:10px 12px;border-radius:6px;margin-bottom:10px">_loDiagnostics()</div>
+          <p style="margin-bottom:10px;font-size:12px;color:var(--muted)">It prints, in order:</p>
+          <ul style="margin:0 0 10px 0;padding-left:24px;font-size:12px;line-height:1.7;color:var(--muted)">
+            <li>The MLB codes Fantrax uses for your roster</li>
+            <li>The MLB codes from <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">probables.schedule</code></li>
+            <li>Any team-code mismatches between the two (after alias normalization)</li>
+            <li>How many of today's probable SPs resolve to FantasyPros pitcher data, with a list of any that don't</li>
+          </ul>
+          <p style="margin:0;font-size:12px;color:var(--muted)">If everything resolves but cards still misbehave, the issue is downstream of resolution (e.g. quartile cutoffs not computing, or cards rendering before context builds).</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Slot config (this league)</span><span style="font-size:12px;color:var(--muted)">14 hitting + 9 pitching</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <p style="margin-bottom:14px">Defined in <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">_LO_HIT_SLOTS</code> and <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">_LO_PIT_SLOTS</code> at the top of the Lineup Organizer code. Order matters &mdash; this is the scarcity-fill order.</p>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="padding:14px;background:var(--bg);border-radius:8px">
+              <div style="font-weight:600;font-size:12px;margin-bottom:8px">Hitting (14 slots)</div>
+              <div style="font-size:12px;line-height:1.8">
+                C, 1B, 2B, 3B, SS&nbsp;&mdash;&nbsp;single position<br>
+                CI&nbsp;&mdash;&nbsp;1B or 3B<br>
+                MI&nbsp;&mdash;&nbsp;2B or SS<br>
+                OF &times; 5&nbsp;&mdash;&nbsp;any OF<br>
+                UT&nbsp;&mdash;&nbsp;any hitter
+              </div>
+            </div>
+            <div style="padding:14px;background:var(--bg);border-radius:8px">
+              <div style="font-weight:600;font-size:12px;margin-bottom:8px">Pitching (9 slots)</div>
+              <div style="font-size:12px;line-height:1.8">
+                P &times; 9&nbsp;&mdash;&nbsp;any pitcher (SP or RP)<br><br>
+                <em style="color:var(--muted);font-size:11px">Fully flexible &mdash; the optimizer just picks the 9 highest-scoring active pitchers each day. No SP/RP slot ratio enforced.</em>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
   </div>
 
 </main>
@@ -7377,14 +7658,21 @@ function _loTodayHit(pl, ctx) {
   var perGame = rosSGP / games;
   var plays = ctx.teamPlaysToday[pl.mlb] !== false; // default true (no schedule data → assume plays)
   var oppSP = ctx.oppSPByMLB[pl.mlb] || null;
-  // Matchup multiplier (coarse 4-bucket; bullpen-discounted to ±9% / ±3%)
+  // Matchup multiplier based on opponent SP's current-season ERA.
+  // Quartiles are sorted ascending by ERA: spQuartiles[0]=25th, [1]=50th, [2]=75th.
+  // Lower ERA = better pitcher = TOUGH matchup for the hitter.
+  // Higher ERA = worse pitcher = PLUS matchup for the hitter.
   var mlt = 1.0, lbl = 'Avg', oppDesc = '';
-  if (oppSP && ctx.spQuartiles && ctx.spQuartiles.length === 3) {
-    var sgp = oppSP._teamSGP;
-    if      (sgp >= ctx.spQuartiles[2]) { mlt = 0.91; lbl = 'Tough'; }
-    else if (sgp >= ctx.spQuartiles[1]) { mlt = 0.97; lbl = 'Above-avg'; }
-    else if (sgp >= ctx.spQuartiles[0]) { mlt = 1.03; lbl = 'Avg'; }
-    else                                 { mlt = 1.09; lbl = 'Plus'; }
+  if (oppSP && ctx.spQuartiles && ctx.spQuartiles.length === 3 && oppSP._currERA != null) {
+    var era = oppSP._currERA;
+    if      (era <= ctx.spQuartiles[0]) { mlt = 0.91; lbl = 'Tough'; }       // bottom 25% ERA = best pitchers
+    else if (era <= ctx.spQuartiles[1]) { mlt = 0.97; lbl = 'Above-avg'; }
+    else if (era <= ctx.spQuartiles[2]) { mlt = 1.03; lbl = 'Avg'; }
+    else                                 { mlt = 1.09; lbl = 'Plus'; }       // top 25% ERA = worst pitchers
+    oppDesc = 'vs ' + (oppSP._displayName || oppSP.name || '');
+  } else if (oppSP) {
+    // SP exists but no current-season ERA (haven't pitched yet this year).
+    lbl = 'Avg';
     oppDesc = 'vs ' + (oppSP._displayName || oppSP.name || '');
   } else {
     lbl = 'Matchup TBD';
@@ -7467,11 +7755,12 @@ function _loBuildContext() {
     spQuartiles: null,       // [Q1,Q2,Q3] cutoffs of SP _teamSGP across qualified SPs
     lineupQuartiles: null    // [Q1,Q2,Q3] cutoffs of team lineup strength
   };
-  // Index all pitchers by name AND compute per-start SGP for every one of them.
-  // The IP >= 15 filter only governs which entries contribute to the *quartile
-  // boundary* computation — it does NOT exclude low-IP SPs from getting a tier
-  // assigned today (otherwise rookie call-ups get "Matchup TBD" forever).
+  // Index all pitchers by name AND attach their current-season ERA from
+  // _rosCurrentStats. ERA drives the matchup tier — what the pitcher is
+  // ACTUALLY doing this season, not what FP projects forward. We still keep
+  // _teamSGP on each FP record for any other consumers that might need it.
   var spByName = {};
+  var curStats = window._rosCurrentStats || {};
   if (_rosPitData && _rosPitData.length) {
     _rosPitData.forEach(function(p){
       var sgp = _rosAdPlayerSGP(p, false) || 0;
@@ -7479,18 +7768,29 @@ function _loBuildContext() {
       p._teamSGP = gs > 0 ? sgp/gs : 0;
       var nm = p._displayName || p.name || '';
       var k = (typeof _normPlayerKey === 'function') ? _normPlayerKey(nm) : nm.toLowerCase();
-      if (k) spByName[k] = p;
+      if (!k) return;
+      // Attach current-season ERA — null if pitcher hasn't appeared this season.
+      var cs = curStats[k];
+      p._currERA = (cs && cs.ERA != null && cs.IP > 0) ? parseFloat(cs.ERA) : null;
+      p._currIP  = (cs && cs.IP != null) ? parseFloat(cs.IP) : 0;
+      spByName[k] = p;
     });
-    // Quartile cutoffs from the IP-qualified subset only.
-    var qualifiedSps = _rosPitData.filter(function(p){
-      var posUp = (p.pos || p._posShort || '').toUpperCase();
-      // If pos field is missing/empty, fall back to "any pitcher with non-trivial GS"
-      // to avoid filtering everyone out when the FP JSON doesn't include pos.
-      var looksLikeSP = posUp.indexOf('SP') !== -1 || (parseFloat(p.GS||0) >= 5);
-      return looksLikeSP && parseFloat(p.IP||0) >= 15;
-    }).map(function(p){ return p._teamSGP; }).sort(function(a,b){ return a-b; });
-    if (qualifiedSps.length >= 4) {
-      ctx.spQuartiles = [qualifiedSps[Math.floor(qualifiedSps.length*0.25)], qualifiedSps[Math.floor(qualifiedSps.length*0.5)], qualifiedSps[Math.floor(qualifiedSps.length*0.75)]];
+    // Quartile cutoffs from current-season ERA across every pitcher with any
+    // IP this season. NO IP minimum — even 1-start guys get bucketed (per spec).
+    // Lower ERA = better pitcher, so cutoffs sort ascending and "Tough" is the
+    // BOTTOM quartile (lowest ERA).
+    var allERAs = [];
+    Object.keys(spByName).forEach(function(k){
+      var p = spByName[k];
+      if (p._currERA != null && p._currIP > 0) allERAs.push(p._currERA);
+    });
+    allERAs.sort(function(a,b){ return a-b; });
+    if (allERAs.length >= 4) {
+      ctx.spQuartiles = [
+        allERAs[Math.floor(allERAs.length*0.25)],  // 25th percentile
+        allERAs[Math.floor(allERAs.length*0.50)],  // 50th percentile
+        allERAs[Math.floor(allERAs.length*0.75)]   // 75th percentile
+      ];
     }
   }
   // Compute season-long lineup-strength quartiles. Per MLB team, sum top-9
