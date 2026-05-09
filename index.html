@@ -21,8 +21,13 @@ header { background: var(--accent); color: white; padding: 0 32px; display: flex
 .logo { font-family: var(--font-display); font-size: 22px; color: white; display: flex; align-items: center; gap: 10px; }
 .logo-dot { width: 8px; height: 8px; background: var(--accent2); border-radius: 50%; }
 .updated { font-size: 11px; color: rgba(255,255,255,0.55); font-weight: 300; }
-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 32px; display: flex; overflow-x: auto; }
-nav button { background: none; border: none; border-bottom: 2px solid transparent; padding: 14px 20px; font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; white-space: nowrap; transition: color 0.15s, border-color 0.15s; }
+nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 32px; display: flex; overflow-x: auto; align-items: stretch; }
+nav .nav-group { display: flex; flex-direction: column; padding: 8px 0 0; }
+nav .nav-group-header { display: flex; align-items: center; gap: 5px; padding: 0 14px 6px; border-bottom: 0.5px solid var(--border); margin: 0 6px; }
+nav .nav-group-header svg { flex-shrink: 0; opacity: 0.7; }
+nav .nav-group-header span { font-size: 9px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
+nav .nav-group-buttons { display: flex; }
+nav button { background: none; border: none; border-bottom: 2px solid transparent; padding: 12px 16px; font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; white-space: nowrap; transition: color 0.15s, border-color 0.15s; }
 nav button:hover { color: var(--text); }
 nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
 main { max-width: 1280px; margin: 0 auto; padding: 32px 24px; }
@@ -248,21 +253,69 @@ td.neg { color: #c0392b; font-weight: 500; }
 </header>
 
 <nav>
-  <button class="active" onclick="showPage('dashboard',this)">Dashboard</button>
-  <button onclick="showPage('guide',this)">Site Guide</button>
-  <button onclick="showPage('correlations',this)">Correlations</button>
-  <button onclick="showPage('models',this)">Models</button>
-  <button onclick="showPage('fantrax',this)">Fantrax Data</button>
-  <button onclick="showPage('combined',this)">League Stats</button>
-  <button onclick="showPage('leaders',this)">League Leaders</button>
-  <button onclick="showPage('zscores',this)">Z-Scores</button>
-  <button onclick="showPage('joe',this)">JOE Factor</button>
-  <button onclick="showPage('teamroster',this)">Team Roster</button>
-  <button onclick="showPage('archetype',this)">Team Archetype</button>
-  <button onclick="showPage('lineuporg',this)">Lineup Organizer</button>
-  <button onclick="showPage('ros',this)">Player Trade &amp; Waiver SPG</button>
-  <button onclick="showPage('fwar',this)">Player Statistics</button>
-  <button onclick="showPage('targets',this)">Player Expected Statistics</button>
+  <div class="nav-group">
+    <div class="nav-group-header">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span>Summary</span>
+    </div>
+    <div class="nav-group-buttons">
+      <button class="active" onclick="showPage('dashboard',this)">Dashboard</button>
+      <button onclick="showPage('guide',this)">Site Guide</button>
+    </div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-header">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-5"/></svg>
+      <span>Math</span>
+    </div>
+    <div class="nav-group-buttons">
+      <button onclick="showPage('correlations',this)">Correlations</button>
+      <button onclick="showPage('models',this)">Models</button>
+    </div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-header">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 11v6c0 1.66 4 3 9 3s9-1.34 9-3v-6"/></svg>
+      <span>League Data</span>
+    </div>
+    <div class="nav-group-buttons">
+      <button onclick="showPage('fantrax',this)">Fantrax Data</button>
+      <button onclick="showPage('combined',this)">League Stats</button>
+      <button onclick="showPage('leaders',this)">League Leaders</button>
+    </div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-header">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <span>League Analytics</span>
+    </div>
+    <div class="nav-group-buttons">
+      <button onclick="showPage('zscores',this)">Z-Scores</button>
+      <button onclick="showPage('joe',this)">JOE Factor</button>
+    </div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-header">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>Team Data</span>
+    </div>
+    <div class="nav-group-buttons">
+      <button onclick="showPage('teamroster',this)">Team Roster</button>
+      <button onclick="showPage('archetype',this)">Team Archetype</button>
+      <button onclick="showPage('lineuporg',this)">Lineup Organizer</button>
+    </div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-header">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Player Data</span>
+    </div>
+    <div class="nav-group-buttons">
+      <button onclick="showPage('ros',this)">Player Trade &amp; Waiver SPG</button>
+      <button onclick="showPage('fwar',this)">Player Statistics</button>
+      <button onclick="showPage('targets',this)">Player Expected Statistics</button>
+    </div>
+  </div>
 </nav>
 
 <main>
