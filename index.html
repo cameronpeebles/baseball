@@ -2555,36 +2555,44 @@ td.neg { color: #c0392b; font-weight: 500; }
             <div style="padding:14px;background:var(--bg);border-radius:8px;border-top:3px solid #1e6b3a">
               <div style="font-weight:700;font-size:12px;color:#1e6b3a;margin-bottom:6px">HITTERS</div>
               <div style="font-family:monospace;font-size:11px;line-height:1.7;background:var(--surface);padding:8px 10px;border-radius:4px;margin-bottom:8px">
-                ros_sgp     = _rosAdPlayerSGP(p, true)<br>
-                games_proj  = max(1, AB / 3.7)<br>
-                per_game    = ros_sgp / games_proj<br>
-                plays_today = team in today's MLB schedule<br>
+                // ROS rate (what FP projects forward)<br>
+                ros_sgp      = _rosAdPlayerSGP(p, true)<br>
+                ros_per_game = ros_sgp / max(1, AB_proj / 3.7)<br>
+                <br>
+                // Current-season rate (how player is performing now)<br>
+                cur_sgp      = _rosCurrSGP(cs, true)<br>
+                cur_per_game = cur_sgp / max(1, AB_actual / 3.7)<br>
+                <br>
+                // 50/50 blend<br>
+                per_game = 0.5 &times; ros_per_game<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + 0.5 &times; cur_per_game<br>
                 <br>
                 score = per_game &times; plays_today &times; mult
               </div>
-              <div style="font-size:11px;color:var(--muted);line-height:1.6">AB / 3.7 estimates full-season games (a typical hitter gets ~3.7 AB per game). FantasyPros doesn't include G in their hitter projection, so this proxy is the best available signal for playing-time scaling.</div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.6">AB / 3.7 estimates games played (a typical hitter gets ~3.7 AB per game). The 50/50 blend lets recent form (hot/cold) influence today's decision instead of trusting projections alone. Players with no current-season ABs contribute 0 from the cur side &mdash; the blend naturally weights by sample size.</div>
             </div>
             <div style="padding:14px;background:var(--bg);border-radius:8px;border-top:3px solid #1e6b3a">
               <div style="font-weight:700;font-size:12px;color:#1e6b3a;margin-bottom:6px">PITCHERS</div>
               <div style="font-family:monospace;font-size:11px;line-height:1.7;background:var(--surface);padding:8px 10px;border-radius:4px;margin-bottom:8px">
-                ros_sgp = _rosAdPlayerSGP(p, false)<br>
-                <br>
                 if SP:<br>
-                &nbsp;&nbsp;starts   = GS || (IP / 6)<br>
-                &nbsp;&nbsp;per_unit = ros_sgp / starts<br>
+                &nbsp;&nbsp;ros_per_start = ros_sgp / (GS_proj || IP_proj/6)<br>
+                &nbsp;&nbsp;cur_per_start = cur_sgp / (IP_actual / 6)<br>
+                &nbsp;&nbsp;per_unit = 0.5&times;ros + 0.5&times;cur<br>
                 &nbsp;&nbsp;plays    = (probable today)<br>
                 <br>
                 if RP:<br>
-                &nbsp;&nbsp;per_unit = ros_sgp / G &times; 0.4<br>
+                &nbsp;&nbsp;ros_per_app = ros_sgp / G_proj<br>
+                &nbsp;&nbsp;cur_per_app = cur_sgp / IP_actual<br>
+                &nbsp;&nbsp;per_unit = (0.5&times;ros + 0.5&times;cur) &times; 0.4<br>
                 &nbsp;&nbsp;plays    = team_plays_today<br>
                 <br>
                 score = per_unit &times; plays &times; mult
               </div>
-              <div style="font-size:11px;color:var(--muted);line-height:1.6">SPs only contribute on days they actually start &mdash; the probables data tells us this exactly. RPs are downweighted to 40% of per-game value since they only appear in ~40% of their team's games.</div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.6">Same 50/50 blend on the pitcher side. SPs only contribute on probable-today days (probables data tells us this exactly). RPs are downweighted to 40% of per-game value since they only appear in ~40% of their team's games. Pitchers with zero current-season IP contribute 0 from the cur side.</div>
             </div>
           </div>
 
-          <p style="font-size:12px;line-height:1.6;color:var(--muted);margin-top:8px"><strong style="color:var(--text)">Why per-game / per-start?</strong> ROS SGP is a season-aggregate counting number &mdash; for a daily decision we need rate, not volume. A player with 2.0 season ROS SGP and 162 games projects to ~0.012 SGP/game; a 1-start ace with 3.0 ROS SGP across 25 starts projects to ~0.12 SGP/start. That's the apples-to-apples comparison the optimizer needs.</p>
+          <p style="font-size:12px;line-height:1.6;color:var(--muted);margin-top:8px"><strong style="color:var(--text)">Why blend ROS + current?</strong> ROS projections regress hard toward league mean and lag real-world breakouts/slumps. Current-season rate captures recent form but is noisy on small samples. The 50/50 blend gets both: stability from ROS, responsiveness from current. A hot streak still gets noticed; a tiny rookie sample still gets ROS-level conservatism.</p>
         </div>
       </div>
 
@@ -7568,6 +7576,7 @@ function _loBuildRoster(teamId, isHit) {
       pos: posList,
       posStr: cs.pos || '',
       fp: fp,
+      cs: cs,           // current-season stats row for the curr-SGP blend
       isHit: !!isHit
     });
   });
@@ -7579,17 +7588,29 @@ function _loBuildRoster(teamId, isHit) {
 //   isHit=false: pitchers — see _loPitToday
 // Returns { score, raw, multLabel, multValue, oppDesc, plays, perGame }.
 function _loTodayHit(pl, ctx) {
+  // ── ROS per-game (forward-looking projection) ─────────────────────────
   var rosSGP = _rosAdPlayerSGP(pl.fp, true) || 0;
-  // Estimate games-per-season from AB. Empirically AB ≈ 3.7 × G for hitters.
-  var ab = parseFloat(pl.fp.AB || 0);
-  var games = ab > 0 ? Math.max(1, ab / 3.7) : 150;
-  var perGame = rosSGP / games;
+  var rosAB = parseFloat(pl.fp.AB || 0);
+  var rosGames = rosAB > 0 ? Math.max(1, rosAB / 3.7) : 150;
+  var rosPerGame = rosSGP / rosGames;
+  // ── Current-season per-game (how the player is performing now) ────────
+  // _rosCurrSGP returns season-aggregate SGP impact; divide by games-played
+  // (AB / 3.7) to put on the same per-game scale as the ROS rate.
+  var currPerGame = 0;
+  if (pl.cs && typeof _rosCurrSGP === 'function') {
+    var currSGP = _rosCurrSGP(pl.cs, true) || 0;
+    var curAB = parseFloat(pl.cs.AB || 0);
+    if (curAB > 0) currPerGame = currSGP / Math.max(1, curAB / 3.7);
+  }
+  // 50/50 blend. Players with no current-season AB get 0 from the curr side,
+  // which the spec calls "weighted by AB — sample size handles itself."
+  var perGame = 0.5 * rosPerGame + 0.5 * currPerGame;
   var plays = ctx.teamPlaysToday[pl.mlb] !== false; // default true (no schedule data → assume plays)
   var oppSP = ctx.oppSPByMLB[pl.mlb] || null;
   // Matchup multiplier based on opponent SP's current-season ERA.
   // Quartiles are sorted ascending by ERA: spQuartiles[0]=25th, [1]=50th, [2]=75th.
   // Lower ERA = better pitcher = TOUGH matchup for the hitter.
-  // Higher ERA = worse pitcher = PLUS matchup for the hitter.
+  // Higher ERA = worse pitcher = EASY matchup for the hitter.
   var mlt = 1.0, lbl = 'Avg', oppDesc = '';
   if (oppSP && ctx.spQuartiles && ctx.spQuartiles.length === 3 && oppSP._currERA != null) {
     var era = oppSP._currERA;
@@ -7618,27 +7639,50 @@ function _loTodayHit(pl, ctx) {
     var hand = '';
     if (oppSP.throws) hand = oppSP.throws;
     else if (oppCur && oppCur.throws) hand = oppCur.throws;
-    var era = oppCur && oppCur.ERA != null ? oppCur.ERA : (oppSP.ERA != null ? oppSP.ERA : null);
+    var era2 = oppCur && oppCur.ERA != null ? oppCur.ERA : (oppSP.ERA != null ? oppSP.ERA : null);
     var whip = oppCur && oppCur.WHIP != null ? oppCur.WHIP : (oppSP.WHIP != null ? oppSP.WHIP : null);
     var ip = oppCur && oppCur.IP != null ? oppCur.IP : (oppSP.IP != null ? oppSP.IP : null);
     var k = oppCur && oppCur.K != null ? oppCur.K : (oppSP.K != null ? oppSP.K : null);
     var k9 = (k != null && ip > 0) ? (k / ip * 9) : null;
-    oppSPInfo = { name: oppName, hand: hand, era: era, whip: whip, k9: k9, hasStats: era != null || whip != null };
+    oppSPInfo = { name: oppName, hand: hand, era: era2, whip: whip, k9: k9, hasStats: era2 != null || whip != null };
   }
   return { score: score, raw: perGame, multLabel: lbl, multValue: mlt, oppDesc: oppDesc, plays: plays, perGame: perGame, oppSPInfo: oppSPInfo };
 }
 
 function _loTodayPit(pl, ctx) {
+  // ── ROS per-unit (per-start for SP, per-game for RP) ──────────────────
   var rosSGP = _rosAdPlayerSGP(pl.fp, false) || 0;
   var posUp = (pl.posStr||'').toUpperCase();
   var isSP = posUp.indexOf('SP') !== -1;
-  var perUnit, plays, mlt = 1.0, lbl = 'Avg', oppDesc = '';
+  var rosPerUnit, currPerUnit = 0;
   if (isSP) {
     // SP: per-start. Use GS if available, else estimate from IP/6.
-    var gs = parseFloat(pl.fp.GS || 0);
-    var ip = parseFloat(pl.fp.IP || 0);
-    var starts = gs > 0 ? gs : (ip > 0 ? ip / 6 : 25);
-    perUnit = rosSGP / starts;
+    var rosGS = parseFloat(pl.fp.GS || 0);
+    var rosIP = parseFloat(pl.fp.IP || 0);
+    var rosStarts = rosGS > 0 ? rosGS : (rosIP > 0 ? rosIP / 6 : 25);
+    rosPerUnit = rosSGP / rosStarts;
+    // Current-season per-start. Use cs.IP/6 since cs doesn't carry GS.
+    if (pl.cs && typeof _rosCurrSGP === 'function') {
+      var curSGP = _rosCurrSGP(pl.cs, false) || 0;
+      var curIP = parseFloat(pl.cs.IP || 0);
+      if (curIP > 0) currPerUnit = curSGP / Math.max(1, curIP / 6);
+    }
+  } else {
+    // RP: per-game appearance.
+    var rosG = parseFloat(pl.fp.G || 0);
+    var rpApp = rosG > 0 ? rosG : 50;
+    rosPerUnit = rosSGP / rpApp;
+    if (pl.cs && typeof _rosCurrSGP === 'function') {
+      var curSGPp = _rosCurrSGP(pl.cs, false) || 0;
+      // No G in _rosCurrentStats; approximate from IP using 1 IP per appearance for relievers.
+      var curIPp = parseFloat(pl.cs.IP || 0);
+      if (curIPp > 0) currPerUnit = curSGPp / Math.max(1, curIPp);
+    }
+  }
+  // 50/50 blend.
+  var perUnit = 0.5 * rosPerUnit + 0.5 * currPerUnit;
+  var plays, mlt = 1.0, lbl = 'Avg', oppDesc = '';
+  if (isSP) {
     plays = ctx.spProbableByMLB[pl.mlb] === pl.key; // is this guy specifically the probable today?
     // Lineup-strength matchup
     if (plays && ctx.lineupQuartiles && ctx.lineupQuartiles.length === 3) {
@@ -7655,10 +7699,6 @@ function _loTodayPit(pl, ctx) {
       lbl = 'Not probable';
     }
   } else {
-    // RP: per-game appearance, no matchup adjustment.
-    var g = parseFloat(pl.fp.G || 0);
-    var rpApp = g > 0 ? g : 50;
-    perUnit = rosSGP / rpApp;
     // RP plays whenever team plays (rough heuristic — actually ~40% of games).
     plays = ctx.teamPlaysToday[pl.mlb] !== false;
     perUnit *= 0.4; // downweight RPs since they don't appear every game
