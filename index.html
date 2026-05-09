@@ -2727,13 +2727,13 @@ td.neg { color: #c0392b; font-weight: 500; }
 
           <div style="font-family:monospace;font-size:11px;background:var(--surface);padding:12px 14px;border-radius:6px;line-height:1.8;margin-bottom:14px">
             for slot in [C, 1B, 2B, 3B, SS, CI, MI,<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;OF1, OF2, OF3, OF4, OF5, UT]:<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;OF (&times;5 flex), UT]:<br>
             &nbsp;&nbsp;eligible = [p for p in roster<br>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if p not assigned<br>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;and p.pos &cap; slot.eligible<br>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;and p.plays_today]<br>
             &nbsp;&nbsp;eligible.sort(by score desc)<br>
-            &nbsp;&nbsp;slot.picked = eligible[0]
+            &nbsp;&nbsp;slot.picked = eligible[0..slot.count]
           </div>
 
           <p style="margin-bottom:10px;color:var(--muted);font-size:12px"><strong style="color:var(--text)">Why scarcity order?</strong> If you fill OF first and a player is eligible at both OF and 2B, they might steal an OF slot from someone less flexible &mdash; leaving 2B unfilled when a competent 2B was available. Going single-position first (where flexibility is lowest) makes sure rare-eligibility players land in the rare slots.</p>
@@ -2860,7 +2860,7 @@ td.neg { color: #c0392b; font-weight: 500; }
           </div>
 
           <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6;border-left:3px solid var(--accent)">
-            <strong>OF surplus row</strong> &mdash; when you have more than 5 OF-eligible players, the OF slot label box gets an amber tint to flag that the optimizer's bench-bottom decisions matter most here. Same applies to any single-slot row with multiple eligible bodies.
+            <strong>OF (&times;5) flex row</strong> &mdash; OF appears as a single horizontally-scrolling row, ranked left to right. The 5 leftmost cards are the &quot;In lineup&quot; picks (labeled OF1-OF5). A thin vertical divider marks where the lineup ends. Cards past the divider are bench candidates; any card within 0.05 SGP of the cutoff line on either side is dashed-bordered as a &quot;Toss-up.&quot; The slot label box shows &quot;5 slots / N eligible&quot; with an amber tint when there's a surplus.
           </div>
         </div>
       </div>
@@ -7576,7 +7576,10 @@ window._loDiagnostics = function() {
 };
 
 // League slot config (the user's league: 14 hitting + 9 pitching).
-// Order matters — fill scarcity-ordered (single-pos before flex).
+// Order matters — fill scarcity-ordered (single-pos before flex). Each entry
+// can take a `count` (default 1) and `flex: true` to mean "multiple identical
+// slots, render as one ranked row." OF is 5×flex; UT is its own single slot
+// taken from whatever's left.
 var _LO_HIT_SLOTS = [
   {id:'C',  label:'C',  eligible:['C']},
   {id:'1B', label:'1B', eligible:['1B']},
@@ -7585,11 +7588,7 @@ var _LO_HIT_SLOTS = [
   {id:'SS', label:'SS', eligible:['SS']},
   {id:'CI', label:'CI', eligible:['1B','3B']},
   {id:'MI', label:'MI', eligible:['2B','SS']},
-  {id:'OF1',label:'OF', eligible:['OF']},
-  {id:'OF2',label:'OF', eligible:['OF']},
-  {id:'OF3',label:'OF', eligible:['OF']},
-  {id:'OF4',label:'OF', eligible:['OF']},
-  {id:'OF5',label:'OF', eligible:['OF']},
+  {id:'OF', label:'OF', eligible:['OF'], count:5, flex:true},
   {id:'UT', label:'UT', eligible:['C','1B','2B','3B','SS','OF','DH','UT']}
 ];
 var _LO_PIT_SLOTS = (function(){
@@ -7881,9 +7880,7 @@ function _loBuildContext() {
 function _loAssignHit(roster, ctx) {
   // Decorate each player with today-score & sort once.
   roster.forEach(function(p){ p._today = _loTodayHit(p, ctx); });
-  // Try all combinations? 14 slots, ~14-16 hitters, exponential. Use greedy
-  // ordered scarcity-first, then OF brute-force on remaining surplus, then UT.
-  var assigned = {};   // key → slotId
+  var assigned = {};   // key → slotId (e.g. "C", "OF1", "OF2")
   var perSlot = [];
   var available = roster.slice();
   // Score-descending sort helper.
@@ -7892,11 +7889,20 @@ function _loAssignHit(roster, ctx) {
   _LO_HIT_SLOTS.forEach(function(slot){
     var elig = available.filter(function(p){ return _loSlotAccepts(slot.eligible, p.pos) && !assigned[p.key]; });
     elig.sort(byScore);
-    // Only pick players who actually play today. If everyone in the list is off,
-    // leave the slot unfilled (picked=null) but still show them in the ranked list.
-    var picked = elig.find(function(p){ return p._today.plays && p._today.score > 0; }) || null;
-    if (picked) assigned[picked.key] = slot.id;
-    perSlot.push({ slot: slot, ranked: elig, picked: picked });
+    var count = slot.count || 1;
+    if (slot.flex && count > 1) {
+      // Multi-count flex slot (e.g. OF×5). Take the top N who actually play
+      // today and have score > 0; rest stay in ranked list as bench candidates.
+      var fillable = elig.filter(function(p){ return p._today.plays && p._today.score > 0; });
+      var pickedArr = fillable.slice(0, count);
+      pickedArr.forEach(function(p, i){ assigned[p.key] = slot.id + (i+1); });
+      perSlot.push({ slot: slot, ranked: elig, picked: pickedArr, allFlex: true, slotCount: count });
+    } else {
+      // Single-slot path: take top eligible playing today.
+      var picked = elig.find(function(p){ return p._today.plays && p._today.score > 0; }) || null;
+      if (picked) assigned[picked.key] = slot.id;
+      perSlot.push({ slot: slot, ranked: elig, picked: picked });
+    }
   });
 
   // Bench: players with no slot assignment.
@@ -7916,7 +7922,7 @@ function _loAssignPit(roster, ctx) {
   var fillable = sorted.filter(function(p){ return p._today.score > 0; });
   var pickedArr = fillable.slice(0, 9);
   pickedArr.forEach(function(p, i){ assigned[p.key] = 'P'+(i+1); });
-  perSlot.push({ slot: {id:'P', label:'P (×9)', eligible:['SP','RP','P']}, ranked: sorted, picked: pickedArr, allFlex: true });
+  perSlot.push({ slot: {id:'P', label:'P (×9)', eligible:['SP','RP','P']}, ranked: sorted, picked: pickedArr, allFlex: true, slotCount: 9 });
   var bench = sorted.filter(function(p){ return !assigned[p.key]; });
   return { perSlot: perSlot, bench: bench, assigned: assigned };
 }
@@ -8044,19 +8050,31 @@ function _loBuildSlotRowHtml(rs, isHit) {
   var slot = rs.slot;
   var ranked = rs.ranked || [];
   var picked = rs.picked;
-  var pickedKeys = {};
-  if (Array.isArray(picked)) picked.forEach(function(p){ pickedKeys[p.key] = true; });
-  else if (picked) pickedKeys[picked.key] = true;
-  // Surplus detection: more eligible than slots (only meaningful for single-slot rows)
-  var surplus = !rs.allFlex && ranked.length > 1;
-  // OF row callout — count OF slots remaining when we get to this slot.
+  var slotCount = rs.slotCount || (slot.count || 1);
+  // Build pickedKeys → sub-slot-id (e.g. "OF1", "OF2") for label decoration.
+  // Only show a numbered sub-id for flex slots that have it explicitly set
+  // (OF). Pitcher row uses an inline slot without flex:true so cards there
+  // stay as just "In lineup".
+  var pickedSubId = {};
+  if (Array.isArray(picked)) {
+    picked.forEach(function(p, i){
+      pickedSubId[p.key] = (slot.flex && slotCount > 1) ? (slot.id + (i+1)) : slot.id;
+    });
+  } else if (picked) {
+    pickedSubId[picked.key] = slot.id;
+  }
+  // Surplus = more eligible than slot count. Applies to single and flex rows.
+  var surplus = ranked.length > slotCount;
   var slotBoxStyle = surplus
     ? 'background:rgba(186,117,23,0.08);border:0.5px solid rgba(186,117,23,0.30)'
     : 'background:var(--bg);border:0.5px solid var(--border)';
   var labelColor = surplus ? '#854f0b' : 'var(--muted)';
-  var sub = rs.allFlex
-    ? '9 slots &middot; '+ranked.length+' eligible'
-    : ranked.length + ' eligible';
+  var sub;
+  if (rs.allFlex) {
+    sub = slotCount + ' slots &middot; ' + ranked.length + ' eligible';
+  } else {
+    sub = ranked.length + ' eligible';
+  }
   var h = '';
   h += '<div style="display:grid;grid-template-columns:88px minmax(0,1fr);gap:8px;align-items:stretch;margin-bottom:8px">';
   h += '<div style="padding:10px 8px;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;'+slotBoxStyle+'">';
@@ -8067,24 +8085,38 @@ function _loBuildSlotRowHtml(rs, isHit) {
   if (!ranked.length) {
     h += '<div style="font-size:11px;color:var(--muted);padding:10px 6px;font-style:italic">No eligible players for this slot.</div>';
   } else {
+    // Toss-up: any card within 0.05 SGP of the cutoff line gets the dashed
+    // border. The cutoff is the boundary between picked (top slotCount) and
+    // bench. Both sides of the boundary are eligible for toss-up if close.
+    var cutoffIdx = slotCount - 1;
+    var cutoffScore = ranked[cutoffIdx] ? ranked[cutoffIdx]._today.score : null;
+    var nextScore   = ranked[cutoffIdx+1] ? ranked[cutoffIdx+1]._today.score : null;
+    var isCutoffAmbiguous = (cutoffScore != null && nextScore != null &&
+                             Math.abs(cutoffScore - nextScore) < 0.05);
     ranked.forEach(function(p, i){
-      var isPick = !!pickedKeys[p.key];
-      // Toss-up: top non-pick within 0.05 SGP of the pick (or 2nd pick close to 3rd in flex row).
+      var subId = pickedSubId[p.key];
+      var isPick = !!subId;
       var tossUp = false;
-      if (rs.allFlex && Array.isArray(picked) && picked.length === 9) {
-        if (i === 8) tossUp = ranked[9] && Math.abs(ranked[8]._today.score - ranked[9]._today.score) < 0.02;
-        if (i === 9) tossUp = ranked[8] && Math.abs(ranked[8]._today.score - ranked[9]._today.score) < 0.02;
-      } else if (!rs.allFlex && picked && i === 1) {
-        tossUp = ranked[1] && Math.abs(ranked[0]._today.score - ranked[1]._today.score) < 0.05;
+      if (isCutoffAmbiguous) {
+        // Both the last picked and any unpicked card within 0.05 of cutoff
+        // get the toss-up flag.
+        if (i === cutoffIdx) tossUp = true;
+        else if (!isPick && p._today.plays && p._today.score > 0 &&
+                 Math.abs(p._today.score - cutoffScore) < 0.05) tossUp = true;
       }
-      h += _loCardHtml(p, isPick, tossUp, isHit, slot);
+      // Insert a thin vertical divider right at the cutoff for flex rows
+      // (visual marker for "lineup ends here").
+      if (slotCount > 1 && i === slotCount && isPick === false) {
+        h += '<div style="width:1px;background:var(--border);flex-shrink:0;margin:4px 4px"></div>';
+      }
+      h += _loCardHtml(p, isPick, tossUp, isHit, slot, subId);
     });
   }
   h += '</div></div>';
   return h;
 }
 
-function _loCardHtml(p, isPick, tossUp, isHit, slot) {
+function _loCardHtml(p, isPick, tossUp, isHit, slot, subId) {
   var t = p._today;
   var bg = isPick ? '#E1F5EE' : 'var(--bg)';
   var borderStyle = isPick ? '1px solid #5DCAA5' : (tossUp ? '1px dashed #5DCAA5' : '0.5px solid var(--border)');
@@ -8155,7 +8187,8 @@ function _loCardHtml(p, isPick, tossUp, isHit, slot) {
     h += '</div>';
   }
   if (isPick) {
-    h += '<div style="font-size:9px;color:#0F6E56;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;margin-top:4px">In lineup</div>';
+    var lineupTag = subId && subId !== slot.id ? 'In lineup &middot; ' + subId : 'In lineup';
+    h += '<div style="font-size:9px;color:#0F6E56;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;margin-top:4px">'+lineupTag+'</div>';
   }
   h += '</div>';
   return h;
