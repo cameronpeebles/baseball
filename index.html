@@ -7556,6 +7556,23 @@ window._loDiagnostics = function() {
     console.log('[LO] '+resolved+' of '+spNames.length+' SPs resolved to FP projection data.');
     if (unresolved.length) console.warn('[LO] Unresolved SPs:', unresolved);
   }
+  // ── IL / status inventory ──────────────────────────────────────────────
+  var rl = window._rosRosterLookup || {};
+  var byStatus = {};
+  Object.keys(rl).forEach(function(k){
+    var s = (rl[k] && rl[k].statusId != null) ? String(rl[k].statusId) : '?';
+    byStatus[s] = (byStatus[s]||0) + 1;
+  });
+  console.log('[LO] statusId distribution across all roster entries:', byStatus);
+  if (_loSelectedTeam) {
+    var teamIL = [];
+    Object.keys(rl).forEach(function(k){
+      if (rl[k] && rl[k].teamId === _loSelectedTeam && String(rl[k].statusId) === '3') {
+        teamIL.push(k);
+      }
+    });
+    console.log('[LO] Selected team IL players (statusId="3"):', teamIL);
+  }
 };
 
 // League slot config (the user's league: 14 hitting + 9 pitching).
@@ -7620,7 +7637,7 @@ function _loBuildRoster(teamId, isHit) {
   Object.keys(rosterLookup).forEach(function(key){
     var entry = rosterLookup[key];
     if (!entry || entry.teamId !== teamId) return;
-    if (entry.statusId === '3') return;  // skip IL
+    if (String(entry.statusId) === '3') return;  // skip IL (handle int or string)
     var cs = curStats[key]; if (!cs) return;
     if (!!cs.isHit !== !!isHit) return;
     var posList = _loParsePos(cs.pos);
