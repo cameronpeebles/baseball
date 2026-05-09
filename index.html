@@ -8132,7 +8132,6 @@ function _loCardHtml(p, isPick, tossUp, isHit, slot, subId) {
   if (p.pos.length > 1) posHint = p.pos.slice(0,3).join('/');
   var h = '';
   h += '<div style="background:'+bg+';border:'+borderStyle+';border-radius:8px;padding:8px 10px;min-width:220px;max-width:240px;cursor:pointer;opacity:'+opacity+';position:relative;flex-shrink:0">';
-  if (tossUp) h += '<div style="position:absolute;top:4px;right:6px;font-size:8px;color:#854f0b;font-weight:500;text-transform:uppercase;letter-spacing:0.04em">Toss-up</div>';
   h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">';
   h += '<div style="font-size:12px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">'+_loEsc(p.name)+'</div>';
   h += '<div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0">';
@@ -8186,9 +8185,18 @@ function _loCardHtml(p, isPick, tossUp, isHit, slot, subId) {
     }
     h += '</div>';
   }
-  if (isPick) {
-    var lineupTag = subId && subId !== slot.id ? 'In lineup &middot; ' + subId : 'In lineup';
-    h += '<div style="font-size:9px;color:#0F6E56;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;margin-top:4px">'+lineupTag+'</div>';
+  // Bottom status line: combines In lineup tag with optional Toss-up flag.
+  // For non-picked toss-up cards, shows amber "Toss-up" alone on the left.
+  if (isPick || tossUp) {
+    var bits = [];
+    if (isPick) {
+      var lineupTag = subId && subId !== slot.id ? 'In lineup &middot; ' + subId : 'In lineup';
+      bits.push('<span style="color:#0F6E56">'+lineupTag+'</span>');
+    }
+    if (tossUp) {
+      bits.push('<span style="color:#854f0b">Toss-up</span>');
+    }
+    h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;margin-top:4px">'+bits.join(' &middot; ')+'</div>';
   }
   h += '</div>';
   return h;
