@@ -7008,6 +7008,11 @@ function _rosBuildTeamNeedHtml(dashMode) {
   }
   h += '</div>';
 
+  // "How to read this" info box — sits between the header and the Positional Strength grid.
+  if (typeof dashInfoBox === 'function') {
+    h += dashInfoBox('Two-part snapshot of your roster vs the league. <strong>Positional Strength</strong> (top row) compares your raw Team ROS SGP at each fine position (C/1B/2B/3B/SS/OF/SP/RP) against the league average. Green = surplus (you can afford to trade from here), red = deficit (priority area to add). <strong>Category Needs</strong> (bottom rows) ranks your team in each of the 10 standings categories. Rank 1 = top of the league for that cat (least need), rank 10 = bottom (highest need). The need-weights derived from these ranks drive the &times;multiplier on category pills throughout the rest of the site, so a higher rank in a category translates to a stronger pull on the Add/Drop simulator and ROS suggestions.');
+  }
+
   // ── Positional Strength row ───────────────────────────────────────
   // For each fine position, compute the selected team's raw Team ROS SGP
   // (no need-weights) and compare against the league average per position.
@@ -13571,6 +13576,8 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   h += '<div class="card-header"><span class="card-title">Team diagnostic</span>';
   h += pill(arcEntry.arch||'—', _arcC.bg, _arcC.text);
   h += '</div><div class="card-body" style="padding:14px 16px;display:flex;flex-direction:column;gap:14px">';
+  // "How to read this" info box — top of the card body so it's the first thing the eye lands on.
+  h += dashInfoBox('Your team\'s archetype, where it should be heading, and what to do about it. <strong>Archetype</strong> classifies your roster shape (e.g. Heavyweight, Cinderella, Pretender). <strong>Should-be direction</strong> is the strategic posture the model recommends (Buy/Sell/Hold) given roster strength vs current standings. <strong>Action</strong> is the one specific next move worth making. <strong>Trust score</strong> reflects how aligned the underlying signals are — high trust means fWAR%, Rating%, ROS%, and JOE all agree; low trust means signals are noisy and the recommendation is more speculative. Below those four tiles, Model Inputs break down each percentile that fed the score so you can see exactly where strengths and weaknesses sit.');
 
   // ── Section 1: Archetype + Current vs Expected ────────────────────
   // Row 1: 4 summary tiles
@@ -14323,25 +14330,6 @@ function assembleDashboard(teamId, el) {
     _rosSelectedTeam = _savedRosTeam;
   }
 
-  // Positional strength cards
-  html += '<div class="card" style="margin-bottom:20px">';
-  html += '<div class="card-header"><span class="card-title">Positional strength</span></div>';
-  html += '<div class="card-body" style="padding:10px 16px 0">' + dashInfoBox('Each tile shows your average player rating for that positional group as a percentile (0-100). The number below shows how you compare to the league average. Dark green = well above average, red = below average. Use this to identify where to add via trade or waiver wire.') + '</div>';
-  html += '<div class="dash-pos-grid">';
-  groups.forEach(function(g) {
-    var d = posData[g];
-    if (d.avg == null) return;
-    var c = posHeatColorDash(d.avg);
-    var sign = d.diff >= 0 ? '+' : '';
-    html += '<div class="dash-pos-card" style="background:' + c.bg + ';color:' + c.fg + '">';
-    html += '<div class="pos-label">' + g + '</div>';
-    html += '<div class="pos-pct">' + Math.round(d.avg*100) + '</div>';
-    html += '<div class="pos-diff">' + sign + Math.round(d.diff*100) + ' vs league</div>';
-    html += '<div class="pos-count">' + d.count + ' rostered</div>';
-    html += '</div>';
-  });
-  html += '</div></div>';
-
   // ── Roster Overview card ──────────────────────────────────────────────────
   html += '<div class="card" style="margin-bottom:20px" id="dash-roster-charts-card">';
   html += '<div class="card-header"><span class="card-title">Roster overview</span></div>';
@@ -14470,8 +14458,7 @@ function assembleDashboard(teamId, el) {
     matchupHtml += '</div></div>';
   }
 
-  // ── 2-col: Left = Z-scatter + Category breakdown | Right = Matchup + Upcoming ──
-  html += matchupHtml;
+  // ── Upcoming schedule (Current matchup card removed per spec) ──────────
   html += '<div class="card" style="flex:1"><div class="card-header"><span class="card-title">Upcoming schedule</span></div>';
   html += '<div style="padding:0 16px">' + dashInfoBox('Your next several matchups with win probability estimates. Win probability is based on your fWAR and category ratings vs your opponent. Use this to plan roster moves - a tough stretch ahead means prioritise adds now.') + '</div>';
   if (!upcomingMatches.length) {
