@@ -259,10 +259,10 @@ td.neg { color: #c0392b; font-weight: 500; }
   <button onclick="showPage('joe',this)">JOE Factor</button>
   <button onclick="showPage('teamroster',this)">Team Roster</button>
   <button onclick="showPage('archetype',this)">Team Archetype</button>
-  <button onclick="showPage('ros',this)">ROS</button>
   <button onclick="showPage('lineuporg',this)">Lineup Organizer</button>
-  <button onclick="showPage('fwar',this)">Player Data</button>
-  <button onclick="showPage('targets',this)">Trade Waiver Wire Targets</button>
+  <button onclick="showPage('ros',this)">Player Trade &amp; Waiver SPG</button>
+  <button onclick="showPage('fwar',this)">Player Statistics</button>
+  <button onclick="showPage('targets',this)">Player Expected Statistics</button>
 </nav>
 
 <main>
@@ -337,7 +337,7 @@ td.neg { color: #c0392b; font-weight: 500; }
   </div>
 
   <div class="page" id="page-fwar">
-    <div class="page-title">Player Data</div>
+    <div class="page-title">Player Statistics</div>
     <div class="page-subtitle">Fantasy WAR and player ratings - sortable by position, fWAR, and ratings.</div>
 
     <!-- Player Profile Panel (hidden until player clicked) -->
@@ -648,7 +648,7 @@ td.neg { color: #c0392b; font-weight: 500; }
   </div>
   <div class="page" id="page-historic" style="display:none"></div>
   <div class="page" id="page-ros">
-    <div class="page-title">ROS Projections</div>
+    <div class="page-title">Player Trade &amp; Waiver SPG</div>
     <div class="page-subtitle">FantasyPros consensus rest-of-season projections for all players.</div>
     <div id="ros-team-dropdown" style="margin-bottom:10px"></div>
     <div id="ros-team-need-top" style="margin-bottom:14px"></div>
@@ -743,7 +743,7 @@ td.neg { color: #c0392b; font-weight: 500; }
     </div>
   </div>
   <div class="page" id="page-targets">
-    <div class="page-title">Trade Waiver Wire Targets</div>
+    <div class="page-title">Player Expected Statistics</div>
     <div class="page-subtitle">Buy low / sell high analysis based on Statcast expected vs actual performance.</div>
     <div class="trade-tabs" id="targets-tabs">
       <button class="trade-tab active" onclick="showTargetsTab('hitters',this)">Hitters</button>
