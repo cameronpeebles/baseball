@@ -2645,7 +2645,7 @@ td.neg { color: #c0392b; font-weight: 500; }
       <div class="card" style="margin-top:16px;max-width:900px">
         <div class="card-header"><span class="card-title">Today-score formula</span><span style="font-size:12px;color:var(--muted)">Hitters and pitchers, end-to-end</span></div>
         <div class="card-body" style="padding:20px">
-          <p style="font-size:13px;line-height:1.7;margin-bottom:14px">Each card's big number is the &quot;today-score&quot; &mdash; the expected SGP gain from starting this player today. The struck-through smaller number below is the same calculation <em>without</em> the matchup multiplier, so you can see exactly how much the opposing pitcher (or lineup) moved the needle.</p>
+          <p style="font-size:13px;line-height:1.7;margin-bottom:14px">Each card's big number is the &quot;today-score&quot; &mdash; the expected SGP gain from starting this player today. The smaller number below it shows the matchup multiplier (e.g. <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">&times;1.09</code>) so you can see exactly how much the opposing pitcher (or lineup) moved the needle. Hidden when there's no adjustment.</p>
 
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
             <div style="padding:14px;background:var(--bg);border-radius:8px;border-top:3px solid #1e6b3a">
@@ -2696,10 +2696,10 @@ td.neg { color: #c0392b; font-weight: 500; }
               opp_sp_ERA &le; Q1 (25th)  &rarr;  Tough     &rarr;  &times; 0.91&nbsp;&nbsp;<span style="color:#854f0b">(&minus;9%)</span><br>
               opp_sp_ERA &le; Q2 (50th)  &rarr;  Above-avg &rarr;  &times; 0.97&nbsp;&nbsp;<span style="color:#a06a1f">(&minus;3%)</span><br>
               opp_sp_ERA &le; Q3 (75th)  &rarr;  Avg       &rarr;  &times; 1.03&nbsp;&nbsp;<span style="color:var(--muted)">(+3%)</span><br>
-              opp_sp_ERA &gt; Q3          &rarr;  Plus      &rarr;  &times; 1.09&nbsp;&nbsp;<span style="color:#1D9E75">(+9%)</span>
+              opp_sp_ERA &gt; Q3          &rarr;  Easy      &rarr;  &times; 1.09&nbsp;&nbsp;<span style="color:#1D9E75">(+9%)</span>
             </div>
             <p style="font-size:11px;color:var(--muted);line-height:1.6;margin:0 0 8px 0"><strong style="color:var(--text)">Why &plusmn;9% instead of the &plusmn;15% the quartile labels suggest?</strong> Bullpen discount. Modern starters average ~5.5 IP, so only ~60% of a hitter's PAs face the listed SP. The other 40% face a generic bullpen, where matchup is essentially neutral. Final swing: <code style="background:var(--surface);padding:1px 4px;border-radius:3px">1 + 0.6 &times; (raw_mult &minus; 1)</code>.</p>
-            <p style="font-size:11px;color:var(--muted);line-height:1.6;margin:0"><strong style="color:var(--text)">Why ERA, not ROS-SGP?</strong> Current ERA reflects how the SP is performing <em>now</em>. ROS projections regress hard toward league mean for unproven arms, so a rookie throwing 2.50 ERA across 3 starts gets projected as below-replacement going forward &mdash; making them look like a "Plus" matchup even though hitters are actually getting carved up. Trusting current production solves that.</p>
+            <p style="font-size:11px;color:var(--muted);line-height:1.6;margin:0"><strong style="color:var(--text)">Why ERA, not ROS-SGP?</strong> Current ERA reflects how the SP is performing <em>now</em>. ROS projections regress hard toward league mean for unproven arms, so a rookie throwing 2.50 ERA across 3 starts gets projected as below-replacement going forward &mdash; making them look like an &quot;Easy&quot; matchup even though hitters are actually getting carved up. Trusting current production solves that.</p>
           </div>
 
           <div style="margin-bottom:14px">
@@ -2709,7 +2709,7 @@ td.neg { color: #c0392b; font-weight: 500; }
               lineup_strength &ge; Q3  &rarr;  Tough     &rarr;  &times; 0.85&nbsp;&nbsp;<span style="color:#854f0b">(&minus;15%)</span><br>
               lineup_strength &ge; Q2  &rarr;  Above-avg &rarr;  &times; 0.95&nbsp;&nbsp;<span style="color:#a06a1f">(&minus;5%)</span><br>
               lineup_strength &ge; Q1  &rarr;  Avg       &rarr;  &times; 1.05&nbsp;&nbsp;<span style="color:var(--muted)">(+5%)</span><br>
-              lineup_strength &lt; Q1   &rarr;  Plus      &rarr;  &times; 1.15&nbsp;&nbsp;<span style="color:#1D9E75">(+15%)</span>
+              lineup_strength &lt; Q1   &rarr;  Easy      &rarr;  &times; 1.15&nbsp;&nbsp;<span style="color:#1D9E75">(+15%)</span>
             </div>
             <p style="font-size:11px;color:var(--muted);line-height:1.6;margin:0">Pitchers get the full &plusmn;15% &mdash; no bullpen discount because they face the entire lineup directly. <strong style="color:var(--text)">RPs are not adjusted</strong> &mdash; their PA samples per appearance are too small for matchup quality to matter consistently.</p>
           </div>
@@ -2852,10 +2852,10 @@ td.neg { color: #c0392b; font-weight: 500; }
           <p style="margin-bottom:14px">Each player card packs a lot of state into ~220px. Reading from top to bottom:</p>
 
           <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;font-size:12px">
-            <div><strong>Name + score</strong> &mdash; left, right. Score color: dark green &ge; 0.50, medium green &ge; 0.25, default text otherwise. Below the score, struck-through is the raw (no-multiplier) score for comparison; if matchup didn't move things by &ge; 0.005, it just says &quot;raw.&quot;</div>
+            <div><strong>Name + score</strong> &mdash; left, right. Score color: dark green &ge; 0.50, medium green &ge; 0.25, default text otherwise. Below the score is the matchup multiplier (e.g. <code style="background:var(--surface);padding:1px 5px;border-radius:3px;font-size:11px">&times;1.09</code>) color-coded green for boost, amber for penalty. Hidden when matchup is exactly &times;1.00.</div>
             <div><strong>Team line</strong> &mdash; e.g. &quot;NYY vs TEX&quot; (home) or &quot;ATL @ LAD&quot; (away). For off-day cards: just the team plus &quot;off day.&quot;</div>
-            <div><strong>Opp-pitcher strip (hitters only)</strong> &mdash; small avatar with SP initials, &quot;vs Last Name&quot; with handedness pill, current-season ERA / WHIP / K/9, then the matchup-tier pill (Tough/Above-avg/Avg/Plus). Full strip is hidden if the team is off, the SP isn't announced yet, or it's a pitcher card.</div>
-            <div><strong>Tier pill (pitchers, fallback for hitters)</strong> &mdash; same color scheme: Tough = amber, Plus = green, Avg = neutral. RP cards always say &quot;RP&quot; (no adjustment).</div>
+            <div><strong>Opp-pitcher strip (hitters only)</strong> &mdash; small avatar with SP initials, &quot;vs Last Name&quot; with handedness pill, current-season ERA / WHIP / K/9, then the matchup-tier pill (Tough/Above-avg/Avg/Easy). Full strip is hidden if the team is off, the SP isn't announced yet, or it's a pitcher card.</div>
+            <div><strong>Tier pill (pitchers, fallback for hitters)</strong> &mdash; same color scheme: Tough = amber, Easy = green, Avg = neutral. RP cards always say &quot;RP&quot; (no adjustment).</div>
             <div><strong>Status tag</strong> &mdash; bottom of card. Green &quot;In lineup&quot; if optimizer picked them. Amber &quot;Toss-up&quot; if the next-best option is within 0.05 SGP. Italic gray &quot;Off day&quot; or &quot;Not probable today&quot; if they can't contribute.</div>
           </div>
 
@@ -7668,7 +7668,7 @@ function _loTodayHit(pl, ctx) {
     if      (era <= ctx.spQuartiles[0]) { mlt = 0.91; lbl = 'Tough'; }       // bottom 25% ERA = best pitchers
     else if (era <= ctx.spQuartiles[1]) { mlt = 0.97; lbl = 'Above-avg'; }
     else if (era <= ctx.spQuartiles[2]) { mlt = 1.03; lbl = 'Avg'; }
-    else                                 { mlt = 1.09; lbl = 'Plus'; }       // top 25% ERA = worst pitchers
+    else                                 { mlt = 1.09; lbl = 'Easy'; }       // top 25% ERA = worst pitchers
     oppDesc = 'vs ' + (oppSP._displayName || oppSP.name || '');
   } else if (oppSP) {
     // SP exists but no current-season ERA (haven't pitched yet this year).
@@ -7720,7 +7720,7 @@ function _loTodayPit(pl, ctx) {
         if      (ls >= ctx.lineupQuartiles[2]) { mlt = 0.85; lbl = 'Tough'; }
         else if (ls >= ctx.lineupQuartiles[1]) { mlt = 0.95; lbl = 'Above-avg'; }
         else if (ls >= ctx.lineupQuartiles[0]) { mlt = 1.05; lbl = 'Avg'; }
-        else                                    { mlt = 1.15; lbl = 'Plus'; }
+        else                                    { mlt = 1.15; lbl = 'Easy'; }
         oppDesc = 'vs ' + oppMlb + ' lineup';
       }
     } else if (!plays) {
@@ -8073,7 +8073,7 @@ function _loCardHtml(p, isPick, tossUp, isHit, slot) {
   // Tier pill
   var tierBg = 'var(--bg)', tierFg = 'var(--muted)';
   if (t.multLabel === 'Tough') { tierBg = 'rgba(186,117,23,0.12)'; tierFg = '#854f0b'; }
-  else if (t.multLabel === 'Plus') { tierBg = 'rgba(29,158,117,0.14)'; tierFg = '#1D9E75'; }
+  else if (t.multLabel === 'Easy') { tierBg = 'rgba(29,158,117,0.14)'; tierFg = '#1D9E75'; }
   else if (t.multLabel === 'Above-avg') { tierBg = 'rgba(186,117,23,0.06)'; tierFg = '#a06a1f'; }
   // Multi-eligibility hint
   var posHint = '';
@@ -8085,10 +8085,12 @@ function _loCardHtml(p, isPick, tossUp, isHit, slot) {
   h += '<div style="font-size:12px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">'+_loEsc(p.name)+'</div>';
   h += '<div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0">';
   h += '<div style="font-size:13px;font-weight:600;color:'+scoreCol+';line-height:1">'+(t.score>0?'+':'')+t.score.toFixed(2)+'</div>';
-  if (Math.abs(t.score - t.raw) > 0.005) {
-    h += '<div style="font-size:8px;color:var(--muted);text-decoration:line-through;line-height:1.2">'+(t.raw>0?'+':'')+t.raw.toFixed(2)+'</div>';
-  } else {
-    h += '<div style="font-size:8px;color:var(--muted);line-height:1.2">raw</div>';
+  // Show the matchup multiplier (e.g. ×1.09 / ×0.91) instead of the raw score.
+  // Color the multiplier green when it boosts (>1), amber when it hurts (<1),
+  // gray when neutral. Hide entirely when there's no matchup adjustment.
+  if (t.multValue != null && Math.abs(t.multValue - 1) > 0.005) {
+    var multCol = t.multValue > 1 ? '#1D9E75' : '#854f0b';
+    h += '<div style="font-size:8px;color:'+multCol+';line-height:1.2;font-weight:500">&times;'+t.multValue.toFixed(2)+'</div>';
   }
   h += '</div></div>';
   h += '<div style="font-size:10px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_loEsc(p.mlb || '')+(p.mlb && t.plays ? ' '+_loEsc(_loGameLabel(p, t)) : '')+(posHint?(' &middot; '+posHint):'')+'</div>';
