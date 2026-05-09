@@ -7467,24 +7467,30 @@ function _loBuildContext() {
     spQuartiles: null,       // [Q1,Q2,Q3] cutoffs of SP _teamSGP across qualified SPs
     lineupQuartiles: null    // [Q1,Q2,Q3] cutoffs of team lineup strength
   };
-  // Compute season-long SP quartile cutoffs from _rosPitData (qualified = IP >= 15).
-  // Also indexes SPs by name so we can resolve probables → FP object.
+  // Index all pitchers by name AND compute per-start SGP for every one of them.
+  // The IP >= 15 filter only governs which entries contribute to the *quartile
+  // boundary* computation — it does NOT exclude low-IP SPs from getting a tier
+  // assigned today (otherwise rookie call-ups get "Matchup TBD" forever).
   var spByName = {};
   if (_rosPitData && _rosPitData.length) {
-    var sps = _rosPitData.filter(function(p){
-      var posUp = (p.pos || p._posShort || '').toUpperCase();
-      return posUp.indexOf('SP') !== -1 && parseFloat(p.IP||0) >= 15;
-    }).map(function(p){
+    _rosPitData.forEach(function(p){
       var sgp = _rosAdPlayerSGP(p, false) || 0;
       var gs = parseFloat(p.GS||0) || (parseFloat(p.IP||0)/6);
       p._teamSGP = gs > 0 ? sgp/gs : 0;
       var nm = p._displayName || p.name || '';
       var k = (typeof _normPlayerKey === 'function') ? _normPlayerKey(nm) : nm.toLowerCase();
       if (k) spByName[k] = p;
-      return p._teamSGP;
-    }).sort(function(a,b){ return a-b; });
-    if (sps.length >= 4) {
-      ctx.spQuartiles = [sps[Math.floor(sps.length*0.25)], sps[Math.floor(sps.length*0.5)], sps[Math.floor(sps.length*0.75)]];
+    });
+    // Quartile cutoffs from the IP-qualified subset only.
+    var qualifiedSps = _rosPitData.filter(function(p){
+      var posUp = (p.pos || p._posShort || '').toUpperCase();
+      // If pos field is missing/empty, fall back to "any pitcher with non-trivial GS"
+      // to avoid filtering everyone out when the FP JSON doesn't include pos.
+      var looksLikeSP = posUp.indexOf('SP') !== -1 || (parseFloat(p.GS||0) >= 5);
+      return looksLikeSP && parseFloat(p.IP||0) >= 15;
+    }).map(function(p){ return p._teamSGP; }).sort(function(a,b){ return a-b; });
+    if (qualifiedSps.length >= 4) {
+      ctx.spQuartiles = [qualifiedSps[Math.floor(qualifiedSps.length*0.25)], qualifiedSps[Math.floor(qualifiedSps.length*0.5)], qualifiedSps[Math.floor(qualifiedSps.length*0.75)]];
     }
   }
   // Compute season-long lineup-strength quartiles. Per MLB team, sum top-9
