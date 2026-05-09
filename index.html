@@ -307,6 +307,7 @@ td.neg { color: #c0392b; font-weight: 500; }
       <button onclick="showPage('teamroster',this)">Team Roster</button>
       <button onclick="showPage('archetype',this)">Team Archetype</button>
       <button onclick="showPage('lineuporg',this)">Lineup Organizer</button>
+      <button onclick="showPage('ros',this)">Trade &amp; Waiver</button>
     </div>
   </div>
   <div class="nav-group">
@@ -315,7 +316,6 @@ td.neg { color: #c0392b; font-weight: 500; }
       <span>Player Data</span>
     </div>
     <div class="nav-group-buttons">
-      <button onclick="showPage('ros',this)">Player Trade &amp; Waiver SPG</button>
       <button onclick="showPage('fwar',this)">Player Statistics</button>
       <button onclick="showPage('targets',this)">Player Expected Statistics</button>
     </div>
@@ -699,7 +699,7 @@ td.neg { color: #c0392b; font-weight: 500; }
   </div>
   <div class="page" id="page-historic" style="display:none"></div>
   <div class="page" id="page-ros">
-    <div class="page-title">Player Trade &amp; Waiver SPG</div>
+    <div class="page-title">Trade &amp; Waiver</div>
     <div class="page-subtitle">FantasyPros consensus rest-of-season projections for all players.</div>
     <div id="ros-team-dropdown" style="margin-bottom:10px"></div>
     <div id="ros-team-need-top" style="margin-bottom:14px"></div>
@@ -812,7 +812,8 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div class="page-title">Site Guide</div>
     <div class="page-subtitle">How each page works, key calculations, and what's new.</div>
     <div class="trade-tabs" id="guide-tabs">
-      <button class="trade-tab active" onclick="showGuideTab('start',this)">Getting Started</button>
+      <button class="trade-tab active" onclick="showGuideTab('flow',this)">Site Flow</button>
+      <button class="trade-tab" onclick="showGuideTab('start',this)">Getting Started</button>
       <button class="trade-tab" onclick="showGuideTab('dashboard',this)">Dashboard</button>
       <button class="trade-tab" onclick="showGuideTab('joe',this)">JOE Factor</button>
       <button class="trade-tab" onclick="showGuideTab('fwar',this)">fWAR</button>
@@ -827,8 +828,164 @@ td.neg { color: #c0392b; font-weight: 500; }
       <button class="trade-tab" onclick="showGuideTab('lineup',this)">Lineup</button>
     </div>
 
+    <!-- Site Flow (default tab) -->
+    <div id="guide-tab-flow" class="trade-tab-content active">
+      <div style="max-width:800px;margin-top:16px;display:flex;flex-direction:column;gap:16px">
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">Site Flow &mdash; how everything connects</span></div>
+          <div class="card-body" style="padding:20px">
+            <p style="font-size:13px;line-height:1.7;margin-bottom:16px">Six layers, top to bottom. Each builds on the one above it. Raw data comes in at the top; daily decisions fall out at the bottom. Skim the diagram first, then the section notes underneath fill in the &quot;why.&quot;</p>
+
+            <div style="margin:0 0 24px;display:flex;justify-content:center">
+              <svg width="100%" style="max-width:680px" viewBox="0 0 680 1490" role="img">
+                <title>Bluebonnet Baseball data flow</title>
+                <desc>Six-layer flow showing how raw league data feeds league analytics, then math and models, then player metrics, then team views, and finally daily decisions.</desc>
+                <defs>
+                  <marker id="sf-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+                </defs>
+
+                <text x="40" y="40" style="font-size:14px;font-weight:500;fill:var(--text)">1. Raw data</text>
+                <text x="40" y="58" style="font-size:12px;fill:var(--muted)">External feeds pulled by GitHub Action.</text>
+                <g><rect x="40" y="76" width="150" height="56" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+                <text x="115" y="100" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#2C2C2A">Fantrax</text>
+                <text x="115" y="118" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#444441">Standings, stats, rosters</text></g>
+                <g><rect x="206" y="76" width="150" height="56" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+                <text x="281" y="100" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#2C2C2A">MLB Stats API</text>
+                <text x="281" y="118" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#444441">Probables, schedule</text></g>
+                <g><rect x="372" y="76" width="135" height="56" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+                <text x="439" y="100" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#2C2C2A">FantasyPros</text>
+                <text x="439" y="118" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#444441">ROS projections</text></g>
+                <g><rect x="523" y="76" width="117" height="56" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+                <text x="581" y="100" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#2C2C2A">FanGraphs</text>
+                <text x="581" y="118" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#444441">fWAR, Statcast</text></g>
+
+                <line x1="340" y1="132" x2="340" y2="178" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#sf-arrow)"/>
+
+                <text x="40" y="210" style="font-size:14px;font-weight:500;fill:var(--text)">2. League analytics</text>
+                <text x="40" y="228" style="font-size:12px;fill:var(--muted)">League-wide signals that reveal what drives wins.</text>
+                <g><rect x="92" y="246" width="220" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+                <text x="202" y="270" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#085041">Z-scores</text>
+                <text x="202" y="288" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#0F6E56">Team performance per cat</text></g>
+                <g><rect x="368" y="246" width="220" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+                <text x="478" y="270" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#085041">JOE factor</text>
+                <text x="478" y="288" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#0F6E56">Lucky / neutral / unlucky</text></g>
+
+                <line x1="340" y1="302" x2="340" y2="348" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#sf-arrow)"/>
+
+                <text x="40" y="380" style="font-size:14px;font-weight:500;fill:var(--text)">3. Math &amp; models</text>
+                <text x="40" y="398" style="font-size:12px;fill:var(--muted)">Transformations that turn raw cats into comparable values.</text>
+                <g><rect x="40" y="416" width="195" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+                <text x="137" y="440" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#3C3489">SGP engine</text>
+                <text x="137" y="458" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#534AB7">Cats &rarr; standings gain points</text></g>
+                <g><rect x="251" y="416" width="190" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+                <text x="346" y="440" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#3C3489">Correlations</text>
+                <text x="346" y="458" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#534AB7">Which cats win standings</text></g>
+                <g><rect x="457" y="416" width="183" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+                <text x="548" y="440" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#3C3489">Quartile bucketing</text>
+                <text x="548" y="458" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#534AB7">Matchup tier cutoffs</text></g>
+                <g><rect x="40" y="488" width="195" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+                <text x="137" y="512" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#3C3489">ROS + current blend</text>
+                <text x="137" y="530" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#534AB7">50/50 forward + recent</text></g>
+                <g><rect x="251" y="488" width="190" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+                <text x="346" y="512" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#3C3489">Position scarcity</text>
+                <text x="346" y="530" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#534AB7">Adjust by pos rarity</text></g>
+                <g><rect x="457" y="488" width="183" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+                <text x="548" y="512" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#3C3489">Replacement level</text>
+                <text x="548" y="530" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#534AB7">Baseline above waiver</text></g>
+                <g><rect x="220" y="560" width="240" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+                <text x="340" y="584" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#3C3489">JOE factor</text>
+                <text x="340" y="602" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#534AB7">Schedule luck normalization</text></g>
+
+                <line x1="340" y1="616" x2="340" y2="662" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#sf-arrow)"/>
+
+                <text x="40" y="694" style="font-size:14px;font-weight:500;fill:var(--text)">4. Player metrics</text>
+                <text x="40" y="712" style="font-size:12px;fill:var(--muted)">Per-player numbers derived from inputs above.</text>
+                <g><rect x="40" y="730" width="142" height="56" rx="8" fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/>
+                <text x="111" y="754" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#712B13">fWAR%</text>
+                <text x="111" y="772" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#993C1D">Pos-group percentile</text></g>
+                <g><rect x="198" y="730" width="142" height="56" rx="8" fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/>
+                <text x="269" y="754" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#712B13">Lg Rating%</text>
+                <text x="269" y="772" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#993C1D">FP consensus</text></g>
+                <g><rect x="356" y="730" width="142" height="56" rx="8" fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/>
+                <text x="427" y="754" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#712B13">Pos rating</text>
+                <text x="427" y="772" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#993C1D">Within-position rank</text></g>
+                <g><rect x="514" y="730" width="126" height="56" rx="8" fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/>
+                <text x="577" y="754" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#712B13">ROS SGP</text>
+                <text x="577" y="772" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#993C1D">Forward-looking</text></g>
+                <g><rect x="269" y="802" width="142" height="56" rx="8" fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/>
+                <text x="340" y="826" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#712B13">Curr SGP</text>
+                <text x="340" y="844" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#993C1D">Recent form</text></g>
+                <g><rect x="220" y="874" width="240" height="56" rx="8" fill="#F5C4B3" stroke="#993C1D" stroke-width="1"/>
+                <text x="340" y="898" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#4A1B0C">Today-score</text>
+                <text x="340" y="916" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#712B13">Per-game blend &times; matchup</text></g>
+                <line x1="111" y1="786" x2="280" y2="874" stroke="var(--muted)" stroke-width="1" marker-end="url(#sf-arrow)"/>
+                <line x1="269" y1="786" x2="320" y2="874" stroke="var(--muted)" stroke-width="1" marker-end="url(#sf-arrow)"/>
+                <line x1="427" y1="786" x2="360" y2="874" stroke="var(--muted)" stroke-width="1" marker-end="url(#sf-arrow)"/>
+                <line x1="577" y1="786" x2="400" y2="874" stroke="var(--muted)" stroke-width="1" marker-end="url(#sf-arrow)"/>
+                <line x1="340" y1="858" x2="340" y2="874" stroke="var(--muted)" stroke-width="1" marker-end="url(#sf-arrow)"/>
+
+                <line x1="340" y1="930" x2="340" y2="976" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#sf-arrow)"/>
+
+                <text x="40" y="1008" style="font-size:14px;font-weight:500;fill:var(--text)">5. Team views</text>
+                <text x="40" y="1026" style="font-size:12px;fill:var(--muted)">Roster-level aggregations and recommendations.</text>
+                <g><rect x="40" y="1044" width="195" height="56" rx="8" fill="#FBEAF0" stroke="#993556" stroke-width="0.5"/>
+                <text x="137" y="1068" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#72243E">Team Roster</text>
+                <text x="137" y="1086" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#993556">Full roster + ratings</text></g>
+                <g><rect x="251" y="1044" width="190" height="56" rx="8" fill="#FBEAF0" stroke="#993556" stroke-width="0.5"/>
+                <text x="346" y="1068" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#72243E">Team Archetype</text>
+                <text x="346" y="1086" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#993556">Buy / sell / hold</text></g>
+                <g><rect x="457" y="1044" width="183" height="56" rx="8" fill="#FBEAF0" stroke="#993556" stroke-width="0.5"/>
+                <text x="548" y="1068" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#72243E">Team Need</text>
+                <text x="548" y="1086" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#993556">Position + cat gaps</text></g>
+
+                <line x1="340" y1="1100" x2="340" y2="1146" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#sf-arrow)"/>
+
+                <text x="40" y="1178" style="font-size:14px;font-weight:500;fill:var(--text)">6. Daily decisions</text>
+                <text x="40" y="1196" style="font-size:12px;fill:var(--muted)">Today-score + team needs &rarr; lineup, add/drop, and trade calls.</text>
+                <g><rect x="40" y="1214" width="195" height="76" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+                <text x="137" y="1238" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#0C447C">Lineup Organizer</text>
+                <text x="137" y="1258" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#185FA5">Daily slot fill</text>
+                <text x="137" y="1276" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#185FA5">Filters IL, ranks today</text></g>
+                <g><rect x="251" y="1214" width="190" height="76" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+                <text x="346" y="1238" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#0C447C">Add / Drop</text>
+                <text x="346" y="1258" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#185FA5">Waiver SGP gain</text>
+                <text x="346" y="1276" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#185FA5">Weighted by team need</text></g>
+                <g><rect x="457" y="1214" width="183" height="76" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+                <text x="548" y="1238" text-anchor="middle" dominant-baseline="central" style="font-size:14px;font-weight:500;fill:#0C447C">Trade analyzer</text>
+                <text x="548" y="1258" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#185FA5">Buy-low / sell-high</text>
+                <text x="548" y="1276" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:#185FA5">Statcast x vs actual</text></g>
+
+                <rect x="40" y="1340" width="20" height="14" rx="3" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/><text x="68" y="1352" style="font-size:12px;fill:var(--muted)">Inputs</text>
+                <rect x="120" y="1340" width="20" height="14" rx="3" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/><text x="148" y="1352" style="font-size:12px;fill:var(--muted)">League</text>
+                <rect x="210" y="1340" width="20" height="14" rx="3" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/><text x="238" y="1352" style="font-size:12px;fill:var(--muted)">Math</text>
+                <rect x="290" y="1340" width="20" height="14" rx="3" fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/><text x="318" y="1352" style="font-size:12px;fill:var(--muted)">Player</text>
+                <rect x="376" y="1340" width="20" height="14" rx="3" fill="#FBEAF0" stroke="#993556" stroke-width="0.5"/><text x="404" y="1352" style="font-size:12px;fill:var(--muted)">Team</text>
+                <rect x="450" y="1340" width="20" height="14" rx="3" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/><text x="478" y="1352" style="font-size:12px;fill:var(--muted)">Decisions</text>
+              </svg>
+            </div>
+
+            <div style="font-size:13px;line-height:1.7">
+              <div style="margin-bottom:14px"><strong>1. Raw data.</strong> Four external feeds. <strong>Fantrax</strong> is the system of record &mdash; standings, weekly stats, rosters, transaction history. <strong>MLB Stats API</strong> provides today's probable pitchers and the league schedule. <strong>FantasyPros</strong> contributes consensus rest-of-season projections used for forward-looking SGP. <strong>FanGraphs</strong> supplies fWAR (the player-rating gold standard) and Statcast (xBA / xSLG / xwOBA used for buy-low signals). All four are pulled by a GitHub Action and stored as JSON files the site reads directly.</div>
+
+              <div style="margin-bottom:14px"><strong>2. League analytics.</strong> Before the math layer can weight anything correctly, you need to know <em>what's actually winning games this season</em>. <strong>Z-Scores</strong> show how each team performs in each category relative to league mean &mdash; the raw shape of the standings. <strong>JOE Factor</strong> measures schedule luck: how much each team's record reflects their underlying performance vs. who they happened to face when. These two signals tell the math layer below which categories matter and where the real talent (vs. luck) sits.</div>
+
+              <div style="margin-bottom:14px"><strong>3. Math &amp; models.</strong> The transformation engine. <strong>SGP</strong> converts raw category stats into &quot;standings gain points&quot; &mdash; a single comparable unit. <strong>Correlations</strong> identify which cats actually drive winning. <strong>Quartile bucketing</strong> turns continuous values into Tough/Above-avg/Avg/Easy matchup tiers. The <strong>ROS + current blend</strong> weights forward-looking projections 50/50 with current-season production. <strong>Position scarcity</strong> bumps up players at thin positions (a top SS is worth more than a top OF). <strong>Replacement level</strong> sets the baseline of what's freely available on waivers, so SGP is measured above-replacement rather than absolute. <strong>JOE factor</strong> normalizes for schedule luck.</div>
+
+              <div style="margin-bottom:14px"><strong>4. Player metrics.</strong> Five derived numbers per player, each measuring a different facet. <strong>fWAR%</strong> is a percentile of true talent within the player's position group. <strong>Lg Rating%</strong> is FantasyPros consensus consensus. <strong>Pos rating</strong> is rank within the position. <strong>ROS SGP</strong> is forward-looking value, <strong>Curr SGP</strong> is recent-form value. All five converge into <strong>Today-score</strong>: the per-game expected SGP gain blended 50/50 ROS+current and multiplied by today's matchup tier. This is the number the daily decision tools rank by.</div>
+
+              <div style="margin-bottom:14px"><strong>5. Team views.</strong> Roster-level aggregations. <strong>Team Roster</strong> is the full player list with ratings. <strong>Team Archetype</strong> classifies your team's shape (Heavyweight, Cinderella, Pretender, etc.) and recommends a strategic posture (Buy / Sell / Hold). <strong>Team Need</strong> identifies positional gaps (where roster is below league average) and category gaps (which standings cats you most need to add to). The Team Need output specifically becomes weighting input for the decision tools below.</div>
+
+              <div><strong>6. Daily decisions.</strong> Where it all lands. <strong>Lineup Organizer</strong> takes today-score, filters out IL players, applies position-eligibility, and ranks your roster into a slot-filled lineup with toss-up flags. <strong>Add / Drop</strong> ranks waiver candidates by SGP gain weighted by your team's category needs &mdash; not just &quot;is this guy good&quot; but &quot;does he add what you specifically need.&quot; <strong>Trade analyzer</strong> highlights buy-low / sell-high opportunities by comparing each player's actual stats to Statcast expected stats &mdash; a gap signals likely regression or improvement.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- Getting Started -->
-    <div id="guide-tab-start" class="trade-tab-content active">
+    <div id="guide-tab-start" class="trade-tab-content">
       <div class="card" style="margin-top:16px">
         <div class="card-header"><span class="card-title">Welcome to Bluebonnet Baseball Analytics</span></div>
         <div class="card-body" style="padding:20px;max-width:760px">
