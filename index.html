@@ -7973,9 +7973,13 @@ function renderLineupOrgPage() {
   selHtml += '</select>';
   var probables = window._loProbables;
   var statusPill;
+  var fetchedCaption = '';
   if (probables && probables.games && probables.games.length > 0) {
     var spCount = probables.games.filter(function(g){ return g.homeSP && g.awaySP; }).length;
     statusPill = '<span style="font-size:10px;padding:3px 8px;border-radius:10px;background:rgba(45,90,61,0.10);color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;font-weight:500" title="'+probables.games.length+' games today, '+spCount+' with both SPs announced. Fetched '+probables.fetched+'.">Matchup data on</span>';
+    if (probables.fetched) {
+      fetchedCaption = '<span style="font-size:10px;color:var(--muted)">Fetched '+_loEsc(_loFmtFetched(probables.fetched))+'</span>';
+    }
   } else if (probables && probables.error) {
     statusPill = '<span style="font-size:10px;padding:3px 8px;border-radius:10px;background:rgba(186,117,23,0.10);color:#854f0b;text-transform:uppercase;letter-spacing:0.06em;font-weight:500" title="probables.json fetch failed: '+_loEsc(probables.error)+'">Matchup data error</span>';
   } else if (probables && probables.games && probables.games.length === 0) {
@@ -7983,7 +7987,7 @@ function renderLineupOrgPage() {
   } else {
     statusPill = '<span style="font-size:10px;padding:3px 8px;border-radius:10px;background:rgba(186,117,23,0.10);color:#854f0b;text-transform:uppercase;letter-spacing:0.06em;font-weight:500" title="data/probables.json not found. Run fetch_fantrax.py to populate.">Matchup data missing</span>';
   }
-  ctrl.innerHTML = '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="font-size:13px;font-weight:500;color:var(--muted)">Team:</span>'+selHtml+statusPill+'<span style="font-size:11px;color:var(--muted);margin-left:auto">'+_loFmtDate(new Date())+'</span></div>';
+  ctrl.innerHTML = '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="font-size:13px;font-weight:500;color:var(--muted)">Team:</span>'+selHtml+statusPill+fetchedCaption+'<span style="font-size:11px;color:var(--muted);margin-left:auto">'+_loFmtDate(new Date())+'</span></div>';
   _loRender();
 }
 
@@ -8003,6 +8007,21 @@ function _loFmtDate(d) {
   var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return days[d.getDay()]+', '+months[d.getMonth()]+' '+d.getDate();
+}
+
+// Format an ISO timestamp like "2026-05-08T18:33:00Z" into a short
+// human-readable form like "May 8, 2:33pm" using the user's local time.
+function _loFmtFetched(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var hr = d.getHours();
+  var ampm = hr >= 12 ? 'pm' : 'am';
+  var hr12 = hr % 12 || 12;
+  var min = d.getMinutes();
+  var mm = (min < 10 ? '0' : '') + min;
+  return months[d.getMonth()]+' '+d.getDate()+', '+hr12+':'+mm+ampm;
 }
 
 function _loRender() {
