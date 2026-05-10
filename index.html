@@ -20978,6 +20978,100 @@ function _tlBuildPlayerCard(p, isHit, teamId) {
 // (player-pickers, SGP delta, verdict). Reuses existing data sources.
 window._tlV2 = window._tlV2 || { teamA: null, teamB: null, sendA: [], sendB: [], activeTab: 'compare' };
 
+// Compute category weights for any team (rank 1 = least need = 0.2x,
+// rank N = most need = 2.5x). Mirrors the inline catWeights logic in the
+// ROS Trade Analyzer so the Build tab can use the SAME weighting per team.
+// Returns { catWeights: {cat: weight}, catRanks: {cat: rank}, n: numTeams }
+window._tlV2CatWeightsCache = {};
+function _tlV2CatWeights(teamId) {
+  if (window._tlV2CatWeightsCache[teamId]) return window._tlV2CatWeightsCache[teamId];
+  var catWeights = {}, catRanks = {};
+  var tables = (S.seasonData && S.seasonData.data && S.seasonData.data.tableList) || [];
+  var statTable = null;
+  for (var i = 0; i < tables.length; i++) {
+    var cap = (tables[i].caption || '').toLowerCase();
+    if (cap.indexOf('stat total') !== -1 || cap.indexOf('season stat') !== -1) { statTable = tables[i]; break; }
+    if (!statTable && cap !== '' && cap.indexOf('point') === -1 && (tables[i].rows||[]).length > 0) statTable = tables[i];
+  }
+  if (!statTable) { window._tlV2CatWeightsCache[teamId] = { catWeights: catWeights, catRanks: catRanks, n: 10 }; return window._tlV2CatWeightsCache[teamId]; }
+  var hdr = (statTable.header && statTable.header.cells) || [];
+  var hIdx = {};
+  hdr.forEach(function(h,i){
+    if (h.key)       hIdx[h.key.toUpperCase()]       = i;
+    if (h.shortName) hIdx[h.shortName.toUpperCase()] = i;
+    if (h.name)      hIdx[h.name.toUpperCase()]      = i;
+  });
+  var CATS_HI  = ['R','HR','RBI','SB','AVG','K','W','SVH3'];
+  var CATS_LOW = ['ERA','WHIP'];
+  var ALL_C    = CATS_HI.concat(CATS_LOW);
+  var teamCatVals = {};
+  (statTable.rows || []).forEach(function(row) {
+    var fc = row.fixedCells || [], cells = row.cells || [];
+    var id = (fc[1] && fc[1].teamId) || ''; if (!id) return;
+    teamCatVals[id] = {};
+    ALL_C.forEach(function(cat) {
+      var ci = hIdx[cat]; if (ci == null) return;
+      var v = parseFloat((cells[ci]||{}).content);
+      if (!isNaN(v)) teamCatVals[id][cat] = v;
+    });
+  });
+  ALL_C.forEach(function(cat) {
+    var isLow = CATS_LOW.indexOf(cat) !== -1;
+    var pairs = Object.keys(teamCatVals).map(function(id){ return {id:id, v:teamCatVals[id][cat]}; })
+      .filter(function(p){ return p.v != null; })
+      .sort(function(a,b){ return isLow ? a.v-b.v : b.v-a.v; });
+    var rank = pairs.findIndex(function(p){ return p.id === teamId }) + 1;
+    if (rank < 1) rank = 5;
+    catRanks[cat] = rank;
+    var n = pairs.length || 10;
+    catWeights[cat] = 0.2 + (rank - 1) / (n - 1) * (2.5 - 0.2);
+  });
+  var result = { catWeights: catWeights, catRanks: catRanks, n: Object.keys(teamCatVals).length || 10 };
+  window._tlV2CatWeightsCache[teamId] = result;
+  return result;
+}
+
+// Compute per-category SGP contribution for a player. Returns {cat: sgpPerCat}
+// across all 10 standings cats. Hitters contribute to R/HR/RBI/SB/AVG; pitchers
+// to W/K/SVH3/ERA/WHIP. Counting cats: raw projected value mapped to SGP units.
+// Rate cats (AVG/ERA/WHIP): proportional impact on team aggregate.
+// We approximate by splitting the player's total ROS SGP across their relevant
+// cats using FantasyPros category projections as weights.
+function _tlV2PlayerCatSGP(player) {
+  var out = { R:0,HR:0,RBI:0,SB:0,AVG:0, W:0,K:0,SVH3:0,ERA:0,WHIP:0 };
+  if (!player || !player.fp) return out;
+  var fp = player.fp;
+  var rosSGP = player.rosSGP || 0;
+  if (Math.abs(rosSGP) < 0.001) return out;
+  // Use the player's projected counting stats as proportional weights.
+  // For hitters: R/HR/RBI/SB + AVG. For pitchers: K/W/SVH3 + ERA/WHIP.
+  if (player.isHit) {
+    var R = parseFloat(fp.R||0), HR = parseFloat(fp.HR||0), RBI = parseFloat(fp.RBI||0), SB = parseFloat(fp.SB||0);
+    // Scale each by typical roto category importance (rough heuristic):
+    // R/HR/RBI/SB roughly equal volume → 0.2 each, AVG → 0.2.
+    var counts = { R: R, HR: HR*4.5, RBI: RBI, SB: SB*5 }; // weighted to similar magnitudes
+    var totalC = 0; Object.keys(counts).forEach(function(c){ totalC += counts[c]; });
+    if (totalC > 0) {
+      Object.keys(counts).forEach(function(c){
+        out[c] = rosSGP * 0.8 * (counts[c] / totalC); // 80% to counting cats
+      });
+    }
+    out['AVG'] = rosSGP * 0.2; // 20% to AVG
+  } else {
+    var W = parseFloat(fp.W||0), K = parseFloat(fp.K||0), SVH3 = parseFloat(fp.SVH3||fp.SV||0);
+    var countsP = { W: W*8, K: K, SVH3: SVH3*3 };
+    var totalP = 0; Object.keys(countsP).forEach(function(c){ totalP += countsP[c]; });
+    if (totalP > 0) {
+      Object.keys(countsP).forEach(function(c){
+        out[c] = rosSGP * 0.6 * (countsP[c] / totalP); // 60% to counting cats
+      });
+    }
+    out['ERA']  = rosSGP * 0.2;
+    out['WHIP'] = rosSGP * 0.2;
+  }
+  return out;
+}
+
 window.showTradeLabTab = function(tab, btn) {
   document.querySelectorAll('#page-tradelab .trade-tab').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
@@ -21325,27 +21419,40 @@ function _tlV2RenderBuild() {
   var sentB = sendB.map(function(k){ return byKeyB[k]; });
   function sumSGP(arr) { var s = 0; arr.forEach(function(p){ s += p.rosSGP; }); return s; }
   var sentASGP = sumSGP(sentA), sentBSGP = sumSGP(sentB);
-  function getNeedWeights(tid) {
-    if (typeof _rosNeed === 'function') {
-      try { var n = _rosNeed(tid); if (n && n.catWeights) return n.catWeights; } catch(e){}
-    }
-    return null;
+
+  // Get per-team category weights from current standings.
+  var nwA = _tlV2CatWeights(tA);
+  var nwB = _tlV2CatWeights(tB);
+
+  // Per-category SGP deltas. For team A: received (from B's sent) minus given (A's sent).
+  // For team B: received (from A's sent) minus given (B's sent).
+  function aggregateCatSGP(playerArr) {
+    var agg = { R:0,HR:0,RBI:0,SB:0,AVG:0, W:0,K:0,SVH3:0,ERA:0,WHIP:0 };
+    playerArr.forEach(function(p){
+      var c = _tlV2PlayerCatSGP(p);
+      Object.keys(c).forEach(function(cat){ agg[cat] += c[cat]; });
+    });
+    return agg;
   }
-  function needWeightedSGP(player, weights) {
-    if (!weights || !player.fp) return player.rosSGP;
-    if (typeof _rosAdPlayerSGP === 'function') {
-      try { return _rosAdPlayerSGP(player.fp, player.isHit, weights) || player.rosSGP; }
-      catch(e) { return player.rosSGP; }
-    }
-    return player.rosSGP;
+  var aReceived = aggregateCatSGP(sentB);
+  var aGiven    = aggregateCatSGP(sentA);
+  var bReceived = aggregateCatSGP(sentA);
+  var bGiven    = aggregateCatSGP(sentB);
+  var ALL_CATS = ['R','HR','RBI','SB','AVG','W','K','SVH3','ERA','WHIP'];
+  var aCatDelta = {}, bCatDelta = {};
+  ALL_CATS.forEach(function(cat){
+    aCatDelta[cat] = aReceived[cat] - aGiven[cat];
+    bCatDelta[cat] = bReceived[cat] - bGiven[cat];
+  });
+
+  // Need-weighted total = sum over cats of (delta × cat weight for that team).
+  function weightedTotal(deltaMap, weights) {
+    var t = 0;
+    ALL_CATS.forEach(function(cat){ t += (deltaMap[cat] || 0) * (weights[cat] || 1); });
+    return t;
   }
-  var weightsA = getNeedWeights(tA), weightsB = getNeedWeights(tB);
-  var weightedRecvA = sentB.reduce(function(s,p){ return s + needWeightedSGP(p, weightsA); }, 0);
-  var weightedSentA = sentA.reduce(function(s,p){ return s + needWeightedSGP(p, weightsA); }, 0);
-  var weightedRecvB = sentA.reduce(function(s,p){ return s + needWeightedSGP(p, weightsB); }, 0);
-  var weightedSentB = sentB.reduce(function(s,p){ return s + needWeightedSGP(p, weightsB); }, 0);
-  var weightedDeltaA = weightedRecvA - weightedSentA;
-  var weightedDeltaB = weightedRecvB - weightedSentB;
+  var weightedDeltaA = weightedTotal(aCatDelta, nwA.catWeights);
+  var weightedDeltaB = weightedTotal(bCatDelta, nwB.catWeights);
 
   function verdictText() {
     var dA = weightedDeltaA, dB = weightedDeltaB;
@@ -21381,6 +21488,80 @@ function _tlV2RenderBuild() {
   html += deltaCardHtml(nameB, weightedDeltaB, sentBSGP, sentASGP);
   html += '</div></div>';
 
+  // ── Team Needs (both teams, side by side) ───────────────────────────────
+  // Shows category rank (1 = least need, N = most need) so the user can see
+  // why a delta is large or small — i.e., did the trade actually fill needs?
+  function teamNeedHtml(name, nw) {
+    var n = nw.n || 10;
+    var ranks = nw.catRanks || {};
+    var h = '<div style="padding:12px 14px;background:var(--surface);border-radius:8px;border:0.5px solid var(--border)">';
+    h += '<div style="font-size:12px;font-weight:500;margin-bottom:8px">'+_loEsc(name)+' &mdash; categorical need</div>';
+    h += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;font-size:11px">';
+    ALL_CATS.forEach(function(cat) {
+      var r = ranks[cat];
+      // Rank-based color: low rank (low need) = green, high rank (big need) = red.
+      var col = 'var(--muted)';
+      if (r != null) {
+        if (r <= n*0.3)      col = '#1D9E75';            // top tier in this cat = no need
+        else if (r <= n*0.6) col = '#7a9a4a';
+        else if (r <= n*0.8) col = '#c8a96e';
+        else                 col = '#c0392b';            // bottom tier = big need
+      }
+      h += '<div style="text-align:center;padding:5px 4px;background:var(--bg);border-radius:4px">';
+      h += '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">'+cat+'</div>';
+      h += '<div style="font-size:14px;font-weight:600;color:'+col+';margin-top:2px">#'+(r||'\u2014')+'</div>';
+      h += '</div>';
+    });
+    h += '</div></div>';
+    return h;
+  }
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">';
+  html += teamNeedHtml(nameA, nwA);
+  html += teamNeedHtml(nameB, nwB);
+  html += '</div>';
+
+  // ── Category-by-category impact ─────────────────────────────────────────
+  // Stacked vertically: Team A above, Team B below. Each row is a category
+  // with a horizontal bar showing the SGP delta (signed). Negative = bar
+  // grows left in red, positive = right in green.
+  function catBarRow(cat, delta, maxAbs) {
+    var rank = nwA.catRanks[cat]; // reused below but team-specific in actual call
+    var pct = Math.round(Math.abs(delta) / Math.max(0.01, maxAbs) * 100);
+    var sign = delta >= 0 ? '+' : '\u2212';
+    var col = delta >= 0.05 ? '#1e6b3a' : delta <= -0.05 ? '#c0392b' : 'var(--muted)';
+    var bg = delta >= 0.05 ? 'rgba(30,107,58,0.6)' : delta <= -0.05 ? 'rgba(192,57,43,0.6)' : 'rgba(150,150,150,0.3)';
+    var h = '<div style="display:grid;grid-template-columns:50px 1fr 1fr 60px;gap:8px;align-items:center;font-size:11px">';
+    h += '<div style="font-weight:500;text-align:right">'+cat+'</div>';
+    // Left half (negative)
+    h += '<div style="height:14px;background:rgba(45,90,61,0.04);border-radius:2px;position:relative;display:flex;flex-direction:row-reverse">';
+    if (delta < 0) h += '<div style="height:100%;width:'+pct+'%;background:'+bg+';border-radius:2px"></div>';
+    h += '</div>';
+    // Right half (positive)
+    h += '<div style="height:14px;background:rgba(45,90,61,0.04);border-radius:2px;position:relative">';
+    if (delta > 0) h += '<div style="height:100%;width:'+pct+'%;background:'+bg+';border-radius:2px"></div>';
+    h += '</div>';
+    h += '<div style="font-size:11px;color:'+col+';font-weight:500">'+sign+Math.abs(delta).toFixed(2)+'</div>';
+    h += '</div>';
+    return h;
+  }
+  function catImpactSection(label, deltaMap, color) {
+    var maxAbs = 0;
+    ALL_CATS.forEach(function(cat){ maxAbs = Math.max(maxAbs, Math.abs(deltaMap[cat])); });
+    if (maxAbs < 0.01) maxAbs = 1;
+    var h = '<div style="margin-bottom:12px">';
+    h += '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:'+color+';margin-bottom:6px">'+_loEsc(label)+'</div>';
+    h += '<div style="display:flex;flex-direction:column;gap:4px">';
+    ALL_CATS.forEach(function(cat){ h += catBarRow(cat, deltaMap[cat], maxAbs); });
+    h += '</div></div>';
+    return h;
+  }
+  html += '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px">';
+  html += '<div style="padding:12px 16px;background:var(--bg);border-bottom:0.5px solid var(--border)"><span style="font-size:13px;font-weight:500">Category-by-category impact</span><span style="font-size:11px;color:var(--muted);margin-left:8px">net SGP shift per cat after the trade</span></div>';
+  html += '<div style="padding:14px 16px">';
+  html += catImpactSection(nameA + ' \u2014 net delta per cat', aCatDelta, 'var(--accent)');
+  html += catImpactSection(nameB + ' \u2014 net delta per cat', bCatDelta, '#185FA5');
+  html += '</div></div>';
+
   var caveats = [];
   function teamCountAtGroup(roster, group) { return roster.filter(function(p){ return _tlV2PosGroup(p.pos) === group; }).length; }
   function sentAtGroup(sentArr, group) { return sentArr.filter(function(p){ return _tlV2PosGroup(p.pos) === group; }).length; }
@@ -21402,6 +21583,21 @@ function _tlV2RenderBuild() {
     }
   }
   sentA.concat(sentB).forEach(function(p){ if (p.isHit) regressionCheck(p); });
+
+  // Fit caveats: positive note when a team gains in their highest-need cats.
+  function topNeedCats(catRanks, n) {
+    return ALL_CATS.map(function(cat){ return { cat: cat, rank: catRanks[cat] || 5 }; })
+      .sort(function(a,b){ return b.rank - a.rank; })
+      .slice(0, n)
+      .map(function(p){ return p.cat; });
+  }
+  function fitCheck(name, deltaMap, catRanks) {
+    var topNeeds = topNeedCats(catRanks, 3);
+    var hits = topNeeds.filter(function(cat){ return deltaMap[cat] > 0.05; });
+    if (hits.length >= 2) caveats.push({ kind:'Fits', text: name+' gains in '+hits.join(', ')+' \u2014 their top-need categories.' });
+  }
+  fitCheck(nameA, aCatDelta, nwA.catRanks);
+  fitCheck(nameB, bCatDelta, nwB.catRanks);
 
   if (caveats.length) {
     html += '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px">';
