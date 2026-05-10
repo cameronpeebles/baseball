@@ -308,6 +308,7 @@ td.neg { color: #c0392b; font-weight: 500; }
       <button onclick="showPage('archetype',this)">Team Archetype</button>
       <button onclick="showPage('lineuporg',this)">Lineup Organizer</button>
       <button onclick="showPage('ros',this)">Trade &amp; Waiver</button>
+      <button onclick="showPage('tradelab',this)">Trade Lab</button>
     </div>
   </div>
   <div class="nav-group">
@@ -665,9 +666,19 @@ td.neg { color: #c0392b; font-weight: 500; }
   </div>
 
   <div class="page" id="page-tradelab">
-    <div class="page-title">ROS Trade Lab</div>
-    <div class="page-subtitle">Forward-looking trade and pickup analysis. Heatmap, verdicts, and recommendations all use FanGraphs ROS projections weighted by team category needs. Current-season data is shown only as a regression-risk check.</div>
-    <div id="tradelab-body"><div class="loading">Loading...</div></div>
+    <div class="page-title">Trade Lab</div>
+    <div class="page-subtitle">Scout potential trade partners and build proposals.</div>
+    <div id="tradelab-team-pickers" style="margin-bottom:14px"></div>
+    <div class="trade-tabs" id="tradelab-tabs">
+      <button class="trade-tab active" onclick="showTradeLabTab('compare',this)">Compare</button>
+      <button class="trade-tab" onclick="showTradeLabTab('build',this)">Build Trade</button>
+    </div>
+    <div id="tradelab-tab-compare" class="trade-tab-content active">
+      <div id="tradelab-compare-body"><div class="loading">Select two teams to compare.</div></div>
+    </div>
+    <div id="tradelab-tab-build" class="trade-tab-content">
+      <div id="tradelab-build-body"><div class="loading">Select two teams to build a trade.</div></div>
+    </div>
   </div>
 
   <div class="page" id="page-trade">
@@ -13311,6 +13322,9 @@ function renderDashboard() {
 
   // Refresh all data card
   var html = '<div class="card" style="margin-bottom:14px;padding:14px 16px">';
+  // Last-queried-from-GitHub line (sourced from probables.json.fetched, which
+  // the same GitHub Action writes alongside the other data files).
+  html += '<div id="dash-last-fetched" style="font-size:11px;color:var(--muted);margin-bottom:8px;font-style:italic">Last data refresh: checking&hellip;</div>';
   html += '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">';
   html += '<div><div style="font-size:13px;font-weight:600;margin-bottom:2px">Refresh all data</div>';
   html += '<div style="font-size:12px;color:var(--muted)">Runs all pipelines so every page populates correctly.</div></div>';
@@ -13330,6 +13344,38 @@ function renderDashboard() {
   html += '</select></div>';
   html += '<div id="dashboard-content"></div>';
   el.innerHTML = html;
+
+  // Populate the "last data refresh" line. Sourced from probables.json.fetched —
+  // the same GitHub Action that runs all data pipelines also writes that file,
+  // so its timestamp is a reliable proxy for "when was data last queried."
+  (function fillLastFetched() {
+    var pillEl = document.getElementById('dash-last-fetched');
+    if (!pillEl) return;
+    function render(iso) {
+      if (!iso) { pillEl.innerHTML = 'Last data refresh: <em>unknown</em>'; return; }
+      var pretty = (typeof _loFmtFetched === 'function') ? _loFmtFetched(iso) : iso;
+      pillEl.innerHTML = 'Last data refresh: <strong style="color:var(--text);font-style:normal">'+pretty+'</strong>';
+    }
+    if (window._loProbables && window._loProbables.fetched) {
+      render(window._loProbables.fetched);
+    } else if (window._loProbablesLoadState === 'pending') {
+      // Wait briefly for the inflight load.
+      var ticks = 0;
+      var iv = setInterval(function(){
+        ticks++;
+        if (window._loProbables && window._loProbables.fetched) { clearInterval(iv); render(window._loProbables.fetched); }
+        else if (ticks > 20) { clearInterval(iv); render(null); }
+      }, 200);
+    } else if (typeof loadJSON === 'function' && window._loProbablesLoadState === undefined) {
+      // Kick off our own load (won't conflict with Lineup Organizer's lazy load).
+      window._loProbablesLoadState = 'pending';
+      loadJSON('probables.json')
+        .then(function(d){ window._loProbables = d || null; window._loProbablesLoadState = 'done'; render(d ? d.fetched : null); })
+        .catch(function(){ window._loProbables = null; window._loProbablesLoadState = 'done'; render(null); });
+    } else {
+      render(null);
+    }
+  })();
 
   if (DB.teamId) buildDashboard(DB.teamId);
 }
@@ -20927,7 +20973,469 @@ function _tlBuildPlayerCard(p, isHit, teamId) {
   };
 }
 
+// ── Trade Lab v2 ──────────────────────────────────────────────────────────
+// Two-tab page: Compare (side-by-side roster diagnostics) + Build Trade
+// (player-pickers, SGP delta, verdict). Reuses existing data sources.
+window._tlV2 = window._tlV2 || { teamA: null, teamB: null, sendA: [], sendB: [], activeTab: 'compare' };
+
+window.showTradeLabTab = function(tab, btn) {
+  document.querySelectorAll('#page-tradelab .trade-tab').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  document.querySelectorAll('#page-tradelab .trade-tab-content').forEach(function(c){ c.classList.remove('active'); });
+  document.getElementById('tradelab-tab-' + tab).classList.add('active');
+  window._tlV2.activeTab = tab;
+  if (tab === 'compare') _tlV2RenderCompare();
+  else _tlV2RenderBuild();
+};
+
 function renderROSTradeLab() {
+  if (typeof TA === 'undefined' || !TA.players || !TA.players.length) {
+    if (typeof renderTradeAnalyzer === 'function') { try { renderTradeAnalyzer(); } catch (e) {} }
+  }
+  if (typeof renderROSPage === 'function' && (!window._rosHitData || !window._rosHitData.length)) {
+    try { renderROSPage(); } catch (e) {}
+  }
+  _tlV2RenderTeamPickers();
+  if (window._tlV2.activeTab === 'build') _tlV2RenderBuild();
+  else _tlV2RenderCompare();
+}
+
+function _tlV2RenderTeamPickers() {
+  var el = document.getElementById('tradelab-team-pickers');
+  if (!el) return;
+  var teams = Object.keys(S.teamInfo || {}).map(function(id){
+    return { id: id, name: (S.teamInfo[id].shortName || S.teamInfo[id].name || id) };
+  }).sort(function(a,b){ return a.name.localeCompare(b.name); });
+  if (!teams.length) { el.innerHTML = ''; return; }
+  if (!window._tlV2.teamA) window._tlV2.teamA = (window._rosSelectedTeam && S.teamInfo[window._rosSelectedTeam]) ? window._rosSelectedTeam : teams[0].id;
+  if (!window._tlV2.teamB) {
+    var aIdx = teams.findIndex(function(t){ return t.id === window._tlV2.teamA; });
+    window._tlV2.teamB = teams[(aIdx + 1) % teams.length].id;
+  }
+  function selHtml(label, current, sideKey) {
+    var h = '<div style="display:flex;flex-direction:column;gap:6px">';
+    h += '<label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">'+label+'</label>';
+    h += '<select onchange="window._tlV2TeamChange(\''+sideKey+'\',this.value)" style="padding:8px 10px;font-size:13px;border:0.5px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">';
+    teams.forEach(function(t){
+      h += '<option value="'+t.id+'"'+(t.id===current?' selected':'')+'>'+_loEsc(t.name)+'</option>';
+    });
+    h += '</select></div>';
+    return h;
+  }
+  el.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'
+    + selHtml('Team A', window._tlV2.teamA, 'A')
+    + selHtml('Team B', window._tlV2.teamB, 'B')
+    + '</div>';
+}
+
+window._tlV2TeamChange = function(side, val) {
+  if (side === 'A') window._tlV2.teamA = val;
+  else window._tlV2.teamB = val;
+  window._tlV2.sendA = [];
+  window._tlV2.sendB = [];
+  if (window._tlV2.activeTab === 'build') _tlV2RenderBuild();
+  else _tlV2RenderCompare();
+};
+
+function _tlV2GetTeamName(tid) {
+  var ti = (S.teamInfo || {})[tid] || {};
+  return ti.shortName || ti.name || tid;
+}
+
+window._tlV2StatusCache = {};
+function _tlV2BuildStatusMap(tid) {
+  if (window._tlV2StatusCache[tid]) return window._tlV2StatusCache[tid];
+  var m = {};
+  var rosters = S && S.rosterRaw && S.rosterRaw.data && S.rosterRaw.data.rosters;
+  if (!rosters || !rosters[tid]) { window._tlV2StatusCache[tid] = m; return m; }
+  var tables = (rosters[tid].data && rosters[tid].data.tables) || [];
+  tables.forEach(function(tbl) {
+    (tbl.rows || []).forEach(function(row) {
+      var nm = (row.scorer && row.scorer.name) || '';
+      if (!nm) return;
+      var nk = (typeof _normPlayerKey === 'function') ? _normPlayerKey(nm) : nm.toLowerCase();
+      if (nk) m[nk] = String(row.statusId || '1');
+    });
+  });
+  window._tlV2StatusCache[tid] = m;
+  return m;
+}
+
+function _tlV2GetTeamRoster(tid) {
+  var out = [];
+  var rl = window._rosRosterLookup || {};
+  var cs = window._rosCurrentStats || {};
+  var statusByName = _tlV2BuildStatusMap(tid);
+  function pushFor(arr, isHit) {
+    (arr || []).forEach(function(p){
+      var nm = p._displayName || p.name || '';
+      var key = (typeof _normPlayerKey === 'function') ? _normPlayerKey(nm) : nm.toLowerCase();
+      var entry = rl[key];
+      if (!entry || entry.teamId !== tid) return;
+      if (statusByName[key] === '3') return;
+      var rosSGP = (typeof _rosAdPlayerSGP === 'function') ? (_rosAdPlayerSGP(p, isHit) || 0) : 0;
+      var curRow = cs[key] || null;
+      var curSGP = (curRow && typeof _rosCurrSGP === 'function') ? (_rosCurrSGP(curRow, isHit) || 0) : 0;
+      out.push({
+        key: key, name: nm,
+        pos: (curRow && curRow.pos) || (p.pos || ''),
+        isHit: isHit, rosSGP: rosSGP, curSGP: curSGP,
+        fp: p, cs: curRow
+      });
+    });
+  }
+  pushFor(window._rosHitData, true);
+  pushFor(window._rosPitData, false);
+  return out.sort(function(a,b){ return b.rosSGP - a.rosSGP; });
+}
+
+function _tlV2PosGroup(pos) {
+  var p = (pos || '').toUpperCase();
+  if (p.indexOf('SP') !== -1) return 'SP';
+  if (p.indexOf('RP') !== -1) return 'RP';
+  if (p.indexOf('P')  !== -1) return 'SP';
+  if (p.indexOf('OF') !== -1) return 'OF';
+  return 'IF';
+}
+
+function _tlV2NumOrNull(x) { var n = parseFloat(x); return isNaN(n) ? null : n; }
+
+function _tlV2RenderCompare() {
+  var el = document.getElementById('tradelab-compare-body');
+  if (!el) return;
+  var tA = window._tlV2.teamA, tB = window._tlV2.teamB;
+  if (!tA || !tB) { el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px">Pick two teams above to compare.</div>'; return; }
+  if (tA === tB) { el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px">Pick two <em>different</em> teams above to compare.</div>'; return; }
+  var rosterA = _tlV2GetTeamRoster(tA);
+  var rosterB = _tlV2GetTeamRoster(tB);
+  if (!rosterA.length || !rosterB.length) { el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px">Loading roster data&hellip;</div>'; return; }
+  var nameA = _tlV2GetTeamName(tA), nameB = _tlV2GetTeamName(tB);
+  var html = '';
+
+  var posGroupAvg = {};
+  ['IF','OF','SP','RP'].forEach(function(g) {
+    var aPlayers = rosterA.filter(function(p){ return _tlV2PosGroup(p.pos) === g; });
+    var bPlayers = rosterB.filter(function(p){ return _tlV2PosGroup(p.pos) === g; });
+    function avg(arr) { if (!arr.length) return 0; var s = 0; arr.forEach(function(p){ s += p.rosSGP; }); return s / arr.length; }
+    posGroupAvg[g] = { a: avg(aPlayers), b: avg(bPlayers) };
+  });
+  var fits = [];
+  ['IF','OF','SP','RP'].forEach(function(g) {
+    var d = posGroupAvg[g].a - posGroupAvg[g].b;
+    if (Math.abs(d) > 0.3) {
+      if (d > 0) fits.push({ from: nameA, to: nameB, group: g });
+      else       fits.push({ from: nameB, to: nameA, group: g });
+    }
+  });
+
+  html += '<div style="background:var(--bg);border:0.5px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:18px">';
+  html += '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:10px">Trade space &mdash; where the asymmetries are</div>';
+  if (fits.length === 0) {
+    html += '<div style="font-size:12px;color:var(--muted);font-style:italic">Both teams look fairly balanced &mdash; no obvious positional asymmetries.</div>';
+  } else {
+    html += '<div style="display:flex;flex-direction:column;gap:6px;font-size:12px">';
+    fits.forEach(function(f) {
+      html += '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center">';
+      html += '<div style="text-align:right"><strong>'+_loEsc(f.from)+'</strong> has surplus in <span style="color:#1D9E75;font-weight:500">'+f.group+'</span></div>';
+      html += '<div style="font-size:18px;color:var(--muted)">&harr;</div>';
+      html += '<div><strong>'+_loEsc(f.to)+'</strong> is short in <span style="color:#c0392b;font-weight:500">'+f.group+'</span></div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+  html += '<div style="margin-top:12px"><button onclick="window._tlV2GotoBuild()" style="padding:6px 12px;font-size:11px;font-weight:500;border:0.5px solid var(--accent);background:rgba(45,90,61,0.08);color:var(--accent);border-radius:6px;cursor:pointer">Build trade with these teams &rarr;</button></div>';
+  html += '</div>';
+
+  function teamSummary(tid, name) {
+    var stTbls = (S.standingsData && S.standingsData.data && S.standingsData.data.tableList) || [];
+    var stMain = null;
+    for (var i = 0; i < stTbls.length; i++) {
+      if (stTbls[i].tableType === 'SECTION_HEADING') continue;
+      if ((stTbls[i].rows||[]).length > 0) { stMain = stTbls[i]; break; }
+    }
+    var rank = '\u2014', h2h = '\u2014';
+    if (stMain) {
+      var hIdx = {};
+      ((stMain.header && stMain.header.cells) || []).forEach(function(h, i) { if (h.key) hIdx[h.key.toUpperCase()] = i; if (h.shortName) hIdx[h.shortName.toUpperCase()] = i; });
+      var wi = hIdx['W'], pi = hIdx['PTS'];
+      var rows = (stMain.rows||[]).map(function(row) {
+        var fc = row.fixedCells || [], cells = row.cells || [];
+        var id = ''; fc.forEach(function(c){ if (c.teamId) id = c.teamId; });
+        var w = wi != null ? (parseFloat((cells[wi]||{}).content) || 0) : 0;
+        var pts = pi != null ? (parseFloat((cells[pi]||{}).content) || 0) : 0;
+        return { id: id, w: w, pts: pts };
+      }).sort(function(a,b){ return b.w - a.w || b.pts - a.pts; });
+      var idx = rows.findIndex(function(r){ return r.id === tid; });
+      if (idx >= 0) h2h = (idx+1) + (idx===0?'st':idx===1?'nd':idx===2?'rd':'th');
+    }
+    var seasonTbls = (S.seasonData && S.seasonData.data && S.seasonData.data.tableList) || [];
+    var ptTable = null;
+    for (var j = 0; j < seasonTbls.length; j++) {
+      var cap = (seasonTbls[j].caption||'').toLowerCase();
+      if (cap.indexOf('point total') !== -1) { ptTable = seasonTbls[j]; break; }
+    }
+    if (ptTable) {
+      var pIdx = -1;
+      (ptTable.rows||[]).forEach(function(row, i){ var fc = row.fixedCells||[]; var id = (fc[1]&&fc[1].teamId)||''; if (id === tid) pIdx = i; });
+      if (pIdx >= 0) rank = (pIdx+1) + (pIdx===0?'st':pIdx===1?'nd':pIdx===2?'rd':'th');
+    }
+    var joeRow = (window._joeSeasonData||[]).find(function(r){ return r.team === name; });
+    var joeVal = joeRow && joeRow.joe != null ? joeRow.joe : null;
+    return { rank: rank, h2h: h2h, joeVal: joeVal };
+  }
+  var sumA = teamSummary(tA, nameA), sumB = teamSummary(tB, nameB);
+  function joeFmt(v) {
+    if (v == null) return '<span style="color:var(--muted)">\u2014</span>';
+    var col = v >= 0.12 ? '#1D9E75' : v <= -0.12 ? '#c0392b' : 'var(--text)';
+    return '<strong style="color:'+col+'">'+(v>=0?'+':'')+v.toFixed(2)+'</strong>';
+  }
+  function summaryHtml(name, s) {
+    return '<div style="padding:14px 18px">'
+      +'<div style="font-size:13px;font-weight:500;margin-bottom:6px">'+_loEsc(name)+'</div>'
+      +'<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px">'
+      +'<div><span style="color:var(--muted)">Rank</span> <strong>'+s.rank+'</strong></div>'
+      +'<div><span style="color:var(--muted)">H2H</span> <strong>'+s.h2h+'</strong></div>'
+      +'<div><span style="color:var(--muted)">JOE</span> '+joeFmt(s.joeVal)+'</div>'
+      +'</div></div>';
+  }
+  html += '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px">';
+  html += '<div style="padding:12px 16px;background:var(--bg);border-bottom:0.5px solid var(--border)"><span style="font-size:13px;font-weight:500">Standings &amp; archetype</span></div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr">';
+  html += '<div style="border-right:0.5px solid var(--border)">'+summaryHtml(nameA, sumA)+'</div>';
+  html += '<div>'+summaryHtml(nameB, sumB)+'</div>';
+  html += '</div></div>';
+
+  var groups = ['IF','OF','SP','RP'];
+  var allVals = []; groups.forEach(function(g){ allVals.push(posGroupAvg[g].a, posGroupAvg[g].b); });
+  var maxVal = Math.max.apply(null, allVals.map(function(v){ return Math.abs(v); }));
+  if (maxVal < 0.01) maxVal = 1;
+  html += '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px">';
+  html += '<div style="padding:12px 16px;background:var(--bg);border-bottom:0.5px solid var(--border)"><span style="font-size:13px;font-weight:500">Roster strength by position</span><span style="font-size:11px;color:var(--muted);margin-left:8px">avg ROS-SGP per player</span></div>';
+  html += '<div style="padding:14px 16px"><div style="display:grid;grid-template-columns:60px 1fr 1fr 60px;gap:8px;align-items:center;font-size:12px;row-gap:8px">';
+  groups.forEach(function(g) {
+    var vA = posGroupAvg[g].a, vB = posGroupAvg[g].b;
+    var pctA = Math.round(Math.abs(vA) / maxVal * 100);
+    var pctB = Math.round(Math.abs(vB) / maxVal * 100);
+    var diff = vA - vB;
+    var diffCol = Math.abs(diff) < 0.15 ? 'var(--muted)' : (diff > 0 ? '#1e6b3a' : '#c0392b');
+    html += '<div style="font-weight:500;text-align:right;color:var(--muted)">'+g+'</div>';
+    html += '<div style="height:20px;background:rgba(45,90,61,0.05);border-radius:3px;position:relative;display:flex;justify-content:flex-end">';
+    html += '<div style="height:100%;width:'+pctA+'%;background:linear-gradient(to right, transparent, #1e6b3a);border-radius:3px"></div>';
+    html += '<span style="position:absolute;right:6px;top:2px;font-size:11px;font-weight:500">'+vA.toFixed(2)+'</span></div>';
+    html += '<div style="height:20px;background:rgba(45,90,61,0.05);border-radius:3px;position:relative">';
+    html += '<div style="height:100%;width:'+pctB+'%;background:linear-gradient(to left, transparent, #1e6b3a);border-radius:3px"></div>';
+    html += '<span style="position:absolute;left:6px;top:2px;font-size:11px;font-weight:500">'+vB.toFixed(2)+'</span></div>';
+    var sign = diff >= 0 ? '+' : '\u2212';
+    html += '<div style="font-size:11px;color:'+diffCol+'">'+sign+Math.abs(diff).toFixed(2)+'</div>';
+  });
+  html += '</div></div></div>';
+
+  function topNHtml(name, roster, n) {
+    var rows = roster.slice(0, n);
+    var h = '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden">';
+    h += '<div style="padding:12px 16px;background:var(--bg);border-bottom:0.5px solid var(--border)"><span style="font-size:13px;font-weight:500">'+_loEsc(name)+' &mdash; top '+n+' by ROS SGP</span></div>';
+    h += '<div style="padding:6px 0">';
+    rows.forEach(function(p, i) {
+      var sep = i === rows.length-1 ? '' : ';border-bottom:0.5px solid var(--border)';
+      var valCol = i === 0 ? '#0F6E56' : 'var(--text)';
+      var valWeight = i === 0 ? '600' : '500';
+      h += '<div style="display:flex;align-items:center;padding:6px 14px;gap:10px'+sep+'">';
+      h += '<span style="font-size:11px;color:var(--muted);width:12px">'+(i+1)+'</span>';
+      h += '<div style="flex:1;display:flex;align-items:baseline;gap:6px"><span style="font-size:12px;font-weight:500">'+_loEsc(p.name)+'</span><span style="font-size:10px;color:var(--muted)">'+_loEsc(p.pos)+'</span></div>';
+      h += '<span style="font-size:12px;font-weight:'+valWeight+';color:'+valCol+'">'+p.rosSGP.toFixed(2)+'</span>';
+      h += '</div>';
+    });
+    h += '</div></div>';
+    return h;
+  }
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">';
+  html += topNHtml(nameA, rosterA, 5);
+  html += topNHtml(nameB, rosterB, 5);
+  html += '</div>';
+
+  el.innerHTML = html;
+}
+
+window._tlV2GotoBuild = function() {
+  document.querySelectorAll('#page-tradelab .trade-tab').forEach(function(b){ b.classList.remove('active'); });
+  var btn = document.querySelector('#page-tradelab .trade-tab[onclick*="build"]');
+  if (btn) btn.classList.add('active');
+  document.querySelectorAll('#page-tradelab .trade-tab-content').forEach(function(c){ c.classList.remove('active'); });
+  document.getElementById('tradelab-tab-build').classList.add('active');
+  window._tlV2.activeTab = 'build';
+  _tlV2RenderBuild();
+};
+
+function _tlV2RenderBuild() {
+  var el = document.getElementById('tradelab-build-body');
+  if (!el) return;
+  var tA = window._tlV2.teamA, tB = window._tlV2.teamB;
+  if (!tA || !tB || tA === tB) { el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px">Pick two different teams above.</div>'; return; }
+  var rosterA = _tlV2GetTeamRoster(tA);
+  var rosterB = _tlV2GetTeamRoster(tB);
+  if (!rosterA.length || !rosterB.length) { el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px">Loading roster data&hellip;</div>'; return; }
+  var nameA = _tlV2GetTeamName(tA), nameB = _tlV2GetTeamName(tB);
+  var byKeyA = {}; rosterA.forEach(function(p){ byKeyA[p.key] = p; });
+  var byKeyB = {}; rosterB.forEach(function(p){ byKeyB[p.key] = p; });
+  var sendA = window._tlV2.sendA.filter(function(k){ return byKeyA[k]; });
+  var sendB = window._tlV2.sendB.filter(function(k){ return byKeyB[k]; });
+  window._tlV2.sendA = sendA; window._tlV2.sendB = sendB;
+
+  var html = '';
+
+  function pickerHtml(side, name, sendKeys, byKey, roster) {
+    var picked = sendKeys.map(function(k){ return byKey[k]; });
+    var unpicked = roster.filter(function(p){ return sendKeys.indexOf(p.key) === -1; });
+    var h = '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden">';
+    h += '<div style="padding:10px 14px;background:var(--bg);border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center">';
+    var arrow = side === 'A' ? '&rarr;' : '&larr;';
+    var label = side === 'A' ? _loEsc(name)+' sends '+arrow : arrow+' '+_loEsc(name)+' sends';
+    h += '<span style="font-size:12px;font-weight:500">'+label+'</span>';
+    h += '<span style="font-size:10px;color:var(--muted)">'+sendKeys.length+' selected</span>';
+    h += '</div><div style="padding:10px 12px;min-height:100px">';
+    picked.forEach(function(p) {
+      h += '<div style="display:flex;align-items:center;padding:8px 10px;gap:10px;background:rgba(45,90,61,0.06);border-radius:6px;margin-bottom:6px;border:0.5px solid var(--accent)">';
+      h += '<span style="font-size:12px;font-weight:500;flex:1">'+_loEsc(p.name)+'</span>';
+      h += '<span style="font-size:10px;color:var(--muted)">'+_loEsc(p.pos)+'</span>';
+      h += '<span style="font-size:12px;font-weight:600;color:var(--accent)">+'+p.rosSGP.toFixed(2)+'</span>';
+      h += '<span onclick="window._tlV2RemovePlayer(\''+side+'\',\''+p.key+'\')" style="font-size:14px;color:var(--muted);cursor:pointer;padding:0 4px" title="Remove">&times;</span>';
+      h += '</div>';
+    });
+    h += '<select onchange="window._tlV2AddPlayer(\''+side+'\',this.value);this.value=\'\'" style="width:100%;padding:8px 10px;font-size:12px;border:0.5px dashed var(--border);background:transparent;color:var(--muted);border-radius:6px;cursor:pointer">';
+    h += '<option value="">+ add player from '+_loEsc(name)+' roster</option>';
+    unpicked.forEach(function(p) {
+      h += '<option value="'+_loEsc(p.key)+'">'+_loEsc(p.name)+' &middot; '+_loEsc(p.pos)+' &middot; ROS '+p.rosSGP.toFixed(2)+'</option>';
+    });
+    h += '</select>';
+    h += '</div></div>';
+    return h;
+  }
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">';
+  html += pickerHtml('A', nameA, sendA, byKeyA, rosterA);
+  html += pickerHtml('B', nameB, sendB, byKeyB, rosterB);
+  html += '</div>';
+
+  if (sendA.length === 0 && sendB.length === 0) {
+    html += '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px;background:var(--bg);border-radius:8px;border:0.5px dashed var(--border)">Add players to both sides to see trade analysis.</div>';
+    el.innerHTML = html;
+    return;
+  }
+
+  var sentA = sendA.map(function(k){ return byKeyA[k]; });
+  var sentB = sendB.map(function(k){ return byKeyB[k]; });
+  function sumSGP(arr) { var s = 0; arr.forEach(function(p){ s += p.rosSGP; }); return s; }
+  var sentASGP = sumSGP(sentA), sentBSGP = sumSGP(sentB);
+  function getNeedWeights(tid) {
+    if (typeof _rosNeed === 'function') {
+      try { var n = _rosNeed(tid); if (n && n.catWeights) return n.catWeights; } catch(e){}
+    }
+    return null;
+  }
+  function needWeightedSGP(player, weights) {
+    if (!weights || !player.fp) return player.rosSGP;
+    if (typeof _rosAdPlayerSGP === 'function') {
+      try { return _rosAdPlayerSGP(player.fp, player.isHit, weights) || player.rosSGP; }
+      catch(e) { return player.rosSGP; }
+    }
+    return player.rosSGP;
+  }
+  var weightsA = getNeedWeights(tA), weightsB = getNeedWeights(tB);
+  var weightedRecvA = sentB.reduce(function(s,p){ return s + needWeightedSGP(p, weightsA); }, 0);
+  var weightedSentA = sentA.reduce(function(s,p){ return s + needWeightedSGP(p, weightsA); }, 0);
+  var weightedRecvB = sentA.reduce(function(s,p){ return s + needWeightedSGP(p, weightsB); }, 0);
+  var weightedSentB = sentB.reduce(function(s,p){ return s + needWeightedSGP(p, weightsB); }, 0);
+  var weightedDeltaA = weightedRecvA - weightedSentA;
+  var weightedDeltaB = weightedRecvB - weightedSentB;
+
+  function verdictText() {
+    var dA = weightedDeltaA, dB = weightedDeltaB;
+    var threshold = 0.5;
+    if (Math.abs(dA - dB) < threshold && Math.abs(dA) < threshold) return { label: 'Roughly even', color: 'var(--text)' };
+    if (dA > threshold && dB > threshold) return { label: 'Both teams gain', color: '#1D9E75' };
+    if (dA > threshold && dB < -threshold) return { label: 'Lopsided for ' + nameA, color: '#1D9E75' };
+    if (dB > threshold && dA < -threshold) return { label: 'Lopsided for ' + nameB, color: '#1D9E75' };
+    if (dA > dB + threshold) return { label: 'Win for ' + nameA, color: '#1D9E75' };
+    if (dB > dA + threshold) return { label: 'Win for ' + nameB, color: '#1D9E75' };
+    if (dA > 0 && dA > Math.abs(dB)) return { label: 'Slight win for ' + nameA, color: '#4a9a68' };
+    if (dB > 0 && dB > Math.abs(dA)) return { label: 'Slight win for ' + nameB, color: '#4a9a68' };
+    return { label: 'Roughly even', color: 'var(--text)' };
+  }
+  var v = verdictText();
+
+  function deltaCardHtml(name, dW, sentSGP, recvSGP) {
+    var col = dW >= 0.5 ? '#0F6E56' : dW <= -0.5 ? '#c0392b' : (dW >= 0 ? '#4a9a68' : '#c08070');
+    var sign = dW >= 0 ? '+' : '\u2212';
+    return '<div style="padding:10px 12px;background:rgba(255,255,255,0.4);border-radius:8px">'
+      +'<div style="font-size:11px;color:var(--muted);margin-bottom:4px">'+_loEsc(name)+' need-weighted delta</div>'
+      +'<div style="font-size:22px;font-weight:500;color:'+col+'">'+sign+Math.abs(dW).toFixed(2)+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:4px">Pure SGP: <strong style="color:var(--text)">\u2212'+sentSGP.toFixed(2)+' / +'+recvSGP.toFixed(2)+'</strong></div>'
+      +'</div>';
+  }
+  html += '<div style="background:linear-gradient(to right, rgba(29,158,117,0.05), rgba(192,57,43,0.04));border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:14px">';
+  html += '<div style="margin-bottom:12px">';
+  html += '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Verdict</div>';
+  html += '<div style="font-size:18px;font-weight:500;color:'+v.color+'">'+_loEsc(v.label)+'</div>';
+  html += '</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">';
+  html += deltaCardHtml(nameA, weightedDeltaA, sentASGP, sentBSGP);
+  html += deltaCardHtml(nameB, weightedDeltaB, sentBSGP, sentASGP);
+  html += '</div></div>';
+
+  var caveats = [];
+  function teamCountAtGroup(roster, group) { return roster.filter(function(p){ return _tlV2PosGroup(p.pos) === group; }).length; }
+  function sentAtGroup(sentArr, group) { return sentArr.filter(function(p){ return _tlV2PosGroup(p.pos) === group; }).length; }
+  ['IF','OF','SP','RP'].forEach(function(g) {
+    var aCount = teamCountAtGroup(rosterA, g);
+    var bCount = teamCountAtGroup(rosterB, g);
+    var aSent = sentAtGroup(sentA, g);
+    var bSent = sentAtGroup(sentB, g);
+    if (aSent >= 2 && (aCount - aSent) <= 4) caveats.push({ kind:'Position', text: nameA+' is sending '+aSent+' '+g+'s and would have only '+(aCount-aSent)+' left.' });
+    if (bSent >= 2 && (bCount - bSent) <= 4) caveats.push({ kind:'Position', text: nameB+' is sending '+bSent+' '+g+'s and would have only '+(bCount-bSent)+' left.' });
+  });
+  function regressionCheck(player) {
+    var cs = player.cs || {};
+    var xwoba = _tlV2NumOrNull(cs.xwoba), woba = _tlV2NumOrNull(cs.woba);
+    if (xwoba != null && woba != null && Math.abs(woba - xwoba) > 0.04) {
+      var dir = woba > xwoba ? 'overperforming' : 'underperforming';
+      var pct = Math.round((Math.abs(woba - xwoba) / Math.max(0.01, xwoba)) * 100);
+      caveats.push({ kind:'Regression', text: player.name+' is currently '+dir+' (xwOBA '+xwoba.toFixed(3)+' vs actual '+woba.toFixed(3)+', ~'+pct+'% gap). True value may regress.' });
+    }
+  }
+  sentA.concat(sentB).forEach(function(p){ if (p.isHit) regressionCheck(p); });
+
+  if (caveats.length) {
+    html += '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px">';
+    html += '<div style="padding:12px 16px;background:var(--bg);border-bottom:0.5px solid var(--border)"><span style="font-size:13px;font-weight:500">Caveats &amp; risk read</span></div>';
+    html += '<div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">';
+    caveats.forEach(function(c) {
+      var pillCol = c.kind === 'Fits' ? 'rgba(45,90,61,0.10)' : 'rgba(186,117,23,0.12)';
+      var pillFg = c.kind === 'Fits' ? '#1D9E75' : '#854f0b';
+      html += '<div style="display:flex;gap:10px;align-items:flex-start;font-size:12px;line-height:1.5">';
+      html += '<span style="font-size:11px;padding:2px 7px;border-radius:4px;background:'+pillCol+';color:'+pillFg+';font-weight:500;text-transform:uppercase;letter-spacing:0.04em;flex-shrink:0;margin-top:1px">'+c.kind+'</span>';
+      html += '<div>'+_loEsc(c.text)+'</div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+  }
+
+  el.innerHTML = html;
+}
+
+window._tlV2AddPlayer = function(side, key) {
+  if (!key) return;
+  if (side === 'A') { if (window._tlV2.sendA.indexOf(key) === -1) window._tlV2.sendA.push(key); }
+  else              { if (window._tlV2.sendB.indexOf(key) === -1) window._tlV2.sendB.push(key); }
+  _tlV2RenderBuild();
+};
+
+window._tlV2RemovePlayer = function(side, key) {
+  if (side === 'A') window._tlV2.sendA = window._tlV2.sendA.filter(function(k){ return k !== key; });
+  else                window._tlV2.sendB = window._tlV2.sendB.filter(function(k){ return k !== key; });
+  _tlV2RenderBuild();
+};
+
+// Legacy ROS Trade Lab function (no longer used). Kept inert.
+function renderROSTradeLab_legacy_unused() {
   var el = document.getElementById('tradelab-body');
   if (!el) return;
 
