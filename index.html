@@ -21408,15 +21408,18 @@ function _tlV2PartnerCardHtml(myTid, p, idx) {
 
 // One trade-row inside a partner card: "You send X ↔ You get Y" with deltas.
 // Returns a small horizontal "ratings strip" for a player, showing fWAR / fWAR% /
-// League Rating / Pos Rating from the existing lookups. Designed to be small and
-// scannable below the player name in trade-suggestion rows.
+// League Rating / Pos Rating / Curr SGP from the existing lookups. Designed to be
+// small and scannable below the player name in trade-suggestion rows.
 //
 // align: 'left' or 'right' (matches the surrounding column's alignment).
 function _tlV2RatingsStripHtml(name, isHit, align) {
   if (!name) return '';
-  // Normalize name with the same scheme used by the FWAR/rating lookups.
+  // Normalize name with the same scheme used by the FWAR / rating lookups.
   function _nrm(n) { return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
   var k = _nrm(name);
+  // Curr SGP lookups are keyed via _normPlayerKey (NFD + suffix strip),
+  // a slightly different normalizer than the rating ones. Use the right one.
+  var sgpKey = (typeof _normPlayerKey === 'function') ? _normPlayerKey(name) : k;
   // fWAR raw — search FWAR.hitResults / FWAR.pitResults
   var fwarVal = null;
   if (typeof FWAR !== 'undefined') {
@@ -21429,8 +21432,13 @@ function _tlV2RatingsStripHtml(name, isHit, align) {
   var fwarPct = isHit
     ? ((window._fwarPctLookupHit || window._fwarPctLookup || {})[k])
     : ((window._fwarPctLookupPit || window._fwarPctLookup || {})[k]);
-  var lgRat   = (window._lgRatingLookup  || {})[k];
-  var posRat  = (window._posRatingLookup || {})[k];
+  // League Rating + Pos Rating come in as 0-1 fractions; convert to 0-100.
+  var lgRatRaw  = (window._lgRatingLookup  || {})[k];
+  var posRatRaw = (window._posRatingLookup || {})[k];
+  var lgRat  = (lgRatRaw  != null && !isNaN(lgRatRaw))  ? lgRatRaw  * 100 : null;
+  var posRat = (posRatRaw != null && !isNaN(posRatRaw)) ? posRatRaw * 100 : null;
+  // Curr SGP — keyed by _normPlayerKey
+  var currSgp = isHit ? (window._playerCurrSgpHit||{})[sgpKey] : (window._playerCurrSgpPit||{})[sgpKey];
 
   function pctChip(label, v) {
     if (v == null || isNaN(v)) return '<span style="font-size:9px;color:var(--muted);padding:1px 5px;background:var(--bg);border-radius:3px;letter-spacing:0.02em">'+label+' \u2014</span>';
@@ -21446,12 +21454,20 @@ function _tlV2RatingsStripHtml(name, isHit, align) {
     var sign = v >= 0 ? '+' : '';
     return '<span style="font-size:9px;color:'+col+';font-weight:'+weight+';padding:1px 5px;background:var(--bg);border-radius:3px;letter-spacing:0.02em">fWAR '+sign+v.toFixed(1)+'</span>';
   }
+  function sgpChip(label, v) {
+    if (v == null || isNaN(v)) return '<span style="font-size:9px;color:var(--muted);padding:1px 5px;background:var(--bg);border-radius:3px;letter-spacing:0.02em">'+label+' \u2014</span>';
+    var col = v >= 2.0 ? '#0F6E56' : v >= 0.5 ? '#4a9a68' : v >= -0.5 ? 'var(--text)' : '#c0392b';
+    var weight = v >= 2.0 ? '600' : '500';
+    var sign = v >= 0 ? '+' : '';
+    return '<span style="font-size:9px;color:'+col+';font-weight:'+weight+';padding:1px 5px;background:var(--bg);border-radius:3px;letter-spacing:0.02em">'+label+' '+sign+v.toFixed(2)+'</span>';
+  }
   var justify = align === 'right' ? 'flex-end' : 'flex-start';
   var h = '<div style="display:flex;flex-wrap:wrap;gap:3px;justify-content:'+justify+';margin-top:3px">';
   h += fwarChip(fwarVal);
   h += pctChip('fWAR%', fwarPct);
   h += pctChip('Lg', lgRat);
   h += pctChip('Pos', posRat);
+  h += sgpChip('Curr', currSgp);
   h += '</div>';
   return h;
 }
