@@ -21128,14 +21128,14 @@ function _tlV2RenderTeamPickers() {
   }
   var isSuggest = (window._tlV2.activeTab !== 'build');
   if (isSuggest) {
-    // Suggest tab: only the Team A selector is meaningful.
+    // Suggest tab: only the home selector is meaningful.
     el.innerHTML = '<div style="display:grid;grid-template-columns:1fr;gap:14px;max-width:360px">'
       + selHtml('Your team', window._tlV2.teamA, 'A')
       + '</div>';
   } else {
     el.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'
-      + selHtml('Team A', window._tlV2.teamA, 'A')
-      + selHtml('Team B', window._tlV2.teamB, 'B')
+      + selHtml('HOME team', window._tlV2.teamA, 'A')
+      + selHtml('AWAY team', window._tlV2.teamB, 'B')
       + '</div>';
   }
 }
@@ -21173,11 +21173,28 @@ function _tlV2BuildStatusMap(tid) {
   return m;
 }
 
-function _tlV2GetTeamRoster(tid) {
+// Accepts an optional weightTeamId. If provided, rosSGP and curSGP are
+// computed AS IF the player were on that team — using that team's
+// rate-stat context (window._rosTeamStats[weightTeamId]) and that team's
+// categorical need multipliers. This lets the Build tab show all rosters
+// scored through the HOME team's lens.
+function _tlV2GetTeamRoster(tid, weightTeamId) {
   var out = [];
   var rl = window._rosRosterLookup || {};
   var cs = window._rosCurrentStats || {};
   var statusByName = _tlV2BuildStatusMap(tid);
+  // Temporarily override _rosSelectedTeam + _rosCatMultipliers so the
+  // helper functions read the right weighting context. Restored in the finally.
+  var origSelected = window._rosSelectedTeam;
+  var origMults    = window._rosCatMultipliers;
+  if (weightTeamId) {
+    try {
+      window._rosSelectedTeam = weightTeamId;
+      if (typeof _rosTradeSugTeamMults === 'function') {
+        window._rosCatMultipliers = _rosTradeSugTeamMults(weightTeamId) || origMults;
+      }
+    } catch(e) { /* fall back to existing globals */ }
+  }
   function pushFor(arr, isHit) {
     (arr || []).forEach(function(p){
       var nm = p._displayName || p.name || '';
@@ -21196,8 +21213,15 @@ function _tlV2GetTeamRoster(tid) {
       });
     });
   }
-  pushFor(window._rosHitData, true);
-  pushFor(window._rosPitData, false);
+  try {
+    pushFor(window._rosHitData, true);
+    pushFor(window._rosPitData, false);
+  } finally {
+    if (weightTeamId) {
+      window._rosSelectedTeam   = origSelected;
+      window._rosCatMultipliers = origMults;
+    }
+  }
   return out.sort(function(a,b){ return b.rosSGP - a.rosSGP; });
 }
 
@@ -21515,8 +21539,9 @@ function _tlV2TradeRowHtml(t, kind) {
 // Compare diagnostics shown inside the expandable panel of each partner card.
 // Same content the old Compare tab had: roster strength by position + top 5 lists.
 function _tlV2CompareDiagnosticsHtml(tA, tB) {
-  var rosterA = _tlV2GetTeamRoster(tA);
-  var rosterB = _tlV2GetTeamRoster(tB);
+  // Both rosters scored through tA's (HOME's) lens.
+  var rosterA = _tlV2GetTeamRoster(tA, tA);
+  var rosterB = _tlV2GetTeamRoster(tB, tA);
   if (!rosterA.length || !rosterB.length) return '<div style="color:var(--muted);font-size:12px">Roster data not loaded.</div>';
   var nameA = _tlV2GetTeamName(tA), nameB = _tlV2GetTeamName(tB);
   var h = '';
@@ -21696,11 +21721,17 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState)
   var actionFn    = 'window._tlV2AddPlayer(\''+side+'\',';
   var removeFn    = 'window._tlV2RemovePlayer(\''+side+'\',';
   var activeCount = roster.length;
+  var sideLabel   = (side === 'A') ? 'HOME' : 'AWAY';
+  var sideCol     = (side === 'A') ? '#0F6E56' : '#0C447C';
+  var sideBg      = (side === 'A') ? 'rgba(29,158,117,0.12)' : 'rgba(24,95,165,0.12)';
 
   var h = '';
   h += '<div style="margin-bottom:14px">';
   h += '<div style="margin-bottom:6px;display:flex;align-items:baseline;justify-content:space-between">';
-  h += '<div style="font-size:13px;font-weight:500">'+_loEsc(teamName)+' &mdash; full roster</div>';
+  h += '<div style="font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px">';
+  h += '<span style="font-size:9px;padding:2px 6px;border-radius:3px;background:'+sideBg+';color:'+sideCol+';font-weight:600;letter-spacing:0.04em">'+sideLabel+'</span>';
+  h += '<span>'+_loEsc(teamName)+'</span>';
+  h += '</div>';
   h += '<span style="font-size:11px;color:var(--muted)">'+activeCount+' active</span>';
   h += '</div>';
   h += '<div style="border:0.5px solid var(--border);border-radius:8px;overflow:hidden">';
@@ -21935,7 +21966,7 @@ function _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB) {
   }
   function pillForDir(dir, tier) {
     if (!dir) return '';
-    var label = (dir === 'AtoB') ? 'A &rarr; B' : 'B &rarr; A';
+    var label = (dir === 'AtoB') ? 'HOME &rarr; AWAY' : 'AWAY &rarr; HOME';
     var color = (dir === 'AtoB') ? '#0F6E56' : '#0C447C';
     var bg    = (dir === 'AtoB') ? 'rgba(29,158,117,0.15)' : 'rgba(24,95,165,0.15)';
     var opacity = tier === 'strong' ? '1' : '0.7';
@@ -22076,8 +22107,8 @@ function _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB) {
 
   var totalPairs = aToB.length + bToA.length;
   html += '<div style="margin-top:14px;padding-top:10px;border-top:0.5px dashed var(--border);display:flex;gap:16px;font-size:10px;color:var(--muted);flex-wrap:wrap">';
-  html += '<span><strong style="color:var(--text)">A &rarr; B</strong> &mdash; '+_loEsc(nameA)+' has surplus, '+_loEsc(nameB)+' is short.</span>';
-  html += '<span><strong style="color:var(--text)">B &rarr; A</strong> &mdash; '+_loEsc(nameB)+' has surplus, '+_loEsc(nameA)+' is short.</span>';
+  html += '<span><strong style="color:var(--text)">HOME &rarr; AWAY</strong> &mdash; '+_loEsc(nameA)+' has surplus, '+_loEsc(nameB)+' is short.</span>';
+  html += '<span><strong style="color:var(--text)">AWAY &rarr; HOME</strong> &mdash; '+_loEsc(nameB)+' has surplus, '+_loEsc(nameA)+' is short.</span>';
   html += '</div>';
 
   html += '<div style="margin-top:10px;padding:10px 12px;background:var(--bg);border-radius:6px;font-size:12px;line-height:1.5">';
@@ -22101,8 +22132,11 @@ function _tlV2RenderBuild() {
   if (!el) return;
   var tA = window._tlV2.teamA, tB = window._tlV2.teamB;
   if (!tA || !tB || tA === tB) { el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px">Pick two different teams above.</div>'; return; }
-  var rosterA = _tlV2GetTeamRoster(tA);
-  var rosterB = _tlV2GetTeamRoster(tB);
+  // Both rosters scored through tA's (HOME's) need lens — HOME column shows
+  // what they currently contribute, AWAY column shows "how much would this
+  // help me if I traded for them" — both useful for HOME's perspective.
+  var rosterA = _tlV2GetTeamRoster(tA, tA);
+  var rosterB = _tlV2GetTeamRoster(tB, tA);
   if (!rosterA.length || !rosterB.length) { el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px">Loading roster data&hellip;</div>'; return; }
   var nameA = _tlV2GetTeamName(tA), nameB = _tlV2GetTeamName(tB);
   var byKeyA = {}; rosterA.forEach(function(p){ byKeyA[p.key] = p; });
@@ -22116,11 +22150,14 @@ function _tlV2RenderBuild() {
   function pickerHtml(side, name, sendKeys, byKey, roster) {
     var picked = sendKeys.map(function(k){ return byKey[k]; });
     var unpicked = roster.filter(function(p){ return sendKeys.indexOf(p.key) === -1; });
+    var sideLabel = side === 'A' ? 'HOME sends' : 'AWAY sends';
+    var sideCol   = side === 'A' ? '#0F6E56' : '#0C447C';
+    var sideBg    = side === 'A' ? 'rgba(29,158,117,0.12)' : 'rgba(24,95,165,0.12)';
     var h = '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden">';
     h += '<div style="padding:10px 14px;background:var(--bg);border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center">';
-    var arrow = side === 'A' ? '&rarr;' : '&larr;';
-    var label = side === 'A' ? _loEsc(name)+' sends '+arrow : arrow+' '+_loEsc(name)+' sends';
-    h += '<span style="font-size:12px;font-weight:500">'+label+'</span>';
+    h += '<span style="font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px">';
+    h += '<span style="font-size:9px;padding:2px 6px;border-radius:3px;background:'+sideBg+';color:'+sideCol+';font-weight:600;letter-spacing:0.04em">'+sideLabel+'</span>';
+    h += '<span>'+_loEsc(name)+'</span></span>';
     h += '<span style="font-size:10px;color:var(--muted)">'+sendKeys.length+' selected</span>';
     h += '</div><div style="padding:10px 12px;min-height:100px">';
     picked.forEach(function(p) {
@@ -22236,11 +22273,13 @@ function _tlV2RenderBuild() {
     catch(e) { console.warn('[TradeLab] team-fit render failed:', e); }
   }
 
-  function deltaCardHtml(name, dW, sentSGP, recvSGP) {
+  function deltaCardHtml(name, dW, sentSGP, recvSGP, sideLabel, sideCol, sideBg) {
     var col = dW >= 0.5 ? '#0F6E56' : dW <= -0.5 ? '#c0392b' : (dW >= 0 ? '#4a9a68' : '#c08070');
     var sign = dW >= 0 ? '+' : '\u2212';
     return '<div style="padding:10px 12px;background:rgba(255,255,255,0.4);border-radius:8px">'
-      +'<div style="font-size:11px;color:var(--muted);margin-bottom:4px">'+_loEsc(name)+' need-weighted delta</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-bottom:4px;display:flex;align-items:center;gap:6px">'
+      +'<span style="font-size:9px;padding:2px 6px;border-radius:3px;background:'+sideBg+';color:'+sideCol+';font-weight:600;letter-spacing:0.04em">'+sideLabel+'</span>'
+      +'<span>'+_loEsc(name)+' need-weighted delta</span></div>'
       +'<div style="font-size:22px;font-weight:500;color:'+col+'">'+sign+Math.abs(dW).toFixed(2)+'</div>'
       +'<div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:4px">Pure SGP: <strong style="color:var(--text)">\u2212'+sentSGP.toFixed(2)+' / +'+recvSGP.toFixed(2)+'</strong></div>'
       +'</div>';
@@ -22251,18 +22290,20 @@ function _tlV2RenderBuild() {
   analyticsHtml += '<div style="font-size:18px;font-weight:500;color:'+v.color+'">'+_loEsc(v.label)+'</div>';
   analyticsHtml += '</div>';
   analyticsHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">';
-  analyticsHtml += deltaCardHtml(nameA, weightedDeltaA, sentASGP, sentBSGP);
-  analyticsHtml += deltaCardHtml(nameB, weightedDeltaB, sentBSGP, sentASGP);
+  analyticsHtml += deltaCardHtml(nameA, weightedDeltaA, sentASGP, sentBSGP, 'HOME', '#0F6E56', 'rgba(29,158,117,0.12)');
+  analyticsHtml += deltaCardHtml(nameB, weightedDeltaB, sentBSGP, sentASGP, 'AWAY', '#0C447C', 'rgba(24,95,165,0.12)');
   analyticsHtml += '</div></div>';
 
   // ── Team Needs (both teams, side by side) ───────────────────────────────
   // Shows category rank (1 = least need, N = most need) so the user can see
   // why a delta is large or small — i.e., did the trade actually fill needs?
-  function teamNeedHtml(name, nw) {
+  function teamNeedHtml(name, nw, sideLabel, sideCol, sideBg) {
     var n = nw.n || 10;
     var ranks = nw.catRanks || {};
     var h = '<div style="padding:12px 14px;background:var(--surface);border-radius:8px;border:0.5px solid var(--border)">';
-    h += '<div style="font-size:12px;font-weight:500;margin-bottom:8px">'+_loEsc(name)+' &mdash; categorical need</div>';
+    h += '<div style="font-size:12px;font-weight:500;margin-bottom:8px;display:flex;align-items:center;gap:6px">';
+    h += '<span style="font-size:9px;padding:2px 6px;border-radius:3px;background:'+sideBg+';color:'+sideCol+';font-weight:600;letter-spacing:0.04em">'+sideLabel+'</span>';
+    h += '<span>'+_loEsc(name)+' &mdash; categorical need</span></div>';
     h += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;font-size:11px">';
     ALL_CATS.forEach(function(cat) {
       var r = ranks[cat];
@@ -22283,8 +22324,8 @@ function _tlV2RenderBuild() {
     return h;
   }
   analyticsHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">';
-  analyticsHtml += teamNeedHtml(nameA, nwA);
-  analyticsHtml += teamNeedHtml(nameB, nwB);
+  analyticsHtml += teamNeedHtml(nameA, nwA, 'HOME', '#0F6E56', 'rgba(29,158,117,0.12)');
+  analyticsHtml += teamNeedHtml(nameB, nwB, 'AWAY', '#0C447C', 'rgba(24,95,165,0.12)');
   analyticsHtml += '</div>';
 
   // ── Category-by-category impact ─────────────────────────────────────────
@@ -22325,8 +22366,8 @@ function _tlV2RenderBuild() {
   analyticsHtml += '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px">';
   analyticsHtml += '<div style="padding:12px 16px;background:var(--bg);border-bottom:0.5px solid var(--border)"><span style="font-size:13px;font-weight:500">Category-by-category impact</span><span style="font-size:11px;color:var(--muted);margin-left:8px">net SGP shift per cat after the trade</span></div>';
   analyticsHtml += '<div style="padding:14px 16px">';
-  analyticsHtml += catImpactSection(nameA + ' \u2014 net delta per cat', aCatDelta, 'var(--accent)');
-  analyticsHtml += catImpactSection(nameB + ' \u2014 net delta per cat', bCatDelta, '#185FA5');
+  analyticsHtml += catImpactSection('HOME (' + nameA + ') \u2014 net delta per cat', aCatDelta, '#0F6E56');
+  analyticsHtml += catImpactSection('AWAY (' + nameB + ') \u2014 net delta per cat', bCatDelta, '#0C447C');
   analyticsHtml += '</div></div>';
 
   // Inject analytics (Verdict + Category-by-category) ABOVE the roster tables.
@@ -22341,8 +22382,8 @@ function _tlV2RenderBuild() {
     var bCount = teamCountAtGroup(rosterB, g);
     var aSent = sentAtGroup(sentA, g);
     var bSent = sentAtGroup(sentB, g);
-    if (aSent >= 2 && (aCount - aSent) <= 4) caveats.push({ kind:'Position', text: nameA+' is sending '+aSent+' '+g+'s and would have only '+(aCount-aSent)+' left.' });
-    if (bSent >= 2 && (bCount - bSent) <= 4) caveats.push({ kind:'Position', text: nameB+' is sending '+bSent+' '+g+'s and would have only '+(bCount-bSent)+' left.' });
+    if (aSent >= 2 && (aCount - aSent) <= 4) caveats.push({ kind:'Position', text: 'HOME ('+nameA+') is sending '+aSent+' '+g+'s and would have only '+(aCount-aSent)+' left.' });
+    if (bSent >= 2 && (bCount - bSent) <= 4) caveats.push({ kind:'Position', text: 'AWAY ('+nameB+') is sending '+bSent+' '+g+'s and would have only '+(bCount-bSent)+' left.' });
   });
   function regressionCheck(player) {
     var cs = player.cs || {};
@@ -22362,13 +22403,13 @@ function _tlV2RenderBuild() {
       .slice(0, n)
       .map(function(p){ return p.cat; });
   }
-  function fitCheck(name, deltaMap, catRanks) {
+  function fitCheck(name, deltaMap, catRanks, sideLabel) {
     var topNeeds = topNeedCats(catRanks, 3);
     var hits = topNeeds.filter(function(cat){ return deltaMap[cat] > 0.05; });
-    if (hits.length >= 2) caveats.push({ kind:'Fits', text: name+' gains in '+hits.join(', ')+' \u2014 their top-need categories.' });
+    if (hits.length >= 2) caveats.push({ kind:'Fits', text: sideLabel+' ('+name+') gains in '+hits.join(', ')+' \u2014 their top-need categories.' });
   }
-  fitCheck(nameA, aCatDelta, nwA.catRanks);
-  fitCheck(nameB, bCatDelta, nwB.catRanks);
+  fitCheck(nameA, aCatDelta, nwA.catRanks, 'HOME');
+  fitCheck(nameB, bCatDelta, nwB.catRanks, 'AWAY');
 
   if (caveats.length) {
     html += '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px">';
