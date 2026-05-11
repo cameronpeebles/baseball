@@ -22295,7 +22295,7 @@ function _tlV2RenderBuild() {
   // halfCol wraps a card at 50% page width with a small inset so it doesn't
   // sit edge-to-edge — applies to Fit heatmap, Suggested trades, Cat-impact.
   function halfCol(inner) {
-    return '<div style="max-width:50%;min-width:0">' + inner + '</div>';
+    return '<div style="width:50%;min-width:0;margin:0 auto">' + inner + '</div>';
   }
 
   if (sendA.length === 0 && sendB.length === 0) {
