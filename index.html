@@ -21763,6 +21763,339 @@ window._tlV2SortRoster = function(side, colKey) {
   _tlV2RenderBuild();
 };
 
+// ── Team Fit data + plot ──────────────────────────────────────────────────
+// Computes, for each team, raw Team-ROS-SGP per fine position (vs league avg)
+// AND categorical rank from current standings (via _tlV2CatWeights). Then the
+// plot helper renders a diverging-bar layout with both teams' values per row,
+// highlighting rows where one team is strong and the other is short.
+window._tlV2TeamFitCache = null;
+window._tlV2TeamFitCacheKey = null;
+function _tlV2BuildTeamFitData(tA, tB) {
+  // Cache by team pair so we don't recompute on every sort/picker change.
+  var ck = tA + '|' + tB;
+  if (window._tlV2TeamFitCacheKey === ck && window._tlV2TeamFitCache) return window._tlV2TeamFitCache;
+  var FINE_POS = ['C','1B','2B','3B','SS','OF','SP','RP'];
+
+  function _tfNorm(n){ return (n||'').replace(/\s*\([^)]*\).*$/, '').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function _tfPrimaryPos(posStr) {
+    var parts = (posStr||'').toUpperCase().split(',').map(function(x){return x.trim();});
+    for (var i=0; i<parts.length; i++) {
+      var t = parts[i];
+      if (t === 'LF' || t === 'CF' || t === 'RF' || t === 'OF') return 'OF';
+      if (FINE_POS.indexOf(t) !== -1) return t;
+    }
+    return null;
+  }
+  function _tfRawSGP(p, isHit, teamId) {
+    var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
+    var ts = (window._rosTeamStats||{})[teamId] || {R:0,HR:0,RBI:0,SB:0,AVG:null,AB:0,K:0,W:0,SVH3:0,ERA:null,WHIP:null,IP:0};
+    var total = 0;
+    if (isHit) {
+      total += ((p.R||0)/D2.r) + ((p.HR||0)/D2.hr) + ((p.RBI||0)/D2.rbi) + ((p.SB||0)/D2.sb);
+      var rH=(p.H>0?p.H:(p.AVG&&p.AB?p.AVG*p.AB:null));
+      if(rH&&p.AB>0&&ts.AVG!=null&&ts.AB>0){
+        var cH=(ts.AVG||0)*(ts.AB||0),nH=cH+rH,nAB=(ts.AB||0)+(p.AB||0);
+        total += (nAB>0?((nH/nAB)-(ts.AVG||0)):0)/D2.avg;
+      }
+    } else {
+      total += ((p.W||0)/D2.w) + ((p.K||0)/D2.k) + ((p.SV||0)/D2.svh3);
+      if(p.ERA!=null&&p.IP>0&&ts.ERA!=null&&ts.IP>0){
+        var tER=(ts.ERA||0)*(ts.IP||0)/9,pER=p.ERA*(p.IP||0)/9,nIP=(ts.IP||0)+(p.IP||0);
+        total += (nIP>0?((ts.ERA||0)-(tER+pER)/nIP*9):0)/D2.era;
+      }
+      if(p.WHIP!=null&&p.IP>0&&ts.WHIP!=null&&ts.IP>0){
+        var tBR=(ts.WHIP||0)*(ts.IP||0),pBR=p.WHIP*(p.IP||0),nIP2=(ts.IP||0)+(p.IP||0);
+        total += (nIP2>0?((ts.WHIP||0)-(tBR+pBR)/nIP2):0)/D2.whip;
+      }
+    }
+    var trust = isHit ? Math.min(1,(p.AB||0)/250) : ((p.pos||'').toUpperCase().indexOf('SP')!==-1?Math.min(1,(p.IP||0)/60):Math.min(1,(p.IP||0)/30));
+    return total * trust;
+  }
+  var hitData = (typeof _rosHitData !== 'undefined' && _rosHitData) ? _rosHitData : [];
+  var pitData = (typeof _rosPitData !== 'undefined' && _rosPitData) ? _rosPitData : [];
+  var rosterLookup = window._rosRosterLookup || {};
+  var byTeamPos = {};
+  function processPlayer(p, isHit) {
+    var k = _tfNorm(p.name);
+    var ri = rosterLookup[k];
+    if (!ri || !ri.teamId) return;
+    if (typeof _rosHasMLBRole === 'function' && !_rosHasMLBRole(p, isHit)) return;
+    var posStr = p._pos || p.pos || '';
+    if (!posStr) {
+      var nm = (p.name||'').match(/\(([^)]+)\)/);
+      if (nm) {
+        var pts = nm[1].split(' - ');
+        if (pts.length >= 2) posStr = pts.slice(1).join(',');
+      }
+    }
+    var fp = _tfPrimaryPos(posStr);
+    if (!fp) return;
+    if (!byTeamPos[ri.teamId]) byTeamPos[ri.teamId] = {};
+    var sgp = _tfRawSGP(p, isHit, ri.teamId);
+    if (!isFinite(sgp)) return;
+    byTeamPos[ri.teamId][fp] = (byTeamPos[ri.teamId][fp] || 0) + sgp;
+  }
+  hitData.forEach(function(p){ processPlayer(p, true); });
+  pitData.forEach(function(p){ processPlayer(p, false); });
+
+  // League average per fp
+  var leagueAvg = {};
+  FINE_POS.forEach(function(fp) {
+    var vals = [];
+    Object.keys(byTeamPos).forEach(function(tid){ if (byTeamPos[tid][fp] != null) vals.push(byTeamPos[tid][fp]); });
+    leagueAvg[fp] = vals.length ? vals.reduce(function(s,v){return s+v;},0) / vals.length : 0;
+  });
+
+  // Build positional rows with vs-lg-avg deltas for both teams
+  var posRows = FINE_POS.map(function(fp) {
+    var aVal = (byTeamPos[tA] && byTeamPos[tA][fp] != null) ? byTeamPos[tA][fp] : null;
+    var bVal = (byTeamPos[tB] && byTeamPos[tB][fp] != null) ? byTeamPos[tB][fp] : null;
+    var aDelta = aVal != null ? aVal - leagueAvg[fp] : null;
+    var bDelta = bVal != null ? bVal - leagueAvg[fp] : null;
+    return { label: fp, aVal: aDelta, bVal: bDelta };
+  });
+
+  // Cat ranks from existing helper
+  var ALL_CATS = ['R','HR','RBI','SB','AVG','W','K','SVH3','ERA','WHIP'];
+  var nwA = (typeof _tlV2CatWeights === 'function') ? _tlV2CatWeights(tA) : { catRanks: {}, n: 10 };
+  var nwB = (typeof _tlV2CatWeights === 'function') ? _tlV2CatWeights(tB) : { catRanks: {}, n: 10 };
+  var n = nwA.n || nwB.n || 10;
+  var catRows = ALL_CATS.map(function(cat) {
+    var aRank = nwA.catRanks[cat] || null;
+    var bRank = nwB.catRanks[cat] || null;
+    return { label: cat, aRank: aRank, bRank: bRank, n: n };
+  });
+
+  var out = { posRows: posRows, catRows: catRows, nwA: nwA, nwB: nwB };
+  window._tlV2TeamFitCacheKey = ck;
+  window._tlV2TeamFitCache = out;
+  return out;
+}
+
+// Returns 'strong', 'medium', or null based on positional value asymmetry.
+// Positive asym = team has surplus; we flag pairs where one is positive and
+// the other is negative with a sufficient combined gap.
+function _tlV2PosFitTier(aVal, bVal) {
+  if (aVal == null || bVal == null) return null;
+  // Only flag when SIGNS DISAGREE (one strong, other short).
+  if (Math.sign(aVal) === Math.sign(bVal)) return null;
+  if (Math.abs(aVal) < 0.4 || Math.abs(bVal) < 0.4) return null;
+  var gap = Math.abs(aVal) + Math.abs(bVal);
+  if (gap >= 4.0) return 'strong';
+  if (gap >= 2.0) return 'medium';
+  return null;
+}
+// Cat rank tier: rank ≤30% = strong, ≤45% = mild surplus; rank ≥70% = short, ≥55% = mild short.
+function _tlV2CatFitTier(aRank, bRank, n) {
+  if (!aRank || !bRank || !n) return null;
+  var strongLo = Math.max(1, Math.ceil(n * 0.3));
+  var mildLo   = Math.max(1, Math.ceil(n * 0.45));
+  var strongHi = Math.max(1, Math.ceil(n * 0.7));
+  var mildHi   = Math.max(1, Math.ceil(n * 0.55));
+  function classify(rank) {
+    if (rank <= strongLo) return 'surplus_strong';
+    if (rank <= mildLo)   return 'surplus_mild';
+    if (rank >= strongHi) return 'need_strong';
+    if (rank >= mildHi)   return 'need_mild';
+    return 'mid';
+  }
+  var ca = classify(aRank), cb = classify(bRank);
+  // Direction must be surplus-on-one-side AND need-on-other.
+  var aIsSurplus = (ca === 'surplus_strong' || ca === 'surplus_mild');
+  var aIsNeed    = (ca === 'need_strong'    || ca === 'need_mild');
+  var bIsSurplus = (cb === 'surplus_strong' || cb === 'surplus_mild');
+  var bIsNeed    = (cb === 'need_strong'    || cb === 'need_mild');
+  if (!((aIsSurplus && bIsNeed) || (bIsSurplus && aIsNeed))) return null;
+  // Strong tier if BOTH sides are at their strong threshold.
+  if ((ca === 'surplus_strong' && cb === 'need_strong') || (cb === 'surplus_strong' && ca === 'need_strong')) return 'strong';
+  return 'medium';
+}
+
+// Render the Team Fit plot. Returns HTML string.
+function _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB) {
+  var data = _tlV2BuildTeamFitData(tA, tB);
+  if (!data.posRows.length && !data.catRows.length) return '';
+  var COL_A = '#1D9E75';
+  var COL_B = '#185FA5';
+
+  // Find global max bar magnitudes so positional + cat bars scale together.
+  var posMax = 0;
+  data.posRows.forEach(function(r){
+    if (r.aVal != null) posMax = Math.max(posMax, Math.abs(r.aVal));
+    if (r.bVal != null) posMax = Math.max(posMax, Math.abs(r.bVal));
+  });
+  if (posMax < 0.5) posMax = 0.5;
+
+  function rowBgForTier(tier, dir) {
+    if (!tier) return '';
+    var color = (dir === 'AtoB') ? COL_A : COL_B;
+    var rgba = (dir === 'AtoB') ? 'rgba(29,158,117,' : 'rgba(24,95,165,';
+    if (tier === 'strong') return 'background:'+rgba+'0.08);border:0.5px solid '+rgba+'0.30)';
+    return 'background:'+rgba+'0.04);border:0.5px dashed '+rgba+'0.25)';
+  }
+  function pillForDir(dir, tier) {
+    if (!dir) return '';
+    var label = (dir === 'AtoB') ? 'A &rarr; B' : 'B &rarr; A';
+    var color = (dir === 'AtoB') ? '#0F6E56' : '#0C447C';
+    var bg    = (dir === 'AtoB') ? 'rgba(29,158,117,0.15)' : 'rgba(24,95,165,0.15)';
+    var opacity = tier === 'strong' ? '1' : '0.7';
+    return '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:'+bg+';color:'+color+';font-weight:600;margin-left:6px;opacity:'+opacity+'">'+label+'</span>';
+  }
+  function posBarHtml(aVal, bVal) {
+    function bar(v, side) {
+      if (v == null) return '<div style="width:0%;height:100%"></div>';
+      var pct = Math.round(Math.abs(v) / posMax * 100);
+      var col = v > 0.05 ? 'rgba(29,158,117,0.7)' : v < -0.05 ? 'rgba(192,57,43,0.6)' : 'rgba(150,150,150,0.4)';
+      return '<div style="width:'+pct+'%;height:100%;background:'+col+';border-radius:2px"></div>';
+    }
+    var h = '<div style="height:16px;background:rgba(0,0,0,0.03);border-radius:2px;position:relative;display:flex;justify-content:flex-end">'+bar(aVal,'L')+'</div>';
+    h    += '<div style="height:16px;background:rgba(0,0,0,0.03);border-radius:2px;position:relative">'+bar(bVal,'R')+'</div>';
+    return h;
+  }
+  function catBarHtml(aRank, bRank, n) {
+    // Bar length = (n - rank + 1) / n — top ranks (low #) get long bars (surplus visual).
+    function bar(rank, side) {
+      if (!rank) return '<div style="width:0%;height:100%"></div>';
+      var pct = Math.round((n - rank + 1) / n * 100);
+      var topThird = Math.max(1, Math.ceil(n * 0.3));
+      var botThird = Math.max(1, Math.ceil(n * 0.7));
+      var col = rank <= topThird ? 'rgba(29,158,117,0.7)' : rank >= botThird ? 'rgba(192,57,43,0.6)' : 'rgba(200,169,110,0.5)';
+      return '<div style="width:'+pct+'%;height:100%;background:'+col+';border-radius:2px"></div>';
+    }
+    var h = '<div style="height:16px;background:rgba(0,0,0,0.03);border-radius:2px;position:relative;display:flex;justify-content:flex-end">'+bar(aRank,'L')+'</div>';
+    h    += '<div style="height:16px;background:rgba(0,0,0,0.03);border-radius:2px;position:relative">'+bar(bRank,'R')+'</div>';
+    return h;
+  }
+  function fmtVal(v) {
+    if (v == null) return '\u2014';
+    var sign = v >= 0 ? '+' : '\u2212';
+    return sign + Math.abs(v).toFixed(1);
+  }
+  function fmtRank(r) { return r ? '#' + r : '\u2014'; }
+
+  var html = '';
+  html += '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:14px">';
+  html += '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;gap:14px;flex-wrap:wrap">';
+  html += '<div>';
+  html += '<div style="font-size:13px;font-weight:500">Trade fit &mdash; where the asymmetries are</div>';
+  html += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Highlighted rows are pairs where one team is strong and the other is short. Those are the natural trade targets.</div>';
+  html += '</div>';
+  html += '<div style="display:flex;gap:10px;font-size:11px;flex-shrink:0">';
+  html += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:'+COL_A+';border-radius:2px"></span>'+_loEsc(nameA)+'</span>';
+  html += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:'+COL_B+';border-radius:2px"></span>'+_loEsc(nameB)+'</span>';
+  html += '</div>';
+  html += '</div>';
+
+  // ── Positional section ────────────────────────────────────────────────
+  html += '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Positional</div>';
+  html += '<div style="margin-bottom:14px">';
+  data.posRows.forEach(function(r) {
+    var tier = _tlV2PosFitTier(r.aVal, r.bVal);
+    var dir = null;
+    if (tier) {
+      if (r.aVal > 0 && r.bVal < 0) dir = 'AtoB';
+      else if (r.bVal > 0 && r.aVal < 0) dir = 'BtoA';
+    }
+    var rowStyle = tier ? rowBgForTier(tier, dir) + ';' : '';
+    var aCol = r.aVal == null ? 'var(--muted)' : Math.abs(r.aVal) >= 1 ? 'var(--text)' : 'var(--muted)';
+    var bCol = r.bVal == null ? 'var(--muted)' : Math.abs(r.bVal) >= 1 ? 'var(--text)' : 'var(--muted)';
+    // 5-column grid: numLeft | barLeft | label | barRight | numRight
+    html += '<div style="display:grid;grid-template-columns:48px 1fr 150px 1fr 48px;gap:8px;align-items:center;font-size:11px;padding:4px 6px;border-radius:4px;margin-bottom:2px;'+rowStyle+'">';
+    html += '<div style="text-align:right;font-weight:500;color:'+aCol+'">'+fmtVal(r.aVal)+'</div>';
+    // Left bar (grows leftward)
+    var aPct = r.aVal == null ? 0 : Math.round(Math.abs(r.aVal) / posMax * 100);
+    var aBarCol = r.aVal == null ? 'transparent' : r.aVal > 0.05 ? 'rgba(29,158,117,0.7)' : r.aVal < -0.05 ? 'rgba(192,57,43,0.6)' : 'rgba(150,150,150,0.4)';
+    html += '<div style="height:16px;background:rgba(0,0,0,0.03);border-radius:2px;position:relative;display:flex;justify-content:flex-end">';
+    html += '<div style="width:'+aPct+'%;height:100%;background:'+aBarCol+';border-radius:2px"></div></div>';
+    html += '<div style="text-align:center;font-weight:500;color:var(--text)">'+r.label+pillForDir(dir, tier)+'</div>';
+    // Right bar (grows rightward)
+    var bPct = r.bVal == null ? 0 : Math.round(Math.abs(r.bVal) / posMax * 100);
+    var bBarCol = r.bVal == null ? 'transparent' : r.bVal > 0.05 ? 'rgba(29,158,117,0.7)' : r.bVal < -0.05 ? 'rgba(192,57,43,0.6)' : 'rgba(150,150,150,0.4)';
+    html += '<div style="height:16px;background:rgba(0,0,0,0.03);border-radius:2px;position:relative">';
+    html += '<div style="width:'+bPct+'%;height:100%;background:'+bBarCol+';border-radius:2px"></div></div>';
+    html += '<div style="text-align:left;font-weight:500;color:'+bCol+'">'+fmtVal(r.bVal)+'</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // ── Category section ──────────────────────────────────────────────────
+  html += '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Category</div>';
+  html += '<div>';
+  data.catRows.forEach(function(r) {
+    var tier = _tlV2CatFitTier(r.aRank, r.bRank, r.n);
+    var topThird = Math.max(1, Math.ceil(r.n * 0.3));
+    var botThird = Math.max(1, Math.ceil(r.n * 0.7));
+    var mildLine = Math.ceil(r.n * 0.45);
+    var dir = null;
+    if (tier) {
+      var aIsSurplus = r.aRank <= mildLine;
+      var bIsSurplus = r.bRank <= mildLine;
+      if (aIsSurplus && !bIsSurplus) dir = 'AtoB';
+      else if (bIsSurplus && !aIsSurplus) dir = 'BtoA';
+    }
+    var rowStyle = tier ? rowBgForTier(tier, dir) + ';' : '';
+    var aCol = !r.aRank ? 'var(--muted)' : (r.aRank <= topThird || r.aRank >= botThird ? 'var(--text)' : 'var(--muted)');
+    var bCol = !r.bRank ? 'var(--muted)' : (r.bRank <= topThird || r.bRank >= botThird ? 'var(--text)' : 'var(--muted)');
+    // Bar length: top ranks → long bars (representing strength).
+    function rankPct(rank) { return rank ? Math.round((r.n - rank + 1) / r.n * 100) : 0; }
+    function rankCol(rank) {
+      if (!rank) return 'transparent';
+      if (rank <= topThird) return 'rgba(29,158,117,0.7)';
+      if (rank >= botThird) return 'rgba(192,57,43,0.6)';
+      return 'rgba(200,169,110,0.5)';
+    }
+    html += '<div style="display:grid;grid-template-columns:48px 1fr 150px 1fr 48px;gap:8px;align-items:center;font-size:11px;padding:4px 6px;border-radius:4px;margin-bottom:2px;'+rowStyle+'">';
+    html += '<div style="text-align:right;font-weight:500;color:'+aCol+'">'+fmtRank(r.aRank)+'</div>';
+    html += '<div style="height:16px;background:rgba(0,0,0,0.03);border-radius:2px;position:relative;display:flex;justify-content:flex-end">';
+    html += '<div style="width:'+rankPct(r.aRank)+'%;height:100%;background:'+rankCol(r.aRank)+';border-radius:2px"></div></div>';
+    html += '<div style="text-align:center;font-weight:500;color:var(--text)">'+r.label+pillForDir(dir, tier)+'</div>';
+    html += '<div style="height:16px;background:rgba(0,0,0,0.03);border-radius:2px;position:relative">';
+    html += '<div style="width:'+rankPct(r.bRank)+'%;height:100%;background:'+rankCol(r.bRank)+';border-radius:2px"></div></div>';
+    html += '<div style="text-align:left;font-weight:500;color:'+bCol+'">'+fmtRank(r.bRank)+'</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // ── Plain-English fit summary ─────────────────────────────────────────
+  var aToB = [];   // labels where A surplus, B short
+  var bToA = [];   // labels where B surplus, A short
+  data.posRows.forEach(function(r) {
+    var tier = _tlV2PosFitTier(r.aVal, r.bVal);
+    if (!tier) return;
+    if (r.aVal > 0 && r.bVal < 0) aToB.push(r.label);
+    else if (r.bVal > 0 && r.aVal < 0) bToA.push(r.label);
+  });
+  data.catRows.forEach(function(r) {
+    var tier = _tlV2CatFitTier(r.aRank, r.bRank, r.n);
+    if (!tier) return;
+    var aIsSurplus = r.aRank <= Math.ceil(r.n * 0.45);
+    var bIsSurplus = r.bRank <= Math.ceil(r.n * 0.45);
+    if (aIsSurplus && !bIsSurplus) aToB.push(r.label);
+    else if (bIsSurplus && !aIsSurplus) bToA.push(r.label);
+  });
+
+  var totalPairs = aToB.length + bToA.length;
+  html += '<div style="margin-top:14px;padding-top:10px;border-top:0.5px dashed var(--border);display:flex;gap:16px;font-size:10px;color:var(--muted);flex-wrap:wrap">';
+  html += '<span><strong style="color:var(--text)">A &rarr; B</strong> &mdash; '+_loEsc(nameA)+' has surplus, '+_loEsc(nameB)+' is short.</span>';
+  html += '<span><strong style="color:var(--text)">B &rarr; A</strong> &mdash; '+_loEsc(nameB)+' has surplus, '+_loEsc(nameA)+' is short.</span>';
+  html += '</div>';
+
+  html += '<div style="margin-top:10px;padding:10px 12px;background:var(--bg);border-radius:6px;font-size:12px;line-height:1.5">';
+  if (totalPairs === 0) {
+    html += '<strong>Fit summary:</strong> <span style="color:var(--muted)">No clear asymmetries between these two teams. They look balanced across positions and cats &mdash; trades would have to be tactical (regression bets, schedule arbitrage) rather than need-based.</span>';
+  } else {
+    html += '<strong>Fit summary:</strong> '+totalPairs+' overlap pair'+(totalPairs===1?'':'s')+' identified. ';
+    if (aToB.length) html += _loEsc(nameA)+' can send strength in <strong style="color:#0F6E56">'+aToB.join(', ')+'</strong>. ';
+    if (bToA.length) html += _loEsc(nameB)+' can send strength in <strong style="color:#0C447C">'+bToA.join(', ')+'</strong>. ';
+    if (aToB.length && bToA.length) html += '<em style="color:var(--muted)">Strong mutual-fit trade pattern.</em>';
+    else html += '<em style="color:var(--muted)">One-directional fit &mdash; may require sweetener to balance.</em>';
+  }
+  html += '</div>';
+
+  html += '</div>';
+  return html;
+}
+
 function _tlV2RenderBuild() {
   var el = document.getElementById('tradelab-build-body');
   if (!el) return;
@@ -21824,6 +22157,11 @@ function _tlV2RenderBuild() {
     + '</div>';
 
   if (sendA.length === 0 && sendB.length === 0) {
+    // Render the fit plot here too so users see overlap BEFORE picking players.
+    if (typeof _tlV2RenderTeamFitHtml === 'function') {
+      try { html += _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB); }
+      catch(e) { console.warn('[TradeLab] team-fit render (empty state) failed:', e); }
+    }
     html += rosterTablesHtml;
     html += '<div style="padding:16px;text-align:center;color:var(--muted);font-size:12px;background:var(--bg);border-radius:8px;border:0.5px dashed var(--border);margin-top:14px">Select players from both rosters to see trade analysis.</div>';
     el.innerHTML = html;
@@ -21884,10 +22222,19 @@ function _tlV2RenderBuild() {
   }
   var v = verdictText();
 
-  // analyticsHtml accumulates the Verdict + Category-by-category cards; we'll
+  // analyticsHtml accumulates the Trade Fit + Verdict + Category cards; we'll
   // inject it BEFORE the roster tables so it sits near the top of the tab
   // alongside the picker columns.
   var analyticsHtml = '';
+
+  // ── Trade fit plot ────────────────────────────────────────────────────
+  // Surfaces positional + category asymmetries between the two teams. Renders
+  // ABOVE everything else so the user sees the overlap before drilling into
+  // verdict / cat-impact / rosters.
+  if (typeof _tlV2RenderTeamFitHtml === 'function') {
+    try { analyticsHtml += _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB); }
+    catch(e) { console.warn('[TradeLab] team-fit render failed:', e); }
+  }
 
   function deltaCardHtml(name, dW, sentSGP, recvSGP) {
     var col = dW >= 0.5 ? '#0F6E56' : dW <= -0.5 ? '#c0392b' : (dW >= 0 ? '#4a9a68' : '#c08070');
