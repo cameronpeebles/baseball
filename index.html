@@ -3440,14 +3440,18 @@ function init() {
           if (isHitter) {
             window._rosCurrentStats[key] = {
               R: gv3('R'), HR: gv3('HR'), RBI: gv3('RBI'), SB: gv3('SB'),
-              AVG: gv3('AVG'), AB: gv3('AB'),
-              pos: (sc.pos || '') + ''
+              AVG: gv3('AVG'), AB: gv3('AB'), H: gv3('H'),
+              pos: (sc.posShortNames || sc.pos || '') + '',
+              isHit: true,
+              name: name, mlb: sc.teamShortName || '', hs: sc.headshotUrl || ''
             };
           } else {
             window._rosCurrentStats[key] = {
               W: gv3('W'), K: gv3('K'), SVH3: gv3('SVH3'),
               ERA: gv3('ERA'), WHIP: gv3('WHIP'), IP: gv3('IP'),
-              pos: (sc.pos || '') + ''
+              pos: (sc.posShortNames || sc.pos || '') + '',
+              isHit: false,
+              name: name, mlb: sc.teamShortName || '', hs: sc.headshotUrl || ''
             };
           }
         });
