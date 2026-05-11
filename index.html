@@ -21417,8 +21417,9 @@ function _tlV2PartnerCardHtml(myTid, p, idx) {
 // align: 'left' or 'right' (matches the surrounding column's alignment).
 function _tlV2RatingsStripHtml(name, isHit, align) {
   if (!name) return '';
-  // Normalize name with the same scheme used by the FWAR / rating lookups.
-  function _nrm(n) { return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  // Strip FantasyPros paren suffix BEFORE normalizing so lookup keys match.
+  function _stripFP(n) { return (n||'').replace(/\s*\([^)]*\).*$/, '').trim(); }
+  function _nrm(n) { return _stripFP(n).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
   var k = _nrm(name);
   // Curr SGP lookups are keyed via _normPlayerKey (NFD + suffix strip),
   // a slightly different normalizer than the rating ones. Use the right one.
@@ -21610,7 +21611,12 @@ window._tlV2BuildWith = function(oppTid) {
 // Columns: Player · fWAR · fWAR% · Lg · Pos · Curr · ROS · Action
 // All columns sortable. Selected players highlighted with green tint + REMOVE.
 function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState) {
-  function _nrm(n) { return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  // Normalize: FantasyPros names sometimes come in as "Jose Ramirez (CLE - 3B)".
+  // Strip the paren suffix BEFORE applying _nrm so the key matches the
+  // _lgRatingLookup / _fwarPctLookup entries (which key on plain
+  // `scorer.name.toLowerCase()` from Fantrax stat rows — no parens).
+  function _stripFP(n) { return (n||'').replace(/\s*\([^)]*\).*$/, '').trim(); }
+  function _nrm(n) { return _stripFP(n).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
   // Build a per-player metrics row.
   var rows = roster.map(function(p) {
     var nm = p.name || '';
@@ -21633,7 +21639,7 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState)
     var posRat = (posRatRaw != null && !isNaN(posRatRaw)) ? posRatRaw * 100 : null;
     var currSgp = p.isHit ? (window._playerCurrSgpHit||{})[sgpKey] : (window._playerCurrSgpPit||{})[sgpKey];
     return {
-      key: p.key, name: nm, pos: p.pos || '',
+      key: p.key, name: _stripFP(nm), pos: p.pos || '',
       mlb: (p.cs && p.cs.mlb) || '',
       isHit: p.isHit,
       fwar: fwarVal, fwarPct: fwarPct, lg: lgRat, pos_rat: posRat,
@@ -21809,10 +21815,12 @@ function _tlV2RenderBuild() {
   // ── Full roster tables (side by side) ────────────────────────────────────
   // Sortable tables for each team showing fWAR / fWAR% / Lg / Pos / Curr / ROS
   // SGP. Selected players highlighted; row-level + / × buttons mirror the
-  // dropdown pickers above.
-  var rosterTablesHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">'
-    + _tlV2RenderRosterTableHtml('A', nameA, rosterA, sendA, window._tlV2.sortA)
-    + _tlV2RenderRosterTableHtml('B', nameB, rosterB, sendB, window._tlV2.sortB)
+  // dropdown pickers above. min-width:0 on each grid item is required so the
+  // wide 8-col tables can shrink to fit half the page width instead of
+  // overflowing.
+  var rosterTablesHtml = '<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-bottom:14px">'
+    + '<div style="min-width:0">' + _tlV2RenderRosterTableHtml('A', nameA, rosterA, sendA, window._tlV2.sortA) + '</div>'
+    + '<div style="min-width:0">' + _tlV2RenderRosterTableHtml('B', nameB, rosterB, sendB, window._tlV2.sortB) + '</div>'
     + '</div>';
 
   if (sendA.length === 0 && sendB.length === 0) {
