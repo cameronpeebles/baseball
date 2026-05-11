@@ -21210,15 +21210,36 @@ function _tlV2RenderSuggest() {
   if (!el) return;
   var tA = window._tlV2.teamA;
   if (!tA) { el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px">Pick your team above to see suggestions.</div>'; return; }
-  // Required engines: ROS scan + z-data. If not ready, show progressive message.
-  if (!window._playerRosCatHit || !window._playerRosCatPit) {
-    el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px">Loading ROS engine&hellip; this can take a moment after a fresh page load.</div>';
-    return;
+  // Required engines: ROS scan + z-data. If not ready, show progressive message
+  // AND set a poll so this auto-rerenders once the data finally loads.
+  function notReady(msg) {
+    el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px">'+msg+'</div>';
+    // Single polling tick (debounced): retry every 600ms up to 30s.
+    if (!window._tlV2SuggestPoll) {
+      var ticks = 0;
+      window._tlV2SuggestPoll = setInterval(function(){
+        ticks++;
+        var ready = window._playerRosCatHit && window._playerRosCatPit && Object.keys(window._playerRosCatHit).length > 0 && S.zData && S.zData.length;
+        if (ready) {
+          clearInterval(window._tlV2SuggestPoll);
+          window._tlV2SuggestPoll = null;
+          if (window._tlV2.activeTab === 'suggest') _tlV2RenderSuggest();
+        } else if (ticks > 50) {
+          clearInterval(window._tlV2SuggestPoll);
+          window._tlV2SuggestPoll = null;
+        }
+      }, 600);
+    }
+  }
+  if (!window._playerRosCatHit || !window._playerRosCatPit || Object.keys(window._playerRosCatHit).length === 0) {
+    return notReady('Loading ROS engine&hellip; this can take a moment after a fresh page load.');
   }
   if (!S.zData || !S.zData.length) {
-    el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px">Loading z-score data&hellip;</div>';
-    return;
+    return notReady('Loading z-score data&hellip;');
   }
+  // Data IS ready — clear any pending poll.
+  if (window._tlV2SuggestPoll) { clearInterval(window._tlV2SuggestPoll); window._tlV2SuggestPoll = null; }
+
   var nameA = _tlV2GetTeamName(tA);
   var html = '';
 
@@ -21230,21 +21251,41 @@ function _tlV2RenderSuggest() {
         html += '<div style="margin-bottom:16px">' + tnHtml + '</div>';
       }
     } catch(e) {
+      console.warn('[TradeLab] Team Need render failed:', e);
       html += '<div style="padding:12px 16px;background:var(--bg);border-radius:8px;margin-bottom:16px;color:var(--muted);font-size:12px">Team Need card unavailable. Try the Trade &amp; Waiver page first to warm the data.</div>';
     }
   }
 
   // ── Scan for trade partners ──────────────────────────────────────────────
-  // Temporarily set _rosCatMultipliers for the chosen team (the scan reads it).
-  // The function _rosTradeSugScanPairs uses window._rosCatMultipliers as
-  // myMults if available, else computes via _rosTradeSugTeamMults. Override it
-  // around the call so we get the right weights.
+  // The scan reads window._rosCatMultipliers for "your" side weights. Override
+  // around the call so we get the right weights for the chosen team, then restore.
+  // Also enable the engine's debug flag temporarily so we can diagnose if no
+  // results come back.
   var origMults = window._rosCatMultipliers;
   window._rosCatMultipliers = (typeof _rosTradeSugTeamMults === 'function') ? _rosTradeSugTeamMults(tA) : null;
+  var origDebug = window._rosTradeSugDebug;
+  window._rosTradeSugDebug = true;
+  window._rosTradeSugNearMiss = [];
   var scan;
   try { scan = _rosTradeSugScanPairs(tA); }
-  catch(e) { scan = { mutual: [], sneaky: [] }; }
+  catch(e) {
+    console.warn('[TradeLab] scan threw:', e);
+    scan = { mutual: [], sneaky: [] };
+  }
   window._rosCatMultipliers = origMults;
+  window._rosTradeSugDebug = origDebug;
+
+  var totalScan = (scan.mutual||[]).length + (scan.sneaky||[]).length;
+  console.log('[TradeLab] Suggest scan for', tA, _tlV2GetTeamName(tA), '→', (scan.mutual||[]).length, 'mutual,', (scan.sneaky||[]).length, 'sneaky');
+  if (totalScan === 0) {
+    // Quick diagnostic: was the user's roster found at all?
+    var myHitters = (typeof _rosTradeSugTeamRoster === 'function') ? _rosTradeSugTeamRoster(tA, true) : [];
+    var myPitchers = (typeof _rosTradeSugTeamRoster === 'function') ? _rosTradeSugTeamRoster(tA, false) : [];
+    console.log('[TradeLab] roster gates → hitters:', myHitters.length, 'pitchers:', myPitchers.length);
+    if (!myHitters.length && !myPitchers.length) {
+      console.warn('[TradeLab] Roster lookup returned 0 — this is the bug. Check _rosCurrentStats / _rosRosterLookup teamId match.');
+    }
+  }
 
   // Aggregate candidates by opponent team.
   // For each opp tid, collect their mutual + sneaky offers, keep top by myDelta.
@@ -21281,7 +21322,25 @@ function _tlV2RenderSuggest() {
   html += '</div>';
 
   if (partners.length === 0) {
-    html += '<div style="padding:24px 16px;text-align:center;font-size:12px;color:var(--muted)">No clean trade matches found across the league. This usually means your roster categories align with the league&rsquo;s averages &mdash; try the Build tab to manually explore.</div>';
+    var nearMiss = (window._rosTradeSugNearMiss || []).slice(0, 5);
+    if (nearMiss.length) {
+      html += '<div style="padding:14px 16px;font-size:12px;color:var(--muted);line-height:1.6">';
+      html += '<div style="margin-bottom:8px"><strong style="color:var(--text)">No trades clearly clear the bar.</strong> The strictest filters (mutual gain &ge; 0.5 on both sides for &quot;even&quot;, your gain &ge; 1.0 + perception bump for &quot;sneaky&quot;) didn&rsquo;t catch anything.</div>';
+      html += '<div style="margin-bottom:8px;color:var(--text)">Closest near-misses (your gain &ge; 0.3 SGP but not enough on the other side to qualify):</div>';
+      html += '<div style="display:flex;flex-direction:column;gap:4px">';
+      nearMiss.forEach(function(nm) {
+        var giveName = (window._rosCurrentStats && window._rosCurrentStats[nm.give]) ? window._rosCurrentStats[nm.give].name : nm.give;
+        var getName  = (window._rosCurrentStats && window._rosCurrentStats[nm.get])  ? window._rosCurrentStats[nm.get].name  : nm.get;
+        html += '<div style="font-size:11px;padding:5px 8px;background:var(--surface);border-radius:4px">';
+        html += '<strong>'+_loEsc(nm.vs||'')+'</strong>: send '+_loEsc(giveName)+' &harr; get '+_loEsc(getName)+' &middot; you +'+nm.myD+', them '+(nm.theirD>=0?'+':'')+nm.theirD;
+        html += '</div>';
+      });
+      html += '</div>';
+      html += '<div style="margin-top:10px">Use the <strong style="color:var(--text)">Build Trade</strong> tab to mix players from any team and the verdict will tell you if a 2-for-1 or 2-for-2 unlocks a better fit.</div>';
+      html += '</div>';
+    } else {
+      html += '<div style="padding:24px 16px;text-align:center;font-size:12px;color:var(--muted)">No clean trade matches found across the league. This usually means your roster categories align with the league&rsquo;s averages &mdash; try the Build tab to manually explore.</div>';
+    }
   } else {
     html += '<div style="padding:14px;display:flex;flex-direction:column;gap:14px">';
     partners.forEach(function(p, idx) {
