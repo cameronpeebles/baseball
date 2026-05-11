@@ -22274,10 +22274,12 @@ function _tlV2RenderBuild() {
     h += '</div></div>';
     return h;
   }
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">';
-  html += pickerHtml('A', nameA, sendA, byKeyA, rosterA);
-  html += pickerHtml('B', nameB, sendB, byKeyB, rosterB);
-  html += '</div>';
+  // Build the player pickers as a string (instead of appending directly to html)
+  // so we can re-order: Fit heatmap → Pickers → Suggested trades → ...
+  var pickersHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">'
+    + pickerHtml('A', nameA, sendA, byKeyA, rosterA)
+    + pickerHtml('B', nameB, sendB, byKeyB, rosterB)
+    + '</div>';
 
   // ── Full roster tables (side by side) ────────────────────────────────────
   // Sortable tables for each team showing fWAR / fWAR% / Lg / Pos / Curr / ROS
@@ -22290,15 +22292,23 @@ function _tlV2RenderBuild() {
     + '<div style="min-width:0">' + _tlV2RenderRosterTableHtml('B', nameB, rosterB, sendB, window._tlV2.sortB) + '</div>'
     + '</div>';
 
+  // halfCol wraps a card at 50% page width with a small inset so it doesn't
+  // sit edge-to-edge — applies to Fit heatmap, Suggested trades, Cat-impact.
+  function halfCol(inner) {
+    return '<div style="max-width:50%;min-width:0">' + inner + '</div>';
+  }
+
   if (sendA.length === 0 && sendB.length === 0) {
-    // Render the fit plot here too so users see overlap BEFORE picking players.
+    // Fit heatmap at the very top (above pickers), half width.
     if (typeof _tlV2RenderTeamFitHtml === 'function') {
-      try { html += _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB); }
+      try { html += halfCol(_tlV2RenderTeamFitHtml(tA, tB, nameA, nameB)); }
       catch(e) { console.warn('[TradeLab] team-fit render (empty state) failed:', e); }
     }
-    // Compact suggested-trades-with-AWAY card between fit and rosters.
+    // Pickers underneath fit.
+    html += pickersHtml;
+    // Compact suggested-trades-with-AWAY card after pickers, half width.
     if (typeof _tlV2RenderSuggestedTradesHtml === 'function') {
-      try { html += _tlV2RenderSuggestedTradesHtml(tA, tB, nameA, nameB); }
+      try { html += halfCol(_tlV2RenderSuggestedTradesHtml(tA, tB, nameA, nameB)); }
       catch(e) { console.warn('[TradeLab] suggested-trades render (empty state) failed:', e); }
     }
     html += rosterTablesHtml;
@@ -22361,23 +22371,20 @@ function _tlV2RenderBuild() {
   }
   var v = verdictText();
 
-  // analyticsHtml accumulates the Trade Fit + Verdict + Category cards; we'll
-  // inject it BEFORE the roster tables so it sits near the top of the tab
-  // alongside the picker columns.
+  // analyticsHtml accumulates the suggested-trades + verdict + cat-impact +
+  // team-needs blocks. (Fit heatmap renders separately ABOVE pickers, not here.)
   var analyticsHtml = '';
 
-  // ── Trade fit plot ────────────────────────────────────────────────────
-  // Surfaces positional + category asymmetries between the two teams. Renders
-  // ABOVE everything else so the user sees the overlap before drilling into
-  // verdict / cat-impact / rosters.
+  // Pre-render the Trade fit plot so we can inject it above the pickers later.
+  var fitHtml = '';
   if (typeof _tlV2RenderTeamFitHtml === 'function') {
-    try { analyticsHtml += _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB); }
+    try { fitHtml = _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB); }
     catch(e) { console.warn('[TradeLab] team-fit render failed:', e); }
   }
-  // Compact suggested-trades-with-AWAY card right after the fit plot — gives
-  // user concrete trade ideas before the verdict/cat-impact cards.
+  // Compact suggested-trades-with-AWAY card — half width, sits right after
+  // pickers (assembled into analyticsHtml which renders below pickers).
   if (typeof _tlV2RenderSuggestedTradesHtml === 'function') {
-    try { analyticsHtml += _tlV2RenderSuggestedTradesHtml(tA, tB, nameA, nameB); }
+    try { analyticsHtml += halfCol(_tlV2RenderSuggestedTradesHtml(tA, tB, nameA, nameB)); }
     catch(e) { console.warn('[TradeLab] suggested-trades render failed:', e); }
   }
 
@@ -22471,16 +22478,17 @@ function _tlV2RenderBuild() {
     h += '</div></div>';
     return h;
   }
-  analyticsHtml += '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px">';
-  analyticsHtml += '<div style="padding:12px 16px;background:var(--bg);border-bottom:0.5px solid var(--border)"><span style="font-size:13px;font-weight:500">Category-by-category impact</span><span style="font-size:11px;color:var(--muted);margin-left:8px">net SGP shift per cat after the trade</span></div>';
-  analyticsHtml += '<div style="padding:14px 16px">';
-  analyticsHtml += catImpactSection('HOME (' + nameA + ') \u2014 net delta per cat', aCatDelta, '#0F6E56');
-  analyticsHtml += catImpactSection('AWAY (' + nameB + ') \u2014 net delta per cat', bCatDelta, '#0C447C');
-  analyticsHtml += '</div></div>';
+  var catImpactCard = '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px">';
+  catImpactCard += '<div style="padding:12px 16px;background:var(--bg);border-bottom:0.5px solid var(--border)"><span style="font-size:13px;font-weight:500">Category-by-category impact</span><span style="font-size:11px;color:var(--muted);margin-left:8px">net SGP shift per cat after the trade</span></div>';
+  catImpactCard += '<div style="padding:14px 16px">';
+  catImpactCard += catImpactSection('HOME (' + nameA + ') \u2014 net delta per cat', aCatDelta, '#0F6E56');
+  catImpactCard += catImpactSection('AWAY (' + nameB + ') \u2014 net delta per cat', bCatDelta, '#0C447C');
+  catImpactCard += '</div></div>';
+  analyticsHtml += halfCol(catImpactCard);
 
-  // Inject analytics (Verdict + Category-by-category) ABOVE the roster tables.
-  html += analyticsHtml;
-  html += rosterTablesHtml;
+  // Final assembly: Fit heatmap → Pickers → (suggested + verdict + cat-impact
+  // + team-needs inside analyticsHtml) → Roster tables → Caveats below.
+  html = fitHtml + pickersHtml + analyticsHtml + rosterTablesHtml;
 
   var caveats = [];
   function teamCountAtGroup(roster, group) { return roster.filter(function(p){ return _tlV2PosGroup(p.pos) === group; }).length; }
