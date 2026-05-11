@@ -1801,8 +1801,8 @@
                         "typeId": "2"
                       },
                       {
-                        "tooltip": "May 9, 8:48 PM: Betts (oblique) will travel back to Los...",
-                        "typeId": "9"
+                        "tooltip": "May 11, 7:37 AM: Dodgers manager Dave Roberts confirmed...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -3916,8 +3916,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "May 4, 7:14 PM: Sugano (3-2) took the loss Monday,...",
-                        "typeId": "9"
+                        "tooltip": "May 11, 5:53 AM: Sugano (3-3) took the loss Sunday...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -7129,7 +7129,7 @@
                       },
                       {
                         "tooltip": "May 10, 6:45 AM: Lawlar will undergo imaging this week...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "On this team's trade block",
@@ -12097,7 +12097,7 @@
                     "icons": [
                       {
                         "tooltip": "May 10, 6:31 AM: O'Hearn went 2-for-5 with an RBI, a run...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -16465,7 +16465,7 @@
                 "id": "1"
               },
               {
-                "total": 11,
+                "total": 12,
                 "max": 12,
                 "name": "Reserve",
                 "id": "2"
@@ -16491,7 +16491,7 @@
                   "name": "Claims Remaining (Week)",
                   "hasMore": true,
                   "description": "Number of Claims Remaining in week",
-                  "value": 5
+                  "value": 4
                 }
               ]
             },
@@ -18315,7 +18315,7 @@
                   "id": "1"
                 },
                 {
-                  "total": 8,
+                  "total": 9,
                   "name": "Reserve",
                   "id": "2"
                 },
@@ -18688,7 +18688,7 @@
                       "content": "20"
                     }
                   ],
-                  "statusId": "1",
+                  "statusId": "2",
                   "eligiblePosIds": [
                     "017"
                   ],
@@ -19718,6 +19718,126 @@
                     },
                     {
                       "content": "17"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "017"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
+                    "teamName": "Houston Astros",
+                    "urlName": "peter-lambert",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03poo_96_10.png",
+                    "scorerId": "03poo",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "017"
+                    ],
+                    "defaultPosId": "015",
+                    "posShortNames": "SP",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "May 5, 9:17 PM: Lambert (2-2) earned the win over the...",
+                        "typeId": "9"
+                      },
+                      {
+                        "tooltip": "Right-Handed Pitcher",
+                        "typeId": "17"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "017"
+                    ],
+                    "teamId": "10105",
+                    "name": "Peter Lambert",
+                    "teamShortName": "HOU",
+                    "shortName": "P. Lambert"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "017",
+                  "cells": [
+                    {
+                      "content": "29"
+                    },
+                    {
+                      "content": "SEA<br/>Mon 6:10PM",
+                      "pitcher": true,
+                      "eventId": "06iqr",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "george-kirby",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04yie_96_5.png",
+                          "scorerId": "04yie",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "RHP",
+                              "typeId": "17"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "George Kirby",
+                          "shortName": "G. Kirby"
+                        },
+                        "header": "Probable Starter for Seattle:",
+                        "content": "<b>W</b> 4 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 52 &nbsp;<b>K</b> 39 &nbsp;<b>ERA</b> 2.94 &nbsp;<b>WHIP</b> 1.096 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "22.1"
+                    },
+                    {
+                      "content": "2.42"
+                    },
+                    {
+                      "content": "1.164"
+                    },
+                    {
+                      "content": "23"
+                    },
+                    {
+                      "content": "2"
+                    },
+                    {
+                      "content": "0.0"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "0"
+                    },
+                    {
+                      "content": "4"
                     }
                   ],
                   "statusId": "1",
@@ -33993,8 +34113,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "May 5, 11:22 PM: Naylor went 2-for-3 with a walk and two...",
-                        "typeId": "9"
+                        "tooltip": "May 11, 6:01 AM: Naylor went 2-for-3 with a double and a...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -45196,7 +45316,7 @@
                       "content": "37"
                     }
                   ],
-                  "statusId": "2",
+                  "statusId": "1",
                   "eligiblePosIds": [
                     "003",
                     "014",
@@ -45582,7 +45702,7 @@
                     "icons": [
                       {
                         "tooltip": "May 10, 6:22 AM: Lowe went 2-for-4 with a double, a...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -45971,7 +46091,7 @@
                       "content": "36"
                     }
                   ],
-                  "statusId": "1",
+                  "statusId": "2",
                   "eligiblePosIds": [
                     "014"
                   ],
@@ -46829,7 +46949,7 @@
                       "content": "6"
                     }
                   ],
-                  "statusId": "1",
+                  "statusId": "2",
                   "eligiblePosIds": [
                     "017"
                   ],
@@ -46859,7 +46979,7 @@
                       },
                       {
                         "tooltip": "May 10, 7:18 AM: Greene (elbow) is up to 150 feet of...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -47248,7 +47368,7 @@
                       "content": "8"
                     }
                   ],
-                  "statusId": "2",
+                  "statusId": "1",
                   "eligiblePosIds": [
                     "017"
                   ],
