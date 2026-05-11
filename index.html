@@ -670,11 +670,11 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div class="page-subtitle">Scout potential trade partners and build proposals.</div>
     <div id="tradelab-team-pickers" style="margin-bottom:14px"></div>
     <div class="trade-tabs" id="tradelab-tabs">
-      <button class="trade-tab active" onclick="showTradeLabTab('compare',this)">Compare</button>
+      <button class="trade-tab active" onclick="showTradeLabTab('suggest',this)">Suggest</button>
       <button class="trade-tab" onclick="showTradeLabTab('build',this)">Build Trade</button>
     </div>
-    <div id="tradelab-tab-compare" class="trade-tab-content active">
-      <div id="tradelab-compare-body"><div class="loading">Select two teams to compare.</div></div>
+    <div id="tradelab-tab-suggest" class="trade-tab-content active">
+      <div id="tradelab-suggest-body"><div class="loading">Pick a team to see suggested partners.</div></div>
     </div>
     <div id="tradelab-tab-build" class="trade-tab-content">
       <div id="tradelab-build-body"><div class="loading">Select two teams to build a trade.</div></div>
@@ -7004,10 +7004,11 @@ window.rosTradeSugTryThis = function(giveEnc, getEnc, isHit) {
   }
 };
 
-function _rosBuildTeamNeedHtml(dashMode) {
-  if (!_rosSelectedTeam || !S.zData || !S.zData.length) return '';
-  var teamName = (S.teamInfo[_rosSelectedTeam]||{}).shortName || (S.teamInfo[_rosSelectedTeam]||{}).name || '';
-  var myZ = S.zData.find(function(d){ return d.teamId === _rosSelectedTeam; });
+function _rosBuildTeamNeedHtml(dashMode, teamIdOverride) {
+  var targetTeamId = teamIdOverride || _rosSelectedTeam;
+  if (!targetTeamId || !S.zData || !S.zData.length) return '';
+  var teamName = (S.teamInfo[targetTeamId]||{}).shortName || (S.teamInfo[targetTeamId]||{}).name || '';
+  var myZ = S.zData.find(function(d){ return d.teamId === targetTeamId; });
   if (!myZ) return '';
 
   var BAT_Z_CATS = ['R','HR','RBI','SB','AVG'];
@@ -7026,7 +7027,7 @@ function _rosBuildTeamNeedHtml(dashMode) {
     // In points form, higher = better for EVERY category (including ERA/WHIP). So no inversion.
     // Sort descending: position 0 = highest Z = best in category = rank 1 (least need).
     scores.sort(function(a,b){ return b.z - a.z; });
-    var pos = scores.findIndex(function(s){ return s.teamId === _rosSelectedTeam; });
+    var pos = scores.findIndex(function(s){ return s.teamId === targetTeamId; });
     ranks[cat] = pos >= 0 ? pos + 1 : null;
   });
 
@@ -7060,7 +7061,7 @@ function _rosBuildTeamNeedHtml(dashMode) {
         return { tid: tid, v: src[cat] || 0 };
       });
       vals.sort(function(a,b){ return b.v - a.v; });
-      var idx = vals.findIndex(function(x){ return x.tid === _rosSelectedTeam; });
+      var idx = vals.findIndex(function(x){ return x.tid === targetTeamId; });
       projRanks[cat] = idx >= 0 ? idx + 1 : null;
     });
   }
@@ -7112,7 +7113,7 @@ function _rosBuildTeamNeedHtml(dashMode) {
     return { teamId:d.teamId, z:(d.totalZ != null ? d.totalZ : ((d.totalBatZ||0)+(d.totalPitZ||0))) };
   });
   teamScores.sort(function(a,b){ return b.z - a.z; });
-  var teamRank = teamScores.findIndex(function(s){ return s.teamId === _rosSelectedTeam; }) + 1;
+  var teamRank = teamScores.findIndex(function(s){ return s.teamId === targetTeamId; }) + 1;
   var totalCol = totalZ >= 3 ? '#1e6b3a' : totalZ >= 0 ? '#4a9a68' : totalZ > -3 ? '#854f0b' : '#c0392b';
   var totalStr = (totalZ >= 0 ? '+' : '') + totalZ.toFixed(1);
 
@@ -7237,7 +7238,7 @@ function _rosBuildTeamNeedHtml(dashMode) {
 
   // Position tiles row
   h += '<div style="display:grid;grid-template-columns:repeat('+FINE_POS.length+',minmax(0,1fr));gap:6px;margin-bottom:14px">';
-  var teamPos = byTeamPos[_rosSelectedTeam] || {};
+  var teamPos = byTeamPos[targetTeamId] || {};
   FINE_POS.forEach(function(fp) {
     // Empty cells (no rostered player has this as their primary fine position) are
     // treated as 0.0 contribution rather than hidden — a positional gap IS a weakness.
@@ -20976,7 +20977,7 @@ function _tlBuildPlayerCard(p, isHit, teamId) {
 // ── Trade Lab v2 ──────────────────────────────────────────────────────────
 // Two-tab page: Compare (side-by-side roster diagnostics) + Build Trade
 // (player-pickers, SGP delta, verdict). Reuses existing data sources.
-window._tlV2 = window._tlV2 || { teamA: null, teamB: null, sendA: [], sendB: [], activeTab: 'compare' };
+window._tlV2 = window._tlV2 || { teamA: null, teamB: null, sendA: [], sendB: [], activeTab: 'suggest' };
 
 // Compute category weights for any team (rank 1 = least need = 0.2x,
 // rank N = most need = 2.5x). Mirrors the inline catWeights logic in the
@@ -21078,8 +21079,10 @@ window.showTradeLabTab = function(tab, btn) {
   document.querySelectorAll('#page-tradelab .trade-tab-content').forEach(function(c){ c.classList.remove('active'); });
   document.getElementById('tradelab-tab-' + tab).classList.add('active');
   window._tlV2.activeTab = tab;
-  if (tab === 'compare') _tlV2RenderCompare();
-  else _tlV2RenderBuild();
+  // Re-render pickers (some tabs hide the Team B selector).
+  _tlV2RenderTeamPickers();
+  if (tab === 'build') _tlV2RenderBuild();
+  else _tlV2RenderSuggest();
 };
 
 function renderROSTradeLab() {
@@ -21091,7 +21094,7 @@ function renderROSTradeLab() {
   }
   _tlV2RenderTeamPickers();
   if (window._tlV2.activeTab === 'build') _tlV2RenderBuild();
-  else _tlV2RenderCompare();
+  else _tlV2RenderSuggest();
 }
 
 function _tlV2RenderTeamPickers() {
@@ -21116,10 +21119,18 @@ function _tlV2RenderTeamPickers() {
     h += '</select></div>';
     return h;
   }
-  el.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'
-    + selHtml('Team A', window._tlV2.teamA, 'A')
-    + selHtml('Team B', window._tlV2.teamB, 'B')
-    + '</div>';
+  var isSuggest = (window._tlV2.activeTab !== 'build');
+  if (isSuggest) {
+    // Suggest tab: only the Team A selector is meaningful.
+    el.innerHTML = '<div style="display:grid;grid-template-columns:1fr;gap:14px;max-width:360px">'
+      + selHtml('Your team', window._tlV2.teamA, 'A')
+      + '</div>';
+  } else {
+    el.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'
+      + selHtml('Team A', window._tlV2.teamA, 'A')
+      + selHtml('Team B', window._tlV2.teamB, 'B')
+      + '</div>';
+  }
 }
 
 window._tlV2TeamChange = function(side, val) {
@@ -21128,7 +21139,7 @@ window._tlV2TeamChange = function(side, val) {
   window._tlV2.sendA = [];
   window._tlV2.sendB = [];
   if (window._tlV2.activeTab === 'build') _tlV2RenderBuild();
-  else _tlV2RenderCompare();
+  else _tlV2RenderSuggest();
 };
 
 function _tlV2GetTeamName(tid) {
@@ -21194,171 +21205,264 @@ function _tlV2PosGroup(pos) {
 
 function _tlV2NumOrNull(x) { var n = parseFloat(x); return isNaN(n) ? null : n; }
 
-function _tlV2RenderCompare() {
-  var el = document.getElementById('tradelab-compare-body');
+function _tlV2RenderSuggest() {
+  var el = document.getElementById('tradelab-suggest-body');
   if (!el) return;
-  var tA = window._tlV2.teamA, tB = window._tlV2.teamB;
-  if (!tA || !tB) { el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px">Pick two teams above to compare.</div>'; return; }
-  if (tA === tB) { el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px">Pick two <em>different</em> teams above to compare.</div>'; return; }
-  var rosterA = _tlV2GetTeamRoster(tA);
-  var rosterB = _tlV2GetTeamRoster(tB);
-  if (!rosterA.length || !rosterB.length) { el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px">Loading roster data&hellip;</div>'; return; }
-  var nameA = _tlV2GetTeamName(tA), nameB = _tlV2GetTeamName(tB);
+  var tA = window._tlV2.teamA;
+  if (!tA) { el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px">Pick your team above to see suggestions.</div>'; return; }
+  // Required engines: ROS scan + z-data. If not ready, show progressive message.
+  if (!window._playerRosCatHit || !window._playerRosCatPit) {
+    el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px">Loading ROS engine&hellip; this can take a moment after a fresh page load.</div>';
+    return;
+  }
+  if (!S.zData || !S.zData.length) {
+    el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px">Loading z-score data&hellip;</div>';
+    return;
+  }
+  var nameA = _tlV2GetTeamName(tA);
   var html = '';
 
-  var posGroupAvg = {};
-  ['IF','OF','SP','RP'].forEach(function(g) {
-    var aPlayers = rosterA.filter(function(p){ return _tlV2PosGroup(p.pos) === g; });
-    var bPlayers = rosterB.filter(function(p){ return _tlV2PosGroup(p.pos) === g; });
-    function avg(arr) { if (!arr.length) return 0; var s = 0; arr.forEach(function(p){ s += p.rosSGP; }); return s / arr.length; }
-    posGroupAvg[g] = { a: avg(aPlayers), b: avg(bPlayers) };
-  });
-  var fits = [];
-  ['IF','OF','SP','RP'].forEach(function(g) {
-    var d = posGroupAvg[g].a - posGroupAvg[g].b;
-    if (Math.abs(d) > 0.3) {
-      if (d > 0) fits.push({ from: nameA, to: nameB, group: g });
-      else       fits.push({ from: nameB, to: nameA, group: g });
+  // ── Team Need card for the user's team (reuses Trade & Waiver renderer) ──
+  if (typeof _rosBuildTeamNeedHtml === 'function') {
+    try {
+      var tnHtml = _rosBuildTeamNeedHtml(false, tA);
+      if (tnHtml) {
+        html += '<div style="margin-bottom:16px">' + tnHtml + '</div>';
+      }
+    } catch(e) {
+      html += '<div style="padding:12px 16px;background:var(--bg);border-radius:8px;margin-bottom:16px;color:var(--muted);font-size:12px">Team Need card unavailable. Try the Trade &amp; Waiver page first to warm the data.</div>';
     }
-  });
+  }
 
-  html += '<div style="background:var(--bg);border:0.5px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:18px">';
-  html += '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:10px">Trade space &mdash; where the asymmetries are</div>';
-  if (fits.length === 0) {
-    html += '<div style="font-size:12px;color:var(--muted);font-style:italic">Both teams look fairly balanced &mdash; no obvious positional asymmetries.</div>';
+  // ── Scan for trade partners ──────────────────────────────────────────────
+  // Temporarily set _rosCatMultipliers for the chosen team (the scan reads it).
+  // The function _rosTradeSugScanPairs uses window._rosCatMultipliers as
+  // myMults if available, else computes via _rosTradeSugTeamMults. Override it
+  // around the call so we get the right weights.
+  var origMults = window._rosCatMultipliers;
+  window._rosCatMultipliers = (typeof _rosTradeSugTeamMults === 'function') ? _rosTradeSugTeamMults(tA) : null;
+  var scan;
+  try { scan = _rosTradeSugScanPairs(tA); }
+  catch(e) { scan = { mutual: [], sneaky: [] }; }
+  window._rosCatMultipliers = origMults;
+
+  // Aggregate candidates by opponent team.
+  // For each opp tid, collect their mutual + sneaky offers, keep top by myDelta.
+  var byOpp = {};
+  (scan.mutual || []).forEach(function(c){
+    if (!byOpp[c.oppTid]) byOpp[c.oppTid] = { oppTid: c.oppTid, oppName: c.oppName, mutual: [], sneaky: [] };
+    byOpp[c.oppTid].mutual.push(c);
+  });
+  (scan.sneaky || []).forEach(function(c){
+    if (!byOpp[c.oppTid]) byOpp[c.oppTid] = { oppTid: c.oppTid, oppName: c.oppName, mutual: [], sneaky: [] };
+    byOpp[c.oppTid].sneaky.push(c);
+  });
+  // Sort each partner's inner trades by your-side delta desc, keep top 3 per kind.
+  Object.keys(byOpp).forEach(function(tid) {
+    byOpp[tid].mutual.sort(function(a,b){ return b.myDelta - a.myDelta; });
+    byOpp[tid].sneaky.sort(function(a,b){ return b.myDelta - a.myDelta; });
+    byOpp[tid].mutual = byOpp[tid].mutual.slice(0,3);
+    byOpp[tid].sneaky = byOpp[tid].sneaky.slice(0,3);
+    // Compatibility score: sum of best myDelta from each kind, weighted.
+    var bestMutual = byOpp[tid].mutual[0] ? byOpp[tid].mutual[0].myDelta : 0;
+    var bestSneaky = byOpp[tid].sneaky[0] ? byOpp[tid].sneaky[0].myDelta : 0;
+    var hitCount = byOpp[tid].mutual.length + byOpp[tid].sneaky.length;
+    byOpp[tid].score = bestMutual * 1.0 + bestSneaky * 0.7 + hitCount * 0.15;
+  });
+  var partners = Object.keys(byOpp).map(function(tid){ return byOpp[tid]; })
+    .sort(function(a,b){ return b.score - a.score; })
+    .slice(0, 5);
+
+  // ── Partner section ─────────────────────────────────────────────────────
+  html += '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden">';
+  html += '<div style="padding:12px 16px;background:var(--bg);border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between">';
+  html += '<span style="font-size:13px;font-weight:500">Suggested trade partners for '+_loEsc(nameA)+'</span>';
+  html += '<span style="font-size:11px;color:var(--muted)">'+partners.length+' partner'+(partners.length===1?'':'s')+' with viable offers</span>';
+  html += '</div>';
+
+  if (partners.length === 0) {
+    html += '<div style="padding:24px 16px;text-align:center;font-size:12px;color:var(--muted)">No clean trade matches found across the league. This usually means your roster categories align with the league&rsquo;s averages &mdash; try the Build tab to manually explore.</div>';
   } else {
-    html += '<div style="display:flex;flex-direction:column;gap:6px;font-size:12px">';
-    fits.forEach(function(f) {
-      html += '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center">';
-      html += '<div style="text-align:right"><strong>'+_loEsc(f.from)+'</strong> has surplus in <span style="color:#1D9E75;font-weight:500">'+f.group+'</span></div>';
-      html += '<div style="font-size:18px;color:var(--muted)">&harr;</div>';
-      html += '<div><strong>'+_loEsc(f.to)+'</strong> is short in <span style="color:#c0392b;font-weight:500">'+f.group+'</span></div>';
-      html += '</div>';
+    html += '<div style="padding:14px;display:flex;flex-direction:column;gap:14px">';
+    partners.forEach(function(p, idx) {
+      html += _tlV2PartnerCardHtml(tA, p, idx);
     });
     html += '</div>';
   }
-  html += '<div style="margin-top:12px"><button onclick="window._tlV2GotoBuild()" style="padding:6px 12px;font-size:11px;font-weight:500;border:0.5px solid var(--accent);background:rgba(45,90,61,0.08);color:var(--accent);border-radius:6px;cursor:pointer">Build trade with these teams &rarr;</button></div>';
   html += '</div>';
 
-  function teamSummary(tid, name) {
-    var stTbls = (S.standingsData && S.standingsData.data && S.standingsData.data.tableList) || [];
-    var stMain = null;
-    for (var i = 0; i < stTbls.length; i++) {
-      if (stTbls[i].tableType === 'SECTION_HEADING') continue;
-      if ((stTbls[i].rows||[]).length > 0) { stMain = stTbls[i]; break; }
-    }
-    var rank = '\u2014', h2h = '\u2014';
-    if (stMain) {
-      var hIdx = {};
-      ((stMain.header && stMain.header.cells) || []).forEach(function(h, i) { if (h.key) hIdx[h.key.toUpperCase()] = i; if (h.shortName) hIdx[h.shortName.toUpperCase()] = i; });
-      var wi = hIdx['W'], pi = hIdx['PTS'];
-      var rows = (stMain.rows||[]).map(function(row) {
-        var fc = row.fixedCells || [], cells = row.cells || [];
-        var id = ''; fc.forEach(function(c){ if (c.teamId) id = c.teamId; });
-        var w = wi != null ? (parseFloat((cells[wi]||{}).content) || 0) : 0;
-        var pts = pi != null ? (parseFloat((cells[pi]||{}).content) || 0) : 0;
-        return { id: id, w: w, pts: pts };
-      }).sort(function(a,b){ return b.w - a.w || b.pts - a.pts; });
-      var idx = rows.findIndex(function(r){ return r.id === tid; });
-      if (idx >= 0) h2h = (idx+1) + (idx===0?'st':idx===1?'nd':idx===2?'rd':'th');
-    }
-    var seasonTbls = (S.seasonData && S.seasonData.data && S.seasonData.data.tableList) || [];
-    var ptTable = null;
-    for (var j = 0; j < seasonTbls.length; j++) {
-      var cap = (seasonTbls[j].caption||'').toLowerCase();
-      if (cap.indexOf('point total') !== -1) { ptTable = seasonTbls[j]; break; }
-    }
-    if (ptTable) {
-      var pIdx = -1;
-      (ptTable.rows||[]).forEach(function(row, i){ var fc = row.fixedCells||[]; var id = (fc[1]&&fc[1].teamId)||''; if (id === tid) pIdx = i; });
-      if (pIdx >= 0) rank = (pIdx+1) + (pIdx===0?'st':pIdx===1?'nd':pIdx===2?'rd':'th');
-    }
-    var joeRow = (window._joeSeasonData||[]).find(function(r){ return r.team === name; });
-    var joeVal = joeRow && joeRow.joe != null ? joeRow.joe : null;
-    return { rank: rank, h2h: h2h, joeVal: joeVal };
-  }
-  var sumA = teamSummary(tA, nameA), sumB = teamSummary(tB, nameB);
-  function joeFmt(v) {
-    if (v == null) return '<span style="color:var(--muted)">\u2014</span>';
-    var col = v >= 0.12 ? '#1D9E75' : v <= -0.12 ? '#c0392b' : 'var(--text)';
-    return '<strong style="color:'+col+'">'+(v>=0?'+':'')+v.toFixed(2)+'</strong>';
-  }
-  function summaryHtml(name, s) {
-    return '<div style="padding:14px 18px">'
-      +'<div style="font-size:13px;font-weight:500;margin-bottom:6px">'+_loEsc(name)+'</div>'
-      +'<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px">'
-      +'<div><span style="color:var(--muted)">Rank</span> <strong>'+s.rank+'</strong></div>'
-      +'<div><span style="color:var(--muted)">H2H</span> <strong>'+s.h2h+'</strong></div>'
-      +'<div><span style="color:var(--muted)">JOE</span> '+joeFmt(s.joeVal)+'</div>'
-      +'</div></div>';
-  }
-  html += '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px">';
-  html += '<div style="padding:12px 16px;background:var(--bg);border-bottom:0.5px solid var(--border)"><span style="font-size:13px;font-weight:500">Standings &amp; archetype</span></div>';
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr">';
-  html += '<div style="border-right:0.5px solid var(--border)">'+summaryHtml(nameA, sumA)+'</div>';
-  html += '<div>'+summaryHtml(nameB, sumB)+'</div>';
-  html += '</div></div>';
+  // Footnote
+  html += '<div style="margin-top:14px;padding:10px 14px;background:var(--bg);border-radius:6px;font-size:11px;color:var(--muted);line-height:1.6">';
+  html += '<strong style="color:var(--text)">How partners are scored</strong> &mdash; we run a 1-for-1 swap scan across the league weighted by your category needs. ';
+  html += '<strong style="color:var(--text)">Even trades</strong> are mutually beneficial (both teams gain need-weighted SGP). ';
+  html += '<strong style="color:var(--text)">Sneaky trades</strong> are when you gain meaningfully and they\'re roughly neutral but the player they receive looks like an upgrade by positional rating or name brand &mdash; they\'d likely accept.';
+  html += '</div>';
 
+  el.innerHTML = html;
+}
+
+// Render a single partner card with the trade proposals + expand/collapse.
+// `idx` is used to give each card a unique ID for the toggle.
+function _tlV2PartnerCardHtml(myTid, p, idx) {
+  var oppName = p.oppName;
+  var h = '';
+  h += '<div style="border:0.5px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg)">';
+  h += '<div style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface)">';
+  h += '<div>';
+  h += '<div style="font-size:14px;font-weight:600">'+_loEsc(oppName)+'</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+p.mutual.length+' even trade'+(p.mutual.length===1?'':'s')+' &middot; '+p.sneaky.length+' sneaky trade'+(p.sneaky.length===1?'':'s')+'</div>';
+  h += '</div>';
+  h += '<div style="display:flex;gap:6px;flex-shrink:0">';
+  h += '<button onclick="window._tlV2ToggleCompare('+idx+')" id="tlv2-compare-btn-'+idx+'" style="padding:6px 12px;font-size:11px;font-weight:500;border:0.5px solid var(--border);background:var(--surface);color:var(--text);border-radius:6px;cursor:pointer">View Compare</button>';
+  h += '<button onclick="window._tlV2BuildWith(\''+p.oppTid+'\')" style="padding:6px 12px;font-size:11px;font-weight:500;border:0.5px solid var(--accent);background:rgba(45,90,61,0.08);color:var(--accent);border-radius:6px;cursor:pointer">Build Trade</button>';
+  h += '</div>';
+  h += '</div>';
+
+  // Trade proposals
+  h += '<div style="padding:12px 14px">';
+  if (p.mutual.length) {
+    h += '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#1D9E75;margin-bottom:6px">Even trades</div>';
+    h += '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">';
+    p.mutual.forEach(function(t) { h += _tlV2TradeRowHtml(t, 'even'); });
+    h += '</div>';
+  }
+  if (p.sneaky.length) {
+    h += '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#854f0b;margin-bottom:6px">Sneaky trades</div>';
+    h += '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:4px">';
+    p.sneaky.forEach(function(t) { h += _tlV2TradeRowHtml(t, 'sneaky'); });
+    h += '</div>';
+  }
+  h += '</div>';
+
+  // Hidden compare panel (toggled by View Compare button)
+  h += '<div id="tlv2-compare-panel-'+idx+'" style="display:none;border-top:0.5px solid var(--border);padding:14px;background:var(--surface)">';
+  h += _tlV2CompareDiagnosticsHtml(myTid, p.oppTid);
+  h += '</div>';
+
+  h += '</div>';
+  return h;
+}
+
+// One trade-row inside a partner card: "You send X ↔ You get Y" with deltas.
+function _tlV2TradeRowHtml(t, kind) {
+  var h = '<div style="padding:8px 10px;background:var(--surface);border-radius:6px;border-left:2px solid '+(kind==='even'?'#1D9E75':'#854f0b')+';display:grid;grid-template-columns:1fr 30px 1fr 90px;gap:10px;align-items:center;font-size:12px">';
+  h += '<div style="text-align:right">';
+  h += '<div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:0.04em">You send</div>';
+  h += '<div style="font-weight:500">'+_loEsc(t.give.name)+'</div>';
+  h += '<div style="font-size:10px;color:var(--muted)">'+_loEsc(t.give.pos)+(t.give.rawSgp!=null?' &middot; SGP '+t.give.rawSgp.toFixed(2):'')+'</div>';
+  h += '</div>';
+  h += '<div style="text-align:center;color:var(--muted);font-size:14px">&harr;</div>';
+  h += '<div>';
+  h += '<div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:0.04em">You get</div>';
+  h += '<div style="font-weight:500">'+_loEsc(t.get.name)+'</div>';
+  h += '<div style="font-size:10px;color:var(--muted)">'+_loEsc(t.get.pos)+(t.get.rawSgp!=null?' &middot; SGP '+t.get.rawSgp.toFixed(2):'')+'</div>';
+  h += '</div>';
+  h += '<div style="text-align:right">';
+  var youSign = t.myDelta >= 0 ? '+' : '\u2212';
+  var youCol = t.myDelta >= 0.5 ? '#0F6E56' : '#4a9a68';
+  h += '<div style="font-size:12px;font-weight:600;color:'+youCol+'">You '+youSign+Math.abs(t.myDelta).toFixed(2)+'</div>';
+  var theirSign = t.theirDelta >= 0 ? '+' : '\u2212';
+  var theirCol = t.theirDelta >= 0.5 ? '#1D9E75' : t.theirDelta >= -0.3 ? 'var(--muted)' : '#c0392b';
+  h += '<div style="font-size:11px;color:'+theirCol+'">Them '+theirSign+Math.abs(t.theirDelta).toFixed(2)+'</div>';
+  h += '</div>';
+  h += '</div>';
+  return h;
+}
+
+// Compare diagnostics shown inside the expandable panel of each partner card.
+// Same content the old Compare tab had: roster strength by position + top 5 lists.
+function _tlV2CompareDiagnosticsHtml(tA, tB) {
+  var rosterA = _tlV2GetTeamRoster(tA);
+  var rosterB = _tlV2GetTeamRoster(tB);
+  if (!rosterA.length || !rosterB.length) return '<div style="color:var(--muted);font-size:12px">Roster data not loaded.</div>';
+  var nameA = _tlV2GetTeamName(tA), nameB = _tlV2GetTeamName(tB);
+  var h = '';
+
+  // Position group avg + roster strength chart
   var groups = ['IF','OF','SP','RP'];
+  var posGroupAvg = {};
+  groups.forEach(function(g) {
+    var aP = rosterA.filter(function(p){ return _tlV2PosGroup(p.pos) === g; });
+    var bP = rosterB.filter(function(p){ return _tlV2PosGroup(p.pos) === g; });
+    function avg(arr) { if (!arr.length) return 0; var s = 0; arr.forEach(function(p){ s += p.rosSGP; }); return s / arr.length; }
+    posGroupAvg[g] = { a: avg(aP), b: avg(bP) };
+  });
   var allVals = []; groups.forEach(function(g){ allVals.push(posGroupAvg[g].a, posGroupAvg[g].b); });
   var maxVal = Math.max.apply(null, allVals.map(function(v){ return Math.abs(v); }));
   if (maxVal < 0.01) maxVal = 1;
-  html += '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px">';
-  html += '<div style="padding:12px 16px;background:var(--bg);border-bottom:0.5px solid var(--border)"><span style="font-size:13px;font-weight:500">Roster strength by position</span><span style="font-size:11px;color:var(--muted);margin-left:8px">avg ROS-SGP per player</span></div>';
-  html += '<div style="padding:14px 16px"><div style="display:grid;grid-template-columns:60px 1fr 1fr 60px;gap:8px;align-items:center;font-size:12px;row-gap:8px">';
+  h += '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Roster strength by position &mdash; avg ROS-SGP per player</div>';
+  h += '<div style="display:grid;grid-template-columns:50px 1fr 1fr 50px;gap:6px;align-items:center;font-size:11px;margin-bottom:14px">';
+  h += '<div></div><div style="text-align:center;color:var(--muted);font-size:10px">'+_loEsc(nameA)+'</div><div style="text-align:center;color:var(--muted);font-size:10px">'+_loEsc(nameB)+'</div><div></div>';
   groups.forEach(function(g) {
     var vA = posGroupAvg[g].a, vB = posGroupAvg[g].b;
     var pctA = Math.round(Math.abs(vA) / maxVal * 100);
     var pctB = Math.round(Math.abs(vB) / maxVal * 100);
     var diff = vA - vB;
     var diffCol = Math.abs(diff) < 0.15 ? 'var(--muted)' : (diff > 0 ? '#1e6b3a' : '#c0392b');
-    html += '<div style="font-weight:500;text-align:right;color:var(--muted)">'+g+'</div>';
-    html += '<div style="height:20px;background:rgba(45,90,61,0.05);border-radius:3px;position:relative;display:flex;justify-content:flex-end">';
-    html += '<div style="height:100%;width:'+pctA+'%;background:linear-gradient(to right, transparent, #1e6b3a);border-radius:3px"></div>';
-    html += '<span style="position:absolute;right:6px;top:2px;font-size:11px;font-weight:500">'+vA.toFixed(2)+'</span></div>';
-    html += '<div style="height:20px;background:rgba(45,90,61,0.05);border-radius:3px;position:relative">';
-    html += '<div style="height:100%;width:'+pctB+'%;background:linear-gradient(to left, transparent, #1e6b3a);border-radius:3px"></div>';
-    html += '<span style="position:absolute;left:6px;top:2px;font-size:11px;font-weight:500">'+vB.toFixed(2)+'</span></div>';
+    h += '<div style="font-weight:500;text-align:right;color:var(--muted)">'+g+'</div>';
+    h += '<div style="height:18px;background:rgba(45,90,61,0.05);border-radius:3px;position:relative;display:flex;justify-content:flex-end">';
+    h += '<div style="height:100%;width:'+pctA+'%;background:linear-gradient(to right, transparent, #1e6b3a);border-radius:3px"></div>';
+    h += '<span style="position:absolute;right:6px;top:1px;font-size:10px;font-weight:500">'+vA.toFixed(2)+'</span></div>';
+    h += '<div style="height:18px;background:rgba(45,90,61,0.05);border-radius:3px;position:relative">';
+    h += '<div style="height:100%;width:'+pctB+'%;background:linear-gradient(to left, transparent, #1e6b3a);border-radius:3px"></div>';
+    h += '<span style="position:absolute;left:6px;top:1px;font-size:10px;font-weight:500">'+vB.toFixed(2)+'</span></div>';
     var sign = diff >= 0 ? '+' : '\u2212';
-    html += '<div style="font-size:11px;color:'+diffCol+'">'+sign+Math.abs(diff).toFixed(2)+'</div>';
+    h += '<div style="font-size:10px;color:'+diffCol+';text-align:right">'+sign+Math.abs(diff).toFixed(2)+'</div>';
   });
-  html += '</div></div></div>';
+  h += '</div>';
 
+  // Top 5 each
   function topNHtml(name, roster, n) {
     var rows = roster.slice(0, n);
-    var h = '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden">';
-    h += '<div style="padding:12px 16px;background:var(--bg);border-bottom:0.5px solid var(--border)"><span style="font-size:13px;font-weight:500">'+_loEsc(name)+' &mdash; top '+n+' by ROS SGP</span></div>';
-    h += '<div style="padding:6px 0">';
+    var x = '<div style="background:var(--bg);border:0.5px solid var(--border);border-radius:6px;overflow:hidden">';
+    x += '<div style="padding:8px 12px;font-size:11px;font-weight:500;color:var(--muted)">'+_loEsc(name)+' top 5 by ROS SGP</div>';
+    x += '<div style="padding:4px 0">';
     rows.forEach(function(p, i) {
       var sep = i === rows.length-1 ? '' : ';border-bottom:0.5px solid var(--border)';
-      var valCol = i === 0 ? '#0F6E56' : 'var(--text)';
-      var valWeight = i === 0 ? '600' : '500';
-      h += '<div style="display:flex;align-items:center;padding:6px 14px;gap:10px'+sep+'">';
-      h += '<span style="font-size:11px;color:var(--muted);width:12px">'+(i+1)+'</span>';
-      h += '<div style="flex:1;display:flex;align-items:baseline;gap:6px"><span style="font-size:12px;font-weight:500">'+_loEsc(p.name)+'</span><span style="font-size:10px;color:var(--muted)">'+_loEsc(p.pos)+'</span></div>';
-      h += '<span style="font-size:12px;font-weight:'+valWeight+';color:'+valCol+'">'+p.rosSGP.toFixed(2)+'</span>';
-      h += '</div>';
+      x += '<div style="display:flex;align-items:center;padding:5px 12px;gap:8px'+sep+'">';
+      x += '<span style="font-size:10px;color:var(--muted);width:12px">'+(i+1)+'</span>';
+      x += '<div style="flex:1;display:flex;align-items:baseline;gap:6px"><span style="font-size:11px;font-weight:500">'+_loEsc(p.name)+'</span><span style="font-size:9px;color:var(--muted)">'+_loEsc(p.pos)+'</span></div>';
+      x += '<span style="font-size:11px;font-weight:500">'+p.rosSGP.toFixed(2)+'</span>';
+      x += '</div>';
     });
-    h += '</div></div>';
-    return h;
+    x += '</div></div>';
+    return x;
   }
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">';
-  html += topNHtml(nameA, rosterA, 5);
-  html += topNHtml(nameB, rosterB, 5);
-  html += '</div>';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
+  h += topNHtml(nameA, rosterA, 5);
+  h += topNHtml(nameB, rosterB, 5);
+  h += '</div>';
 
-  el.innerHTML = html;
+  return h;
 }
 
-window._tlV2GotoBuild = function() {
+window._tlV2ToggleCompare = function(idx) {
+  var panel = document.getElementById('tlv2-compare-panel-'+idx);
+  var btn   = document.getElementById('tlv2-compare-btn-'+idx);
+  if (!panel) return;
+  if (panel.style.display === 'none') {
+    panel.style.display = 'block';
+    if (btn) btn.innerHTML = 'Hide Compare';
+  } else {
+    panel.style.display = 'none';
+    if (btn) btn.innerHTML = 'View Compare';
+  }
+};
+
+window._tlV2BuildWith = function(oppTid) {
+  window._tlV2.teamB = oppTid;
+  window._tlV2.sendA = [];
+  window._tlV2.sendB = [];
   document.querySelectorAll('#page-tradelab .trade-tab').forEach(function(b){ b.classList.remove('active'); });
   var btn = document.querySelector('#page-tradelab .trade-tab[onclick*="build"]');
   if (btn) btn.classList.add('active');
   document.querySelectorAll('#page-tradelab .trade-tab-content').forEach(function(c){ c.classList.remove('active'); });
   document.getElementById('tradelab-tab-build').classList.add('active');
   window._tlV2.activeTab = 'build';
+  _tlV2RenderTeamPickers();
   _tlV2RenderBuild();
 };
+
 
 function _tlV2RenderBuild() {
   var el = document.getElementById('tradelab-build-body');
