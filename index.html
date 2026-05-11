@@ -21946,10 +21946,12 @@ function _tlV2CatFitTier(aRank, bRank, n) {
 function _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB) {
   var data = _tlV2BuildTeamFitData(tA, tB);
   if (!data.posRows.length && !data.catRows.length) return '';
-  var COL_A = '#1D9E75';
-  var COL_B = '#185FA5';
+  var COL_A_BG = 'rgba(29,158,117,0.12)';
+  var COL_A_FG = '#0F6E56';
+  var COL_B_BG = 'rgba(24,95,165,0.12)';
+  var COL_B_FG = '#0C447C';
 
-  // Find global max bar magnitudes so positional + cat bars scale together.
+  // Find global max for positional values so color intensity scales consistently.
   var posMax = 0;
   data.posRows.forEach(function(r){
     if (r.aVal != null) posMax = Math.max(posMax, Math.abs(r.aVal));
@@ -21957,46 +21959,41 @@ function _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB) {
   });
   if (posMax < 0.5) posMax = 0.5;
 
-  function rowBgForTier(tier, dir) {
-    if (!tier) return '';
-    var color = (dir === 'AtoB') ? COL_A : COL_B;
-    var rgba = (dir === 'AtoB') ? 'rgba(29,158,117,' : 'rgba(24,95,165,';
-    if (tier === 'strong') return 'background:'+rgba+'0.08);border:0.5px solid '+rgba+'0.30)';
-    return 'background:'+rgba+'0.04);border:0.5px dashed '+rgba+'0.25)';
-  }
-  function pillForDir(dir, tier) {
-    if (!dir) return '';
-    var label = (dir === 'AtoB') ? 'HOME &rarr; AWAY' : 'AWAY &rarr; HOME';
-    var color = (dir === 'AtoB') ? '#0F6E56' : '#0C447C';
-    var bg    = (dir === 'AtoB') ? 'rgba(29,158,117,0.15)' : 'rgba(24,95,165,0.15)';
-    var opacity = tier === 'strong' ? '1' : '0.7';
-    return '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:'+bg+';color:'+color+';font-weight:600;margin-left:6px;opacity:'+opacity+'">'+label+'</span>';
-  }
-  function posBarHtml(aVal, bVal) {
-    function bar(v, side) {
-      if (v == null) return '<div style="width:0%;height:100%"></div>';
-      var pct = Math.round(Math.abs(v) / posMax * 100);
-      var col = v > 0.05 ? 'rgba(29,158,117,0.7)' : v < -0.05 ? 'rgba(192,57,43,0.6)' : 'rgba(150,150,150,0.4)';
-      return '<div style="width:'+pct+'%;height:100%;background:'+col+';border-radius:2px"></div>';
+  // Cell color logic — strength → green, weakness → red, mid → amber/neutral.
+  // intensity = 0..1, scales the alpha.
+  function posCellStyle(v) {
+    if (v == null) return { bg: 'rgba(150,150,150,0.08)', color: 'var(--muted)', weight: 500 };
+    var intensity = Math.min(1, Math.abs(v) / posMax);
+    if (v > 0.05) {
+      var alpha = 0.2 + 0.65 * intensity; // 0.2 - 0.85
+      return { bg: 'rgba(29,158,117,' + alpha.toFixed(2) + ')', color: alpha > 0.5 ? '#fff' : '#0F6E56', weight: intensity > 0.5 ? 600 : 500 };
     }
-    var h = '<div style="height:16px;background:rgba(0,0,0,0.03);border-radius:2px;position:relative;display:flex;justify-content:flex-end">'+bar(aVal,'L')+'</div>';
-    h    += '<div style="height:16px;background:rgba(0,0,0,0.03);border-radius:2px;position:relative">'+bar(bVal,'R')+'</div>';
-    return h;
-  }
-  function catBarHtml(aRank, bRank, n) {
-    // Bar length = (n - rank + 1) / n — top ranks (low #) get long bars (surplus visual).
-    function bar(rank, side) {
-      if (!rank) return '<div style="width:0%;height:100%"></div>';
-      var pct = Math.round((n - rank + 1) / n * 100);
-      var topThird = Math.max(1, Math.ceil(n * 0.3));
-      var botThird = Math.max(1, Math.ceil(n * 0.7));
-      var col = rank <= topThird ? 'rgba(29,158,117,0.7)' : rank >= botThird ? 'rgba(192,57,43,0.6)' : 'rgba(200,169,110,0.5)';
-      return '<div style="width:'+pct+'%;height:100%;background:'+col+';border-radius:2px"></div>';
+    if (v < -0.05) {
+      var alpha2 = 0.2 + 0.65 * intensity;
+      return { bg: 'rgba(192,57,43,' + alpha2.toFixed(2) + ')', color: alpha2 > 0.5 ? '#fff' : '#7a1f1f', weight: intensity > 0.5 ? 600 : 500 };
     }
-    var h = '<div style="height:16px;background:rgba(0,0,0,0.03);border-radius:2px;position:relative;display:flex;justify-content:flex-end">'+bar(aRank,'L')+'</div>';
-    h    += '<div style="height:16px;background:rgba(0,0,0,0.03);border-radius:2px;position:relative">'+bar(bRank,'R')+'</div>';
-    return h;
+    return { bg: 'rgba(200,169,110,0.30)', color: 'var(--text)', weight: 500 };
   }
+
+  // Cat cells use rank rather than value. Lower rank = stronger.
+  function catCellStyle(rank, n) {
+    if (!rank || !n) return { bg: 'rgba(150,150,150,0.08)', color: 'var(--muted)', weight: 500 };
+    var topThird = Math.max(1, Math.ceil(n * 0.3));
+    var botThird = Math.max(1, Math.ceil(n * 0.7));
+    if (rank <= topThird) {
+      // Strong — color scales from top
+      var intensity = 1 - (rank - 1) / Math.max(1, topThird - 1) * 0.4; // 1.0 at #1, ~0.6 at edge of top
+      var alpha = 0.35 + 0.5 * intensity;
+      return { bg: 'rgba(29,158,117,' + alpha.toFixed(2) + ')', color: alpha > 0.5 ? '#fff' : '#0F6E56', weight: 600 };
+    }
+    if (rank >= botThird) {
+      var intensityW = (rank - botThird) / Math.max(1, n - botThird) * 0.5 + 0.5; // 0.5 at edge, 1.0 at last
+      var alphaW = 0.35 + 0.5 * intensityW;
+      return { bg: 'rgba(192,57,43,' + alphaW.toFixed(2) + ')', color: alphaW > 0.5 ? '#fff' : '#7a1f1f', weight: 600 };
+    }
+    return { bg: 'rgba(200,169,110,0.30)', color: 'var(--text)', weight: 500 };
+  }
+
   function fmtVal(v) {
     if (v == null) return '\u2014';
     var sign = v >= 0 ? '+' : '\u2212';
@@ -22006,90 +22003,109 @@ function _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB) {
 
   var html = '';
   html += '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:14px">';
-  html += '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;gap:14px;flex-wrap:wrap">';
+  // Header
+  html += '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;gap:14px;flex-wrap:wrap">';
   html += '<div>';
-  html += '<div style="font-size:13px;font-weight:500">Trade fit &mdash; where the asymmetries are</div>';
-  html += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Highlighted rows are pairs where one team is strong and the other is short. Those are the natural trade targets.</div>';
+  html += '<div style="font-size:13px;font-weight:500">Trade fit &mdash; heatmap</div>';
+  html += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Where each team is strong (green) or short (red). Arrows in the Fit row mark trade-fit pairs.</div>';
   html += '</div>';
   html += '<div style="display:flex;gap:10px;font-size:11px;flex-shrink:0">';
-  html += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:'+COL_A+';border-radius:2px"></span>'+_loEsc(nameA)+'</span>';
-  html += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:'+COL_B+';border-radius:2px"></span>'+_loEsc(nameB)+'</span>';
+  html += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#1D9E75;border-radius:2px"></span>Strong</span>';
+  html += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:rgba(200,169,110,0.5);border-radius:2px"></span>Average</span>';
+  html += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#c0392b;border-radius:2px"></span>Short</span>';
   html += '</div>';
   html += '</div>';
 
-  // ── Positional section ────────────────────────────────────────────────
-  html += '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Positional</div>';
-  html += '<div style="margin-bottom:14px">';
-  data.posRows.forEach(function(r) {
+  // ── Positional matrix ────────────────────────────────────────────────
+  var posLabels = data.posRows.map(function(r){ return r.label; });
+  html += '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Positional &mdash; vs league average (ROS SGP)</div>';
+  html += '<div style="display:grid;grid-template-columns:60px repeat('+posLabels.length+',minmax(0,1fr));gap:2px;margin-bottom:14px">';
+  // Header row
+  html += '<div></div>';
+  posLabels.forEach(function(lbl){
+    html += '<div style="font-size:11px;text-align:center;font-weight:500;padding:4px 0">'+lbl+'</div>';
+  });
+  // HOME row
+  html += '<div style="font-size:10px;text-align:right;font-weight:600;color:'+COL_A_FG+';padding:4px 6px 4px 0;display:flex;align-items:center;justify-content:flex-end"><span style="padding:2px 6px;border-radius:3px;background:'+COL_A_BG+';letter-spacing:0.04em">HOME</span></div>';
+  data.posRows.forEach(function(r){
+    var s = posCellStyle(r.aVal);
+    html += '<div style="height:26px;background:'+s.bg+';display:flex;align-items:center;justify-content:center;font-size:11px;color:'+s.color+';font-weight:'+s.weight+';border-radius:2px">'+fmtVal(r.aVal)+'</div>';
+  });
+  // AWAY row
+  html += '<div style="font-size:10px;text-align:right;font-weight:600;color:'+COL_B_FG+';padding:4px 6px 4px 0;display:flex;align-items:center;justify-content:flex-end"><span style="padding:2px 6px;border-radius:3px;background:'+COL_B_BG+';letter-spacing:0.04em">AWAY</span></div>';
+  data.posRows.forEach(function(r){
+    var s = posCellStyle(r.bVal);
+    html += '<div style="height:26px;background:'+s.bg+';display:flex;align-items:center;justify-content:center;font-size:11px;color:'+s.color+';font-weight:'+s.weight+';border-radius:2px">'+fmtVal(r.bVal)+'</div>';
+  });
+  // Fit row (arrows)
+  html += '<div style="font-size:10px;text-align:right;font-weight:600;color:var(--muted);padding:2px 6px 0 0">Fit</div>';
+  data.posRows.forEach(function(r){
     var tier = _tlV2PosFitTier(r.aVal, r.bVal);
     var dir = null;
     if (tier) {
       if (r.aVal > 0 && r.bVal < 0) dir = 'AtoB';
       else if (r.bVal > 0 && r.aVal < 0) dir = 'BtoA';
     }
-    var rowStyle = tier ? rowBgForTier(tier, dir) + ';' : '';
-    var aCol = r.aVal == null ? 'var(--muted)' : Math.abs(r.aVal) >= 1 ? 'var(--text)' : 'var(--muted)';
-    var bCol = r.bVal == null ? 'var(--muted)' : Math.abs(r.bVal) >= 1 ? 'var(--text)' : 'var(--muted)';
-    // 5-column grid: numLeft | barLeft | label | barRight | numRight
-    html += '<div style="display:grid;grid-template-columns:48px 1fr 150px 1fr 48px;gap:8px;align-items:center;font-size:11px;padding:4px 6px;border-radius:4px;margin-bottom:2px;'+rowStyle+'">';
-    html += '<div style="text-align:right;font-weight:500;color:'+aCol+'">'+fmtVal(r.aVal)+'</div>';
-    // Left bar (grows leftward)
-    var aPct = r.aVal == null ? 0 : Math.round(Math.abs(r.aVal) / posMax * 100);
-    var aBarCol = r.aVal == null ? 'transparent' : r.aVal > 0.05 ? 'rgba(29,158,117,0.7)' : r.aVal < -0.05 ? 'rgba(192,57,43,0.6)' : 'rgba(150,150,150,0.4)';
-    html += '<div style="height:16px;background:rgba(0,0,0,0.03);border-radius:2px;position:relative;display:flex;justify-content:flex-end">';
-    html += '<div style="width:'+aPct+'%;height:100%;background:'+aBarCol+';border-radius:2px"></div></div>';
-    html += '<div style="text-align:center;font-weight:500;color:var(--text)">'+r.label+pillForDir(dir, tier)+'</div>';
-    // Right bar (grows rightward)
-    var bPct = r.bVal == null ? 0 : Math.round(Math.abs(r.bVal) / posMax * 100);
-    var bBarCol = r.bVal == null ? 'transparent' : r.bVal > 0.05 ? 'rgba(29,158,117,0.7)' : r.bVal < -0.05 ? 'rgba(192,57,43,0.6)' : 'rgba(150,150,150,0.4)';
-    html += '<div style="height:16px;background:rgba(0,0,0,0.03);border-radius:2px;position:relative">';
-    html += '<div style="width:'+bPct+'%;height:100%;background:'+bBarCol+';border-radius:2px"></div></div>';
-    html += '<div style="text-align:left;font-weight:500;color:'+bCol+'">'+fmtVal(r.bVal)+'</div>';
-    html += '</div>';
+    if (dir === 'AtoB') {
+      var alpha = tier === 'strong' ? '0.25' : '0.12';
+      html += '<div style="height:16px;background:rgba(29,158,117,'+alpha+');display:flex;align-items:center;justify-content:center;font-size:11px;color:'+COL_A_FG+';font-weight:700;border-radius:2px;margin-top:2px">&rarr;</div>';
+    } else if (dir === 'BtoA') {
+      var alphaB = tier === 'strong' ? '0.25' : '0.12';
+      html += '<div style="height:16px;background:rgba(24,95,165,'+alphaB+');display:flex;align-items:center;justify-content:center;font-size:11px;color:'+COL_B_FG+';font-weight:700;border-radius:2px;margin-top:2px">&larr;</div>';
+    } else {
+      html += '<div style="height:16px;margin-top:2px"></div>';
+    }
   });
   html += '</div>';
 
-  // ── Category section ──────────────────────────────────────────────────
-  html += '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Category</div>';
-  html += '<div>';
-  data.catRows.forEach(function(r) {
+  // ── Category matrix ──────────────────────────────────────────────────
+  var catLabels = data.catRows.map(function(r){ return r.label; });
+  var n = data.nwA.n || data.nwB.n || 10;
+  html += '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Category &mdash; standings rank (lower = stronger)</div>';
+  html += '<div style="display:grid;grid-template-columns:60px repeat('+catLabels.length+',minmax(0,1fr));gap:2px">';
+  html += '<div></div>';
+  catLabels.forEach(function(lbl){
+    html += '<div style="font-size:11px;text-align:center;font-weight:500;padding:4px 0">'+lbl+'</div>';
+  });
+  // HOME
+  html += '<div style="font-size:10px;text-align:right;font-weight:600;color:'+COL_A_FG+';padding:4px 6px 4px 0;display:flex;align-items:center;justify-content:flex-end"><span style="padding:2px 6px;border-radius:3px;background:'+COL_A_BG+';letter-spacing:0.04em">HOME</span></div>';
+  data.catRows.forEach(function(r){
+    var s = catCellStyle(r.aRank, n);
+    html += '<div style="height:26px;background:'+s.bg+';display:flex;align-items:center;justify-content:center;font-size:11px;color:'+s.color+';font-weight:'+s.weight+';border-radius:2px">'+fmtRank(r.aRank)+'</div>';
+  });
+  // AWAY
+  html += '<div style="font-size:10px;text-align:right;font-weight:600;color:'+COL_B_FG+';padding:4px 6px 4px 0;display:flex;align-items:center;justify-content:flex-end"><span style="padding:2px 6px;border-radius:3px;background:'+COL_B_BG+';letter-spacing:0.04em">AWAY</span></div>';
+  data.catRows.forEach(function(r){
+    var s = catCellStyle(r.bRank, n);
+    html += '<div style="height:26px;background:'+s.bg+';display:flex;align-items:center;justify-content:center;font-size:11px;color:'+s.color+';font-weight:'+s.weight+';border-radius:2px">'+fmtRank(r.bRank)+'</div>';
+  });
+  // Fit
+  html += '<div style="font-size:10px;text-align:right;font-weight:600;color:var(--muted);padding:2px 6px 0 0">Fit</div>';
+  data.catRows.forEach(function(r){
     var tier = _tlV2CatFitTier(r.aRank, r.bRank, r.n);
-    var topThird = Math.max(1, Math.ceil(r.n * 0.3));
-    var botThird = Math.max(1, Math.ceil(r.n * 0.7));
-    var mildLine = Math.ceil(r.n * 0.45);
     var dir = null;
     if (tier) {
+      var mildLine = Math.ceil(r.n * 0.45);
       var aIsSurplus = r.aRank <= mildLine;
       var bIsSurplus = r.bRank <= mildLine;
       if (aIsSurplus && !bIsSurplus) dir = 'AtoB';
       else if (bIsSurplus && !aIsSurplus) dir = 'BtoA';
     }
-    var rowStyle = tier ? rowBgForTier(tier, dir) + ';' : '';
-    var aCol = !r.aRank ? 'var(--muted)' : (r.aRank <= topThird || r.aRank >= botThird ? 'var(--text)' : 'var(--muted)');
-    var bCol = !r.bRank ? 'var(--muted)' : (r.bRank <= topThird || r.bRank >= botThird ? 'var(--text)' : 'var(--muted)');
-    // Bar length: top ranks → long bars (representing strength).
-    function rankPct(rank) { return rank ? Math.round((r.n - rank + 1) / r.n * 100) : 0; }
-    function rankCol(rank) {
-      if (!rank) return 'transparent';
-      if (rank <= topThird) return 'rgba(29,158,117,0.7)';
-      if (rank >= botThird) return 'rgba(192,57,43,0.6)';
-      return 'rgba(200,169,110,0.5)';
+    if (dir === 'AtoB') {
+      var alpha = tier === 'strong' ? '0.25' : '0.12';
+      html += '<div style="height:16px;background:rgba(29,158,117,'+alpha+');display:flex;align-items:center;justify-content:center;font-size:11px;color:'+COL_A_FG+';font-weight:700;border-radius:2px;margin-top:2px">&rarr;</div>';
+    } else if (dir === 'BtoA') {
+      var alphaB = tier === 'strong' ? '0.25' : '0.12';
+      html += '<div style="height:16px;background:rgba(24,95,165,'+alphaB+');display:flex;align-items:center;justify-content:center;font-size:11px;color:'+COL_B_FG+';font-weight:700;border-radius:2px;margin-top:2px">&larr;</div>';
+    } else {
+      html += '<div style="height:16px;margin-top:2px"></div>';
     }
-    html += '<div style="display:grid;grid-template-columns:48px 1fr 150px 1fr 48px;gap:8px;align-items:center;font-size:11px;padding:4px 6px;border-radius:4px;margin-bottom:2px;'+rowStyle+'">';
-    html += '<div style="text-align:right;font-weight:500;color:'+aCol+'">'+fmtRank(r.aRank)+'</div>';
-    html += '<div style="height:16px;background:rgba(0,0,0,0.03);border-radius:2px;position:relative;display:flex;justify-content:flex-end">';
-    html += '<div style="width:'+rankPct(r.aRank)+'%;height:100%;background:'+rankCol(r.aRank)+';border-radius:2px"></div></div>';
-    html += '<div style="text-align:center;font-weight:500;color:var(--text)">'+r.label+pillForDir(dir, tier)+'</div>';
-    html += '<div style="height:16px;background:rgba(0,0,0,0.03);border-radius:2px;position:relative">';
-    html += '<div style="width:'+rankPct(r.bRank)+'%;height:100%;background:'+rankCol(r.bRank)+';border-radius:2px"></div></div>';
-    html += '<div style="text-align:left;font-weight:500;color:'+bCol+'">'+fmtRank(r.bRank)+'</div>';
-    html += '</div>';
   });
   html += '</div>';
 
   // ── Plain-English fit summary ─────────────────────────────────────────
-  var aToB = [];   // labels where A surplus, B short
-  var bToA = [];   // labels where B surplus, A short
+  var aToB = [];
+  var bToA = [];
   data.posRows.forEach(function(r) {
     var tier = _tlV2PosFitTier(r.aVal, r.bVal);
     if (!tier) return;
@@ -22104,20 +22120,18 @@ function _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB) {
     if (aIsSurplus && !bIsSurplus) aToB.push(r.label);
     else if (bIsSurplus && !aIsSurplus) bToA.push(r.label);
   });
-
   var totalPairs = aToB.length + bToA.length;
   html += '<div style="margin-top:14px;padding-top:10px;border-top:0.5px dashed var(--border);display:flex;gap:16px;font-size:10px;color:var(--muted);flex-wrap:wrap">';
-  html += '<span><strong style="color:var(--text)">HOME &rarr; AWAY</strong> &mdash; '+_loEsc(nameA)+' has surplus, '+_loEsc(nameB)+' is short.</span>';
-  html += '<span><strong style="color:var(--text)">AWAY &rarr; HOME</strong> &mdash; '+_loEsc(nameB)+' has surplus, '+_loEsc(nameA)+' is short.</span>';
+  html += '<span><strong style="color:var(--text)">HOME &rarr; AWAY</strong> &mdash; HOME has surplus, AWAY is short.</span>';
+  html += '<span><strong style="color:var(--text)">AWAY &rarr; HOME</strong> &mdash; AWAY has surplus, HOME is short.</span>';
   html += '</div>';
-
   html += '<div style="margin-top:10px;padding:10px 12px;background:var(--bg);border-radius:6px;font-size:12px;line-height:1.5">';
   if (totalPairs === 0) {
     html += '<strong>Fit summary:</strong> <span style="color:var(--muted)">No clear asymmetries between these two teams. They look balanced across positions and cats &mdash; trades would have to be tactical (regression bets, schedule arbitrage) rather than need-based.</span>';
   } else {
     html += '<strong>Fit summary:</strong> '+totalPairs+' overlap pair'+(totalPairs===1?'':'s')+' identified. ';
-    if (aToB.length) html += _loEsc(nameA)+' can send strength in <strong style="color:#0F6E56">'+aToB.join(', ')+'</strong>. ';
-    if (bToA.length) html += _loEsc(nameB)+' can send strength in <strong style="color:#0C447C">'+bToA.join(', ')+'</strong>. ';
+    if (aToB.length) html += _loEsc(nameA)+' can send strength in <strong style="color:'+COL_A_FG+'">'+aToB.join(', ')+'</strong>. ';
+    if (bToA.length) html += _loEsc(nameB)+' can send strength in <strong style="color:'+COL_B_FG+'">'+bToA.join(', ')+'</strong>. ';
     if (aToB.length && bToA.length) html += '<em style="color:var(--muted)">Strong mutual-fit trade pattern.</em>';
     else html += '<em style="color:var(--muted)">One-directional fit &mdash; may require sweetener to balance.</em>';
   }
@@ -22126,6 +22140,89 @@ function _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB) {
   html += '</div>';
   return html;
 }
+
+// ── Compact "Suggested trades with AWAY" card for Build tab ──────────────
+// Runs the same scan engine as the Suggest tab but filters to only this
+// pairing of HOME vs AWAY. Layout is tighter: name pills + tiny applies button,
+// no expandable diagnostics panel (those live on the Suggest tab).
+function _tlV2RenderSuggestedTradesHtml(tA, tB, nameA, nameB) {
+  if (!window._playerRosCatHit || !window._playerRosCatPit) return '';
+  // Run scan with HOME's mults overridden temporarily so the engine produces
+  // results from HOME's perspective.
+  var origMults = window._rosCatMultipliers;
+  window._rosCatMultipliers = (typeof _rosTradeSugTeamMults === 'function') ? _rosTradeSugTeamMults(tA) : null;
+  var scan;
+  try { scan = _rosTradeSugScanPairs(tA); }
+  catch(e) { scan = { mutual: [], sneaky: [] }; }
+  window._rosCatMultipliers = origMults;
+
+  // Filter to just this AWAY team.
+  var mutual = (scan.mutual || []).filter(function(c){ return c.oppTid === tB; })
+    .sort(function(a,b){ return b.myDelta - a.myDelta; }).slice(0, 3);
+  var sneaky = (scan.sneaky || []).filter(function(c){ return c.oppTid === tB; })
+    .sort(function(a,b){ return b.myDelta - a.myDelta; }).slice(0, 3);
+  var totalTrades = mutual.length + sneaky.length;
+
+  var h = '';
+  h += '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px">';
+  h += '<div style="padding:10px 14px;background:var(--bg);border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:baseline">';
+  h += '<span style="font-size:12px;font-weight:500">Suggested trades with '+_loEsc(nameB)+'</span>';
+  h += '<span style="font-size:10px;color:var(--muted)">'+totalTrades+' candidate'+(totalTrades===1?'':'s')+'</span>';
+  h += '</div>';
+
+  if (totalTrades === 0) {
+    h += '<div style="padding:14px 16px;font-size:12px;color:var(--muted);font-style:italic">No clean 1-for-1 swaps surfaced between these two teams. Try a 2-for-1 manually with the roster tables below, or open the Suggest tab to see alternative partners.</div>';
+    h += '</div>';
+    return h;
+  }
+
+  h += '<div style="padding:8px 12px;display:flex;flex-direction:column;gap:6px">';
+  function compactRow(t, kind) {
+    var sideCol = (kind === 'even') ? '#1D9E75' : '#854f0b';
+    var youSign = t.myDelta >= 0 ? '+' : '\u2212';
+    var youCol = t.myDelta >= 0.5 ? '#0F6E56' : '#4a9a68';
+    var theirSign = t.theirDelta >= 0 ? '+' : '\u2212';
+    var theirCol = t.theirDelta >= 0.5 ? '#1D9E75' : t.theirDelta >= -0.3 ? 'var(--muted)' : '#c0392b';
+    var kindLabel = kind === 'even' ? 'Even' : 'Sneaky';
+    var x = '<div style="padding:6px 10px;background:var(--bg);border-radius:5px;border-left:2px solid '+sideCol+';display:grid;grid-template-columns:46px 1fr 16px 1fr 78px 60px;gap:8px;align-items:center;font-size:11px">';
+    // Kind tag
+    x += '<span style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:'+sideCol+'">'+kindLabel+'</span>';
+    // Give
+    x += '<div style="text-align:right">';
+    x += '<div style="font-weight:500">'+_loEsc(t.give.name)+'</div>';
+    x += '<div style="font-size:9px;color:var(--muted)">'+_loEsc(t.give.pos)+(t.give.rawSgp!=null?' &middot; '+t.give.rawSgp.toFixed(2):'')+'</div>';
+    x += '</div>';
+    // Arrow
+    x += '<span style="text-align:center;color:var(--muted);font-size:12px">&harr;</span>';
+    // Get
+    x += '<div>';
+    x += '<div style="font-weight:500">'+_loEsc(t.get.name)+'</div>';
+    x += '<div style="font-size:9px;color:var(--muted)">'+_loEsc(t.get.pos)+(t.get.rawSgp!=null?' &middot; '+t.get.rawSgp.toFixed(2):'')+'</div>';
+    x += '</div>';
+    // Deltas
+    x += '<div style="text-align:right;line-height:1.3">';
+    x += '<div style="font-size:11px;font-weight:600;color:'+youCol+'">You '+youSign+Math.abs(t.myDelta).toFixed(2)+'</div>';
+    x += '<div style="font-size:9px;color:'+theirCol+'">Them '+theirSign+Math.abs(t.theirDelta).toFixed(2)+'</div>';
+    x += '</div>';
+    // Apply button — pre-fills both pickers and re-renders.
+    x += '<button onclick="window._tlV2ApplySuggestedTrade(\''+t.give.key+'\',\''+t.get.key+'\')" style="padding:4px 8px;font-size:10px;font-weight:500;border:0.5px solid var(--accent);background:rgba(45,90,61,0.06);color:var(--accent);border-radius:4px;cursor:pointer">Apply</button>';
+    x += '</div>';
+    return x;
+  }
+  mutual.forEach(function(t){ h += compactRow(t, 'even'); });
+  sneaky.forEach(function(t){ h += compactRow(t, 'sneaky'); });
+  h += '</div>';
+  h += '</div>';
+  return h;
+}
+
+// Wire up the Apply button: replaces current selections with this exact trade.
+window._tlV2ApplySuggestedTrade = function(giveKey, getKey) {
+  if (!giveKey || !getKey) return;
+  window._tlV2.sendA = [giveKey];
+  window._tlV2.sendB = [getKey];
+  _tlV2RenderBuild();
+};
 
 function _tlV2RenderBuild() {
   var el = document.getElementById('tradelab-build-body');
@@ -22199,6 +22296,11 @@ function _tlV2RenderBuild() {
       try { html += _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB); }
       catch(e) { console.warn('[TradeLab] team-fit render (empty state) failed:', e); }
     }
+    // Compact suggested-trades-with-AWAY card between fit and rosters.
+    if (typeof _tlV2RenderSuggestedTradesHtml === 'function') {
+      try { html += _tlV2RenderSuggestedTradesHtml(tA, tB, nameA, nameB); }
+      catch(e) { console.warn('[TradeLab] suggested-trades render (empty state) failed:', e); }
+    }
     html += rosterTablesHtml;
     html += '<div style="padding:16px;text-align:center;color:var(--muted);font-size:12px;background:var(--bg);border-radius:8px;border:0.5px dashed var(--border);margin-top:14px">Select players from both rosters to see trade analysis.</div>';
     el.innerHTML = html;
@@ -22271,6 +22373,12 @@ function _tlV2RenderBuild() {
   if (typeof _tlV2RenderTeamFitHtml === 'function') {
     try { analyticsHtml += _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB); }
     catch(e) { console.warn('[TradeLab] team-fit render failed:', e); }
+  }
+  // Compact suggested-trades-with-AWAY card right after the fit plot — gives
+  // user concrete trade ideas before the verdict/cat-impact cards.
+  if (typeof _tlV2RenderSuggestedTradesHtml === 'function') {
+    try { analyticsHtml += _tlV2RenderSuggestedTradesHtml(tA, tB, nameA, nameB); }
+    catch(e) { console.warn('[TradeLab] suggested-trades render failed:', e); }
   }
 
   function deltaCardHtml(name, dW, sentSGP, recvSGP, sideLabel, sideCol, sideBg) {
