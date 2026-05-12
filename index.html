@@ -22551,22 +22551,36 @@ function _tlV2RenderBuild() {
   }
 
   if (sendA.length === 0 && sendB.length === 0) {
-    // Compute fit HTML once for the top row.
+    // Empty state: same two-row 30/70 layout as the populated state, minus the
+    // Verdict card (no trade data yet). Both the Suggested Trades card and the
+    // Verification card render here — verification stays empty (its built-in
+    // "Pick a player on each side" message) until the user picks players.
     var fitHtmlEmpty = '';
     if (typeof _tlV2RenderTeamFitHtml === 'function') {
       try { fitHtmlEmpty = _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB); }
       catch(e) { console.warn('[TradeLab] team-fit render (empty state) failed:', e); }
     }
-    // Top row: pickers (30%) | fit card (70%).
+    var suggestedHtmlEmpty = '';
+    if (typeof _tlV2RenderSuggestedTradesHtml === 'function') {
+      try { suggestedHtmlEmpty = _tlV2RenderSuggestedTradesHtml(tA, tB, nameA, nameB); }
+      catch(e) { console.warn('[TradeLab] suggested-trades render (empty state) failed:', e); }
+    }
+    var verificationHtmlEmpty = (typeof _tlV2RenderVerificationCardHtml === 'function')
+      ? _tlV2RenderVerificationCardHtml() : '';
+
+    // Row 1: pickers (30%) | fit card (70%).
     html += '<div style="display:grid;grid-template-columns:30% minmax(0,1fr);gap:14px;margin-bottom:14px;align-items:start">'
       + '<div style="min-width:0">' + pickersHtml + '</div>'
       + '<div style="min-width:0">' + fitHtmlEmpty + '</div>'
       + '</div>';
-    // Compact suggested-trades-with-AWAY card under the top row, centered half width.
-    if (typeof _tlV2RenderSuggestedTradesHtml === 'function') {
-      try { html += halfCol(_tlV2RenderSuggestedTradesHtml(tA, tB, nameA, nameB)); }
-      catch(e) { console.warn('[TradeLab] suggested-trades render (empty state) failed:', e); }
-    }
+    // Row 2: Suggested trades (30%) | Trade Verification (70%) — same as
+    // populated state. Verification displays its built-in empty message until
+    // a player is picked on each side.
+    html += '<div style="display:grid;grid-template-columns:30% minmax(0,1fr);gap:14px;margin-bottom:14px;align-items:start">'
+      + '<div style="min-width:0">' + suggestedHtmlEmpty + '</div>'
+      + '<div style="min-width:0">' + verificationHtmlEmpty + '</div>'
+      + '</div>';
+
     html += rosterTablesHtml;
     html += '<div style="padding:16px;text-align:center;color:var(--muted);font-size:12px;background:var(--bg);border-radius:8px;border:0.5px dashed var(--border);margin-top:14px">Select players from both rosters to see trade analysis.</div>';
     el.innerHTML = html;
