@@ -6478,6 +6478,92 @@ function _rosTradeSugTeamRanks(teamId) {
   return ranks;
 }
 
+// ── Standings-position awareness (engine #3) ──────────────────────────────
+// Movability: how close is your team to flipping standings points in each
+// category? For each cat, compute the GAP to the next-higher team (upGap)
+// and the BUFFER over the next-lower team (downBuffer), in raw stat units
+// (R, HR, K, etc — same units the per-cat divisors D2 are in). Cached per
+// team. ERA/WHIP are inverted (lower = better), so up/down are flipped.
+window._rosTradeSugMovabilityCache = window._rosTradeSugMovabilityCache || {};
+function _rosTradeSugMovability(teamId) {
+  if (!teamId) return null;
+  if (window._rosTradeSugMovabilityCache[teamId]) return window._rosTradeSugMovabilityCache[teamId];
+  var teamStats = window._rosTeamStats || {};
+  var myStats   = teamStats[teamId];
+  if (!myStats) return null;
+  // Cat → list of {teamId, val} sorted best-first. ERA/WHIP: lower is better
+  // (sort ascending). Others: higher is better (sort descending).
+  var HIGHER_BETTER = { R:1, HR:1, RBI:1, SB:1, AVG:1, W:1, K:1, SVH3:1 };
+  var LOWER_BETTER  = { ERA:1, WHIP:1 };
+  var out = {};
+  Object.keys(HIGHER_BETTER).concat(Object.keys(LOWER_BETTER)).forEach(function(cat){
+    var lowerBetter = !!LOWER_BETTER[cat];
+    var rows = Object.keys(teamStats).map(function(tid){
+      return { tid: tid, val: teamStats[tid] && teamStats[tid][cat] };
+    }).filter(function(r){ return r.val != null && !isNaN(r.val); });
+    if (!rows.length) { out[cat] = null; return; }
+    rows.sort(function(a,b){ return lowerBetter ? a.val - b.val : b.val - a.val; });
+    var idx = rows.findIndex(function(r){ return r.tid === teamId; });
+    if (idx < 0) { out[cat] = null; return; }
+    var myVal = rows[idx].val;
+    // upGap: distance from me to the team immediately ABOVE in standings.
+    // For higher-better cats: their val is HIGHER than mine, so upGap = their - mine.
+    // For lower-better cats: their val is LOWER than mine, so upGap = mine - their.
+    var upGap = null, downBuffer = null;
+    if (idx > 0) {
+      var above = rows[idx - 1].val;
+      upGap = lowerBetter ? (myVal - above) : (above - myVal);
+      if (upGap < 0) upGap = 0;
+    }
+    if (idx < rows.length - 1) {
+      var below = rows[idx + 1].val;
+      downBuffer = lowerBetter ? (below - myVal) : (myVal - below);
+      if (downBuffer < 0) downBuffer = 0;
+    }
+    out[cat] = { upGap: upGap, downBuffer: downBuffer, rank: idx + 1, n: rows.length };
+  });
+  window._rosTradeSugMovabilityCache[teamId] = out;
+  return out;
+}
+
+// SGP-to-raw-units divisor map. perCat[X] is in SGP units; multiply by D2[X]
+// to get the equivalent raw stat impact (so we can compare to upGap/downBuffer
+// which live in raw units like "30 runs"). For AVG/ERA/WHIP the rate-stat
+// math is more involved, so we approximate by treating perCat[X] × D2[X] as
+// the "effective magnitude" — fine for ranking purposes.
+function _rosTradeSugCatDivisor(cat) {
+  var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
+  var map = { R:D2.r, HR:D2.hr, RBI:D2.rbi, SB:D2.sb, AVG:D2.avg, W:D2.w, K:D2.k, SVH3:D2.svh3, ERA:D2.era, WHIP:D2.whip };
+  return map[cat] || 1;
+}
+
+// Movability multiplier: scales the balance contribution by how likely a per-
+// cat delta is to flip standings points. Small upGap + positive delta → big
+// upside; small downBuffer + negative delta → big downside. Locked positions
+// (no team to leapfrog or no team chasing) → dampened.
+function _rosTradeSugMovabilityFactor(deltaRaw, mov) {
+  if (!mov) return 1.0;
+  if (deltaRaw > 0) {
+    // We'd gain in this cat. Compare to upGap (distance to the team above).
+    if (mov.upGap == null) return 0.5;             // already #1; can't go higher
+    if (mov.upGap === 0)   return 1.6;             // tied — even tiny gain breaks the tie
+    var ratioU = deltaRaw / mov.upGap;
+    if (ratioU >= 1.0)  return 1.6;                // clearly clears the gap
+    if (ratioU >= 0.5)  return 1.3;                // gets you close
+    if (ratioU >= 0.2)  return 1.1;                // marginal step
+    return 0.9;                                    // way short — diminishing returns
+  }
+  // deltaRaw < 0: losing in this cat. Compare to downBuffer (cushion over team below).
+  var absD = -deltaRaw;
+  if (mov.downBuffer == null) return 0.5;          // already last; can't fall further
+  if (mov.downBuffer === 0)   return 1.8;          // tied — any loss surrenders the tie
+  var ratioD = absD / mov.downBuffer;
+  if (ratioD >= 1.0)  return 1.8;                  // drops you a rank
+  if (ratioD >= 0.5)  return 1.4;                  // gets dangerously close
+  if (ratioD >= 0.2)  return 1.1;
+  return 0.9;
+}
+
 // Asymmetric balance factor for a per-category trade impact. Penalizes negative
 // deltas in weak cats more than the current need-multipliers do; dampens
 // positive deltas in already-strong cats. This is the core of the "multi-cat
@@ -6502,10 +6588,11 @@ function _rosTradeSugBalanceFactor(delta, rank) {
   return 0.5;
 }
 
-// Compute a balance-score for a trade given the per-cat impact and the
-// trader's own current-standings ranks. Returns { score, perCat } where
-// perCat[c] = { delta, rank, factor, contribution } for diagnostics.
-function _rosTradeSugBalanceScore(givePerCat, getPerCat, myRanks) {
+// Compute a balance-score for a trade given the per-cat impact, the trader's
+// own current-standings ranks, and (optionally) the movability data. Returns
+// { score, perCat } where perCat[c] = { delta, rank, factor, movFactor,
+// contribution } for diagnostics.
+function _rosTradeSugBalanceScore(givePerCat, getPerCat, myRanks, myMov) {
   var score = 0;
   var diag = {};
   ['R','HR','RBI','SB','AVG','W','K','SVH3','ERA','WHIP'].forEach(function(c){
@@ -6513,9 +6600,18 @@ function _rosTradeSugBalanceScore(givePerCat, getPerCat, myRanks) {
     if (!d) return;
     var rk = (myRanks && myRanks[c]) || 5;
     var f  = _rosTradeSugBalanceFactor(d, rk);
-    var contribution = d * f;
+    // Convert SGP-units delta back to raw stat units for movability comparison.
+    var dRaw = d * _rosTradeSugCatDivisor(c);
+    // For ERA/WHIP, the delta direction is reversed: positive perCat ERA = good
+    // (lower team ERA), which corresponds to a LOWER raw ERA. In raw units,
+    // that's a NEGATIVE change in ERA. _rosTradeSugMovability treats LOWER as
+    // better for ERA/WHIP, so we need to flip sign for these cats.
+    if (c === 'ERA' || c === 'WHIP') dRaw = -dRaw;
+    var mov  = myMov ? myMov[c] : null;
+    var movF = _rosTradeSugMovabilityFactor(d > 0 ? dRaw : -Math.abs(dRaw), mov);
+    var contribution = d * f * movF;
     score += contribution;
-    diag[c] = { delta: d, rank: rk, factor: f, contribution: contribution };
+    diag[c] = { delta: d, rank: rk, factor: f, movFactor: movF, contribution: contribution };
   });
   return { score: score, perCat: diag };
 }
@@ -6672,6 +6768,7 @@ function _rosTradeSugScanPairs(myTeamId) {
     // for "your" side. Each opponent team's mults are computed below.
     var myMults = window._rosCatMultipliers || _rosTradeSugTeamMults(myTeamId);
     var myRanks = _rosTradeSugTeamRanks(myTeamId); // for balance scoring
+    var myMov   = _rosTradeSugMovability(myTeamId); // standings-position awareness
     if (debug) console.log('[TradeSug] grp='+grp+' my mults:', myMults, 'ranks:', myRanks);
 
     oppTeamIds.forEach(function(oppTid){
@@ -6740,19 +6837,31 @@ function _rosTradeSugScanPairs(myTeamId) {
           // Multi-cat balance score — penalizes negative deltas in weak cats
           // and dampens positive deltas in already-strong cats. See
           // _rosTradeSugBalanceFactor for the asymmetric weighting curve.
-          var balanceResult = _rosTradeSugBalanceScore(myDropPerCat, oppDropPerCat, myRanks);
+          var balanceResult = _rosTradeSugBalanceScore(myDropPerCat, oppDropPerCat, myRanks, myMov);
           var balanceScore  = balanceResult.score;
           var balanceDiag   = balanceResult.perCat;
           // Identify the biggest negative-balance cat (the "anti-fit") and
           // biggest positive-balance cat (the "best fit"). Used for the UI tag.
+          // Also track the top movability signal: the strongest cat where
+          // we're at the verge of flipping a standings point.
           var balanceTopPos = null, balanceTopNeg = null;
+          var topWinnable = null;   // cat with high mov upside on a gain
+          var topRisky    = null;   // cat with high mov downside on a loss
           Object.keys(balanceDiag).forEach(function(c){
             var d = balanceDiag[c];
+            var mov = myMov ? myMov[c] : null;
             if (d.contribution > 0 && (!balanceTopPos || d.contribution > balanceTopPos.contribution)) {
-              balanceTopPos = { cat: c, contribution: d.contribution, delta: d.delta, rank: d.rank };
+              balanceTopPos = { cat: c, contribution: d.contribution, delta: d.delta, rank: d.rank, movFactor: d.movFactor, mov: mov };
             }
             if (d.contribution < 0 && (!balanceTopNeg || d.contribution < balanceTopNeg.contribution)) {
-              balanceTopNeg = { cat: c, contribution: d.contribution, delta: d.delta, rank: d.rank };
+              balanceTopNeg = { cat: c, contribution: d.contribution, delta: d.delta, rank: d.rank, movFactor: d.movFactor, mov: mov };
+            }
+            // Highlight cats where movability factor is materially amplifying impact.
+            if (d.delta > 0 && d.movFactor >= 1.3 && (!topWinnable || d.movFactor > topWinnable.movFactor)) {
+              topWinnable = { cat: c, movFactor: d.movFactor, mov: mov };
+            }
+            if (d.delta < 0 && d.movFactor >= 1.4 && (!topRisky || d.movFactor > topRisky.movFactor)) {
+              topRisky = { cat: c, movFactor: d.movFactor, mov: mov };
             }
           });
 
@@ -6774,7 +6883,9 @@ function _rosTradeSugScanPairs(myTeamId) {
             scarcityWarn: scarcityWarn,
             balanceScore: balanceScore,
             balanceTopPos: balanceTopPos,
-            balanceTopNeg: balanceTopNeg
+            balanceTopNeg: balanceTopNeg,
+            topWinnable: topWinnable,
+            topRisky: topRisky
           });
         });
       });
@@ -7016,7 +7127,7 @@ function _rosBuildTradeSuggestionsHtml() {
   h += '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">';
   h += '<div>';
   h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Trade Suggestions &middot; ROS-driven</div>';
-  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">1-for-1 swaps with other teams, ranked by <strong>Balance score</strong> (multi-cat fit: rewards adding to weak cats, penalizes losing in weak cats). <strong>Mutual</strong>: both teams gain by their own need-weighting. <strong>Sneaky</strong>: you gain &ge;1.0, they perceive a positional or league-rating upgrade. The Min Your &Delta; filter uses the simpler need-weighted total.</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">1-for-1 swaps with other teams, ranked by <strong>Balance score</strong> (multi-cat fit + standings-position awareness: rewards trades that fill weak cats AND have small gaps to flip; penalizes losses with thin buffers). Look for &#127919; <em>Winnable</em> and &#9888; <em>Risky</em> chips. <strong>Mutual</strong>: both teams gain. <strong>Sneaky</strong>: you gain &ge;1.0, they perceive a positional or league-rating upgrade. The Min Your &Delta; filter uses the simpler need-weighted total.</div>';
   h += '</div>';
   // Min Net filter — same convention as the Suggested Moves card.
   h += '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">';
@@ -7084,21 +7195,42 @@ function _rosTradeSugRow(c, idx, kind) {
   h += '</div>'; // end Give/Get grid
 
   // Best-fit / anti-fit category pills (from balance-score diagnostic).
-  if (c.balanceTopPos || c.balanceTopNeg) {
+  if (c.balanceTopPos || c.balanceTopNeg || c.topWinnable || c.topRisky) {
     h += '<div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">';
     if (c.balanceTopPos) {
       var pCat = c.balanceTopPos.cat;
       var pRk  = c.balanceTopPos.rank;
       var pD   = c.balanceTopPos.delta;
+      var pMov = c.balanceTopPos.mov;
       var pTip = 'You\u2019re ranked #'+pRk+' in '+pCat+'. This trade adds '+(pD>=0?'+':'')+pD.toFixed(2)+' '+pCat+' SGP.';
+      if (pMov && pMov.upGap != null) pTip += ' Standings gap to next-higher team: '+pMov.upGap.toFixed(pCat==='AVG'||pCat==='ERA'||pCat==='WHIP'?3:0)+' '+pCat+'.';
       h += '<span title="'+pTip+'" style="font-size:9px;color:#0F6E56;background:rgba(29,158,117,0.10);border-radius:4px;padding:3px 7px">Best fit: '+pCat+' &uarr;</span>';
     }
     if (c.balanceTopNeg) {
       var nCat = c.balanceTopNeg.cat;
       var nRk  = c.balanceTopNeg.rank;
       var nD   = c.balanceTopNeg.delta;
+      var nMov = c.balanceTopNeg.mov;
       var nTip = 'You\u2019re ranked #'+nRk+' in '+nCat+'. This trade loses '+nD.toFixed(2)+' '+nCat+' SGP.';
+      if (nMov && nMov.downBuffer != null) nTip += ' Buffer over next-lower team: '+nMov.downBuffer.toFixed(nCat==='AVG'||nCat==='ERA'||nCat==='WHIP'?3:0)+' '+nCat+'.';
       h += '<span title="'+nTip+'" style="font-size:9px;color:#a04020;background:rgba(192,57,43,0.08);border-radius:4px;padding:3px 7px">Anti-fit: '+nCat+' &darr;</span>';
+    }
+    // Standings-position awareness: highlight when a gain or loss is highly
+    // likely to flip standings points. Different from "fit" — fit is about
+    // need-weighting, this is about how close the gap actually is.
+    if (c.topWinnable) {
+      var wCat = c.topWinnable.cat;
+      var wMov = c.topWinnable.mov;
+      var wTip = 'Small standings-points gap in '+wCat+' \u2014 this gain has a strong chance of flipping a point.';
+      if (wMov && wMov.upGap != null) wTip += ' Gap to team above: '+wMov.upGap.toFixed(wCat==='AVG'||wCat==='ERA'||wCat==='WHIP'?3:0)+' '+wCat+'.';
+      h += '<span title="'+wTip+'" style="font-size:9px;color:#0F6E56;background:rgba(29,158,117,0.16);border-radius:4px;padding:3px 7px">&#127919; Winnable: '+wCat+'</span>';
+    }
+    if (c.topRisky) {
+      var rCat = c.topRisky.cat;
+      var rMov = c.topRisky.mov;
+      var rTip = 'Thin standings-points buffer in '+rCat+' \u2014 this loss could surrender a point.';
+      if (rMov && rMov.downBuffer != null) rTip += ' Buffer over team below: '+rMov.downBuffer.toFixed(rCat==='AVG'||rCat==='ERA'||rCat==='WHIP'?3:0)+' '+rCat+'.';
+      h += '<span title="'+rTip+'" style="font-size:9px;color:#a04020;background:rgba(192,57,43,0.14);border-radius:4px;padding:3px 7px">&#9888; Risky: '+rCat+'</span>';
     }
     h += '</div>';
   }
