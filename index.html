@@ -21722,8 +21722,8 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState)
   var removeFn    = 'window._tlV2RemovePlayer(\''+side+'\',';
   var activeCount = roster.length;
   var sideLabel   = (side === 'A') ? 'HOME' : 'AWAY';
-  var sideCol     = (side === 'A') ? '#0F6E56' : '#0C447C';
-  var sideBg      = (side === 'A') ? 'rgba(29,158,117,0.12)' : 'rgba(24,95,165,0.12)';
+  var sideCol     = (side === 'A') ? '#5a594f' : '#0C447C';
+  var sideBg      = (side === 'A') ? 'rgba(136,135,128,0.18)' : 'rgba(24,95,165,0.12)';
 
   var h = '';
   h += '<div style="margin-bottom:14px">';
@@ -21990,8 +21990,8 @@ function _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB) {
   var ALL_CATS = data.catRows.map(function(r){ return r.label; });
 
   var SIDE = {
-    HOME: { col: '#0F6E56', bg: 'rgba(29,158,117,0.12)' },
-    AWAY: { col: '#0C447C', bg: 'rgba(24,95,165,0.12)' }
+    HOME: { col: '#5a594f', bg: 'rgba(136,135,128,0.18)', borderRgba: 'rgba(136,135,128,0.30)' },
+    AWAY: { col: '#0C447C', bg: 'rgba(24,95,165,0.12)',   borderRgba: 'rgba(24,95,165,0.30)' }
   };
 
   var html = '';
@@ -22031,7 +22031,7 @@ function _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB) {
   });
   html += '</div>';
   // AWAY row
-  html += '<div style="display:grid;grid-template-columns:46px repeat('+FINE_POS.length+',minmax(0,1fr));gap:6px;margin-bottom:14px;align-items:stretch">';
+  html += '<div style="display:grid;grid-template-columns:46px repeat('+FINE_POS.length+',minmax(0,1fr));gap:6px;margin-bottom:4px;align-items:stretch">';
   html += '<div style="display:flex;align-items:center;justify-content:flex-end;padding-right:4px"><span style="font-size:10px;padding:3px 8px;border-radius:4px;background:'+SIDE.AWAY.bg+';color:'+SIDE.AWAY.col+';font-weight:600;letter-spacing:0.04em">AWAY</span></div>';
   data.posRows.forEach(function(r) {
     var delta = r.bVal;
@@ -22042,6 +22042,26 @@ function _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB) {
     html += '<div style="font-size:13px;font-weight:600;color:'+t.text+'">'+fmtPosDelta(delta)+'</div>';
     html += '<div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-top:1px">vs LG</div>';
     html += '</div>';
+  });
+  html += '</div>';
+  // Arrows row under positional — indicates trade direction when there's a fit.
+  html += '<div style="display:grid;grid-template-columns:46px repeat('+FINE_POS.length+',minmax(0,1fr));gap:6px;margin-bottom:14px;align-items:stretch">';
+  html += '<div></div>';
+  data.posRows.forEach(function(r) {
+    var tier = _tlV2PosFitTier(r.aVal, r.bVal);
+    var arrowHtml = '';
+    if (tier) {
+      if (r.aVal > 0 && r.bVal < 0) {
+        // HOME has surplus, AWAY short — H → A (HOME sends to AWAY).
+        var col = tier === 'strong' ? '#0F6E56' : '#4a9a68';
+        arrowHtml = '<span style="font-size:10px;font-weight:600;color:'+col+'">H &rarr; A</span>';
+      } else if (r.bVal > 0 && r.aVal < 0) {
+        // AWAY has surplus, HOME short — A → H.
+        var colB = tier === 'strong' ? '#0C447C' : '#185FA5';
+        arrowHtml = '<span style="font-size:10px;font-weight:600;color:'+colB+'">A &rarr; H</span>';
+      }
+    }
+    html += '<div style="text-align:center;padding:2px 0">'+arrowHtml+'</div>';
   });
   html += '</div>';
 
@@ -22064,7 +22084,7 @@ function _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB) {
   });
   html += '</div>';
   // AWAY row
-  html += '<div style="display:grid;grid-template-columns:46px repeat('+ALL_CATS.length+',minmax(0,1fr));gap:6px;margin-bottom:14px;align-items:stretch">';
+  html += '<div style="display:grid;grid-template-columns:46px repeat('+ALL_CATS.length+',minmax(0,1fr));gap:6px;margin-bottom:4px;align-items:stretch">';
   html += '<div style="display:flex;align-items:center;justify-content:flex-end;padding-right:4px"><span style="font-size:10px;padding:3px 8px;border-radius:4px;background:'+SIDE.AWAY.bg+';color:'+SIDE.AWAY.col+';font-weight:600;letter-spacing:0.04em">AWAY</span></div>';
   data.catRows.forEach(function(r) {
     var rank = r.bRank;
@@ -22079,6 +22099,28 @@ function _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB) {
     html += '</div>';
   });
   html += '</div>';
+  // Arrows row under category — indicates trade direction when there's a fit.
+  html += '<div style="display:grid;grid-template-columns:46px repeat('+ALL_CATS.length+',minmax(0,1fr));gap:6px;margin-bottom:14px;align-items:stretch">';
+  html += '<div></div>';
+  data.catRows.forEach(function(r) {
+    var tier = _tlV2CatFitTier(r.aRank, r.bRank, r.n);
+    var arrowHtml = '';
+    if (tier) {
+      var mildLine = Math.ceil(r.n * 0.45);
+      var aIsSurplus = r.aRank <= mildLine;
+      var bIsSurplus = r.bRank <= mildLine;
+      if (aIsSurplus && !bIsSurplus) {
+        var col = tier === 'strong' ? '#0F6E56' : '#4a9a68';
+        arrowHtml = '<span style="font-size:10px;font-weight:600;color:'+col+'">H &rarr; A</span>';
+      } else if (bIsSurplus && !aIsSurplus) {
+        var colB = tier === 'strong' ? '#0C447C' : '#185FA5';
+        arrowHtml = '<span style="font-size:10px;font-weight:600;color:'+colB+'">A &rarr; H</span>';
+      }
+    }
+    html += '<div style="text-align:center;padding:2px 0">'+arrowHtml+'</div>';
+  });
+  html += '</div>';
+
 
   // Top fit pairs strip
   var aToB = [];
@@ -22103,13 +22145,13 @@ function _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB) {
     html += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);min-width:74px;padding-top:1px">Trade fits</div>';
     html += '<div style="display:flex;flex-wrap:wrap;gap:5px;flex:1">';
     aToB.forEach(function(lbl) {
-      html += '<span style="font-size:10px;color:'+SIDE.HOME.col+';background:'+SIDE.HOME.bg+';border:0.5px solid rgba(29,158,117,0.30);border-radius:10px;padding:2px 8px;font-weight:500">'+lbl+' &middot; HOME &rarr; AWAY</span>';
+      html += '<span style="font-size:10px;color:'+SIDE.HOME.col+';background:'+SIDE.HOME.bg+';border:0.5px solid '+SIDE.HOME.borderRgba+';border-radius:10px;padding:2px 8px;font-weight:500">'+lbl+' &middot; HOME &rarr; AWAY</span>';
     });
     if (aToB.length && bToA.length) {
       html += '<span style="display:inline-block;width:0.5px;height:14px;background:var(--border);align-self:center;margin:0 3px"></span>';
     }
     bToA.forEach(function(lbl) {
-      html += '<span style="font-size:10px;color:'+SIDE.AWAY.col+';background:'+SIDE.AWAY.bg+';border:0.5px solid rgba(24,95,165,0.30);border-radius:10px;padding:2px 8px;font-weight:500">'+lbl+' &middot; AWAY &rarr; HOME</span>';
+      html += '<span style="font-size:10px;color:'+SIDE.AWAY.col+';background:'+SIDE.AWAY.bg+';border:0.5px solid '+SIDE.AWAY.borderRgba+';border-radius:10px;padding:2px 8px;font-weight:500">'+lbl+' &middot; AWAY &rarr; HOME</span>';
     });
     html += '</div></div>';
   }
@@ -22234,8 +22276,8 @@ function _tlV2RenderBuild() {
     var picked = sendKeys.map(function(k){ return byKey[k]; });
     var unpicked = roster.filter(function(p){ return sendKeys.indexOf(p.key) === -1; });
     var sideLabel = side === 'A' ? 'HOME sends' : 'AWAY sends';
-    var sideCol   = side === 'A' ? '#0F6E56' : '#0C447C';
-    var sideBg    = side === 'A' ? 'rgba(29,158,117,0.12)' : 'rgba(24,95,165,0.12)';
+    var sideCol   = side === 'A' ? '#5a594f' : '#0C447C';
+    var sideBg    = side === 'A' ? 'rgba(136,135,128,0.18)' : 'rgba(24,95,165,0.12)';
     var h = '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden">';
     h += '<div style="padding:10px 14px;background:var(--bg);border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center">';
     h += '<span style="font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px">';
@@ -22389,15 +22431,20 @@ function _tlV2RenderBuild() {
       +'<div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:4px">Pure SGP: <strong style="color:var(--text)">\u2212'+sentSGP.toFixed(2)+' / +'+recvSGP.toFixed(2)+'</strong></div>'
       +'</div>';
   }
-  analyticsHtml += '<div style="background:linear-gradient(to right, rgba(29,158,117,0.05), rgba(192,57,43,0.04));border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:14px">';
-  analyticsHtml += '<div style="margin-bottom:12px">';
-  analyticsHtml += '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Verdict</div>';
-  analyticsHtml += '<div style="font-size:18px;font-weight:500;color:'+v.color+'">'+_loEsc(v.label)+'</div>';
-  analyticsHtml += '</div>';
-  analyticsHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">';
-  analyticsHtml += deltaCardHtml(nameA, weightedDeltaA, sentASGP, sentBSGP, 'HOME', '#0F6E56', 'rgba(29,158,117,0.12)');
-  analyticsHtml += deltaCardHtml(nameB, weightedDeltaB, sentBSGP, sentASGP, 'AWAY', '#0C447C', 'rgba(24,95,165,0.12)');
-  analyticsHtml += '</div></div>';
+  // Verdict goes into its own variable so we can inject it under the pickers
+  // in the left rail (rather than alongside the wide analytics block).
+  // Since it'll live in the narrow 30% column, stack the two delta cards
+  // vertically instead of using a 2-col grid.
+  var verdictHtml = '';
+  verdictHtml += '<div style="background:linear-gradient(to bottom, rgba(29,158,117,0.05), rgba(192,57,43,0.04));border:1px solid var(--border);border-radius:10px;padding:14px 16px">';
+  verdictHtml += '<div style="margin-bottom:12px">';
+  verdictHtml += '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Verdict</div>';
+  verdictHtml += '<div style="font-size:16px;font-weight:500;color:'+v.color+';line-height:1.3">'+_loEsc(v.label)+'</div>';
+  verdictHtml += '</div>';
+  verdictHtml += '<div style="display:flex;flex-direction:column;gap:10px">';
+  verdictHtml += deltaCardHtml(nameA, weightedDeltaA, sentASGP, sentBSGP, 'HOME', '#5a594f', 'rgba(136,135,128,0.18)');
+  verdictHtml += deltaCardHtml(nameB, weightedDeltaB, sentBSGP, sentASGP, 'AWAY', '#0C447C', 'rgba(24,95,165,0.12)');
+  verdictHtml += '</div></div>';
 
   // ── Team Needs (both teams, side by side) ───────────────────────────────
   // Shows category rank (1 = least need, N = most need) so the user can see
@@ -22429,7 +22476,7 @@ function _tlV2RenderBuild() {
     return h;
   }
   analyticsHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">';
-  analyticsHtml += teamNeedHtml(nameA, nwA, 'HOME', '#0F6E56', 'rgba(29,158,117,0.12)');
+  analyticsHtml += teamNeedHtml(nameA, nwA, 'HOME', '#5a594f', 'rgba(136,135,128,0.18)');
   analyticsHtml += teamNeedHtml(nameB, nwB, 'AWAY', '#0C447C', 'rgba(24,95,165,0.12)');
   analyticsHtml += '</div>';
 
@@ -22476,13 +22523,19 @@ function _tlV2RenderBuild() {
   catImpactCard += '</div></div>';
   analyticsHtml += halfCol(catImpactCard);
 
-  // Top row: pickers (left, ~30%) + Trade Fit card (right, ~70%).
-  var topRowHtml = '<div style="display:grid;grid-template-columns:30% minmax(0,1fr);gap:14px;margin-bottom:14px;align-items:start">'
-    + '<div style="min-width:0">' + pickersHtml + '</div>'
-    + '<div style="min-width:0">' + fitHtml    + '</div>'
+  // Left rail: HOME picker → AWAY picker → Verdict card (third row).
+  var leftRailHtml = '<div style="display:flex;flex-direction:column;gap:14px;min-width:0">'
+    + pickersHtml
+    + verdictHtml
     + '</div>';
 
-  // Final assembly: TopRow (pickers | fit) → analyticsHtml (suggested + verdict
+  // Top row: left rail (~30%) | Trade Fit card (~70%).
+  var topRowHtml = '<div style="display:grid;grid-template-columns:30% minmax(0,1fr);gap:14px;margin-bottom:14px;align-items:start">'
+    + leftRailHtml
+    + '<div style="min-width:0">' + fitHtml + '</div>'
+    + '</div>';
+
+  // Final assembly: TopRow (pickers+verdict | fit) → analyticsHtml (suggested
   // + cat-impact + team-needs) → Roster tables → Caveats below.
   html = topRowHtml + analyticsHtml + rosterTablesHtml;
 
