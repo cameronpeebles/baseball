@@ -7132,7 +7132,7 @@ function _rosBuildTeamNeedHtml(dashMode, teamIdOverride) {
 
   // "How to read this" info box — sits between the header and the Positional Strength grid.
   if (typeof dashInfoBox === 'function') {
-    h += dashInfoBox('Two-part snapshot of your roster vs the league. <strong>Positional Strength</strong> (top row) compares your raw Team ROS SGP at each fine position (C/1B/2B/3B/SS/OF/SP/RP) against the league average. Green = surplus (you can afford to trade from here), red = deficit (priority area to add). <strong>Category Needs</strong> (bottom rows) ranks your team in each of the 10 standings categories. Rank 1 = top of the league for that cat (least need), rank 10 = bottom (highest need). The need-weights derived from these ranks drive the &times;multiplier on category pills throughout the rest of the site, so a higher rank in a category translates to a stronger pull on the Add/Drop simulator and ROS suggestions.');
+    h += dashInfoBox('Two-part snapshot of your roster vs the league. <strong>Positional Strength</strong> (top row) uses <em>projected</em> data: your raw Team ROS SGP at each fine position (C/1B/2B/3B/SS/OF/SP/RP) compared against the league average. Green = projected surplus (you can afford to trade from here), red = projected deficit (priority area to add). <strong>Category Needs</strong> (bottom rows) uses <em>current</em> data: your real-life rank in each of the 10 standings categories from Fantrax’s season totals to date. Rank 1 = top of the league for that cat (least need), rank 10 = bottom (highest need). The need-weights derived from these ranks drive the &times;multiplier on category pills throughout the rest of the site, so a higher rank in a category translates to a stronger pull on the Add/Drop simulator and ROS suggestions.');
   }
 
   // ── Positional Strength row ───────────────────────────────────────
@@ -7569,6 +7569,47 @@ function _rosAdPlayerSGP(p, isHit) {
     if(p.WHIP!=null&&p.IP>0&&ts.WHIP!=null&&ts.IP>0){
       var tBR=(ts.WHIP||0)*(ts.IP||0),pBR=p.WHIP*(p.IP||0),nIP2=(ts.IP||0)+(p.IP||0);
       total += (nIP2>0?((ts.WHIP||0)-(tBR+pBR)/nIP2):0)/D2.whip*(mults.WHIP||1);
+    }
+  }
+  var trust = isHit ? Math.min(1,(p.AB||0)/250) : ((p.pos||'').toUpperCase().indexOf('SP')!==-1?Math.min(1,(p.IP||0)/60):Math.min(1,(p.IP||0)/30));
+  return total * trust;
+}
+
+// Raw player ROS SGP — no need-weight multipliers, no team rate-stat context.
+// Uses fixed league baselines (.260 AVG / 4000 AB, 4.00 ERA / 900 IP, 1.25
+// WHIP / 900 IP). This is the "apples-to-apples" projection useful for
+// comparing players across teams without any HOME-lens bias.
+function _rosRawPlayerSGP(p, isHit) {
+  var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
+  var total = 0;
+  if (isHit) {
+    total += (p.R||0)  / D2.r;
+    total += (p.HR||0) / D2.hr;
+    total += (p.RBI||0)/ D2.rbi;
+    total += (p.SB||0) / D2.sb;
+    var rosH = (p.H>0) ? p.H : (p.AVG!=null && p.AB ? p.AVG*p.AB : null);
+    if (rosH!=null && p.AB>0) {
+      var lgAVG=0.260, lgAB=4000;
+      var newH = lgAVG*lgAB + rosH;
+      var newAB = lgAB + (p.AB||0);
+      var avgTrust = Math.min(1, (p.AB||0)/350);
+      total += (newAB>0 ? (newH/newAB - lgAVG) : 0) / D2.avg * avgTrust;
+    }
+  } else {
+    total += (p.W||0)  / D2.w;
+    total += (p.K||0)  / D2.k;
+    total += (p.SV||0) / D2.svh3;
+    if (p.ERA!=null && p.IP>0) {
+      var lgERA=4.00, lgIP=900;
+      var nIP=(lgIP+(p.IP||0));
+      var nERA=nIP>0?(lgERA*lgIP/9+p.ERA*(p.IP||0)/9)/nIP*9:lgERA;
+      total += (lgERA - nERA) / D2.era;
+    }
+    if (p.WHIP!=null && p.IP>0) {
+      var lgWHIP=1.25, lgIP2=900;
+      var nIP2=(lgIP2+(p.IP||0));
+      var nWHIP=nIP2>0?(lgWHIP*lgIP2+p.WHIP*(p.IP||0))/nIP2:lgWHIP;
+      total += (lgWHIP - nWHIP) / D2.whip;
     }
   }
   var trust = isHit ? Math.min(1,(p.AB||0)/250) : ((p.pos||'').toUpperCase().indexOf('SP')!==-1?Math.min(1,(p.IP||0)/60):Math.min(1,(p.IP||0)/30));
@@ -21153,12 +21194,13 @@ function _tlV2GetTeamRoster(tid, weightTeamId) {
       if (!entry || entry.teamId !== tid) return;
       if (statusByName[key] === '3') return;
       var rosSGP = (typeof _rosAdPlayerSGP === 'function') ? (_rosAdPlayerSGP(p, isHit) || 0) : 0;
+      var rosRawSGP = (typeof _rosRawPlayerSGP === 'function') ? (_rosRawPlayerSGP(p, isHit) || 0) : 0;
       var curRow = cs[key] || null;
       var curSGP = (curRow && typeof _rosCurrSGP === 'function') ? (_rosCurrSGP(curRow, isHit) || 0) : 0;
       out.push({
         key: key, name: nm,
         pos: (curRow && curRow.pos) || (p.pos || ''),
-        isHit: isHit, rosSGP: rosSGP, curSGP: curSGP,
+        isHit: isHit, rosSGP: rosSGP, rosRawSGP: rosRawSGP, curSGP: curSGP,
         fp: p, cs: curRow
       });
     });
@@ -21610,6 +21652,7 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState,
       isHit: p.isHit,
       fwarPct: fwarPct, pos_rat: posRat,
       curr: (currSgp != null && !isNaN(currSgp)) ? currSgp : null,
+      rosRaw: p.rosRawSGP != null ? p.rosRawSGP : null,
       ros:  p.rosSGP != null ? p.rosSGP : null
     };
     if (wantHit) {
@@ -21683,7 +21726,7 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState,
     h += '</div>';
     return h;
   }
-  h += '<div style="border:0.5px solid var(--border);border-radius:8px;overflow:auto">';
+  h += '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:auto">';
   h += '<table style="width:100%;border-collapse:collapse;font-size:11px">';
   h += '<thead><tr style="background:var(--bg);font-size:10px;color:var(--muted)">';
   h += thSort('name', 'Player', 'left');
@@ -21703,7 +21746,8 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState,
   h += thSort('fwarPct', 'fWAR%',    'right');
   h += thSort('pos_rat', 'Pos',      'right');
   h += thSort('curr',    'Curr SGP', 'right');
-  h += thSort('ros',     'ROS SGP',  'right');
+  h += thSort('rosRaw',  'Raw ROS',  'right');
+  h += thSort('ros',     'Need-wtd ROS',  'right');
   h += '<th style="padding:6px 5px"></th>';
   h += '</tr></thead><tbody>';
 
@@ -21733,6 +21777,7 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState,
     h += '<td style="text-align:right;padding:6px 5px;color:'+pctColor(r.fwarPct)+';font-weight:500">'+fmtPct(r.fwarPct)+'</td>';
     h += '<td style="text-align:right;padding:6px 5px;color:'+pctColor(r.pos_rat)+';font-weight:500">'+fmtPct(r.pos_rat)+'</td>';
     h += '<td style="text-align:right;padding:6px 5px;color:'+sgpColor(r.curr)+';font-weight:500">'+(r.curr==null?'\u2014':fmtNum(r.curr,2))+'</td>';
+    h += '<td style="text-align:right;padding:6px 5px;color:'+sgpColor(r.rosRaw)+';font-weight:500">'+(r.rosRaw==null?'\u2014':fmtNum(r.rosRaw,2))+'</td>';
     h += '<td style="text-align:right;padding:6px 5px;color:'+sgpColor(r.ros)+';font-weight:500">'+(r.ros==null?'\u2014':fmtNum(r.ros,2))+'</td>';
     h += '<td style="text-align:center;padding:6px 5px">';
     if (selected) {
@@ -21981,7 +22026,7 @@ function _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB) {
 
   // How to read this
   if (typeof dashInfoBox === 'function') {
-    html += dashInfoBox('Two-part snapshot of your roster vs the league. <strong>Positional Strength</strong> (top row) compares your raw Team ROS SGP at each fine position (C/1B/2B/3B/SS/OF/SP/RP) against the league average. Green = surplus (you can afford to trade from here), red = deficit (priority area to add). <strong>Category Needs</strong> (bottom rows) ranks your team in each of the 10 standings categories. Rank 1 = top of the league for that cat (least need), rank 10 = bottom (highest need). The need-weights derived from these ranks drive the &times;multiplier on category pills throughout the rest of the site, so a higher rank in a category translates to a stronger pull on the Add/Drop simulator and ROS suggestions.');
+    html += dashInfoBox('Two-part snapshot of your roster vs the league. <strong>Positional Strength</strong> (top row) uses <em>projected</em> data: your raw Team ROS SGP at each fine position (C/1B/2B/3B/SS/OF/SP/RP) compared against the league average. Green = projected surplus (you can afford to trade from here), red = projected deficit (priority area to add). <strong>Category Needs</strong> (bottom rows) uses <em>current</em> data: your real-life rank in each of the 10 standings categories from Fantrax’s season totals to date. Rank 1 = top of the league for that cat (least need), rank 10 = bottom (highest need). The need-weights derived from these ranks drive the &times;multiplier on category pills throughout the rest of the site, so a higher rank in a category translates to a stronger pull on the Add/Drop simulator and ROS suggestions.');
   }
 
   // Positional Strength
@@ -22480,7 +22525,51 @@ function _tlV2RenderBuild() {
   var el = document.getElementById('tradelab-build-body');
   if (!el) return;
   var tA = window._tlV2.teamA, tB = window._tlV2.teamB;
-  if (!tA || !tB || tA === tB) { el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px">Pick two different teams above.</div>'; return; }
+  if (!tA || !tB || tA === tB) {
+    // Render a friendly fallback with full team dropdowns inline. The user
+    // can pick a different HOME or AWAY from here directly — no need to
+    // reload the page or refresh.
+    var teamList = Object.keys((S && S.teamInfo) || {}).map(function(id){
+      var ti = S.teamInfo[id] || {};
+      return { id: id, name: ti.shortName || ti.name || id };
+    }).sort(function(a,b){ return a.name.localeCompare(b.name); });
+    function makeSelect(side, currentTid) {
+      var s = '<select onchange="window._tlV2TeamChange(\''+side+'\',this.value)" style="padding:6px 10px;font-size:12px;border:0.5px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text);min-width:160px">';
+      teamList.forEach(function(t){
+        s += '<option value="'+t.id+'"'+(t.id===currentTid?' selected':'')+'>'+_loEsc(t.name)+'</option>';
+      });
+      s += '</select>';
+      return s;
+    }
+    // Auto-resolve helper: bump teamB to the next team in the list that
+    // isn't teamA. One-click recovery for the most common case.
+    var aIdx = teamList.findIndex(function(t){ return t.id === tA; });
+    var nextTid = (aIdx >= 0 && teamList.length > 1)
+      ? teamList[(aIdx + 1) % teamList.length].id
+      : (teamList[0] && teamList[0].id);
+
+    var msg = (tA && tB && tA === tB)
+      ? 'HOME and AWAY can\u2019t be the same team. Pick another or click Auto-fix.'
+      : 'Pick HOME and AWAY teams to start.';
+    el.innerHTML =
+      '<div style="padding:20px 24px;background:var(--surface);border:0.5px solid var(--border);border-radius:8px;max-width:560px;margin:20px auto">'
+      + '<div style="font-size:13px;color:var(--text);margin-bottom:14px;line-height:1.5">'+msg+'</div>'
+      + '<div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">'
+      + '<div style="display:flex;flex-direction:column;gap:4px">'
+      + '<label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">HOME</label>'
+      + makeSelect('A', tA)
+      + '</div>'
+      + '<div style="display:flex;flex-direction:column;gap:4px">'
+      + '<label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">AWAY</label>'
+      + makeSelect('B', tB)
+      + '</div>'
+      + (nextTid && nextTid !== tA
+          ? '<button onclick="window._tlV2TeamChange(\'B\',\''+nextTid+'\')" style="padding:6px 12px;font-size:12px;border:0.5px solid var(--accent);background:rgba(45,90,61,0.06);color:var(--accent);border-radius:5px;cursor:pointer">Auto-fix \u2192 '+_loEsc((S.teamInfo[nextTid]||{}).shortName||(S.teamInfo[nextTid]||{}).name||nextTid)+'</button>'
+          : '')
+      + '</div>'
+      + '</div>';
+    return;
+  }
   // Both rosters scored through tA's (HOME's) need lens — HOME column shows
   // what they currently contribute, AWAY column shows "how much would this
   // help me if I traded for them" — both useful for HOME's perspective.
@@ -22556,14 +22645,31 @@ function _tlV2RenderBuild() {
   var sortAp = window._tlV2.sortA_pit || { col: 'curr', dir: 'desc' };
   var sortBh = window._tlV2.sortB_hit || { col: 'curr', dir: 'desc' };
   var sortBp = window._tlV2.sortB_pit || { col: 'curr', dir: 'desc' };
+  // Helper: wrap one side's two stacked tables (Hitters + Pitchers) in a
+  // single white card with a header pill so they read as one unit.
+  function rosterSideCard(side, teamName, hitTable, pitTable) {
+    var sideLabel = (side === 'A') ? 'HOME' : 'AWAY';
+    var sideCol   = (side === 'A') ? '#5a594f' : '#0C447C';
+    var sideBg    = (side === 'A') ? 'rgba(136,135,128,0.18)' : 'rgba(24,95,165,0.12)';
+    var c = '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden">';
+    c += '<div style="padding:10px 14px;background:var(--bg);border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:8px">';
+    c += '<span style="font-size:9px;padding:2px 6px;border-radius:3px;background:'+sideBg+';color:'+sideCol+';font-weight:600;letter-spacing:0.04em">'+sideLabel+'</span>';
+    c += '<span style="font-size:13px;font-weight:500">'+_loEsc(teamName)+'</span>';
+    c += '</div>';
+    c += '<div style="padding:12px 14px">' + hitTable + pitTable + '</div>';
+    c += '</div>';
+    return c;
+  }
   var rosterTablesHtml = '<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-bottom:14px">'
     + '<div style="min-width:0">'
-      + _tlV2RenderRosterTableHtml('A', nameA, rosterA, sendA, sortAh, 'hit')
-      + _tlV2RenderRosterTableHtml('A', nameA, rosterA, sendA, sortAp, 'pit')
+      + rosterSideCard('A', nameA,
+          _tlV2RenderRosterTableHtml('A', nameA, rosterA, sendA, sortAh, 'hit'),
+          _tlV2RenderRosterTableHtml('A', nameA, rosterA, sendA, sortAp, 'pit'))
     + '</div>'
     + '<div style="min-width:0">'
-      + _tlV2RenderRosterTableHtml('B', nameB, rosterB, sendB, sortBh, 'hit')
-      + _tlV2RenderRosterTableHtml('B', nameB, rosterB, sendB, sortBp, 'pit')
+      + rosterSideCard('B', nameB,
+          _tlV2RenderRosterTableHtml('B', nameB, rosterB, sendB, sortBh, 'hit'),
+          _tlV2RenderRosterTableHtml('B', nameB, rosterB, sendB, sortBp, 'pit'))
     + '</div>'
     + '</div>';
 
