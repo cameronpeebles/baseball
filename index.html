@@ -6514,6 +6514,85 @@ function _rosTradeSugPlayerInfo(playerKey) {
 
 // Main scan — returns {mutual:[...], sneaky:[...]} ranked by your ΔSGP desc.
 // Each item: {oppTid, oppName, give, get, myDelta, theirDelta, theirPosDelta, isHit}
+// ── Positional scarcity check for trade suggestions ───────────────────────
+// Counts how many active-MLB-role players on `teamId` cover each fine position
+// (C, 1B, 2B, 3B, SS, OF, SP, RP). A player listed "1B,3B" counts for both 1B
+// and 3B (multi-eligibility). Returns { C: n, '1B': n, ... }.
+function _rosTradeSugPosCounts(teamId, isHit) {
+  var counts = isHit
+    ? { C:0, '1B':0, '2B':0, '3B':0, 'SS':0, 'OF':0 }
+    : { 'SP':0, 'RP':0 };
+  var curStats = window._rosCurrentStats || {};
+  var rosterLookup = window._rosRosterLookup || {};
+  Object.keys(curStats).forEach(function(k){
+    var cs = curStats[k];
+    if (!cs || cs.isHit !== isHit) return;
+    var ri = rosterLookup[k] || {};
+    if (ri.teamId !== teamId) return;
+    if (typeof _rosHasMLBRole === 'function' && !_rosHasMLBRole(cs, isHit)) return;
+    var parts = (cs.pos || '').toUpperCase().split(/[,\/\s]+/).filter(Boolean);
+    if (isHit) {
+      var seen = {};
+      parts.forEach(function(p){
+        // Normalize LF/CF/RF → OF; ignore UT/DH (UT slot is computed downstream).
+        if (p === 'LF' || p === 'CF' || p === 'RF') p = 'OF';
+        if (counts[p] != null && !seen[p]) { counts[p]++; seen[p] = 1; }
+      });
+    } else {
+      // For pitchers: SP, RP, or P (P = both SP+RP eligible).
+      var sawSP = parts.indexOf('SP') !== -1 || parts.indexOf('P') !== -1;
+      var sawRP = parts.indexOf('RP') !== -1 || parts.indexOf('P') !== -1;
+      if (sawSP) counts.SP++;
+      if (sawRP) counts.RP++;
+    }
+  });
+  return counts;
+}
+
+// Active-roster minimum slots per fine position (this league: 14 hit + 9 pit).
+// We warn if after-trade count drops STRICTLY BELOW this minimum.
+var _ROS_POS_MIN = {
+  // Hitters: 1×C, 1×1B, 1×2B, 1×3B, 1×SS, 5×OF (CI/MI/UT are flex covers).
+  C:1, '1B':1, '2B':1, '3B':1, 'SS':1, 'OF':5,
+  // Pitchers: rotation + bullpen needs (9 total active slots, mixed). Warn
+  // if SP drops below 4 (need ~5-6 to fill the rotation) or RP below 2.
+  'SP':4, 'RP':2
+};
+
+// Given a candidate trade (drop one of OUR players, get one of THEIRS), check
+// if dropping the player would leave us thin at any of his eligible positions
+// AFTER accounting for what we're receiving (which may also cover that pos).
+// Returns a warning string like "Would leave 1 SS" or null if no concern.
+function _rosTradeSugScarcityWarn(teamId, isHit, dropPos, addPos) {
+  if (!teamId) return null;
+  var counts = _rosTradeSugPosCounts(teamId, isHit);
+  if (!counts) return null;
+  // Positions our DROP player currently covers
+  function eligList(posStr) {
+    var parts = (posStr || '').toUpperCase().split(/[,\/\s]+/).filter(Boolean);
+    var out = {};
+    parts.forEach(function(p){
+      if (p === 'LF' || p === 'CF' || p === 'RF') p = 'OF';
+      if (counts[p] != null) out[p] = 1;
+      // Pitcher 'P' eligibility = both SP and RP
+      if (!isHit && p === 'P') { out.SP = 1; out.RP = 1; }
+    });
+    return Object.keys(out);
+  }
+  var dropElig = eligList(dropPos);
+  var addElig  = {}; eligList(addPos).forEach(function(p){ addElig[p] = 1; });
+  // Simulate the trade: -1 for each pos dropElig covers, +1 for each addElig covers.
+  var warns = [];
+  dropElig.forEach(function(p){
+    var after = (counts[p] || 0) - 1 + (addElig[p] ? 1 : 0);
+    var min   = _ROS_POS_MIN[p] || 0;
+    if (after < min) {
+      warns.push('Would leave ' + after + ' ' + p);
+    }
+  });
+  return warns.length ? warns.join(' \u00b7 ') : null;
+}
+
 function _rosTradeSugScanPairs(myTeamId) {
   if (!myTeamId) return { mutual: [], sneaky: [] };
   if (!window._playerRosCatHit || !window._playerRosCatPit) return { mutual: [], sneaky: [] };
@@ -6600,6 +6679,9 @@ function _rosTradeSugScanPairs(myTeamId) {
           var getInfo  = _rosTradeSugPlayerInfo(oppKey);
           if (!giveInfo || !getInfo) return;
 
+          // Positional scarcity check — soft warning only (doesn't filter).
+          var scarcityWarn = _rosTradeSugScarcityWarn(myTeamId, isHit, giveInfo.pos, getInfo.pos);
+
           allCandidates.push({
             oppTid: oppTid,
             oppName: (S.teamInfo[oppTid]||{}).shortName || (S.teamInfo[oppTid]||{}).name || oppTid,
@@ -6614,7 +6696,8 @@ function _rosTradeSugScanPairs(myTeamId) {
             theirPerceptDelta: theirPerceptDelta,
             isHit: isHit,
             isMutual: isMutual,
-            isSneaky: isSneaky
+            isSneaky: isSneaky,
+            scarcityWarn: scarcityWarn
           });
         });
       });
@@ -6929,6 +7012,13 @@ function _rosTradeSugRow(c, idx, kind) {
     if (lbl != null && val != null) {
       h += '<div style="margin-top:5px;font-size:9px;color:#854f0b;background:rgba(186,117,23,0.08);border-radius:4px;padding:3px 7px;display:inline-block">'+lbl+' &uarr; '+val.toFixed(0)+'pts</div>';
     }
+  }
+
+  // Positional scarcity warning — soft chip flagging trades that would thin
+  // a position below the active-roster minimum (e.g. drop a SS when you only
+  // have 2). Doesn't filter the suggestion, just labels it.
+  if (c.scarcityWarn) {
+    h += '<div style="margin-top:5px;font-size:9px;color:#a04020;background:rgba(192,57,43,0.10);border:0.5px solid rgba(192,57,43,0.25);border-radius:4px;padding:3px 7px;display:inline-block">&#9888; '+c.scarcityWarn+'</div>';
   }
 
   // Try this hint
