@@ -21946,164 +21946,141 @@ function _tlV2CatFitTier(aRank, bRank, n) {
 function _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB) {
   var data = _tlV2BuildTeamFitData(tA, tB);
   if (!data.posRows.length && !data.catRows.length) return '';
-  var COL_A_BG = 'rgba(29,158,117,0.12)';
-  var COL_A_FG = '#0F6E56';
-  var COL_B_BG = 'rgba(24,95,165,0.12)';
-  var COL_B_FG = '#0C447C';
 
-  // Find global max for positional values so color intensity scales consistently.
-  var posMax = 0;
-  data.posRows.forEach(function(r){
-    if (r.aVal != null) posMax = Math.max(posMax, Math.abs(r.aVal));
-    if (r.bVal != null) posMax = Math.max(posMax, Math.abs(r.bVal));
-  });
-  if (posMax < 0.5) posMax = 0.5;
-
-  // Cell color logic — strength → green, weakness → red, mid → amber/neutral.
-  // intensity = 0..1, scales the alpha.
-  function posCellStyle(v) {
-    if (v == null) return { bg: 'rgba(150,150,150,0.08)', color: 'var(--muted)', weight: 500 };
-    var intensity = Math.min(1, Math.abs(v) / posMax);
-    if (v > 0.05) {
-      var alpha = 0.2 + 0.65 * intensity; // 0.2 - 0.85
-      return { bg: 'rgba(29,158,117,' + alpha.toFixed(2) + ')', color: alpha > 0.5 ? '#fff' : '#0F6E56', weight: intensity > 0.5 ? 600 : 500 };
-    }
-    if (v < -0.05) {
-      var alpha2 = 0.2 + 0.65 * intensity;
-      return { bg: 'rgba(192,57,43,' + alpha2.toFixed(2) + ')', color: alpha2 > 0.5 ? '#fff' : '#7a1f1f', weight: intensity > 0.5 ? 600 : 500 };
-    }
-    return { bg: 'rgba(200,169,110,0.30)', color: 'var(--text)', weight: 500 };
+  // Match the 5-tier palette used by _rosBuildTeamNeedHtml so this card feels
+  // like its sibling rather than a standalone visualization.
+  var TIER = {
+    high:   { bg:'rgba(226,75,74,0.10)', border:'rgba(226,75,74,0.35)', text:'#c0392b', chipBg:'rgba(226,75,74,0.18)' },
+    below:  { bg:'rgba(186,117,23,0.10)', border:'rgba(186,117,23,0.35)', text:'#854f0b', chipBg:'rgba(186,117,23,0.16)' },
+    avg:    { bg:'rgba(136,135,128,0.07)', border:'var(--border)', text:'#5a594f', chipBg:'rgba(136,135,128,0.16)' },
+    above:  { bg:'rgba(74,154,104,0.08)', border:'rgba(74,154,104,0.30)', text:'#4a9a68', chipBg:'rgba(74,154,104,0.18)' },
+    strong: { bg:'rgba(30,107,58,0.08)', border:'rgba(30,107,58,0.35)', text:'#1e6b3a', chipBg:'rgba(30,107,58,0.18)' },
+    na:     { bg:'var(--bg)', border:'var(--border)', text:'var(--muted)', chipBg:'var(--bg)' }
+  };
+  function posTier(delta) {
+    if (delta == null) return 'na';
+    if (delta <= -1.5) return 'high';
+    if (delta <= -0.5) return 'below';
+    if (delta <  0.5) return 'avg';
+    if (delta <  1.5) return 'above';
+    return 'strong';
   }
-
-  // Cat cells use rank rather than value. Lower rank = stronger.
-  function catCellStyle(rank, n) {
-    if (!rank || !n) return { bg: 'rgba(150,150,150,0.08)', color: 'var(--muted)', weight: 500 };
-    var topThird = Math.max(1, Math.ceil(n * 0.3));
-    var botThird = Math.max(1, Math.ceil(n * 0.7));
-    if (rank <= topThird) {
-      // Strong — color scales from top
-      var intensity = 1 - (rank - 1) / Math.max(1, topThird - 1) * 0.4; // 1.0 at #1, ~0.6 at edge of top
-      var alpha = 0.35 + 0.5 * intensity;
-      return { bg: 'rgba(29,158,117,' + alpha.toFixed(2) + ')', color: alpha > 0.5 ? '#fff' : '#0F6E56', weight: 600 };
-    }
-    if (rank >= botThird) {
-      var intensityW = (rank - botThird) / Math.max(1, n - botThird) * 0.5 + 0.5; // 0.5 at edge, 1.0 at last
-      var alphaW = 0.35 + 0.5 * intensityW;
-      return { bg: 'rgba(192,57,43,' + alphaW.toFixed(2) + ')', color: alphaW > 0.5 ? '#fff' : '#7a1f1f', weight: 600 };
-    }
-    return { bg: 'rgba(200,169,110,0.30)', color: 'var(--text)', weight: 500 };
+  function catTier(rank) {
+    if (rank == null) return 'na';
+    if (rank >= 9) return 'high';
+    if (rank >= 7) return 'below';
+    if (rank >= 5) return 'avg';
+    if (rank >= 3) return 'above';
+    return 'strong';
   }
-
-  function fmtVal(v) {
+  function needMult(rank) {
+    if (rank == null) return 1.0;
+    if (rank <= 2) return 0.5;
+    if (rank <= 4) return 0.8;
+    if (rank <= 6) return 1.0;
+    if (rank <= 8) return 1.4;
+    return 1.8;
+  }
+  function fmtPosDelta(v) {
     if (v == null) return '\u2014';
-    var sign = v >= 0 ? '+' : '\u2212';
-    return sign + Math.abs(v).toFixed(1);
+    return (v >= 0 ? '+' : '') + v.toFixed(1);
   }
-  function fmtRank(r) { return r ? '#' + r : '\u2014'; }
+
+  var FINE_POS = data.posRows.map(function(r){ return r.label; });
+  var ALL_CATS = data.catRows.map(function(r){ return r.label; });
+
+  var SIDE = {
+    HOME: { col: '#0F6E56', bg: 'rgba(29,158,117,0.12)' },
+    AWAY: { col: '#0C447C', bg: 'rgba(24,95,165,0.12)' }
+  };
 
   var html = '';
-  html += '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:14px">';
+  html += '<div class="card" style="padding:14px 16px;margin-bottom:14px;overflow:visible">';
+
   // Header
-  html += '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;gap:14px;flex-wrap:wrap">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:12px">';
   html += '<div>';
-  html += '<div style="font-size:13px;font-weight:500">Trade fit &mdash; heatmap</div>';
-  html += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Where each team is strong (green) or short (red). Arrows in the Fit row mark trade-fit pairs.</div>';
+  html += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Trade Fit &middot; ' + _loEsc(nameA) + ' &harr; ' + _loEsc(nameB) + '</div>';
+  html += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Side-by-side snapshot of both teams\u2019 positional strength and categorical needs. Green = surplus, red = deficit.</div>';
   html += '</div>';
-  html += '<div style="display:flex;gap:10px;font-size:11px;flex-shrink:0">';
-  html += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#1D9E75;border-radius:2px"></span>Strong</span>';
-  html += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:rgba(200,169,110,0.5);border-radius:2px"></span>Average</span>';
-  html += '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#c0392b;border-radius:2px"></span>Short</span>';
+  html += '<div style="display:flex;gap:6px;flex-shrink:0;align-items:center">';
+  html += '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:'+SIDE.HOME.bg+';color:'+SIDE.HOME.col+';font-weight:600;letter-spacing:0.04em">HOME</span>';
+  html += '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:'+SIDE.AWAY.bg+';color:'+SIDE.AWAY.col+';font-weight:600;letter-spacing:0.04em">AWAY</span>';
   html += '</div>';
   html += '</div>';
 
-  // ── Positional matrix ────────────────────────────────────────────────
-  var posLabels = data.posRows.map(function(r){ return r.label; });
-  html += '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Positional &mdash; vs league average (ROS SGP)</div>';
-  html += '<div style="display:grid;grid-template-columns:60px repeat('+posLabels.length+',minmax(0,1fr));gap:2px;margin-bottom:14px">';
-  // Header row
-  html += '<div></div>';
-  posLabels.forEach(function(lbl){
-    html += '<div style="font-size:11px;text-align:center;font-weight:500;padding:4px 0">'+lbl+'</div>';
-  });
+  // How to read this
+  if (typeof dashInfoBox === 'function') {
+    html += dashInfoBox('Two-part snapshot of your roster vs the league. <strong>Positional Strength</strong> (top row) compares your raw Team ROS SGP at each fine position (C/1B/2B/3B/SS/OF/SP/RP) against the league average. Green = surplus (you can afford to trade from here), red = deficit (priority area to add). <strong>Category Needs</strong> (bottom rows) ranks your team in each of the 10 standings categories. Rank 1 = top of the league for that cat (least need), rank 10 = bottom (highest need). The need-weights derived from these ranks drive the &times;multiplier on category pills throughout the rest of the site, so a higher rank in a category translates to a stronger pull on the Add/Drop simulator and ROS suggestions.');
+  }
+
+  // Positional Strength
+  html += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Positional Strength &middot; vs league average</div>';
   // HOME row
-  html += '<div style="font-size:10px;text-align:right;font-weight:600;color:'+COL_A_FG+';padding:4px 6px 4px 0;display:flex;align-items:center;justify-content:flex-end"><span style="padding:2px 6px;border-radius:3px;background:'+COL_A_BG+';letter-spacing:0.04em">HOME</span></div>';
-  data.posRows.forEach(function(r){
-    var s = posCellStyle(r.aVal);
-    html += '<div style="height:26px;background:'+s.bg+';display:flex;align-items:center;justify-content:center;font-size:11px;color:'+s.color+';font-weight:'+s.weight+';border-radius:2px">'+fmtVal(r.aVal)+'</div>';
+  html += '<div style="display:grid;grid-template-columns:46px repeat('+FINE_POS.length+',minmax(0,1fr));gap:6px;margin-bottom:6px;align-items:stretch">';
+  html += '<div style="display:flex;align-items:center;justify-content:flex-end;padding-right:4px"><span style="font-size:10px;padding:3px 8px;border-radius:4px;background:'+SIDE.HOME.bg+';color:'+SIDE.HOME.col+';font-weight:600;letter-spacing:0.04em">HOME</span></div>';
+  data.posRows.forEach(function(r) {
+    var delta = r.aVal;
+    var tt = posTier(delta);
+    var t = TIER[tt];
+    html += '<div style="background:'+t.bg+';border:0.5px solid '+t.border+';border-radius:6px;padding:6px 4px;text-align:center">';
+    html += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px">'+r.label+'</div>';
+    html += '<div style="font-size:13px;font-weight:600;color:'+t.text+'">'+fmtPosDelta(delta)+'</div>';
+    html += '<div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-top:1px">vs LG</div>';
+    html += '</div>';
   });
+  html += '</div>';
   // AWAY row
-  html += '<div style="font-size:10px;text-align:right;font-weight:600;color:'+COL_B_FG+';padding:4px 6px 4px 0;display:flex;align-items:center;justify-content:flex-end"><span style="padding:2px 6px;border-radius:3px;background:'+COL_B_BG+';letter-spacing:0.04em">AWAY</span></div>';
-  data.posRows.forEach(function(r){
-    var s = posCellStyle(r.bVal);
-    html += '<div style="height:26px;background:'+s.bg+';display:flex;align-items:center;justify-content:center;font-size:11px;color:'+s.color+';font-weight:'+s.weight+';border-radius:2px">'+fmtVal(r.bVal)+'</div>';
-  });
-  // Fit row (arrows)
-  html += '<div style="font-size:10px;text-align:right;font-weight:600;color:var(--muted);padding:2px 6px 0 0">Fit</div>';
-  data.posRows.forEach(function(r){
-    var tier = _tlV2PosFitTier(r.aVal, r.bVal);
-    var dir = null;
-    if (tier) {
-      if (r.aVal > 0 && r.bVal < 0) dir = 'AtoB';
-      else if (r.bVal > 0 && r.aVal < 0) dir = 'BtoA';
-    }
-    if (dir === 'AtoB') {
-      var alpha = tier === 'strong' ? '0.25' : '0.12';
-      html += '<div style="height:16px;background:rgba(29,158,117,'+alpha+');display:flex;align-items:center;justify-content:center;font-size:11px;color:'+COL_A_FG+';font-weight:700;border-radius:2px;margin-top:2px">&rarr;</div>';
-    } else if (dir === 'BtoA') {
-      var alphaB = tier === 'strong' ? '0.25' : '0.12';
-      html += '<div style="height:16px;background:rgba(24,95,165,'+alphaB+');display:flex;align-items:center;justify-content:center;font-size:11px;color:'+COL_B_FG+';font-weight:700;border-radius:2px;margin-top:2px">&larr;</div>';
-    } else {
-      html += '<div style="height:16px;margin-top:2px"></div>';
-    }
+  html += '<div style="display:grid;grid-template-columns:46px repeat('+FINE_POS.length+',minmax(0,1fr));gap:6px;margin-bottom:14px;align-items:stretch">';
+  html += '<div style="display:flex;align-items:center;justify-content:flex-end;padding-right:4px"><span style="font-size:10px;padding:3px 8px;border-radius:4px;background:'+SIDE.AWAY.bg+';color:'+SIDE.AWAY.col+';font-weight:600;letter-spacing:0.04em">AWAY</span></div>';
+  data.posRows.forEach(function(r) {
+    var delta = r.bVal;
+    var tt = posTier(delta);
+    var t = TIER[tt];
+    html += '<div style="background:'+t.bg+';border:0.5px solid '+t.border+';border-radius:6px;padding:6px 4px;text-align:center">';
+    html += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px">'+r.label+'</div>';
+    html += '<div style="font-size:13px;font-weight:600;color:'+t.text+'">'+fmtPosDelta(delta)+'</div>';
+    html += '<div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-top:1px">vs LG</div>';
+    html += '</div>';
   });
   html += '</div>';
 
-  // ── Category matrix ──────────────────────────────────────────────────
-  var catLabels = data.catRows.map(function(r){ return r.label; });
-  var n = data.nwA.n || data.nwB.n || 10;
-  html += '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Category &mdash; standings rank (lower = stronger)</div>';
-  html += '<div style="display:grid;grid-template-columns:60px repeat('+catLabels.length+',minmax(0,1fr));gap:2px">';
-  html += '<div></div>';
-  catLabels.forEach(function(lbl){
-    html += '<div style="font-size:11px;text-align:center;font-weight:500;padding:4px 0">'+lbl+'</div>';
+  // Category Needs
+  html += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Category Needs &middot; current standings rank &middot; drives simulator multipliers</div>';
+  // HOME row
+  html += '<div style="display:grid;grid-template-columns:46px repeat('+ALL_CATS.length+',minmax(0,1fr));gap:6px;margin-bottom:6px;align-items:stretch">';
+  html += '<div style="display:flex;align-items:center;justify-content:flex-end;padding-right:4px"><span style="font-size:10px;padding:3px 8px;border-radius:4px;background:'+SIDE.HOME.bg+';color:'+SIDE.HOME.col+';font-weight:600;letter-spacing:0.04em">HOME</span></div>';
+  data.catRows.forEach(function(r) {
+    var rank = r.aRank;
+    var tt = catTier(rank);
+    var t = TIER[tt];
+    var mult = needMult(rank);
+    html += '<div style="background:'+t.bg+';border:0.5px solid '+t.border+';border-radius:6px;padding:6px 4px;text-align:center">';
+    html += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px">'+r.label+'</div>';
+    html += '<div style="font-size:13px;font-weight:600;color:'+t.text+'">'+(rank||'\u2014')+'</div>';
+    html += '<div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-top:1px">Rank</div>';
+    html += '<div style="font-size:9px;color:'+t.text+';font-weight:500;margin-top:3px;background:'+t.chipBg+';border-radius:3px;padding:1px 0">\u00d7'+mult.toFixed(1)+'</div>';
+    html += '</div>';
   });
-  // HOME
-  html += '<div style="font-size:10px;text-align:right;font-weight:600;color:'+COL_A_FG+';padding:4px 6px 4px 0;display:flex;align-items:center;justify-content:flex-end"><span style="padding:2px 6px;border-radius:3px;background:'+COL_A_BG+';letter-spacing:0.04em">HOME</span></div>';
-  data.catRows.forEach(function(r){
-    var s = catCellStyle(r.aRank, n);
-    html += '<div style="height:26px;background:'+s.bg+';display:flex;align-items:center;justify-content:center;font-size:11px;color:'+s.color+';font-weight:'+s.weight+';border-radius:2px">'+fmtRank(r.aRank)+'</div>';
-  });
-  // AWAY
-  html += '<div style="font-size:10px;text-align:right;font-weight:600;color:'+COL_B_FG+';padding:4px 6px 4px 0;display:flex;align-items:center;justify-content:flex-end"><span style="padding:2px 6px;border-radius:3px;background:'+COL_B_BG+';letter-spacing:0.04em">AWAY</span></div>';
-  data.catRows.forEach(function(r){
-    var s = catCellStyle(r.bRank, n);
-    html += '<div style="height:26px;background:'+s.bg+';display:flex;align-items:center;justify-content:center;font-size:11px;color:'+s.color+';font-weight:'+s.weight+';border-radius:2px">'+fmtRank(r.bRank)+'</div>';
-  });
-  // Fit
-  html += '<div style="font-size:10px;text-align:right;font-weight:600;color:var(--muted);padding:2px 6px 0 0">Fit</div>';
-  data.catRows.forEach(function(r){
-    var tier = _tlV2CatFitTier(r.aRank, r.bRank, r.n);
-    var dir = null;
-    if (tier) {
-      var mildLine = Math.ceil(r.n * 0.45);
-      var aIsSurplus = r.aRank <= mildLine;
-      var bIsSurplus = r.bRank <= mildLine;
-      if (aIsSurplus && !bIsSurplus) dir = 'AtoB';
-      else if (bIsSurplus && !aIsSurplus) dir = 'BtoA';
-    }
-    if (dir === 'AtoB') {
-      var alpha = tier === 'strong' ? '0.25' : '0.12';
-      html += '<div style="height:16px;background:rgba(29,158,117,'+alpha+');display:flex;align-items:center;justify-content:center;font-size:11px;color:'+COL_A_FG+';font-weight:700;border-radius:2px;margin-top:2px">&rarr;</div>';
-    } else if (dir === 'BtoA') {
-      var alphaB = tier === 'strong' ? '0.25' : '0.12';
-      html += '<div style="height:16px;background:rgba(24,95,165,'+alphaB+');display:flex;align-items:center;justify-content:center;font-size:11px;color:'+COL_B_FG+';font-weight:700;border-radius:2px;margin-top:2px">&larr;</div>';
-    } else {
-      html += '<div style="height:16px;margin-top:2px"></div>';
-    }
+  html += '</div>';
+  // AWAY row
+  html += '<div style="display:grid;grid-template-columns:46px repeat('+ALL_CATS.length+',minmax(0,1fr));gap:6px;margin-bottom:14px;align-items:stretch">';
+  html += '<div style="display:flex;align-items:center;justify-content:flex-end;padding-right:4px"><span style="font-size:10px;padding:3px 8px;border-radius:4px;background:'+SIDE.AWAY.bg+';color:'+SIDE.AWAY.col+';font-weight:600;letter-spacing:0.04em">AWAY</span></div>';
+  data.catRows.forEach(function(r) {
+    var rank = r.bRank;
+    var tt = catTier(rank);
+    var t = TIER[tt];
+    var mult = needMult(rank);
+    html += '<div style="background:'+t.bg+';border:0.5px solid '+t.border+';border-radius:6px;padding:6px 4px;text-align:center">';
+    html += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px">'+r.label+'</div>';
+    html += '<div style="font-size:13px;font-weight:600;color:'+t.text+'">'+(rank||'\u2014')+'</div>';
+    html += '<div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-top:1px">Rank</div>';
+    html += '<div style="font-size:9px;color:'+t.text+';font-weight:500;margin-top:3px;background:'+t.chipBg+';border-radius:3px;padding:1px 0">\u00d7'+mult.toFixed(1)+'</div>';
+    html += '</div>';
   });
   html += '</div>';
 
-  // ── Plain-English fit summary ─────────────────────────────────────────
+  // Top fit pairs strip
   var aToB = [];
   var bToA = [];
   data.posRows.forEach(function(r) {
@@ -22115,26 +22092,35 @@ function _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB) {
   data.catRows.forEach(function(r) {
     var tier = _tlV2CatFitTier(r.aRank, r.bRank, r.n);
     if (!tier) return;
-    var aIsSurplus = r.aRank <= Math.ceil(r.n * 0.45);
-    var bIsSurplus = r.bRank <= Math.ceil(r.n * 0.45);
+    var mildLine = Math.ceil(r.n * 0.45);
+    var aIsSurplus = r.aRank <= mildLine;
+    var bIsSurplus = r.bRank <= mildLine;
     if (aIsSurplus && !bIsSurplus) aToB.push(r.label);
     else if (bIsSurplus && !aIsSurplus) bToA.push(r.label);
   });
-  var totalPairs = aToB.length + bToA.length;
-  html += '<div style="margin-top:14px;padding-top:10px;border-top:0.5px dashed var(--border);display:flex;gap:16px;font-size:10px;color:var(--muted);flex-wrap:wrap">';
-  html += '<span><strong style="color:var(--text)">HOME &rarr; AWAY</strong> &mdash; HOME has surplus, AWAY is short.</span>';
-  html += '<span><strong style="color:var(--text)">AWAY &rarr; HOME</strong> &mdash; AWAY has surplus, HOME is short.</span>';
-  html += '</div>';
-  html += '<div style="margin-top:10px;padding:10px 12px;background:var(--bg);border-radius:6px;font-size:12px;line-height:1.5">';
-  if (totalPairs === 0) {
-    html += '<strong>Fit summary:</strong> <span style="color:var(--muted)">No clear asymmetries between these two teams. They look balanced across positions and cats &mdash; trades would have to be tactical (regression bets, schedule arbitrage) rather than need-based.</span>';
-  } else {
-    html += '<strong>Fit summary:</strong> '+totalPairs+' overlap pair'+(totalPairs===1?'':'s')+' identified. ';
-    if (aToB.length) html += _loEsc(nameA)+' can send strength in <strong style="color:'+COL_A_FG+'">'+aToB.join(', ')+'</strong>. ';
-    if (bToA.length) html += _loEsc(nameB)+' can send strength in <strong style="color:'+COL_B_FG+'">'+bToA.join(', ')+'</strong>. ';
-    if (aToB.length && bToA.length) html += '<em style="color:var(--muted)">Strong mutual-fit trade pattern.</em>';
-    else html += '<em style="color:var(--muted)">One-directional fit &mdash; may require sweetener to balance.</em>';
+  if (aToB.length || bToA.length) {
+    html += '<div style="display:flex;gap:8px;align-items:flex-start;background:var(--bg);border-radius:6px;padding:9px 12px;margin-bottom:10px">';
+    html += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);min-width:74px;padding-top:1px">Trade fits</div>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:5px;flex:1">';
+    aToB.forEach(function(lbl) {
+      html += '<span style="font-size:10px;color:'+SIDE.HOME.col+';background:'+SIDE.HOME.bg+';border:0.5px solid rgba(29,158,117,0.30);border-radius:10px;padding:2px 8px;font-weight:500">'+lbl+' &middot; HOME &rarr; AWAY</span>';
+    });
+    if (aToB.length && bToA.length) {
+      html += '<span style="display:inline-block;width:0.5px;height:14px;background:var(--border);align-self:center;margin:0 3px"></span>';
+    }
+    bToA.forEach(function(lbl) {
+      html += '<span style="font-size:10px;color:'+SIDE.AWAY.col+';background:'+SIDE.AWAY.bg+';border:0.5px solid rgba(24,95,165,0.30);border-radius:10px;padding:2px 8px;font-weight:500">'+lbl+' &middot; AWAY &rarr; HOME</span>';
+    });
+    html += '</div></div>';
   }
+
+  // Legend
+  html += '<div style="display:flex;flex-wrap:wrap;gap:14px;font-size:10px;color:var(--muted)">';
+  html += '<div style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(226,75,74,0.40)"></span>High need (9\u201310)</div>';
+  html += '<div style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(186,117,23,0.40)"></span>Below avg (7\u20138)</div>';
+  html += '<div style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(136,135,128,0.40)"></span>Average (5\u20136)</div>';
+  html += '<div style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(74,154,104,0.40)"></span>Above avg (3\u20134)</div>';
+  html += '<div style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(30,107,58,0.50)"></span>Already strong (1\u20132)</div>';
   html += '</div>';
 
   html += '</div>';
@@ -22274,9 +22260,9 @@ function _tlV2RenderBuild() {
     h += '</div></div>';
     return h;
   }
-  // Build the player pickers as a string (instead of appending directly to html)
-  // so we can re-order: Fit heatmap → Pickers → Suggested trades → ...
-  var pickersHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">'
+  // Build the player pickers stacked vertically (single column). They sit in
+  // the LEFT rail of a 30/70 split alongside the fit card on the right.
+  var pickersHtml = '<div style="display:flex;flex-direction:column;gap:14px">'
     + pickerHtml('A', nameA, sendA, byKeyA, rosterA)
     + pickerHtml('B', nameB, sendB, byKeyB, rosterB)
     + '</div>';
@@ -22299,14 +22285,18 @@ function _tlV2RenderBuild() {
   }
 
   if (sendA.length === 0 && sendB.length === 0) {
-    // Fit heatmap at the very top (above pickers), half width.
+    // Compute fit HTML once for the top row.
+    var fitHtmlEmpty = '';
     if (typeof _tlV2RenderTeamFitHtml === 'function') {
-      try { html += halfCol(_tlV2RenderTeamFitHtml(tA, tB, nameA, nameB)); }
+      try { fitHtmlEmpty = _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB); }
       catch(e) { console.warn('[TradeLab] team-fit render (empty state) failed:', e); }
     }
-    // Pickers underneath fit.
-    html += pickersHtml;
-    // Compact suggested-trades-with-AWAY card after pickers, half width.
+    // Top row: pickers (30%) | fit card (70%).
+    html += '<div style="display:grid;grid-template-columns:30% minmax(0,1fr);gap:14px;margin-bottom:14px;align-items:start">'
+      + '<div style="min-width:0">' + pickersHtml + '</div>'
+      + '<div style="min-width:0">' + fitHtmlEmpty + '</div>'
+      + '</div>';
+    // Compact suggested-trades-with-AWAY card under the top row, centered half width.
     if (typeof _tlV2RenderSuggestedTradesHtml === 'function') {
       try { html += halfCol(_tlV2RenderSuggestedTradesHtml(tA, tB, nameA, nameB)); }
       catch(e) { console.warn('[TradeLab] suggested-trades render (empty state) failed:', e); }
@@ -22486,9 +22476,15 @@ function _tlV2RenderBuild() {
   catImpactCard += '</div></div>';
   analyticsHtml += halfCol(catImpactCard);
 
-  // Final assembly: Fit heatmap → Pickers → (suggested + verdict + cat-impact
-  // + team-needs inside analyticsHtml) → Roster tables → Caveats below.
-  html = fitHtml + pickersHtml + analyticsHtml + rosterTablesHtml;
+  // Top row: pickers (left, ~30%) + Trade Fit card (right, ~70%).
+  var topRowHtml = '<div style="display:grid;grid-template-columns:30% minmax(0,1fr);gap:14px;margin-bottom:14px;align-items:start">'
+    + '<div style="min-width:0">' + pickersHtml + '</div>'
+    + '<div style="min-width:0">' + fitHtml    + '</div>'
+    + '</div>';
+
+  // Final assembly: TopRow (pickers | fit) → analyticsHtml (suggested + verdict
+  // + cat-impact + team-needs) → Roster tables → Caveats below.
+  html = topRowHtml + analyticsHtml + rosterTablesHtml;
 
   var caveats = [];
   function teamCountAtGroup(roster, group) { return roster.filter(function(p){ return _tlV2PosGroup(p.pos) === group; }).length; }
