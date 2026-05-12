@@ -22376,6 +22376,30 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
   var addFPs   = sendB.map(function(k){ return resolveFP(byKeyB, k); }).filter(Boolean).slice(0, 2);
   var dropCSs  = sendA.map(function(k){ return (byKeyA[k] && byKeyA[k].cs) || null; }).slice(0, 2);
 
+  // Build "roster row" objects in the format _rosAdRenderStats expects, so it
+  // can read ._fp (FantasyPros projection — has fWAR + ratings) and ._cs
+  // (current-season stats). Without _fp, fwar / ratings / projected stats are
+  // dashes in the stats table.
+  var dropRowObjs = sendA.slice(0, 2).map(function(k){
+    var entry = byKeyA[k];
+    if (!entry) return null;
+    var fp = entry.fp || null;
+    var cs = entry.cs || null;
+    var isHit = !!entry.isHit;
+    var displayName = (fp && (fp._displayName || fp.name)) || (cs && cs.name) || entry.name || k;
+    return {
+      _key: k,
+      _displayName: displayName,
+      _pos: (cs && cs.pos) || entry.pos || (fp && fp._pos) || '',
+      _currSGP: (typeof _rosCurrSGP === 'function' && cs) ? (_rosCurrSGP(cs, isHit) || 0) : 0,
+      _rosSGP:  (typeof _rosAdPlayerSGP === 'function' && fp) ? (_rosAdPlayerSGP(fp, isHit) || 0) : 0,
+      hs: (fp && fp.hs) || (cs && cs.hs) || '',
+      isHit: isHit,
+      _cs: cs,
+      _fp: fp
+    };
+  }).filter(Boolean);
+
   // Override globals so the renderers see HOME as the active team and use
   // HOME's need multipliers + rate-stat context.
   var origSelected = window._rosSelectedTeam;
@@ -22386,9 +22410,11 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
   }
 
   // Set the simulator's global state arrays (used by the renderers).
+  // _rosDropPlayerObjs must contain roster-row objects (with ._fp) so that
+  // _rosAdRenderStats can build the projected-stats table and radar.
   window._rosAdSelected     = addFPs.slice();
   window._rosDropSelected   = sendA.slice(0, 2);
-  window._rosDropPlayerObjs = dropCSs.slice();
+  window._rosDropPlayerObjs = dropRowObjs.slice();
 
   // ── Populate the player-card DOM for each filled slot ────────────────
   var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : { r:65.4, hr:21.2, rbi:54.8, sb:17.0, avg:0.008, w:15.3, k:216.8, svh3:18.5, era:0.106, whip:0.0191 };
@@ -22724,48 +22750,8 @@ function _tlV2RenderBuild() {
   // heatmap at the top of the tab, which already shows both teams' cat ranks
   // and need-weight multipliers in the same tile format.)
 
-  // ── Category-by-category impact ─────────────────────────────────────────
-  // Stacked vertically: Team A above, Team B below. Each row is a category
-  // with a horizontal bar showing the SGP delta (signed). Negative = bar
-  // grows left in red, positive = right in green.
-  function catBarRow(cat, delta, maxAbs) {
-    var rank = nwA.catRanks[cat]; // reused below but team-specific in actual call
-    var pct = Math.round(Math.abs(delta) / Math.max(0.01, maxAbs) * 100);
-    var sign = delta >= 0 ? '+' : '\u2212';
-    var col = delta >= 0.05 ? '#1e6b3a' : delta <= -0.05 ? '#c0392b' : 'var(--muted)';
-    var bg = delta >= 0.05 ? 'rgba(30,107,58,0.6)' : delta <= -0.05 ? 'rgba(192,57,43,0.6)' : 'rgba(150,150,150,0.3)';
-    var h = '<div style="display:grid;grid-template-columns:50px 1fr 1fr 60px;gap:8px;align-items:center;font-size:11px">';
-    h += '<div style="font-weight:500;text-align:right">'+cat+'</div>';
-    // Left half (negative)
-    h += '<div style="height:14px;background:rgba(45,90,61,0.04);border-radius:2px;position:relative;display:flex;flex-direction:row-reverse">';
-    if (delta < 0) h += '<div style="height:100%;width:'+pct+'%;background:'+bg+';border-radius:2px"></div>';
-    h += '</div>';
-    // Right half (positive)
-    h += '<div style="height:14px;background:rgba(45,90,61,0.04);border-radius:2px;position:relative">';
-    if (delta > 0) h += '<div style="height:100%;width:'+pct+'%;background:'+bg+';border-radius:2px"></div>';
-    h += '</div>';
-    h += '<div style="font-size:11px;color:'+col+';font-weight:500">'+sign+Math.abs(delta).toFixed(2)+'</div>';
-    h += '</div>';
-    return h;
-  }
-  function catImpactSection(label, deltaMap, color) {
-    var maxAbs = 0;
-    ALL_CATS.forEach(function(cat){ maxAbs = Math.max(maxAbs, Math.abs(deltaMap[cat])); });
-    if (maxAbs < 0.01) maxAbs = 1;
-    var h = '<div style="margin-bottom:12px">';
-    h += '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:'+color+';margin-bottom:6px">'+_loEsc(label)+'</div>';
-    h += '<div style="display:flex;flex-direction:column;gap:4px">';
-    ALL_CATS.forEach(function(cat){ h += catBarRow(cat, deltaMap[cat], maxAbs); });
-    h += '</div></div>';
-    return h;
-  }
-  var catImpactCard = '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px">';
-  catImpactCard += '<div style="padding:12px 16px;background:var(--bg);border-bottom:0.5px solid var(--border)"><span style="font-size:13px;font-weight:500">Category-by-category impact</span><span style="font-size:11px;color:var(--muted);margin-left:8px">net SGP shift per cat after the trade</span></div>';
-  catImpactCard += '<div style="padding:14px 16px">';
-  catImpactCard += catImpactSection('HOME (' + nameA + ') \u2014 net delta per cat', aCatDelta, '#0F6E56');
-  catImpactCard += catImpactSection('AWAY (' + nameB + ') \u2014 net delta per cat', bCatDelta, '#0C447C');
-  catImpactCard += '</div></div>';
-  analyticsHtml += halfCol(catImpactCard);
+  // (Category-by-category impact card removed — no longer needed; the
+  // Trade Verification radar + breakdown table cover this view.)
 
   // Left rail (top row): HOME picker → AWAY picker → Verdict.
   var leftRailHtml = '<div style="display:flex;flex-direction:column;gap:14px;min-width:0">'
