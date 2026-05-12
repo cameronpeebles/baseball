@@ -21399,7 +21399,10 @@ function _tlV2GetTeamRoster(tid, weightTeamId) {
       var key = (typeof _normPlayerKey === 'function') ? _normPlayerKey(nm) : nm.toLowerCase();
       var entry = rl[key];
       if (!entry || entry.teamId !== tid) return;
-      if (statusByName[key] === '3') return;
+      // (IL/Reserve filter removed — Trade Lab needs to show ALL rostered
+      // players including IR and minor-league assignments so they can be
+      // traded. Status is captured on the roster entry for badge display.)
+      var status = statusByName[key] || '1';
       var rosSGP = (typeof _rosAdPlayerSGP === 'function') ? (_rosAdPlayerSGP(p, isHit) || 0) : 0;
       var rosRawSGP = (typeof _rosRawPlayerSGP === 'function') ? (_rosRawPlayerSGP(p, isHit) || 0) : 0;
       var curRow = cs[key] || null;
@@ -21408,6 +21411,7 @@ function _tlV2GetTeamRoster(tid, weightTeamId) {
         key: key, name: nm,
         pos: (curRow && curRow.pos) || (p.pos || ''),
         isHit: isHit, rosSGP: rosSGP, rosRawSGP: rosRawSGP, curSGP: curSGP,
+        status: status,
         fp: p, cs: curRow
       });
     });
@@ -21857,6 +21861,7 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState,
       key: p.key, name: _stripFP(nm), pos: p.pos || '',
       mlb: cs.mlb || '',
       isHit: p.isHit,
+      status: p.status || '1',
       fwarPct: fwarPct, pos_rat: posRat,
       curr: (currSgp != null && !isNaN(currSgp)) ? currSgp : null,
       rosRaw: p.rosRawSGP != null ? p.rosRawSGP : null,
@@ -21964,6 +21969,12 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState,
     h += '<tr style="border-top:0.5px solid var(--border);'+rowBg+'">';
     h += '<td style="padding:6px 8px">';
     h += '<div style="font-weight:500">'+_loEsc(r.name);
+    // Status stamp: IL (status '3') in amber, Reserve (status '2') in gray.
+    if (r.status === '3') {
+      h += ' <span style="font-size:9px;color:#b7791f;padding:1px 5px;border-radius:3px;background:#fef3e2;font-weight:600;letter-spacing:0.04em">IL</span>';
+    } else if (r.status === '2') {
+      h += ' <span style="font-size:9px;color:#666;padding:1px 5px;border-radius:3px;background:#f0f0f0;font-weight:600;letter-spacing:0.04em">RES</span>';
+    }
     if (selected) h += ' <span style="font-size:9px;color:#0F6E56;padding:1px 5px;border-radius:3px;background:rgba(29,158,117,0.12);font-weight:500">SELECTED</span>';
     h += '</div>';
     h += '<div style="font-size:9px;color:var(--muted)">'+_loEsc(r.pos)+(r.mlb?' &middot; '+_loEsc(r.mlb):'')+'</div>';
@@ -22822,7 +22833,13 @@ function _tlV2RenderBuild() {
     h += '<div style="padding:10px 12px;min-height:100px">';
     picked.forEach(function(p) {
       h += '<div style="display:flex;align-items:center;padding:8px 10px;gap:10px;background:rgba(45,90,61,0.06);border-radius:6px;margin-bottom:6px;border:0.5px solid var(--accent)">';
-      h += '<span style="font-size:12px;font-weight:500;flex:1">'+_loEsc(p.name)+'</span>';
+      h += '<span style="font-size:12px;font-weight:500;flex:1">'+_loEsc(p.name);
+      if (p.status === '3') {
+        h += ' <span style="font-size:9px;color:#b7791f;padding:1px 5px;border-radius:3px;background:#fef3e2;font-weight:600;letter-spacing:0.04em">IL</span>';
+      } else if (p.status === '2') {
+        h += ' <span style="font-size:9px;color:#666;padding:1px 5px;border-radius:3px;background:#f0f0f0;font-weight:600;letter-spacing:0.04em">RES</span>';
+      }
+      h += '</span>';
       h += '<span style="font-size:10px;color:var(--muted)">'+_loEsc(p.pos)+'</span>';
       h += '<span style="font-size:12px;font-weight:600;color:var(--accent)">+'+p.rosSGP.toFixed(2)+'</span>';
       h += '<span onclick="window._tlV2RemovePlayer(\''+side+'\',\''+p.key+'\')" style="font-size:14px;color:var(--muted);cursor:pointer;padding:0 4px" title="Remove">&times;</span>';
@@ -22831,7 +22848,8 @@ function _tlV2RenderBuild() {
     h += '<select onchange="window._tlV2AddPlayer(\''+side+'\',this.value);this.value=\'\'" style="width:100%;padding:8px 10px;font-size:12px;border:0.5px dashed var(--border);background:transparent;color:var(--muted);border-radius:6px;cursor:pointer">';
     h += '<option value="">+ add player from '+_loEsc(name)+' roster</option>';
     unpicked.forEach(function(p) {
-      h += '<option value="'+_loEsc(p.key)+'">'+_loEsc(p.name)+' &middot; '+_loEsc(p.pos)+' &middot; ROS '+p.rosSGP.toFixed(2)+'</option>';
+      var statusTag = p.status === '3' ? ' [IL]' : p.status === '2' ? ' [RES]' : '';
+      h += '<option value="'+_loEsc(p.key)+'">'+_loEsc(p.name)+statusTag+' &middot; '+_loEsc(p.pos)+' &middot; ROS '+p.rosSGP.toFixed(2)+'</option>';
     });
     h += '</select>';
     h += '</div></div>';
