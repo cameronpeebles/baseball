@@ -307,7 +307,7 @@ td.neg { color: #c0392b; font-weight: 500; }
       <button onclick="showPage('teamroster',this)">Team Roster</button>
       <button onclick="showPage('archetype',this)">Team Archetype</button>
       <button onclick="showPage('lineuporg',this)">Lineup Organizer</button>
-      <button onclick="showPage('ros',this)">Trade &amp; Waiver</button>
+      <button onclick="showPage('ros',this)">Waiver Wire</button>
       <button onclick="showPage('tradelab',this)">Trade Lab</button>
     </div>
   </div>
@@ -700,14 +700,10 @@ td.neg { color: #c0392b; font-weight: 500; }
   </div>
   <div class="page" id="page-historic" style="display:none"></div>
   <div class="page" id="page-ros">
-    <div class="page-title">Trade &amp; Waiver</div>
+    <div class="page-title">Waiver Wire</div>
     <div class="page-subtitle">FantasyPros consensus rest-of-season projections for all players.</div>
     <div id="ros-team-dropdown" style="margin-bottom:10px"></div>
     <div id="ros-team-need-top" style="margin-bottom:14px"></div>
-    <div class="trade-tabs" id="ros-tabs">
-      <button class="trade-tab active" onclick="showROSTab('waivers',this)">Waiver Wire</button>
-      <button class="trade-tab" onclick="showROSTab('trades',this)">Trades</button>
-    </div>
     <div id="ros-addrop-panel" style="display:none;margin-bottom:14px;overflow:visible"></div>
     <div id="ros-body"><div class="loading">Loading...</div></div>
   </div>
@@ -8232,6 +8228,10 @@ function renderLineupOrgPage() {
     statusPill = '<span style="font-size:10px;padding:3px 8px;border-radius:10px;background:rgba(186,117,23,0.10);color:#854f0b;text-transform:uppercase;letter-spacing:0.06em;font-weight:500" title="data/probables.json not found. Run fetch_fantrax.py to populate.">Matchup data missing</span>';
   }
   ctrl.innerHTML = '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="font-size:13px;font-weight:500;color:var(--muted)">Team:</span>'+selHtml+statusPill+fetchedCaption+'<span style="font-size:11px;color:var(--muted);margin-left:auto">'+_loFmtDate(new Date())+'</span></div>';
+  // "How this works" info box — explains the per-game scoring + matchup logic.
+  if (typeof dashInfoBox === 'function') {
+    ctrl.innerHTML += dashInfoBox('Each starter slot lists the candidates on your roster ranked by an <strong>adjusted ROS-SGP-per-game score</strong> for today\u2019s matchup. <strong>Hitters</strong>: blend of ROS projection per game (50%) + current-season per-game (50%), zeroed out if their MLB team isn\u2019t playing today, then scaled by the opposing starter\u2019s ERA quartile (Tough \u00d70.91 \u2192 Easy \u00d71.09). <strong>Pitchers</strong>: ROS-per-start for SP, ROS-per-game for RP, zeroed when their team isn\u2019t playing. SP also get a matchup multiplier based on the opposing lineup\u2019s aggregate offensive strength (top 9 hitters\u2019 ROS-SGP-per-game, quartiled across MLB). The player at the top of each slot is the optimizer\u2019s pick \u2014 not necessarily who you have in your Fantrax lineup right now. Use the <em>Matchup data</em> pill to verify probables for today have loaded.');
+  }
   _loRender();
 }
 
@@ -15659,7 +15659,7 @@ function buildCorrelations(el) {
     html += '<span style="width:40px;font-size:12px;font-weight:600;text-align:right;color:var(--text)">' + cc.cat + '</span>';
     html += '<div style="flex:1;height:18px;background:var(--bg);border-radius:3px;overflow:hidden">';
     html += '<div style="height:100%;width:' + barW + '%;background:' + col + ';border-radius:3px;transition:width 0.3s"></div></div>';
-    html += '<span style="width:90px;font-size:12px;color:' + col + ';font-weight:500">' + sign + Math.abs(cc.r).toFixed(2) + ' - ' + corrLabel(cc.r).split(' ')[0] + '</span>';
+    html += '<span style="width:118px;font-size:12px;color:' + col + ';font-weight:500;white-space:nowrap">' + sign + Math.abs(cc.r).toFixed(2) + ' - ' + corrLabel(cc.r).split(' ')[0] + '</span>';
     html += '</div>';
   });
   html += '</div></div>';
@@ -21275,7 +21275,7 @@ function _tlV2RenderSuggest() {
       }
     } catch(e) {
       console.warn('[TradeLab] Team Need render failed:', e);
-      html += '<div style="padding:12px 16px;background:var(--bg);border-radius:8px;margin-bottom:16px;color:var(--muted);font-size:12px">Team Need card unavailable. Try the Trade &amp; Waiver page first to warm the data.</div>';
+      html += '<div style="padding:12px 16px;background:var(--bg);border-radius:8px;margin-bottom:16px;color:var(--muted);font-size:12px">Team Need card unavailable. Try the Waiver Wire page first to warm the data.</div>';
     }
   }
 
