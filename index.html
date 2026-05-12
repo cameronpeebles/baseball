@@ -667,18 +667,8 @@ td.neg { color: #c0392b; font-weight: 500; }
 
   <div class="page" id="page-tradelab">
     <div class="page-title">Trade Lab</div>
-    <div class="page-subtitle">Scout potential trade partners and build proposals.</div>
-    <div id="tradelab-team-pickers" style="margin-bottom:14px"></div>
-    <div class="trade-tabs" id="tradelab-tabs">
-      <button class="trade-tab active" onclick="showTradeLabTab('suggest',this)">Suggest</button>
-      <button class="trade-tab" onclick="showTradeLabTab('build',this)">Build Trade</button>
-    </div>
-    <div id="tradelab-tab-suggest" class="trade-tab-content active">
-      <div id="tradelab-suggest-body"><div class="loading">Pick a team to see suggested partners.</div></div>
-    </div>
-    <div id="tradelab-tab-build" class="trade-tab-content">
-      <div id="tradelab-build-body"><div class="loading">Select two teams to build a trade.</div></div>
-    </div>
+    <div class="page-subtitle">Build and verify trade proposals.</div>
+    <div id="tradelab-build-body"><div class="loading">Loading roster data&hellip;</div></div>
   </div>
 
   <div class="page" id="page-trade">
@@ -20979,7 +20969,7 @@ function _tlBuildPlayerCard(p, isHit, teamId) {
 // ── Trade Lab v2 ──────────────────────────────────────────────────────────
 // Two-tab page: Compare (side-by-side roster diagnostics) + Build Trade
 // (player-pickers, SGP delta, verdict). Reuses existing data sources.
-window._tlV2 = window._tlV2 || { teamA: null, teamB: null, sendA: [], sendB: [], activeTab: 'suggest', sortA: { col: 'curr', dir: 'desc' }, sortB: { col: 'curr', dir: 'desc' } };
+window._tlV2 = window._tlV2 || { teamA: null, teamB: null, sendA: [], sendB: [], activeTab: 'build', sortA: { col: 'curr', dir: 'desc' }, sortB: { col: 'curr', dir: 'desc' } };
 // Ensure sort fields exist for existing sessions where the object was already created.
 if (!window._tlV2.sortA) window._tlV2.sortA = { col: 'curr', dir: 'desc' };
 if (!window._tlV2.sortB) window._tlV2.sortB = { col: 'curr', dir: 'desc' };
@@ -21078,17 +21068,7 @@ function _tlV2PlayerCatSGP(player) {
   return out;
 }
 
-window.showTradeLabTab = function(tab, btn) {
-  document.querySelectorAll('#page-tradelab .trade-tab').forEach(function(b){ b.classList.remove('active'); });
-  btn.classList.add('active');
-  document.querySelectorAll('#page-tradelab .trade-tab-content').forEach(function(c){ c.classList.remove('active'); });
-  document.getElementById('tradelab-tab-' + tab).classList.add('active');
-  window._tlV2.activeTab = tab;
-  // Re-render pickers (some tabs hide the Team B selector).
-  _tlV2RenderTeamPickers();
-  if (tab === 'build') _tlV2RenderBuild();
-  else _tlV2RenderSuggest();
-};
+// (showTradeLabTab removed — Suggest tab no longer exists, only Build remains.)
 
 function renderROSTradeLab() {
   if (typeof TA === 'undefined' || !TA.players || !TA.players.length) {
@@ -21097,54 +21077,26 @@ function renderROSTradeLab() {
   if (typeof renderROSPage === 'function' && (!window._rosHitData || !window._rosHitData.length)) {
     try { renderROSPage(); } catch (e) {}
   }
-  _tlV2RenderTeamPickers();
-  if (window._tlV2.activeTab === 'build') _tlV2RenderBuild();
-  else _tlV2RenderSuggest();
+  // Initialize team A/B defaults if they haven't been set yet.
+  var teamIds = Object.keys((S && S.teamInfo) || {});
+  if (!window._tlV2.teamA && teamIds.length) {
+    window._tlV2.teamA = (window._rosSelectedTeam && S.teamInfo[window._rosSelectedTeam]) ? window._rosSelectedTeam : teamIds[0];
+  }
+  if (!window._tlV2.teamB && teamIds.length) {
+    var aIdx = teamIds.indexOf(window._tlV2.teamA);
+    window._tlV2.teamB = teamIds[(aIdx + 1) % teamIds.length];
+  }
+  _tlV2RenderBuild();
 }
 
-function _tlV2RenderTeamPickers() {
-  var el = document.getElementById('tradelab-team-pickers');
-  if (!el) return;
-  var teams = Object.keys(S.teamInfo || {}).map(function(id){
-    return { id: id, name: (S.teamInfo[id].shortName || S.teamInfo[id].name || id) };
-  }).sort(function(a,b){ return a.name.localeCompare(b.name); });
-  if (!teams.length) { el.innerHTML = ''; return; }
-  if (!window._tlV2.teamA) window._tlV2.teamA = (window._rosSelectedTeam && S.teamInfo[window._rosSelectedTeam]) ? window._rosSelectedTeam : teams[0].id;
-  if (!window._tlV2.teamB) {
-    var aIdx = teams.findIndex(function(t){ return t.id === window._tlV2.teamA; });
-    window._tlV2.teamB = teams[(aIdx + 1) % teams.length].id;
-  }
-  function selHtml(label, current, sideKey) {
-    var h = '<div style="display:flex;flex-direction:column;gap:6px">';
-    h += '<label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">'+label+'</label>';
-    h += '<select onchange="window._tlV2TeamChange(\''+sideKey+'\',this.value)" style="padding:8px 10px;font-size:13px;border:0.5px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">';
-    teams.forEach(function(t){
-      h += '<option value="'+t.id+'"'+(t.id===current?' selected':'')+'>'+_loEsc(t.name)+'</option>';
-    });
-    h += '</select></div>';
-    return h;
-  }
-  var isSuggest = (window._tlV2.activeTab !== 'build');
-  if (isSuggest) {
-    // Suggest tab: only the home selector is meaningful.
-    el.innerHTML = '<div style="display:grid;grid-template-columns:1fr;gap:14px;max-width:360px">'
-      + selHtml('Your team', window._tlV2.teamA, 'A')
-      + '</div>';
-  } else {
-    el.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'
-      + selHtml('HOME team', window._tlV2.teamA, 'A')
-      + selHtml('AWAY team', window._tlV2.teamB, 'B')
-      + '</div>';
-  }
-}
+// (_tlV2RenderTeamPickers removed — team selection is now inside each picker card.)
 
 window._tlV2TeamChange = function(side, val) {
   if (side === 'A') window._tlV2.teamA = val;
   else window._tlV2.teamB = val;
   window._tlV2.sendA = [];
   window._tlV2.sendB = [];
-  if (window._tlV2.activeTab === 'build') _tlV2RenderBuild();
-  else _tlV2RenderSuggest();
+  _tlV2RenderBuild();
 };
 
 function _tlV2GetTeamName(tid) {
@@ -21619,58 +21571,64 @@ window._tlV2BuildWith = function(oppTid) {
   window._tlV2.teamB = oppTid;
   window._tlV2.sendA = [];
   window._tlV2.sendB = [];
-  document.querySelectorAll('#page-tradelab .trade-tab').forEach(function(b){ b.classList.remove('active'); });
-  var btn = document.querySelector('#page-tradelab .trade-tab[onclick*="build"]');
-  if (btn) btn.classList.add('active');
-  document.querySelectorAll('#page-tradelab .trade-tab-content').forEach(function(c){ c.classList.remove('active'); });
-  document.getElementById('tradelab-tab-build').classList.add('active');
-  window._tlV2.activeTab = 'build';
-  _tlV2RenderTeamPickers();
   _tlV2RenderBuild();
 };
 
 
 // ── Roster table for the Build tab ─────────────────────────────────────────
-// Columns: Player · fWAR · fWAR% · Lg · Pos · Curr · ROS · Action
-// All columns sortable. Selected players highlighted with green tint + REMOVE.
-function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState) {
+// Renders ONE table for one side (HOME or AWAY) and one player kind (hitters
+// or pitchers). Columns differ by kind: hitters get R/HR/RBI/SB/AVG +
+// fWAR%/Pos rating + Curr/ROS SGP; pitchers get W/K/SVH3/ERA/WHIP + same
+// ratings + SGP columns. fWAR and Lg dropped from the previous version per
+// user request.
+function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState, kind) {
   // Normalize: FantasyPros names sometimes come in as "Jose Ramirez (CLE - 3B)".
   // Strip the paren suffix BEFORE applying _nrm so the key matches the
-  // _lgRatingLookup / _fwarPctLookup entries (which key on plain
-  // `scorer.name.toLowerCase()` from Fantrax stat rows — no parens).
+  // `scorer.name.toLowerCase()` from Fantrax stat rows — no parens.
   function _stripFP(n) { return (n||'').replace(/\s*\([^)]*\).*$/, '').trim(); }
   function _nrm(n) { return _stripFP(n).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
-  // Build a per-player metrics row.
-  var rows = roster.map(function(p) {
+  var wantHit = (kind === 'hit');
+
+  // Filter roster to the player kind for this table.
+  var kindRoster = roster.filter(function(p){ return !!p.isHit === wantHit; });
+
+  // Build a per-player metrics row including current-season cat stats from cs.
+  var rows = kindRoster.map(function(p) {
     var nm = p.name || '';
     var k  = _nrm(nm);
     var sgpKey = (typeof _normPlayerKey === 'function') ? _normPlayerKey(nm) : k;
-    // fWAR raw
-    var fwarVal = null;
-    if (typeof FWAR !== 'undefined') {
-      var fwArr = p.isHit ? (FWAR.hitResults || []) : (FWAR.pitResults || []);
-      for (var i = 0; i < fwArr.length; i++) {
-        if (_nrm(fwArr[i].name || '') === k) { fwarVal = fwArr[i].fWAR; break; }
-      }
-    }
     var fwarPct = p.isHit
       ? ((window._fwarPctLookupHit || window._fwarPctLookup || {})[k])
       : ((window._fwarPctLookupPit || window._fwarPctLookup || {})[k]);
-    var lgRatRaw  = (window._lgRatingLookup  || {})[k];
     var posRatRaw = (window._posRatingLookup || {})[k];
-    var lgRat  = (lgRatRaw  != null && !isNaN(lgRatRaw))  ? lgRatRaw  * 100 : null;
     var posRat = (posRatRaw != null && !isNaN(posRatRaw)) ? posRatRaw * 100 : null;
     var currSgp = p.isHit ? (window._playerCurrSgpHit||{})[sgpKey] : (window._playerCurrSgpPit||{})[sgpKey];
-    return {
+    var cs = p.cs || {};
+    var base = {
       key: p.key, name: _stripFP(nm), pos: p.pos || '',
-      mlb: (p.cs && p.cs.mlb) || '',
+      mlb: cs.mlb || '',
       isHit: p.isHit,
-      fwar: fwarVal, fwarPct: fwarPct, lg: lgRat, pos_rat: posRat,
+      fwarPct: fwarPct, pos_rat: posRat,
       curr: (currSgp != null && !isNaN(currSgp)) ? currSgp : null,
-      ros: p.rosSGP != null ? p.rosSGP : null
+      ros:  p.rosSGP != null ? p.rosSGP : null
     };
+    if (wantHit) {
+      base.R   = (cs.R   != null && !isNaN(cs.R))   ? cs.R   : null;
+      base.HR  = (cs.HR  != null && !isNaN(cs.HR))  ? cs.HR  : null;
+      base.RBI = (cs.RBI != null && !isNaN(cs.RBI)) ? cs.RBI : null;
+      base.SB  = (cs.SB  != null && !isNaN(cs.SB))  ? cs.SB  : null;
+      base.AVG = (cs.AVG != null && !isNaN(cs.AVG)) ? cs.AVG : null;
+    } else {
+      base.W    = (cs.W    != null && !isNaN(cs.W))    ? cs.W    : null;
+      base.K    = (cs.K    != null && !isNaN(cs.K))    ? cs.K    : null;
+      base.SVH3 = (cs.SVH3 != null && !isNaN(cs.SVH3)) ? cs.SVH3 : null;
+      base.ERA  = (cs.ERA  != null && !isNaN(cs.ERA))  ? cs.ERA  : null;
+      base.WHIP = (cs.WHIP != null && !isNaN(cs.WHIP)) ? cs.WHIP : null;
+    }
+    return base;
   });
-  // Sort (null values always sort to the bottom regardless of direction).
+
+  // Sort
   var col = (sortState && sortState.col) || 'curr';
   var dir = (sortState && sortState.dir) || 'desc';
   rows.sort(function(a,b) {
@@ -21690,13 +21648,6 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState)
     if (v >= 40) return 'var(--text)';
     return '#854f0b';
   }
-  function fwarColor(v) {
-    if (v == null) return 'var(--muted)';
-    if (v >= 3)  return '#0F6E56';
-    if (v >= 1)  return '#4a9a68';
-    if (v >= -1) return 'var(--text)';
-    return '#c0392b';
-  }
   function sgpColor(v) {
     if (v == null) return 'var(--muted)';
     if (v >= 2.0)  return '#0F6E56';
@@ -21706,69 +21657,88 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState)
   }
   function fmtNum(v, d) { return v == null ? '\u2014' : (v >= 0 ? '+' : '') + v.toFixed(d); }
   function fmtPct(v) { return v == null ? '\u2014' : Math.round(v); }
+  function fmtCount(v) { return v == null ? '\u2014' : Math.round(v); }
+  function fmtAvg(v) { return v == null ? '\u2014' : v.toFixed(3).replace(/^0\./, '.'); }
+  function fmtEraWhip(v, d) { return v == null ? '\u2014' : v.toFixed(d); }
 
   // Header cell helper — clickable for sorting; shows arrow when active.
+  // Sort state is per side+kind (e.g. 'sortA_hit', 'sortB_pit').
   function thSort(colKey, label, align) {
     var arrow = '';
     if (col === colKey) arrow = (dir === 'desc') ? ' \u25be' : ' \u25b4';
     var alignStyle = align === 'left' ? 'text-align:left' : 'text-align:right';
-    return '<th onclick="window._tlV2SortRoster(\''+side+'\',\''+colKey+'\')" style="'+alignStyle+';padding:8px 6px;font-weight:500;cursor:pointer;user-select:none">'+label+arrow+'</th>';
+    return '<th onclick="window._tlV2SortRoster(\''+side+'\',\''+kind+'\',\''+colKey+'\')" style="'+alignStyle+';padding:6px 5px;font-weight:500;cursor:pointer;user-select:none">'+label+arrow+'</th>';
   }
 
   var actionLabel = (side === 'A') ? '+ Send' : '+ Get';
   var actionFn    = 'window._tlV2AddPlayer(\''+side+'\',';
   var removeFn    = 'window._tlV2RemovePlayer(\''+side+'\',';
-  var activeCount = roster.length;
-  var sideLabel   = (side === 'A') ? 'HOME' : 'AWAY';
-  var sideCol     = (side === 'A') ? '#5a594f' : '#0C447C';
-  var sideBg      = (side === 'A') ? 'rgba(136,135,128,0.18)' : 'rgba(24,95,165,0.12)';
+  var kindLabel   = wantHit ? 'Hitters' : 'Pitchers';
 
   var h = '';
-  h += '<div style="margin-bottom:14px">';
-  h += '<div style="margin-bottom:6px;display:flex;align-items:baseline;justify-content:space-between">';
-  h += '<div style="font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px">';
-  h += '<span style="font-size:9px;padding:2px 6px;border-radius:3px;background:'+sideBg+';color:'+sideCol+';font-weight:600;letter-spacing:0.04em">'+sideLabel+'</span>';
-  h += '<span>'+_loEsc(teamName)+'</span>';
-  h += '</div>';
-  h += '<span style="font-size:11px;color:var(--muted)">'+activeCount+' active</span>';
-  h += '</div>';
-  h += '<div style="border:0.5px solid var(--border);border-radius:8px;overflow:hidden">';
-  h += '<table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed">';
-  h += '<colgroup>';
-  h += '<col style="width:26%"><col style="width:9%"><col style="width:9%"><col style="width:9%"><col style="width:9%"><col style="width:11%"><col style="width:11%"><col style="width:16%">';
-  h += '</colgroup>';
-  h += '<thead><tr style="background:var(--bg);font-size:11px;color:var(--muted)">';
-  h += thSort('name',    'Player',   'left');
-  h += thSort('fwar',    'fWAR',     'right');
+  h += '<div style="margin-bottom:10px">';
+  h += '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px">'+kindLabel+' &middot; '+kindRoster.length+'</div>';
+  if (kindRoster.length === 0) {
+    h += '<div style="padding:10px 12px;border:0.5px dashed var(--border);border-radius:8px;color:var(--muted);font-size:11px;text-align:center">No '+kindLabel.toLowerCase()+' on this roster.</div>';
+    h += '</div>';
+    return h;
+  }
+  h += '<div style="border:0.5px solid var(--border);border-radius:8px;overflow:auto">';
+  h += '<table style="width:100%;border-collapse:collapse;font-size:11px">';
+  h += '<thead><tr style="background:var(--bg);font-size:10px;color:var(--muted)">';
+  h += thSort('name', 'Player', 'left');
+  if (wantHit) {
+    h += thSort('R',   'R',   'right');
+    h += thSort('HR',  'HR',  'right');
+    h += thSort('RBI', 'RBI', 'right');
+    h += thSort('SB',  'SB',  'right');
+    h += thSort('AVG', 'AVG', 'right');
+  } else {
+    h += thSort('W',    'W',    'right');
+    h += thSort('K',    'K',    'right');
+    h += thSort('SVH3', 'SVH3', 'right');
+    h += thSort('ERA',  'ERA',  'right');
+    h += thSort('WHIP', 'WHIP', 'right');
+  }
   h += thSort('fwarPct', 'fWAR%',    'right');
-  h += thSort('lg',      'Lg',       'right');
   h += thSort('pos_rat', 'Pos',      'right');
   h += thSort('curr',    'Curr SGP', 'right');
   h += thSort('ros',     'ROS SGP',  'right');
-  h += '<th style="padding:8px 6px"></th>';
+  h += '<th style="padding:6px 5px"></th>';
   h += '</tr></thead><tbody>';
 
   rows.forEach(function(r) {
     var selected = sendKeys.indexOf(r.key) !== -1;
     var rowBg = selected ? 'background:rgba(45,90,61,0.04);' : '';
     h += '<tr style="border-top:0.5px solid var(--border);'+rowBg+'">';
-    h += '<td style="padding:8px 10px">';
+    h += '<td style="padding:6px 8px">';
     h += '<div style="font-weight:500">'+_loEsc(r.name);
     if (selected) h += ' <span style="font-size:9px;color:#0F6E56;padding:1px 5px;border-radius:3px;background:rgba(29,158,117,0.12);font-weight:500">SELECTED</span>';
     h += '</div>';
-    h += '<div style="font-size:10px;color:var(--muted)">'+_loEsc(r.pos)+(r.mlb?' &middot; '+_loEsc(r.mlb):'')+'</div>';
+    h += '<div style="font-size:9px;color:var(--muted)">'+_loEsc(r.pos)+(r.mlb?' &middot; '+_loEsc(r.mlb):'')+'</div>';
     h += '</td>';
-    h += '<td style="text-align:right;padding:8px 6px;color:'+fwarColor(r.fwar)+';font-weight:500">'+(r.fwar==null?'\u2014':fmtNum(r.fwar,1))+'</td>';
-    h += '<td style="text-align:right;padding:8px 6px;color:'+pctColor(r.fwarPct)+';font-weight:500">'+fmtPct(r.fwarPct)+'</td>';
-    h += '<td style="text-align:right;padding:8px 6px;color:'+pctColor(r.lg)+';font-weight:500">'+fmtPct(r.lg)+'</td>';
-    h += '<td style="text-align:right;padding:8px 6px;color:'+pctColor(r.pos_rat)+';font-weight:500">'+fmtPct(r.pos_rat)+'</td>';
-    h += '<td style="text-align:right;padding:8px 6px;color:'+sgpColor(r.curr)+';font-weight:500">'+(r.curr==null?'\u2014':fmtNum(r.curr,2))+'</td>';
-    h += '<td style="text-align:right;padding:8px 6px;color:'+sgpColor(r.ros)+';font-weight:500">'+(r.ros==null?'\u2014':fmtNum(r.ros,2))+'</td>';
-    h += '<td style="text-align:center;padding:8px 6px">';
-    if (selected) {
-      h += '<button onclick="'+removeFn+'\''+_loEsc(r.key)+'\')" style="padding:3px 8px;font-size:10px;border:0.5px solid #c0392b;background:transparent;color:#c0392b;border-radius:4px;cursor:pointer">&times; Remove</button>';
+    if (wantHit) {
+      h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.R)+'</td>';
+      h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.HR)+'</td>';
+      h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.RBI)+'</td>';
+      h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.SB)+'</td>';
+      h += '<td style="text-align:right;padding:6px 5px">'+fmtAvg(r.AVG)+'</td>';
     } else {
-      h += '<button onclick="'+actionFn+'\''+_loEsc(r.key)+'\')" style="padding:3px 8px;font-size:10px;border:0.5px solid var(--border);background:transparent;color:var(--muted);border-radius:4px;cursor:pointer">'+actionLabel+'</button>';
+      h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.W)+'</td>';
+      h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.K)+'</td>';
+      h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.SVH3)+'</td>';
+      h += '<td style="text-align:right;padding:6px 5px">'+fmtEraWhip(r.ERA, 2)+'</td>';
+      h += '<td style="text-align:right;padding:6px 5px">'+fmtEraWhip(r.WHIP, 2)+'</td>';
+    }
+    h += '<td style="text-align:right;padding:6px 5px;color:'+pctColor(r.fwarPct)+';font-weight:500">'+fmtPct(r.fwarPct)+'</td>';
+    h += '<td style="text-align:right;padding:6px 5px;color:'+pctColor(r.pos_rat)+';font-weight:500">'+fmtPct(r.pos_rat)+'</td>';
+    h += '<td style="text-align:right;padding:6px 5px;color:'+sgpColor(r.curr)+';font-weight:500">'+(r.curr==null?'\u2014':fmtNum(r.curr,2))+'</td>';
+    h += '<td style="text-align:right;padding:6px 5px;color:'+sgpColor(r.ros)+';font-weight:500">'+(r.ros==null?'\u2014':fmtNum(r.ros,2))+'</td>';
+    h += '<td style="text-align:center;padding:6px 5px">';
+    if (selected) {
+      h += '<button onclick="'+removeFn+'\''+_loEsc(r.key)+'\')" style="padding:2px 6px;font-size:9px;border:0.5px solid #c0392b;background:transparent;color:#c0392b;border-radius:4px;cursor:pointer">&times;</button>';
+    } else {
+      h += '<button onclick="'+actionFn+'\''+_loEsc(r.key)+'\')" style="padding:2px 6px;font-size:9px;border:0.5px solid var(--border);background:transparent;color:var(--muted);border-radius:4px;cursor:pointer">'+actionLabel+'</button>';
     }
     h += '</td>';
     h += '</tr>';
@@ -21778,14 +21748,16 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState)
   return h;
 }
 
-window._tlV2SortRoster = function(side, colKey) {
-  var sortKey = (side === 'A') ? 'sortA' : 'sortB';
+window._tlV2SortRoster = function(side, kind, colKey) {
+  // Sort state is per side + kind, e.g. 'sortA_hit', 'sortB_pit'.
+  var sortKey = (side === 'A' ? 'sortA' : 'sortB') + '_' + (kind || 'hit');
   var cur = window._tlV2[sortKey] || { col: 'curr', dir: 'desc' };
   if (cur.col === colKey) {
     cur.dir = (cur.dir === 'desc') ? 'asc' : 'desc';
   } else {
     cur.col = colKey;
     // Default direction: descending for numerics (best first); ascending for names.
+    // ERA / WHIP are lower-is-better, but keep descending default (user can re-click).
     cur.dir = (colKey === 'name') ? 'asc' : 'desc';
   }
   window._tlV2[sortKey] = cur;
@@ -22050,11 +22022,11 @@ function _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB) {
     var arrowHtml = '';
     if (tier) {
       if (r.aVal > 0 && r.bVal < 0) {
-        // HOME has surplus, AWAY short — H → A (HOME sends to AWAY).
-        var col = tier === 'strong' ? '#0F6E56' : '#4a9a68';
+        // HOME has surplus, AWAY short — H → A (gray shades, matches HOME pill).
+        var col = tier === 'strong' ? '#5a594f' : '#9c9b94';
         arrowHtml = '<span style="font-size:10px;font-weight:600;color:'+col+'">H &rarr; A</span>';
       } else if (r.bVal > 0 && r.aVal < 0) {
-        // AWAY has surplus, HOME short — A → H.
+        // AWAY has surplus, HOME short — A → H (blue shades, matches AWAY pill).
         var colB = tier === 'strong' ? '#0C447C' : '#185FA5';
         arrowHtml = '<span style="font-size:10px;font-weight:600;color:'+colB+'">A &rarr; H</span>';
       }
@@ -22108,9 +22080,11 @@ function _tlV2RenderTeamFitHtml(tA, tB, nameA, nameB) {
       var aIsSurplus = r.aRank <= mildLine;
       var bIsSurplus = r.bRank <= mildLine;
       if (aIsSurplus && !bIsSurplus) {
-        var col = tier === 'strong' ? '#0F6E56' : '#4a9a68';
+        // H → A: gray shades (matches HOME pill).
+        var col = tier === 'strong' ? '#5a594f' : '#9c9b94';
         arrowHtml = '<span style="font-size:10px;font-weight:600;color:'+col+'">H &rarr; A</span>';
       } else if (bIsSurplus && !aIsSurplus) {
+        // A → H: blue shades (matches AWAY pill).
         var colB = tier === 'strong' ? '#0C447C' : '#185FA5';
         arrowHtml = '<span style="font-size:10px;font-weight:600;color:'+colB+'">A &rarr; H</span>';
       }
@@ -22525,16 +22499,31 @@ function _tlV2RenderBuild() {
   function pickerHtml(side, name, sendKeys, byKey, roster) {
     var picked = sendKeys.map(function(k){ return byKey[k]; });
     var unpicked = roster.filter(function(p){ return sendKeys.indexOf(p.key) === -1; });
-    var sideLabel = side === 'A' ? 'HOME sends' : 'AWAY sends';
+    var sideLabel = side === 'A' ? 'HOME team' : 'AWAY team';
     var sideCol   = side === 'A' ? '#5a594f' : '#0C447C';
     var sideBg    = side === 'A' ? 'rgba(136,135,128,0.18)' : 'rgba(24,95,165,0.12)';
+    var currentTid = side === 'A' ? window._tlV2.teamA : window._tlV2.teamB;
+    // Team list (sorted by display name) for the in-card dropdown.
+    var teamList = Object.keys((S && S.teamInfo) || {}).map(function(id){
+      var ti = S.teamInfo[id] || {};
+      return { id: id, name: ti.shortName || ti.name || id };
+    }).sort(function(a,b){ return a.name.localeCompare(b.name); });
+
     var h = '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden">';
-    h += '<div style="padding:10px 14px;background:var(--bg);border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center">';
-    h += '<span style="font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px">';
+    // Header: side pill + in-card team selector
+    h += '<div style="padding:10px 14px;background:var(--bg);border-bottom:0.5px solid var(--border)">';
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">';
     h += '<span style="font-size:9px;padding:2px 6px;border-radius:3px;background:'+sideBg+';color:'+sideCol+';font-weight:600;letter-spacing:0.04em">'+sideLabel+'</span>';
-    h += '<span>'+_loEsc(name)+'</span></span>';
-    h += '<span style="font-size:10px;color:var(--muted)">'+sendKeys.length+' selected</span>';
-    h += '</div><div style="padding:10px 12px;min-height:100px">';
+    h += '<span style="font-size:10px;color:var(--muted);margin-left:auto">'+sendKeys.length+' selected</span>';
+    h += '</div>';
+    h += '<select onchange="window._tlV2TeamChange(\''+side+'\',this.value)" style="width:100%;padding:6px 8px;font-size:12px;border:0.5px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text)">';
+    teamList.forEach(function(t){
+      h += '<option value="'+t.id+'"'+(t.id===currentTid?' selected':'')+'>'+_loEsc(t.name)+'</option>';
+    });
+    h += '</select>';
+    h += '</div>';
+    // Body: selected players + add dropdown
+    h += '<div style="padding:10px 12px;min-height:100px">';
     picked.forEach(function(p) {
       h += '<div style="display:flex;align-items:center;padding:8px 10px;gap:10px;background:rgba(45,90,61,0.06);border-radius:6px;margin-bottom:6px;border:0.5px solid var(--accent)">';
       h += '<span style="font-size:12px;font-weight:500;flex:1">'+_loEsc(p.name)+'</span>';
@@ -22559,15 +22548,23 @@ function _tlV2RenderBuild() {
     + pickerHtml('B', nameB, sendB, byKeyB, rosterB)
     + '</div>';
 
-  // ── Full roster tables (side by side) ────────────────────────────────────
-  // Sortable tables for each team showing fWAR / fWAR% / Lg / Pos / Curr / ROS
-  // SGP. Selected players highlighted; row-level + / × buttons mirror the
-  // dropdown pickers above. min-width:0 on each grid item is required so the
-  // wide 8-col tables can shrink to fit half the page width instead of
-  // overflowing.
+  // ── Roster tables (side by side, stacked Hitters above Pitchers per team) ──
+  // Each column holds two tables: hitters on top, pitchers below. Cat stats
+  // (R/HR/RBI/SB/AVG for hitters, W/K/SVH3/ERA/WHIP for pitchers) come from
+  // each player's cs (current-season). Sort state is per side+kind.
+  var sortAh = window._tlV2.sortA_hit || { col: 'curr', dir: 'desc' };
+  var sortAp = window._tlV2.sortA_pit || { col: 'curr', dir: 'desc' };
+  var sortBh = window._tlV2.sortB_hit || { col: 'curr', dir: 'desc' };
+  var sortBp = window._tlV2.sortB_pit || { col: 'curr', dir: 'desc' };
   var rosterTablesHtml = '<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-bottom:14px">'
-    + '<div style="min-width:0">' + _tlV2RenderRosterTableHtml('A', nameA, rosterA, sendA, window._tlV2.sortA) + '</div>'
-    + '<div style="min-width:0">' + _tlV2RenderRosterTableHtml('B', nameB, rosterB, sendB, window._tlV2.sortB) + '</div>'
+    + '<div style="min-width:0">'
+      + _tlV2RenderRosterTableHtml('A', nameA, rosterA, sendA, sortAh, 'hit')
+      + _tlV2RenderRosterTableHtml('A', nameA, rosterA, sendA, sortAp, 'pit')
+    + '</div>'
+    + '<div style="min-width:0">'
+      + _tlV2RenderRosterTableHtml('B', nameB, rosterB, sendB, sortBh, 'hit')
+      + _tlV2RenderRosterTableHtml('B', nameB, rosterB, sendB, sortBp, 'pit')
+    + '</div>'
     + '</div>';
 
   // halfCol wraps a card at 50% page width with a small inset so it doesn't
