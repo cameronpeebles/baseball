@@ -5950,6 +5950,8 @@ function renderROSPage() {
 
 
 
+// ── Trade Suggestions ─────────────────────────────────────────────────────
+var _rosTradeSugMinNet = 0.50;
 // ── Suggested Moves ───────────────────────────────────────────────────────
 var _rosSugPos = 'ALL';
 var _rosSugMinNet = 0.25;
@@ -6165,11 +6167,6 @@ function _rosBuildSuggestedMovesHtml() {
     h += '<option value="'+v+'"'+sel+'>+'+v+'</option>';
   });
   h += '</select>';
-  h += '<div style="width:1px;height:18px;background:var(--border);margin:0 6px"></div>';
-  var protectChecked = _rosSugProtect ? ' checked' : '';
-  h += '<label style="display:flex;align-items:center;gap:5px;font-size:10px;color:#5a594f;cursor:pointer">';
-  h += '<input type="checkbox" onchange="rosSugSetProtect(this.checked)"'+protectChecked+' style="width:11px;height:11px;cursor:pointer">';
-  h += '<span>Protect top performers</span></label>';
   h += '</div>';
 
   // Sort by category pill row — combined hitting + pitching cats
@@ -6200,7 +6197,7 @@ function _rosBuildSuggestedMovesHtml() {
 
   if (!top.length) {
     var emptyLabel = (_rosSugSortCat === 'TOTAL') ? 'Net' : (_rosSugSortCat + ' Net');
-    h += '<div style="padding:18px;text-align:center;font-size:12px;color:var(--muted)">No swaps clear the +'+_rosSugMinNet.toFixed(2)+' '+emptyLabel+' threshold for this filter. Try lowering Min Net, switching Sort by, or unchecking Protect top performers.</div>';
+    h += '<div style="padding:18px;text-align:center;font-size:12px;color:var(--muted)">No swaps clear the +'+_rosSugMinNet.toFixed(2)+' '+emptyLabel+' threshold for this filter. Try lowering Min Net or switching Sort by.</div>';
     h += '</div>';
     return h;
   }
@@ -6327,6 +6324,11 @@ window.rosSugSetMinNet = function(v) {
   _rosSugMinNet = parseFloat(v) || 0.25;
   var sugDiv = document.getElementById('ros-sug-card');
   if (sugDiv) sugDiv.innerHTML = _rosBuildSuggestedMovesHtml();
+};
+window.rosTradeSugSetMinNet = function(v) {
+  _rosTradeSugMinNet = parseFloat(v) || 0.50;
+  var tradeDiv = document.getElementById('ros-trade-sug-card');
+  if (tradeDiv) tradeDiv.outerHTML = _rosBuildTradeSuggestionsHtml();
 };
 window.rosSugSetProtect = function(checked) {
   _rosSugProtect = !!checked;
@@ -6684,8 +6686,11 @@ function _rosTradeSugBatchOf3(arr, cursor) {
 // Build a single sub-section (hit or pit) with mutual + sneaky columns
 function _rosTradeSugSection(group, results) {
   var label = (group === 'hit') ? 'Hitter swaps' : 'Pitcher swaps';
-  var muList  = results[group + 'Mutual'] || [];
-  var snList  = results[group + 'Sneaky'] || [];
+  // Apply Min-Your-Delta filter — only keep pairs where my-side gain clears it.
+  var minNet = _rosTradeSugMinNet || 0;
+  function keepFn(c){ return (c.myDelta || 0) >= minNet; }
+  var muList  = (results[group + 'Mutual'] || []).filter(keepFn);
+  var snList  = (results[group + 'Sneaky'] || []).filter(keepFn);
   var muCur   = _rosTradeSugCursors[group + 'Mutual'] || 0;
   var snCur   = _rosTradeSugCursors[group + 'Sneaky'] || 0;
   var muVis   = _rosTradeSugBatchOf3(muList, muCur);
@@ -6843,8 +6848,22 @@ function _rosBuildTradeSuggestionsHtml() {
 
   // Header
   h += '<div style="margin-bottom:14px">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">';
+  h += '<div>';
   h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Trade Suggestions &middot; ROS-driven</div>';
   h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">1-for-1 swaps with other teams. <strong>Mutual</strong>: both teams gain by their own need-weighting. <strong>Sneaky</strong>: you gain &ge;1.0, they perceive a positional or league-rating upgrade. Each team\'s &Delta; uses their own current-standings need-weights.</div>';
+  h += '</div>';
+  // Min Net filter — same convention as the Suggested Moves card.
+  h += '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">';
+  h += '<span style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Min Your &Delta;</span>';
+  h += '<select onchange="rosTradeSugSetMinNet(this.value)" style="padding:3px 8px;font-size:11px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font-family:inherit">';
+  ['0.00','0.25','0.50','1.00','1.50','2.00'].forEach(function(v){
+    var sel = (parseFloat(v) === _rosTradeSugMinNet) ? ' selected' : '';
+    h += '<option value="'+v+'"'+sel+'>+'+v+'</option>';
+  });
+  h += '</select>';
+  h += '</div>';
+  h += '</div>';
   h += '</div>';
 
   // Hitter sub-section
@@ -9849,13 +9868,9 @@ function _buildOneROSTable(isHit, players) {
   var hitPills = ['ALL','C','1B','2B','3B','SS','OF','DH'];
   var pitPills = ['ALL','SP','RP'];
   var pills = isHit ? hitPills : pitPills;
-  // Roster filter pills
-  var rostHtml = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">';
-  [['ALL','All'],['ROSTERED','Rostered'],['FA','Free Agents']].forEach(function(r){
-    var active = (_rosRostFilter===r[0]) ? 'active' : '';
-    rostHtml += '<button class="pill ros-rost-pill '+active+'" onclick="rosSetRost(\''+r[0]+'\',this)" style="padding:3px 12px;font-size:11px">'+r[1]+'</button>';
-  });
-  rostHtml += '</div>';
+  // Status filter removed — this page is the free-agent selection page, so
+  // we lock _rosRostFilter to 'FA' below regardless of any older state.
+  var rostHtml = '';
 
   var pillHtml = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">';
   pillHtml += '<span style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">Position:</span>';
@@ -9868,13 +9883,10 @@ function _buildOneROSTable(isHit, players) {
   // Filter players by position
   function normRos3(n){ return (n||'').replace(/\s*\([^)]*\).*$/, '').trim().toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
   var filtered = players.filter(function(p){
-    // Roster filter
-    if (_rosRostFilter !== 'ALL') {
-      var rInfo = (window._rosRosterLookup||{})[normRos3(p.name||'')] || {};
-      var isRostered = !!rInfo.teamName;
-      if (_rosRostFilter === 'ROSTERED' && !isRostered) return false;
-      if (_rosRostFilter === 'FA' && isRostered) return false;
-    }
+    // Waiver Wire = free agents only. The pill row was removed, so we
+    // bypass _rosRostFilter and always exclude rostered players.
+    var rInfo = (window._rosRosterLookup||{})[normRos3(p.name||'')] || {};
+    if (rInfo.teamName) return false;
     if (_rosPosFilter === 'ALL') return true;
     // Get pos from name parentheses
     var nameStr = (p.name||''); var posStr = (p.pos||'');
