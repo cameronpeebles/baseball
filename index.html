@@ -22646,10 +22646,10 @@ function _tlV2RenderBuild() {
     catch(e) { console.warn('[TradeLab] suggested-trades render failed:', e); }
   }
 
-  // Trade Verification card (stats table + radar) — sits under the Trade Fit
-  // card. The markup is rendered into analyticsHtml now; population happens
-  // AFTER el.innerHTML is set (since the renderers need the DOM IDs to exist).
-  analyticsHtml += _tlV2RenderVerificationCardHtml();
+  // Trade Verification card (stats table + radar) — sits in its own row
+  // beneath the top row. Population happens AFTER el.innerHTML is set (since
+  // the renderers need the DOM IDs to exist).
+  var verificationHtml = _tlV2RenderVerificationCardHtml();
 
   function deltaCardHtml(name, dW, sentSGP, recvSGP, sideLabel, sideCol, sideBg) {
     var col = dW >= 0.5 ? '#0F6E56' : dW <= -0.5 ? '#c0392b' : (dW >= 0 ? '#4a9a68' : '#c08070');
@@ -22753,11 +22753,10 @@ function _tlV2RenderBuild() {
   catImpactCard += '</div></div>';
   analyticsHtml += halfCol(catImpactCard);
 
-  // Left rail: HOME picker → AWAY picker → Verdict → Suggested trades.
+  // Left rail (top row): HOME picker → AWAY picker → Verdict.
   var leftRailHtml = '<div style="display:flex;flex-direction:column;gap:14px;min-width:0">'
     + pickersHtml
     + verdictHtml
-    + suggestedTradesHtml
     + '</div>';
 
   // Top row: left rail (~30%) | Trade Fit card (~70%).
@@ -22766,9 +22765,16 @@ function _tlV2RenderBuild() {
     + '<div style="min-width:0">' + fitHtml + '</div>'
     + '</div>';
 
-  // Final assembly: TopRow (pickers+verdict | fit) → analyticsHtml (suggested
-  // + cat-impact + team-needs) → Roster tables → Caveats below.
-  html = topRowHtml + analyticsHtml + rosterTablesHtml;
+  // Second row: Suggested trades (~30%) | Trade Verification (~70%).
+  // Mirrors the top row's split so the columns line up vertically.
+  var secondRowHtml = '<div style="display:grid;grid-template-columns:30% minmax(0,1fr);gap:14px;margin-bottom:14px;align-items:start">'
+    + '<div style="min-width:0">' + suggestedTradesHtml + '</div>'
+    + '<div style="min-width:0">' + verificationHtml    + '</div>'
+    + '</div>';
+
+  // Final assembly: TopRow → SecondRow → analyticsHtml (cat-impact + team-needs)
+  // → Roster tables → Caveats.
+  html = topRowHtml + secondRowHtml + analyticsHtml + rosterTablesHtml;
 
   var caveats = [];
   function teamCountAtGroup(roster, group) { return roster.filter(function(p){ return _tlV2PosGroup(p.pos) === group; }).length; }
