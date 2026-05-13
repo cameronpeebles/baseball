@@ -21350,6 +21350,10 @@ function _tlBuildPlayerCard(p, isHit, teamId) {
 // Two-tab page: Compare (side-by-side roster diagnostics) + Build Trade
 // (player-pickers, SGP delta, verdict). Reuses existing data sources.
 window._tlV2 = window._tlV2 || { teamA: null, teamB: null, sendA: [], sendB: [], activeTab: 'build', sortA: { col: 'curr', dir: 'desc' }, sortB: { col: 'curr', dir: 'desc' } };
+// Visibility toggles + filters for the per-side roster tables. Stored on the
+// global so they persist across renders.
+if (window._tlV2.showAllCols == null) window._tlV2.showAllCols = false;
+if (!window._tlV2.posFilter) window._tlV2.posFilter = { A_hit:'ALL', A_pit:'ALL', B_hit:'ALL', B_pit:'ALL' };
 // Ensure sort fields exist for existing sessions where the object was already created.
 if (!window._tlV2.sortA) window._tlV2.sortA = { col: 'curr', dir: 'desc' };
 if (!window._tlV2.sortB) window._tlV2.sortB = { col: 'curr', dir: 'desc' };
@@ -21973,12 +21977,40 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState,
   function _stripFP(n) { return (n||'').replace(/\s*\([^)]*\).*$/, '').trim(); }
   function _nrm(n) { return _stripFP(n).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
   var wantHit = (kind === 'hit');
+  var showAll = !!(window._tlV2 && window._tlV2.showAllCols);
+  var posFilterKey = side + '_' + kind;
+  var posFilter = (window._tlV2 && window._tlV2.posFilter && window._tlV2.posFilter[posFilterKey]) || 'ALL';
+  var isAway = (side === 'B');
+
+  // Position pill options by kind.
+  var posOptions = wantHit
+    ? ['ALL','C','1B','2B','3B','SS','OF']
+    : ['ALL','SP','RP'];
+
+  // Helper: does a player cover a fine position? Handles multi-eligibility
+  // ("1B,3B" → 1B and 3B both), LF/CF/RF roll-up to OF, and "P" → SP+RP.
+  function playerCoversPos(p, pos) {
+    if (pos === 'ALL') return true;
+    var parts = (p.pos || '').toUpperCase().split(/[,\/\s]+/).filter(Boolean);
+    for (var i = 0; i < parts.length; i++) {
+      var x = parts[i];
+      if (x === 'LF' || x === 'CF' || x === 'RF') x = 'OF';
+      if (x === pos) return true;
+      if (!wantHit && x === 'P') {
+        // P covers both SP and RP.
+        if (pos === 'SP' || pos === 'RP') return true;
+      }
+    }
+    return false;
+  }
 
   // Filter roster to the player kind for this table.
   var kindRoster = roster.filter(function(p){ return !!p.isHit === wantHit; });
+  // Apply position pill filter.
+  var filteredRoster = kindRoster.filter(function(p){ return playerCoversPos(p, posFilter); });
 
   // Build a per-player metrics row including current-season cat stats from cs.
-  var rows = kindRoster.map(function(p) {
+  var rows = filteredRoster.map(function(p) {
     var nm = p.name || '';
     var k  = _nrm(nm);
     var sgpKey = (typeof _normPlayerKey === 'function') ? _normPlayerKey(nm) : k;
@@ -22042,6 +22074,16 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState,
     if (v >= -0.5) return 'var(--text)';
     return '#c0392b';
   }
+  // Row background tint for AWAY rows: higher Need-wtd ROS = greener tint,
+  // signaling "this player would help HOME if acquired." Untinted on HOME side
+  // (already-yours, no acquisition perspective). Selected rows always green.
+  function awayFitBg(rosVal) {
+    if (rosVal == null) return '';
+    if (rosVal >= 3.0)  return 'background:rgba(29,158,117,0.10);';
+    if (rosVal >= 1.5)  return 'background:rgba(29,158,117,0.05);';
+    if (rosVal >= 0.0)  return '';
+    return 'background:rgba(192,57,43,0.04);'; // negative-value pickups dim red
+  }
   function fmtNum(v, d) { return v == null ? '\u2014' : (v >= 0 ? '+' : '') + v.toFixed(d); }
   function fmtPct(v) { return v == null ? '\u2014' : Math.round(v); }
   function fmtCount(v) { return v == null ? '\u2014' : Math.round(v); }
@@ -22064,9 +22106,29 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState,
 
   var h = '';
   h += '<div style="margin-bottom:10px">';
-  h += '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px">'+kindLabel+' &middot; '+kindRoster.length+'</div>';
+
+  // ── Header row: kind label + position pills + show-all toggle ───────────
+  h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">';
+  h += '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">'+kindLabel+' &middot; '+filteredRoster.length+(posFilter==='ALL'?'':' / '+kindRoster.length)+'</div>';
+  // Position pills
+  h += '<div style="display:flex;gap:3px;flex-wrap:wrap">';
+  posOptions.forEach(function(po){
+    var active = (po === posFilter);
+    var style = active
+      ? 'padding:1px 7px;font-size:10px;border:0.5px solid transparent;border-radius:10px;background:#5a594f;color:#fff;cursor:pointer;font-family:inherit'
+      : 'padding:1px 7px;font-size:10px;border:0.5px solid var(--border);border-radius:10px;background:var(--card);color:var(--muted);cursor:pointer;font-family:inherit';
+    h += '<button onclick="window._tlV2SetPosFilter(\''+side+'\',\''+kind+'\',\''+po+'\')" style="'+style+'">'+po+'</button>';
+  });
+  h += '</div>';
+  h += '</div>';
+
   if (kindRoster.length === 0) {
     h += '<div style="padding:10px 12px;border:0.5px dashed var(--border);border-radius:8px;color:var(--muted);font-size:11px;text-align:center">No '+kindLabel.toLowerCase()+' on this roster.</div>';
+    h += '</div>';
+    return h;
+  }
+  if (filteredRoster.length === 0) {
+    h += '<div style="padding:10px 12px;border:0.5px dashed var(--border);border-radius:8px;color:var(--muted);font-size:11px;text-align:center">No '+kindLabel.toLowerCase()+' eligible at <strong>'+posFilter+'</strong> on this roster.</div>';
     h += '</div>';
     return h;
   }
@@ -22074,21 +22136,25 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState,
   h += '<table style="width:100%;border-collapse:collapse;font-size:11px">';
   h += '<thead><tr style="background:var(--bg);font-size:10px;color:var(--muted)">';
   h += thSort('name', 'Player', 'left');
-  if (wantHit) {
-    h += thSort('R',   'R',   'right');
-    h += thSort('HR',  'HR',  'right');
-    h += thSort('RBI', 'RBI', 'right');
-    h += thSort('SB',  'SB',  'right');
-    h += thSort('AVG', 'AVG', 'right');
-  } else {
-    h += thSort('W',    'W',    'right');
-    h += thSort('K',    'K',    'right');
-    h += thSort('SVH3', 'SVH3', 'right');
-    h += thSort('ERA',  'ERA',  'right');
-    h += thSort('WHIP', 'WHIP', 'right');
+  // Cat stat columns + ratings columns ONLY when "show all" is enabled.
+  if (showAll) {
+    if (wantHit) {
+      h += thSort('R',   'R',   'right');
+      h += thSort('HR',  'HR',  'right');
+      h += thSort('RBI', 'RBI', 'right');
+      h += thSort('SB',  'SB',  'right');
+      h += thSort('AVG', 'AVG', 'right');
+    } else {
+      h += thSort('W',    'W',    'right');
+      h += thSort('K',    'K',    'right');
+      h += thSort('SVH3', 'SVH3', 'right');
+      h += thSort('ERA',  'ERA',  'right');
+      h += thSort('WHIP', 'WHIP', 'right');
+    }
+    h += thSort('fwarPct', 'fWAR%',    'right');
+    h += thSort('pos_rat', 'Pos',      'right');
   }
-  h += thSort('fwarPct', 'fWAR%',    'right');
-  h += thSort('pos_rat', 'Pos',      'right');
+  // Always-visible core columns.
   h += thSort('curr',    'Curr SGP', 'right');
   h += thSort('rosRaw',  'Raw ROS',  'right');
   h += thSort('ros',     'Need-wtd ROS',  'right');
@@ -22097,7 +22163,10 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState,
 
   rows.forEach(function(r) {
     var selected = sendKeys.indexOf(r.key) !== -1;
-    var rowBg = selected ? 'background:rgba(45,90,61,0.04);' : '';
+    // Background priority: selected (green) > AWAY fit-tint > default.
+    var rowBg = '';
+    if (selected) rowBg = 'background:rgba(45,90,61,0.08);';
+    else if (isAway) rowBg = awayFitBg(r.ros);
     h += '<tr style="border-top:0.5px solid var(--border);'+rowBg+'">';
     h += '<td style="padding:6px 8px">';
     h += '<div style="font-weight:500">'+_loEsc(r.name);
@@ -22111,21 +22180,23 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState,
     h += '</div>';
     h += '<div style="font-size:9px;color:var(--muted)">'+_loEsc(r.pos)+(r.mlb?' &middot; '+_loEsc(r.mlb):'')+'</div>';
     h += '</td>';
-    if (wantHit) {
-      h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.R)+'</td>';
-      h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.HR)+'</td>';
-      h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.RBI)+'</td>';
-      h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.SB)+'</td>';
-      h += '<td style="text-align:right;padding:6px 5px">'+fmtAvg(r.AVG)+'</td>';
-    } else {
-      h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.W)+'</td>';
-      h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.K)+'</td>';
-      h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.SVH3)+'</td>';
-      h += '<td style="text-align:right;padding:6px 5px">'+fmtEraWhip(r.ERA, 2)+'</td>';
-      h += '<td style="text-align:right;padding:6px 5px">'+fmtEraWhip(r.WHIP, 2)+'</td>';
+    if (showAll) {
+      if (wantHit) {
+        h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.R)+'</td>';
+        h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.HR)+'</td>';
+        h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.RBI)+'</td>';
+        h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.SB)+'</td>';
+        h += '<td style="text-align:right;padding:6px 5px">'+fmtAvg(r.AVG)+'</td>';
+      } else {
+        h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.W)+'</td>';
+        h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.K)+'</td>';
+        h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.SVH3)+'</td>';
+        h += '<td style="text-align:right;padding:6px 5px">'+fmtEraWhip(r.ERA, 2)+'</td>';
+        h += '<td style="text-align:right;padding:6px 5px">'+fmtEraWhip(r.WHIP, 2)+'</td>';
+      }
+      h += '<td style="text-align:right;padding:6px 5px;color:'+pctColor(r.fwarPct)+';font-weight:500">'+fmtPct(r.fwarPct)+'</td>';
+      h += '<td style="text-align:right;padding:6px 5px;color:'+pctColor(r.pos_rat)+';font-weight:500">'+fmtPct(r.pos_rat)+'</td>';
     }
-    h += '<td style="text-align:right;padding:6px 5px;color:'+pctColor(r.fwarPct)+';font-weight:500">'+fmtPct(r.fwarPct)+'</td>';
-    h += '<td style="text-align:right;padding:6px 5px;color:'+pctColor(r.pos_rat)+';font-weight:500">'+fmtPct(r.pos_rat)+'</td>';
     h += '<td style="text-align:right;padding:6px 5px;color:'+sgpColor(r.curr)+';font-weight:500">'+(r.curr==null?'\u2014':fmtNum(r.curr,2))+'</td>';
     h += '<td style="text-align:right;padding:6px 5px;color:'+sgpColor(r.rosRaw)+';font-weight:500">'+(r.rosRaw==null?'\u2014':fmtNum(r.rosRaw,2))+'</td>';
     h += '<td style="text-align:right;padding:6px 5px;color:'+sgpColor(r.ros)+';font-weight:500">'+(r.ros==null?'\u2014':fmtNum(r.ros,2))+'</td>';
@@ -22156,6 +22227,21 @@ window._tlV2SortRoster = function(side, kind, colKey) {
     cur.dir = (colKey === 'name') ? 'asc' : 'desc';
   }
   window._tlV2[sortKey] = cur;
+  _tlV2RenderBuild();
+};
+
+// Toggle the "Show all stats" mode for roster tables (off by default).
+window._tlV2ToggleCols = function() {
+  window._tlV2.showAllCols = !window._tlV2.showAllCols;
+  _tlV2RenderBuild();
+};
+
+// Set position filter for a side+kind (e.g. 'A_hit', 'B_pit').
+// 'ALL' clears the filter; otherwise filters rows to players eligible at that position.
+window._tlV2SetPosFilter = function(side, kind, pos) {
+  var key = side + '_' + kind;
+  if (!window._tlV2.posFilter) window._tlV2.posFilter = {};
+  window._tlV2.posFilter[key] = pos || 'ALL';
   _tlV2RenderBuild();
 };
 
@@ -23029,7 +23115,21 @@ function _tlV2RenderBuild() {
     c += '</div>';
     return c;
   }
-  var rosterTablesHtml = '<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-bottom:14px">'
+  // ── Roster controls bar (above both team cards) ─────────────────────────
+  // Houses the "Show all stats" toggle and the AWAY fit-coloring legend.
+  var showAllNow = !!(window._tlV2 && window._tlV2.showAllCols);
+  var toggleLabel = showAllNow ? 'Hide cat stats &amp; ratings' : 'Show cat stats &amp; ratings';
+  var rosterControlsHtml = '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:8px">';
+  rosterControlsHtml += '<button onclick="window._tlV2ToggleCols()" style="padding:4px 10px;font-size:11px;border:0.5px solid var(--border);background:var(--surface);color:var(--muted);border-radius:5px;cursor:pointer;font-family:inherit">'+toggleLabel+'</button>';
+  rosterControlsHtml += '<div style="display:flex;align-items:center;gap:8px;font-size:10px;color:var(--muted)">';
+  rosterControlsHtml += '<span>AWAY fit:</span>';
+  rosterControlsHtml += '<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:14px;height:10px;background:rgba(29,158,117,0.10);border:0.5px solid rgba(29,158,117,0.30);border-radius:2px"></span>Strong (Need-wtd &ge; +3)</span>';
+  rosterControlsHtml += '<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:14px;height:10px;background:rgba(29,158,117,0.05);border:0.5px solid rgba(29,158,117,0.20);border-radius:2px"></span>Decent (+1.5 to +3)</span>';
+  rosterControlsHtml += '<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:14px;height:10px;background:rgba(192,57,43,0.04);border:0.5px solid rgba(192,57,43,0.20);border-radius:2px"></span>Negative fit</span>';
+  rosterControlsHtml += '</div></div>';
+
+  var rosterTablesHtml = rosterControlsHtml
+    + '<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-bottom:14px">'
     + '<div style="min-width:0">'
       + rosterSideCard('A', nameA,
           _tlV2RenderRosterTableHtml('A', nameA, rosterA, sendA, sortAh, 'hit'),
