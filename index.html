@@ -22619,256 +22619,206 @@ window._tlV2ApplySuggestedTrade = function(giveKey, getKey) {
   _tlV2RenderBuild();
 };
 
-// ── Trade Verification card (stats table + radar) ────────────────────────
-// Mirrors the markup of the (now-removed) _rosBuildTradesVerificationPanelHtml
-// on the Trade & Waiver page, but with BOTH slot-0 and slot-1 player cards on
-// each side so 1-for-2 / 2-for-1 trades populate. Uses the SAME DOM IDs the
-// existing renderers (_rosAdRenderBars, _rosAdRenderStats) write to, so we
-// don't have to fork those functions.
+// ── Trade Verification card ───────────────────────────────────────────────
+// Dedicated Trade Lab renderer (replaces the previous Workshop-renderer
+// hijack). Supports arbitrary N-for-M trades with mixed hitter+pitcher on
+// either side. The skeleton just defines a header + body container; the
+// populate function writes the full HTML inside the body.
 function _tlV2RenderVerificationCardHtml() {
   var h = '<div class="card" id="ros-trades-verify-card" style="padding:14px 16px;margin-bottom:14px;overflow:visible">';
   h += '<div style="margin-bottom:10px">';
   h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Trade Verification</div>';
-  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Per-category SGP breakdown, ROS rating table, and radar chart for the players currently selected on each side.</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Aggregated per-category SGP impact and net standings-points outlook. Handles N-for-M trades with mixed hitter/pitcher on either side.</div>';
   h += '</div>';
-
-  // Empty state — shown when no players selected
-  h += '<div id="ros-trades-verify-empty" style="font-size:12px;color:var(--muted);text-align:center;padding:30px 20px;background:var(--bg);border-radius:8px">';
-  h += 'Pick a player on each side above to see the verification table and radar.';
+  h += '<div id="ros-trades-verify-body"></div>';
   h += '</div>';
-
-  // Player cards + Net SGP row (hidden until populated)
-  h += '<div id="ros-trades-verify-cards" style="display:none">';
-  h += '<div style="display:grid;grid-template-columns:minmax(0,1fr) 200px minmax(0,1fr);gap:10px;align-items:stretch;margin-bottom:10px">';
-
-  // ── Drop side (left, HOME sends) — slot 0 + slot 1 stacked ────────────
-  h += '<div>';
-  h += '<div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px">HOME sends</div>';
-  // Slot 0
-  h += '<div id="ros-drop-card" style="display:none;background:var(--bg);border-radius:6px;padding:8px 10px">';
-  h += '<div style="display:flex;align-items:center;gap:8px">';
-  h += '<img id="ros-drop-hs" src="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">';
-  h += '<div style="flex:1"><div id="ros-drop-name" style="font-size:12px;font-weight:500;color:var(--text)"></div>';
-  h += '<div id="ros-drop-meta" style="font-size:10px;color:var(--muted)"></div>';
-  h += '<div style="display:flex;gap:10px;margin-top:4px">';
-  h += '<div><div style="font-size:9px;color:var(--muted)">Curr SGP</div><div id="ros-drop-curr" style="font-size:12px;font-weight:500"></div></div>';
-  h += '<div><div style="font-size:9px;color:var(--muted)">ROS SGP</div><div id="ros-drop-raw" style="font-size:12px;font-weight:500"></div></div>';
-  h += '</div></div></div></div>';
-  // Slot 1 (1-for-2 support) — visible if a second drop player is added
-  h += '<div id="ros-drop-card-2" style="display:none;margin-top:8px;background:var(--bg);border-radius:6px;padding:8px 10px">';
-  h += '<div style="display:flex;align-items:center;gap:8px">';
-  h += '<img id="ros-drop-hs-2" src="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">';
-  h += '<div style="flex:1"><div id="ros-drop-name-2" style="font-size:12px;font-weight:500;color:var(--text)"></div>';
-  h += '<div id="ros-drop-meta-2" style="font-size:10px;color:var(--muted)"></div>';
-  h += '<div style="display:flex;gap:10px;margin-top:4px">';
-  h += '<div><div style="font-size:9px;color:var(--muted)">Curr SGP</div><div id="ros-drop-curr-2" style="font-size:12px;font-weight:500"></div></div>';
-  h += '<div><div style="font-size:9px;color:var(--muted)">ROS SGP</div><div id="ros-drop-raw-2" style="font-size:12px;font-weight:500"></div></div>';
-  h += '</div></div></div></div>';
-  h += '</div>';
-
-  // ── Net SGP card (center) ─────────────────────────────────────────────
-  h += '<div id="ros-net-card" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 8px 11px;text-align:center">';
-  h += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px">Net SGP</div>';
-  h += '<div id="ros-net-val" style="font-size:26px;font-weight:600;line-height:1"></div>';
-  h += '<div id="ros-net-verdict" style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;margin-top:6px;padding:3px 8px;border-radius:10px;display:inline-block"></div>';
-  h += '<div id="ros-net-breakdown" style="display:none;border-top:0.5px solid var(--border);padding-top:6px;margin-top:8px"></div>';
-  h += '</div>';
-
-  // ── Add side (right, AWAY sends → HOME receives) — slot 0 + slot 1 ────
-  h += '<div>';
-  h += '<div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px">HOME gets</div>';
-  // Slot 0
-  h += '<div id="ros-add-card" style="display:none;background:var(--bg);border-radius:6px;padding:8px 10px">';
-  h += '<div style="display:flex;align-items:center;gap:8px">';
-  h += '<img id="ros-add-hs" src="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">';
-  h += '<div style="flex:1"><div id="ros-add-name" style="font-size:12px;font-weight:500;color:var(--text)"></div>';
-  h += '<div id="ros-add-meta" style="font-size:10px;color:var(--muted)"></div>';
-  h += '<div style="display:flex;gap:10px;margin-top:4px">';
-  h += '<div><div style="font-size:9px;color:var(--muted)">Raw ROS SGP</div><div id="ros-add-raw" style="font-size:12px;font-weight:500"></div></div>';
-  h += '<div><div style="font-size:9px;color:var(--muted)">Team ROS SGP</div><div id="ros-add-team" style="font-size:12px;font-weight:500"></div></div>';
-  h += '</div></div></div></div>';
-  // Slot 1 (2-for-1 support)
-  h += '<div id="ros-add-card-2" style="display:none;margin-top:8px;background:var(--bg);border-radius:6px;padding:8px 10px">';
-  h += '<div style="display:flex;align-items:center;gap:8px">';
-  h += '<img id="ros-add-hs-2" src="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=&quot;none&quot;">';
-  h += '<div style="flex:1"><div id="ros-add-name-2" style="font-size:12px;font-weight:500;color:var(--text)"></div>';
-  h += '<div id="ros-add-meta-2" style="font-size:10px;color:var(--muted)"></div>';
-  h += '<div style="display:flex;gap:10px;margin-top:4px">';
-  h += '<div><div style="font-size:9px;color:var(--muted)">Raw ROS SGP</div><div id="ros-add-raw-2" style="font-size:12px;font-weight:500"></div></div>';
-  h += '<div><div style="font-size:9px;color:var(--muted)">Team ROS SGP</div><div id="ros-add-team-2" style="font-size:12px;font-weight:500"></div></div>';
-  h += '</div></div></div></div>';
-  h += '</div>';
-
-  h += '</div>'; // end 3-column grid
-
-  // Rate-stat warning (full-width)
-  h += '<div id="ros-net-warn" style="display:none;font-size:11px;color:#854f0b;background:rgba(186,117,23,0.10);border:0.5px solid rgba(186,117,23,0.30);border-radius:8px;padding:6px 10px;margin-top:8px;line-height:1.4"></div>';
-
-  // Per-category bars + stats table (the bars div is hidden by _rosAdRenderBars,
-  // but the stats one is where the table+radar lives).
-  h += '<div id="ros-ad-bars" style="display:none;margin-top:12px;padding-top:10px;border-top:0.5px solid var(--border)"></div>';
-  h += '<div id="ros-ad-stats" style="display:none;margin-top:12px;padding-top:10px;border-top:0.5px solid var(--border)"></div>';
-
-  h += '</div>'; // end ros-trades-verify-cards
-  h += '</div>'; // end card
   return h;
 }
 
-// Populate the verification card with the players currently in sendA / sendB.
-// Sets the relevant global state (_rosAdSelected, _rosDropPlayerObjs,
-// _rosSelectedTeam, _rosCatMultipliers) to match HOME's perspective, fills the
-// player-card DOM, then triggers the existing _rosAdRenderBars +
-// _rosAdRenderStats renderers which write the stats table and radar.
+// Populate the verification card body with full multi-player aggregate
+// analysis. Decoupled from the Workshop simulator renderers — handles any
+// combination of hitters/pitchers on either side.
 function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
-  var emptyEl = document.getElementById('ros-trades-verify-empty');
-  var cardsEl = document.getElementById('ros-trades-verify-cards');
-  if (!emptyEl || !cardsEl) return;
+  var bodyEl = document.getElementById('ros-trades-verify-body');
+  if (!bodyEl) return;
   if (!sendA.length || !sendB.length) {
-    emptyEl.style.display = 'block';
-    cardsEl.style.display = 'none';
+    bodyEl.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:30px 20px;background:var(--bg);border-radius:8px">Pick a player on each side above to see the verification breakdown.</div>';
     return;
   }
-  emptyEl.style.display = 'none';
-  cardsEl.style.display = 'block';
 
-  // Helper: resolve a Trade-Lab roster entry's `key` to the FantasyPros
-  // player object the simulator helpers expect. The roster's `fp` field is
-  // already the FP entry — easy.
-  function resolveFP(byKey, key) {
-    var entry = byKey[key];
-    return entry ? entry.fp : null;
+  // ── Gather player rows for both sides ────────────────────────────────────
+  // Each entry from byKeyA/byKeyB already has {key, name, pos, isHit,
+  // rosSGP (need-weighted through HOME's lens), curSGP, fp, cs, status}.
+  var dropRows = sendA.map(function(k){ return byKeyA[k]; }).filter(Boolean);
+  var addRows  = sendB.map(function(k){ return byKeyB[k]; }).filter(Boolean);
+  if (!dropRows.length || !addRows.length) {
+    bodyEl.innerHTML = '<div style="font-size:12px;color:#c0392b;text-align:center;padding:30px 20px;background:var(--bg);border-radius:8px">Couldn\u2019t resolve some selected players. Try toggling teams or selecting again.</div>';
+    return;
   }
 
-  // Build FP arrays (up to 2 per side) and the curr-stats (cs) array used for
-  // the Drop side's "Curr SGP" calculations.
-  var dropFPs  = sendA.map(function(k){ return resolveFP(byKeyA, k); }).filter(Boolean).slice(0, 2);
-  var addFPs   = sendB.map(function(k){ return resolveFP(byKeyB, k); }).filter(Boolean).slice(0, 2);
-  var dropCSs  = sendA.map(function(k){ return (byKeyA[k] && byKeyA[k].cs) || null; }).slice(0, 2);
+  // ── Compute per-cat SGP impact (signed, +receive / -give) ───────────────
+  var ALL_CATS = ['R','HR','RBI','SB','AVG','W','K','SVH3','ERA','WHIP'];
+  function aggregateCatSGP(rows) {
+    var agg = { R:0,HR:0,RBI:0,SB:0,AVG:0, W:0,K:0,SVH3:0,ERA:0,WHIP:0 };
+    rows.forEach(function(p){
+      // Reuse _tlV2PlayerCatSGP — it allocates rosSGP across cats by
+      // projected counting-stat weights (handles hitters and pitchers).
+      var c = (typeof _tlV2PlayerCatSGP === 'function') ? _tlV2PlayerCatSGP(p) : {};
+      Object.keys(agg).forEach(function(cat){ agg[cat] += (c[cat] || 0); });
+    });
+    return agg;
+  }
+  var dropPerCat = aggregateCatSGP(dropRows); // HOME loses these
+  var addPerCat  = aggregateCatSGP(addRows);  // HOME gains these
+  var netPerCat = {};
+  ALL_CATS.forEach(function(c){ netPerCat[c] = addPerCat[c] - dropPerCat[c]; });
 
-  // Build "roster row" objects in the format _rosAdRenderStats expects, so it
-  // can read ._fp (FantasyPros projection — has fWAR + ratings) and ._cs
-  // (current-season stats). Without _fp, fwar / ratings / projected stats are
-  // dashes in the stats table.
-  var dropRowObjs = sendA.slice(0, 2).map(function(k){
-    var entry = byKeyA[k];
-    if (!entry) return null;
-    var fp = entry.fp || null;
-    var cs = entry.cs || null;
-    var isHit = !!entry.isHit;
-    var displayName = (fp && (fp._displayName || fp.name)) || (cs && cs.name) || entry.name || k;
-    return {
-      _key: k,
-      _displayName: displayName,
-      _pos: (cs && cs.pos) || entry.pos || (fp && fp._pos) || '',
-      _currSGP: (typeof _rosCurrSGP === 'function' && cs) ? (_rosCurrSGP(cs, isHit) || 0) : 0,
-      _rosSGP:  (typeof _rosAdPlayerSGP === 'function' && fp) ? (_rosAdPlayerSGP(fp, isHit) || 0) : 0,
-      hs: (fp && fp.hs) || (cs && cs.hs) || '',
-      isHit: isHit,
-      _cs: cs,
-      _fp: fp
-    };
-  }).filter(Boolean);
+  // Need-multipliers for HOME (from current standings)
+  var myMults = (typeof _rosTradeSugTeamMults === 'function') ? (_rosTradeSugTeamMults(tA) || {}) : {};
+  // Weighted total = sum of (net × need-mult) — same convention as Verdict.
+  var netSGP = 0;
+  ALL_CATS.forEach(function(c){ netSGP += netPerCat[c] * (myMults[c] || 1); });
 
-  // Override globals so the renderers see HOME as the active team and use
-  // HOME's need multipliers + rate-stat context.
-  var origSelected = window._rosSelectedTeam;
-  var origMults    = window._rosCatMultipliers;
-  window._rosSelectedTeam = tA;
-  if (typeof _rosTradeSugTeamMults === 'function') {
-    window._rosCatMultipliers = _rosTradeSugTeamMults(tA) || origMults;
+  // ── Header colors + formatters ───────────────────────────────────────────
+  function fmtSgn(v, dec) { dec = (dec==null?2:dec); if (Math.abs(v) < Math.pow(10,-dec)/2) return '0.'+Array(dec+1).join('0'); return (v >= 0 ? '+' : '') + v.toFixed(dec); }
+  function sgpColor(v) {
+    if (v == null || Math.abs(v) < 0.05) return 'var(--muted)';
+    if (v >= 0.5)  return '#1e6b3a';
+    if (v >  0)    return '#4a9a68';
+    if (v <= -0.5) return '#c0392b';
+    return '#a04020';
+  }
+  function netVerdict(v) {
+    if (v >=  2.0) return { label: 'Strong win',  bg: 'rgba(29,158,117,0.16)', fg: '#0F6E56' };
+    if (v >=  0.5) return { label: 'Slight win',  bg: 'rgba(29,158,117,0.10)', fg: '#1e6b3a' };
+    if (v >  -0.5) return { label: 'Roughly even',bg: 'rgba(150,150,150,0.10)',fg: 'var(--muted)' };
+    if (v >  -2.0) return { label: 'Slight loss', bg: 'rgba(192,57,43,0.10)',  fg: '#a04020' };
+    return                  { label: 'Bad trade',  bg: 'rgba(192,57,43,0.18)',  fg: '#c0392b' };
+  }
+  var verdict = netVerdict(netSGP);
+
+  // ── Player card markup helper ────────────────────────────────────────────
+  function playerCard(p, side) {
+    var statusBadge = '';
+    if (p.status === '3') statusBadge = ' <span style="font-size:9px;color:#b7791f;padding:1px 5px;border-radius:3px;background:#fef3e2;font-weight:600;letter-spacing:0.04em">IL</span>';
+    else if (p.status === '2') statusBadge = ' <span style="font-size:9px;color:#666;padding:1px 5px;border-radius:3px;background:#f0f0f0;font-weight:600;letter-spacing:0.04em">RES</span>';
+    var hs = (p.fp && p.fp.hs) || (p.cs && p.cs.hs) || '';
+    var posTxt = p.pos || (p.cs && p.cs.pos) || '';
+    var teamTxt = (p.cs && p.cs.mlb) || '';
+    var roleTag = p.isHit ? 'HIT' : 'PIT';
+    var roleCol = p.isHit ? '#0F6E56' : '#854f0b';
+    var roleBg  = p.isHit ? 'rgba(29,158,117,0.10)' : 'rgba(186,117,23,0.10)';
+    var c = '<div style="background:var(--bg);border-radius:6px;padding:8px 10px;margin-bottom:6px">';
+    c += '<div style="display:flex;align-items:center;gap:8px">';
+    if (hs) c += '<img src="'+hs+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0" onerror="this.style.display=\'none\'">';
+    c += '<div style="flex:1;min-width:0">';
+    c += '<div style="font-size:12px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:5px;flex-wrap:wrap">';
+    c += '<span>'+_loEsc(p.name)+'</span>';
+    c += '<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:'+roleBg+';color:'+roleCol+';font-weight:600;letter-spacing:0.04em">'+roleTag+'</span>';
+    c += statusBadge;
+    c += '</div>';
+    c += '<div style="font-size:10px;color:var(--muted)">'+_loEsc(posTxt)+(teamTxt?' \u00b7 '+_loEsc(teamTxt):'')+'</div>';
+    c += '<div style="display:flex;gap:10px;margin-top:4px">';
+    c += '<div><div style="font-size:9px;color:var(--muted)">Curr SGP</div><div style="font-size:11px;font-weight:500;color:'+sgpColor(p.curSGP)+'">'+fmtSgn(p.curSGP||0)+'</div></div>';
+    c += '<div><div style="font-size:9px;color:var(--muted)">ROS SGP</div><div style="font-size:11px;font-weight:500;color:'+sgpColor(p.rosSGP)+'">'+fmtSgn(p.rosSGP||0)+'</div></div>';
+    c += '</div></div></div></div>';
+    return c;
   }
 
-  // Set the simulator's global state arrays (used by the renderers).
-  // _rosDropPlayerObjs must contain roster-row objects (with ._fp) so that
-  // _rosAdRenderStats can build the projected-stats table and radar.
-  window._rosAdSelected     = addFPs.slice();
-  window._rosDropSelected   = sendA.slice(0, 2);
-  window._rosDropPlayerObjs = dropRowObjs.slice();
+  // ── Build HTML ───────────────────────────────────────────────────────────
+  var html = '';
+  // Top row: drop side | Net card | add side
+  html += '<div style="display:grid;grid-template-columns:minmax(0,1fr) 200px minmax(0,1fr);gap:10px;align-items:start;margin-bottom:14px">';
+  // Drop column
+  html += '<div>';
+  html += '<div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#5a594f;margin-bottom:6px">HOME sends &middot; '+dropRows.length+'</div>';
+  dropRows.forEach(function(p){ html += playerCard(p, 'drop'); });
+  html += '</div>';
+  // Net card
+  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 8px;text-align:center;align-self:start">';
+  html += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Net SGP (HOME)</div>';
+  html += '<div style="font-size:28px;font-weight:600;line-height:1;color:'+sgpColor(netSGP)+'">'+fmtSgn(netSGP)+'</div>';
+  html += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;margin-top:8px;padding:3px 9px;border-radius:10px;display:inline-block;background:'+verdict.bg+';color:'+verdict.fg+'">'+verdict.label+'</div>';
+  html += '<div style="font-size:9px;color:var(--muted);margin-top:8px;line-height:1.3">Weighted through HOME\u2019s current category needs.</div>';
+  html += '</div>';
+  // Add column
+  html += '<div>';
+  html += '<div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#0C447C;margin-bottom:6px">HOME gets &middot; '+addRows.length+'</div>';
+  addRows.forEach(function(p){ html += playerCard(p, 'add'); });
+  html += '</div>';
+  html += '</div>';
 
-  // ── Populate the player-card DOM for each filled slot ────────────────
-  var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : { r:65.4, hr:21.2, rbi:54.8, sb:17.0, avg:0.008, w:15.3, k:216.8, svh3:18.5, era:0.106, whip:0.0191 };
-  function fmtSgp(v) { return (typeof _rosAdFmt === 'function') ? _rosAdFmt(v) : (v >= 0 ? '+' : '') + v.toFixed(2); }
-  function colSgp(v) { return (typeof _rosAdCol === 'function') ? _rosAdCol(v) : (v >= 0.5 ? '#1e6b3a' : v <= -0.5 ? '#c0392b' : 'var(--text)'); }
+  // ── Per-category impact table ────────────────────────────────────────────
+  var hasHitters  = dropRows.some(function(p){return p.isHit;}) || addRows.some(function(p){return p.isHit;});
+  var hasPitchers = dropRows.some(function(p){return !p.isHit;}) || addRows.some(function(p){return !p.isHit;});
+  var rowsToShow = ALL_CATS.filter(function(c){
+    var isHitCat = ['R','HR','RBI','SB','AVG'].indexOf(c) !== -1;
+    if (isHitCat && !hasHitters)  return false;
+    if (!isHitCat && !hasPitchers) return false;
+    return true;
+  });
 
-  // Compute current SGP for a roster entry (mirrors _rosCurrSGP usage).
-  function calcCurrSGP(cs, isHit) {
-    if (!cs || typeof _rosCurrSGP !== 'function') return 0;
-    return _rosCurrSGP(cs, isHit) || 0;
+  html += '<div style="margin-top:14px;padding-top:14px;border-top:0.5px solid var(--border)">';
+  html += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Per-category impact</div>';
+  html += '<div style="display:grid;grid-template-columns:36px minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 48px;gap:4px;font-size:11px">';
+  html += '<div style="font-weight:600;color:var(--muted);font-size:10px">Cat</div>';
+  html += '<div style="font-weight:600;color:var(--muted);font-size:10px;text-align:right">HOME loses</div>';
+  html += '<div style="font-weight:600;color:var(--muted);font-size:10px;text-align:right">HOME gains</div>';
+  html += '<div style="font-weight:600;color:var(--muted);font-size:10px;text-align:right">Net SGP</div>';
+  html += '<div style="font-weight:600;color:var(--muted);font-size:10px;text-align:right">Need&times;</div>';
+  rowsToShow.forEach(function(c){
+    var lose = dropPerCat[c];
+    var gain = addPerCat[c];
+    var net  = netPerCat[c];
+    var mult = myMults[c] || 1;
+    html += '<div style="font-weight:500">'+c+'</div>';
+    html += '<div style="text-align:right;color:'+sgpColor(-lose)+'">'+(lose ? '\u2212'+lose.toFixed(2) : '\u2014')+'</div>';
+    html += '<div style="text-align:right;color:'+sgpColor(gain)+'">'+(gain ? '+'+gain.toFixed(2) : '\u2014')+'</div>';
+    html += '<div style="text-align:right;color:'+sgpColor(net)+';font-weight:500">'+fmtSgn(net)+'</div>';
+    var multCol = mult >= 1.4 ? '#0F6E56' : mult <= 0.7 ? '#854f0b' : 'var(--muted)';
+    html += '<div style="text-align:right;color:'+multCol+';font-size:10px">'+mult.toFixed(1)+'&times;</div>';
+  });
+  html += '</div>';
+  html += '</div>';
+
+  // ── Radar: per-cat net contribution ──────────────────────────────────────
+  var uid = 'tlv2Radar_'+Date.now();
+  html += '<div style="margin-top:14px;padding-top:14px;border-top:0.5px solid var(--border)">';
+  html += '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px">';
+  html += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Net per-category impact (HOME)</div>';
+  html += '<div style="font-size:10px;color:var(--muted)">positive = trade helps</div>';
+  html += '</div>';
+  html += '<div style="position:relative;width:100%;height:260px"><canvas id="'+uid+'" role="img"></canvas></div>';
+  html += '</div>';
+
+  bodyEl.innerHTML = html;
+
+  // ── Render radar via Chart.js ────────────────────────────────────────────
+  var canvas = document.getElementById(uid);
+  if (canvas && typeof Chart !== 'undefined') {
+    if (window._tlV2RadarChart) { try { window._tlV2RadarChart.destroy(); } catch(e){} }
+    var labels = rowsToShow.slice();
+    var posData = labels.map(function(c){ return netPerCat[c] > 0 ? +netPerCat[c].toFixed(2) : 0; });
+    var negData = labels.map(function(c){ return netPerCat[c] < 0 ? +Math.abs(netPerCat[c]).toFixed(2) : 0; });
+    var maxAbs  = 0;
+    labels.forEach(function(c){ maxAbs = Math.max(maxAbs, Math.abs(netPerCat[c])); });
+    if (maxAbs < 0.3) maxAbs = 0.3;
+    try {
+      window._tlV2RadarChart = new Chart(canvas, {
+        type: 'radar',
+        data: { labels: labels, datasets: [
+          { label: 'HOME gains', data: posData, borderColor: '#1D9E75', backgroundColor: 'rgba(29,158,117,0.18)', borderWidth: 2, pointBackgroundColor: '#1D9E75', pointRadius: 4 },
+          { label: 'HOME loses', data: negData, borderColor: '#c0392b', backgroundColor: 'rgba(192,57,43,0.14)', borderWidth: 2, pointBackgroundColor: '#c0392b', pointRadius: 4 }
+        ]},
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } },
+          scales: { r: { suggestedMin: 0, suggestedMax: maxAbs * 1.15, ticks: { display: false }, angleLines: { color: 'rgba(150,150,150,0.18)' }, grid: { color: 'rgba(150,150,150,0.18)' }, pointLabels: { font: { size: 11, weight: '500' }, color: '#5a594f' } } }
+        }
+      });
+    } catch(e) { console.warn('[TradeLab] radar render failed:', e); }
   }
-  // Compute raw ROS SGP (with team rate context + need mults — current globals).
-  function calcRosSGP(p, isHit) {
-    if (!p || typeof _rosAdPlayerSGP !== 'function') return 0;
-    return _rosAdPlayerSGP(p, isHit) || 0;
-  }
-
-  function fillDrop(idx, sfx) {
-    var p   = dropFPs[idx];
-    var cs  = dropCSs[idx];
-    var card = document.getElementById('ros-drop-card' + sfx);
-    if (!p) { if (card) card.style.display = 'none'; return; }
-    if (card) card.style.display = 'block';
-    var hs = document.getElementById('ros-drop-hs' + sfx);
-    if (hs) { hs.src = p.hs || ''; hs.style.display = p.hs ? 'block' : 'none'; }
-    var nm = document.getElementById('ros-drop-name' + sfx); if (nm) nm.textContent = p._displayName || p.name || '';
-    var mt = document.getElementById('ros-drop-meta' + sfx);
-    if (mt) {
-      var posTxt = (cs && cs.pos) || p._pos || p.pos || '';
-      var teamTxt = (cs && cs.mlb) || p._team || '';
-      mt.textContent = posTxt + (teamTxt ? ' \u00b7 ' + teamTxt : '');
-    }
-    var isHit = !!p.isHit;
-    var rosSGP = calcRosSGP(p, isHit);
-    var curSGP = calcCurrSGP(cs, isHit);
-    var rawEl = document.getElementById('ros-drop-raw' + sfx);
-    if (rawEl) rawEl.innerHTML = '<span style="color:'+colSgp(rosSGP)+'">'+fmtSgp(rosSGP)+'</span>';
-    var curEl = document.getElementById('ros-drop-curr' + sfx);
-    if (curEl) curEl.innerHTML = '<span style="color:'+colSgp(curSGP)+'">'+fmtSgp(curSGP)+'</span>';
-  }
-  function fillAdd(idx, sfx) {
-    var p = addFPs[idx];
-    var card = document.getElementById('ros-add-card' + sfx);
-    if (!p) { if (card) card.style.display = 'none'; return; }
-    if (card) card.style.display = 'block';
-    var hs = document.getElementById('ros-add-hs' + sfx);
-    if (hs) { hs.src = p.hs || ''; hs.style.display = p.hs ? 'block' : 'none'; }
-    var nm = document.getElementById('ros-add-name' + sfx); if (nm) nm.textContent = p._displayName || p.name || '';
-    var mt = document.getElementById('ros-add-meta' + sfx);
-    if (mt) {
-      var posTxt = p._pos || p.pos || '';
-      var teamTxt = p._team || '';
-      mt.textContent = posTxt + (teamTxt ? ' \u00b7 ' + teamTxt : '');
-    }
-    var isHit = !!p.isHit;
-    var rawSGP = 0;
-    if (isHit) rawSGP = ((p.R||0)/D2.r) + ((p.HR||0)/D2.hr) + ((p.RBI||0)/D2.rbi) + ((p.SB||0)/D2.sb);
-    else       rawSGP = ((p.W||0)/D2.w) + ((p.K||0)/D2.k) + ((p.SV||0)/D2.svh3);
-    var rawEl = document.getElementById('ros-add-raw' + sfx);
-    if (rawEl) rawEl.innerHTML = '<span style="color:'+colSgp(rawSGP)+'">'+fmtSgp(rawSGP)+'</span>';
-    var teamSGP = (p._teamSGP != null) ? p._teamSGP : calcRosSGP(p, isHit);
-    var teamEl = document.getElementById('ros-add-team' + sfx);
-    if (teamEl) teamEl.innerHTML = '<span style="color:'+colSgp(teamSGP)+'">'+fmtSgp(teamSGP)+'</span>';
-  }
-
-  fillDrop(0, '');
-  fillDrop(1, '-2');
-  fillAdd(0, '');
-  fillAdd(1, '-2');
-
-  // Show the Net SGP card (the renderers fill in -val/-verdict/-breakdown).
-  var netCard = document.getElementById('ros-net-card');
-  if (netCard) netCard.style.display = 'block';
-
-  // Trigger the existing renderers (write to #ros-ad-bars + #ros-ad-stats).
-  try {
-    if (typeof _rosAdRenderBars  === 'function') _rosAdRenderBars();
-    if (typeof _rosAdRenderStats === 'function') _rosAdRenderStats();
-  } catch(e) {
-    console.warn('[TradeLab] verification renderers failed:', e);
-  }
-
-  // Restore globals.
-  window._rosSelectedTeam   = origSelected;
-  window._rosCatMultipliers = origMults;
 }
 
 function _tlV2RenderBuild() {
