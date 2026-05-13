@@ -22709,27 +22709,53 @@ window._tlV2ApplySuggestedTrade = function(giveKey, getKey) {
 // Lists the top N players across all NON-HOME rosters, ranked by their
 // fit-to-HOME (Need-wtd ROS SGP + winnable-cat bonus). Each row has a Build
 // button that sets AWAY to that player's team and pre-selects them in sendB.
-window._tlV2TargetsKindFilter = window._tlV2TargetsKindFilter || 'all';
-window._tlV2SetTargetsKind = function(v) {
-  window._tlV2TargetsKindFilter = v || 'all';
+window._tlV2TargetsCatFilter = window._tlV2TargetsCatFilter || 'ALL';
+window._tlV2SetTargetsCat = function(v) {
+  window._tlV2TargetsCatFilter = v || 'ALL';
   _tlV2RenderBuild();
 };
 function _tlV2RenderTopTargetsHtml(tA, nameA) {
-  var kindFilter = window._tlV2TargetsKindFilter || 'all';
+  var catFilter = window._tlV2TargetsCatFilter || 'ALL';
+  var HIT_CATS = ['R','HR','RBI','SB','AVG'];
+  var PIT_CATS = ['W','K','SVH3','ERA','WHIP'];
+  // Filter category determines which player kinds are eligible: hit cats →
+  // hitters only, pit cats → pitchers only, ALL → both.
+  var kindMode = 'all';
+  if (HIT_CATS.indexOf(catFilter) !== -1) kindMode = 'hit';
+  else if (PIT_CATS.indexOf(catFilter) !== -1) kindMode = 'pit';
+
   var h = '<div class="card" style="padding:14px 16px;margin-bottom:14px;overflow:visible">';
   // Header
-  h += '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px;flex-wrap:wrap">';
   h += '<div>';
   h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Top targets across the league</div>';
   h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Best acquisition fits for HOME, ranked by need-weighted ROS + winnable-cat bonus.</div>';
   h += '</div>';
-  h += '<select onchange="window._tlV2SetTargetsKind(this.value)" style="padding:3px 8px;font-size:11px;border:0.5px solid var(--border);border-radius:5px;background:var(--card);color:var(--text);font-family:inherit">';
-  ['all','hit','pit'].forEach(function(k){
-    var label = k === 'all' ? 'All' : (k === 'hit' ? 'Hitters' : 'Pitchers');
-    var sel = (k === kindFilter) ? ' selected' : '';
-    h += '<option value="'+k+'"'+sel+'>'+label+'</option>';
-  });
-  h += '</select>';
+  h += '</div>';
+
+  // Cat-pill filter rows
+  function pill(cat, label) {
+    var active = (catFilter === cat);
+    var style = active
+      ? 'padding:2px 8px;font-size:10px;border:0.5px solid transparent;border-radius:12px;background:#5a594f;color:#fff;cursor:pointer;font-family:inherit'
+      : 'padding:2px 8px;font-size:10px;border:0.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--muted);cursor:pointer;font-family:inherit';
+    return '<button onclick="window._tlV2SetTargetsCat(\''+cat+'\')" style="'+style+'">'+label+'</button>';
+  }
+  h += '<div style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px">';
+  // All row
+  h += '<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">';
+  h += pill('ALL', 'All');
+  h += '</div>';
+  // Hitting cats row
+  h += '<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">';
+  h += '<span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;width:46px">Hitting</span>';
+  HIT_CATS.forEach(function(c){ h += pill(c, c); });
+  h += '</div>';
+  // Pitching cats row
+  h += '<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">';
+  h += '<span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;width:46px">Pitching</span>';
+  PIT_CATS.forEach(function(c){ h += pill(c, c); });
+  h += '</div>';
   h += '</div>';
 
   // Build candidate list: for each NON-HOME team, fetch HOME-weighted roster.
@@ -22743,12 +22769,13 @@ function _tlV2RenderTopTargetsHtml(tA, nameA) {
     var oppRoster;
     try { oppRoster = _tlV2GetTeamRoster(oppTid, tA) || []; } catch(e) { oppRoster = []; }
     oppRoster.forEach(function(p){
-      if (kindFilter === 'hit' && !p.isHit) return;
-      if (kindFilter === 'pit' && p.isHit)  return;
+      if (kindMode === 'hit' && !p.isHit) return;
+      if (kindMode === 'pit' && p.isHit)  return;
       // Bonus: sum the positive winnable-cat contributions.
       var bonus = 0;
       var winnableCats = []; // for chip display
       var bestFitCat = null, bestFitVal = 0;
+      var perCatScore = null; // populated when a specific cat filter is active
       try {
         if (typeof _tlV2PlayerCatSGP === 'function' && myMov && myRanks) {
           var perCat = _tlV2PlayerCatSGP(p) || {};
@@ -22764,15 +22791,22 @@ function _tlV2RenderTopTargetsHtml(tA, nameA) {
             bonus += contrib;
             if (movF >= 1.3) winnableCats.push(c);
             if (contrib > bestFitVal) { bestFitVal = contrib; bestFitCat = c; }
+            if (catFilter !== 'ALL' && c === catFilter) perCatScore = contrib;
           });
         }
       } catch(e){ bonus = 0; }
+      // When a specific cat filter is active, skip players that don't help
+      // that category at all (contrib <= 0 or no measurable impact).
+      if (catFilter !== 'ALL' && (perCatScore == null || perCatScore <= 0)) return;
       var rosScore = (p.rosSGP || 0) + bonus * 0.3; // 30% weight to bonus
+      // When a specific cat is selected, sort by that cat's contribution
+      // directly so the list answers "who helps this cat most?".
+      var sortScore = (catFilter === 'ALL') ? rosScore : perCatScore;
       candidates.push({
         key: p.key, name: p.name, pos: p.pos, isHit: p.isHit, status: p.status || '1',
         mlb: (p.cs && p.cs.mlb) || '',
         rosSGP: p.rosSGP || 0,
-        score: rosScore,
+        score: sortScore,
         oppTid: oppTid,
         oppName: ((S.teamInfo[oppTid]||{}).shortName || (S.teamInfo[oppTid]||{}).name || oppTid),
         winnableCats: winnableCats.slice(0, 2),
@@ -22785,7 +22819,10 @@ function _tlV2RenderTopTargetsHtml(tA, nameA) {
   var topN = candidates.slice(0, 5);
 
   if (topN.length === 0) {
-    h += '<div style="padding:18px;text-align:center;font-size:12px;color:var(--muted);background:var(--bg);border-radius:8px">No candidates found. Make sure roster data has loaded.</div>';
+    var emptyMsg = (catFilter === 'ALL')
+      ? 'No candidates found. Make sure roster data has loaded.'
+      : 'No rostered players notably boost <strong>'+catFilter+'</strong> for HOME. Try another category.';
+    h += '<div style="padding:18px;text-align:center;font-size:12px;color:var(--muted);background:var(--bg);border-radius:8px">'+emptyMsg+'</div>';
     h += '</div>';
     return h;
   }
@@ -22841,6 +22878,13 @@ window._tlV2BuildWithPlayer = function(oppTid, playerKey) {
   window._tlV2.teamB = oppTid;
   window._tlV2.sendA = [];
   window._tlV2.sendB = [playerKey];
+  _tlV2RenderBuild();
+};
+
+// Clears all selected players on both sides (HOME teamA / AWAY teamB stay).
+window._tlV2ClearTrade = function() {
+  window._tlV2.sendA = [];
+  window._tlV2.sendB = [];
   _tlV2RenderBuild();
 };
 
@@ -23171,6 +23215,14 @@ function _tlV2RenderBuild() {
   window._tlV2.sendA = sendA; window._tlV2.sendB = sendB;
 
   var html = '';
+
+  // ── Page-top control row: Clear Trade button (shown when any player is
+  // selected on either side). Sits above all other Build-tab content.
+  if (sendA.length || sendB.length) {
+    html += '<div style="display:flex;justify-content:flex-end;margin-bottom:10px">';
+    html += '<button onclick="window._tlV2ClearTrade()" style="padding:4px 12px;font-size:11px;border:0.5px solid #c0392b;background:rgba(192,57,43,0.06);color:#c0392b;border-radius:14px;cursor:pointer;font-family:inherit;font-weight:500">&times; Clear trade ('+(sendA.length+sendB.length)+')</button>';
+    html += '</div>';
+  }
 
   function pickerHtml(side, name, sendKeys, byKey, roster) {
     var picked = sendKeys.map(function(k){ return byKey[k]; });
