@@ -22748,7 +22748,7 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
   html += '</div>';
   html += '</div>';
 
-  // ── Per-category impact table ────────────────────────────────────────────
+  // ── Per-category impact table is now combined with the stats table below ─
   var hasHitters  = dropRows.some(function(p){return p.isHit;}) || addRows.some(function(p){return p.isHit;});
   var hasPitchers = dropRows.some(function(p){return !p.isHit;}) || addRows.some(function(p){return !p.isHit;});
   var rowsToShow = ALL_CATS.filter(function(c){
@@ -22758,38 +22758,100 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
     return true;
   });
 
-  html += '<div style="margin-top:14px;padding-top:14px;border-top:0.5px solid var(--border)">';
-  html += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Per-category impact</div>';
-  html += '<div style="display:grid;grid-template-columns:36px minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 48px;gap:4px;font-size:11px">';
-  html += '<div style="font-weight:600;color:var(--muted);font-size:10px">Cat</div>';
-  html += '<div style="font-weight:600;color:var(--muted);font-size:10px;text-align:right">HOME loses</div>';
-  html += '<div style="font-weight:600;color:var(--muted);font-size:10px;text-align:right">HOME gains</div>';
-  html += '<div style="font-weight:600;color:var(--muted);font-size:10px;text-align:right">Net SGP</div>';
-  html += '<div style="font-weight:600;color:var(--muted);font-size:10px;text-align:right">Need&times;</div>';
-  rowsToShow.forEach(function(c){
-    var lose = dropPerCat[c];
-    var gain = addPerCat[c];
-    var net  = netPerCat[c];
-    var mult = myMults[c] || 1;
-    html += '<div style="font-weight:500">'+c+'</div>';
-    html += '<div style="text-align:right;color:'+sgpColor(-lose)+'">'+(lose ? '\u2212'+lose.toFixed(2) : '\u2014')+'</div>';
-    html += '<div style="text-align:right;color:'+sgpColor(gain)+'">'+(gain ? '+'+gain.toFixed(2) : '\u2014')+'</div>';
-    html += '<div style="text-align:right;color:'+sgpColor(net)+';font-weight:500">'+fmtSgn(net)+'</div>';
-    var multCol = mult >= 1.4 ? '#0F6E56' : mult <= 0.7 ? '#854f0b' : 'var(--muted)';
-    html += '<div style="text-align:right;color:'+multCol+';font-size:10px">'+mult.toFixed(1)+'&times;</div>';
-  });
-  html += '</div>';
-  html += '</div>';
+  // ── Stats table + radar side-by-side ────────────────────────────────────
+  // Shows aggregate ROS counting stats per side per category and the radar
+  // visualizing net per-cat SGP impact. Mimics the old Workshop simulator's
+  // stats-table-next-to-radar layout from _rosAdRenderStats.
+  // Aggregate ROS counting stats from the player.fp projections.
+  function aggregateRosStats(rows) {
+    var totHit = { R:0, HR:0, RBI:0, SB:0, H:0, AB:0 };
+    var totPit = { W:0, K:0, SV:0, ER:0, BR:0, IP:0 }; // BR = baserunners (H+BB) for WHIP
+    rows.forEach(function(p){
+      var fp = p.fp; if (!fp) return;
+      if (p.isHit) {
+        totHit.R   += parseFloat(fp.R||0);
+        totHit.HR  += parseFloat(fp.HR||0);
+        totHit.RBI += parseFloat(fp.RBI||0);
+        totHit.SB  += parseFloat(fp.SB||0);
+        var ab = parseFloat(fp.AB||0);
+        var h  = (fp.H && fp.H > 0) ? parseFloat(fp.H) : (fp.AVG && ab ? parseFloat(fp.AVG)*ab : 0);
+        totHit.AB += ab;
+        totHit.H  += h;
+      } else {
+        totPit.W    += parseFloat(fp.W||0);
+        totPit.K    += parseFloat(fp.K||0);
+        totPit.SV   += parseFloat(fp.SVH3 || fp.SV || 0);
+        var ip = parseFloat(fp.IP||0);
+        if (ip > 0) {
+          totPit.IP += ip;
+          if (fp.ERA  != null) totPit.ER += parseFloat(fp.ERA)  * ip / 9;
+          if (fp.WHIP != null) totPit.BR += parseFloat(fp.WHIP) * ip;
+        }
+      }
+    });
+    var avg  = totHit.AB > 0 ? totHit.H / totHit.AB : null;
+    var era  = totPit.IP > 0 ? (totPit.ER * 9) / totPit.IP : null;
+    var whip = totPit.IP > 0 ? totPit.BR / totPit.IP : null;
+    return {
+      R: totHit.R, HR: totHit.HR, RBI: totHit.RBI, SB: totHit.SB, AVG: avg,
+      W: totPit.W, K: totPit.K, SVH3: totPit.SV, ERA: era, WHIP: whip,
+      AB: totHit.AB, IP: totPit.IP
+    };
+  }
+  function fmtStat(cat, v) {
+    if (v == null || isNaN(v)) return '\u2014';
+    if (cat === 'AVG')  return v.toFixed(3).replace(/^0\./, '.');
+    if (cat === 'ERA')  return v.toFixed(2);
+    if (cat === 'WHIP') return v.toFixed(2);
+    return Math.round(v);
+  }
+  var dropStats = aggregateRosStats(dropRows);
+  var addStats  = aggregateRosStats(addRows);
 
-  // ── Radar: per-cat net contribution ──────────────────────────────────────
   var uid = 'tlv2Radar_'+Date.now();
   html += '<div style="margin-top:14px;padding-top:14px;border-top:0.5px solid var(--border)">';
+  html += '<div style="display:grid;grid-template-columns:3fr 2fr;gap:16px;align-items:start">';
+
+  // Stats table (left, 3fr)
+  html += '<div>';
+  html += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px">Projected ROS stats &amp; SGP</div>';
+  html += '<table style="width:100%;border-collapse:collapse;font-size:11px">';
+  html += '<thead><tr style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">';
+  html += '<th style="text-align:left;padding:3px 4px;font-weight:500">Cat</th>';
+  html += '<th style="text-align:right;padding:3px 4px;font-weight:500">Drop stat</th>';
+  html += '<th style="text-align:right;padding:3px 4px;font-weight:500">Drop SGP</th>';
+  html += '<th style="text-align:right;padding:3px 4px;font-weight:500">Add stat</th>';
+  html += '<th style="text-align:right;padding:3px 4px;font-weight:500">Add SGP</th>';
+  html += '<th style="text-align:right;padding:3px 4px;font-weight:500">Net SGP</th>';
+  html += '</tr></thead><tbody>';
+  rowsToShow.forEach(function(c){
+    var dStat = dropStats[c];
+    var aStat = addStats[c];
+    var dSgp  = dropPerCat[c];
+    var aSgp  = addPerCat[c];
+    var net   = netPerCat[c];
+    html += '<tr style="border-top:0.5px solid var(--border)">';
+    html += '<td style="padding:5px 4px;font-weight:500">'+c+'</td>';
+    html += '<td style="text-align:right;padding:5px 4px;color:var(--muted)">'+fmtStat(c, dStat)+'</td>';
+    html += '<td style="text-align:right;padding:5px 4px;color:'+sgpColor(-dSgp)+'">'+(dSgp ? '\u2212'+dSgp.toFixed(2) : '\u2014')+'</td>';
+    html += '<td style="text-align:right;padding:5px 4px;color:var(--muted)">'+fmtStat(c, aStat)+'</td>';
+    html += '<td style="text-align:right;padding:5px 4px;color:'+sgpColor(aSgp)+'">'+(aSgp ? '+'+aSgp.toFixed(2) : '\u2014')+'</td>';
+    html += '<td style="text-align:right;padding:5px 4px;color:'+sgpColor(net)+';font-weight:500">'+fmtSgn(net)+'</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  html += '</div>';
+
+  // Radar (right, 2fr)
+  html += '<div>';
   html += '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px">';
-  html += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Net per-category impact (HOME)</div>';
-  html += '<div style="font-size:10px;color:var(--muted)">positive = trade helps</div>';
+  html += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Net per-cat impact</div>';
   html += '</div>';
   html += '<div style="position:relative;width:100%;height:260px"><canvas id="'+uid+'" role="img"></canvas></div>';
   html += '</div>';
+
+  html += '</div>'; // close grid
+  html += '</div>'; // close section
 
   bodyEl.innerHTML = html;
 
