@@ -23310,18 +23310,22 @@ function _tlV2RenderBuild() {
       + '<div style="min-width:0">' + pickersHtml + '</div>'
       + '<div style="min-width:0">' + fitHtmlEmpty + '</div>'
       + '</div>';
-    // Row 2: Suggested trades (30%) | Trade Verification (70%) — same as
-    // populated state. Verification displays its built-in empty message until
-    // a player is picked on each side.
-    html += '<div style="display:grid;grid-template-columns:30% minmax(0,1fr);gap:14px;margin-bottom:14px;align-items:start">'
-      + '<div style="min-width:0">' + suggestedHtmlEmpty + '</div>'
-      + '<div style="min-width:0">' + verificationHtmlEmpty + '</div>'
-      + '</div>';
-    // Top Targets card below Row 2.
+    // Row 2: [Suggested Trades + Top Targets stacked] (30%) | Trade
+    // Verification (70%). align-items:stretch matches the left stack height
+    // to the verification card so the bottoms align.
+    var targetsHtmlEmpty = '';
     if (typeof _tlV2RenderTopTargetsHtml === 'function') {
-      try { html += _tlV2RenderTopTargetsHtml(tA, nameA); }
+      try { targetsHtmlEmpty = _tlV2RenderTopTargetsHtml(tA, nameA); }
       catch(e) { console.warn('[TradeLab] top-targets render (empty state) failed:', e); }
     }
+    var leftRow2StackEmpty = '<div style="display:flex;flex-direction:column;gap:14px;height:100%;min-width:0">'
+      + suggestedHtmlEmpty
+      + targetsHtmlEmpty
+      + '</div>';
+    html += '<div style="display:grid;grid-template-columns:30% minmax(0,1fr);gap:14px;margin-bottom:14px;align-items:stretch">'
+      + leftRow2StackEmpty
+      + '<div style="min-width:0">' + verificationHtmlEmpty + '</div>'
+      + '</div>';
 
     html += rosterTablesHtml;
     html += '<div style="padding:16px;text-align:center;color:var(--muted);font-size:12px;background:var(--bg);border-radius:8px;border:0.5px dashed var(--border);margin-top:14px">Select players from both rosters to see trade analysis.</div>';
@@ -23486,23 +23490,30 @@ function _tlV2RenderBuild() {
     + '<div style="min-width:0">' + fitHtml + '</div>'
     + '</div>';
 
-  // Second row: Suggested trades (~30%) | Trade Verification (~70%).
-  // Mirrors the top row's split so the columns line up vertically.
-  var secondRowHtml = '<div style="display:grid;grid-template-columns:30% minmax(0,1fr);gap:14px;margin-bottom:14px;align-items:start">'
-    + '<div style="min-width:0">' + suggestedTradesHtml + '</div>'
-    + '<div style="min-width:0">' + verificationHtml    + '</div>'
-    + '</div>';
-
-  // Top Targets card — sits below Row 2, full-width.
+  // Pre-render Top Targets so we can place it under Suggested Trades in the
+  // left column of Row 2.
   var topTargetsHtml = '';
   if (typeof _tlV2RenderTopTargetsHtml === 'function') {
     try { topTargetsHtml = _tlV2RenderTopTargetsHtml(tA, nameA); }
     catch(e) { console.warn('[TradeLab] top-targets render failed:', e); }
   }
 
-  // Final assembly: TopRow → SecondRow → TopTargets → analyticsHtml
-  // → Roster tables → Caveats.
-  html = topRowHtml + secondRowHtml + topTargetsHtml + analyticsHtml + rosterTablesHtml;
+  // Second row: [Suggested Trades + Top Targets stacked] (~30%) | Trade
+  // Verification (~70%). align-items:stretch makes the left column match the
+  // right column's height so the bottom of the stack aligns with the bottom
+  // of the Verification card. The two cards in the left column flex naturally;
+  // a small spacer absorbs any height mismatch.
+  var leftRow2Stack = '<div style="display:flex;flex-direction:column;gap:14px;height:100%;min-width:0">'
+    + suggestedTradesHtml
+    + topTargetsHtml
+    + '</div>';
+  var secondRowHtml = '<div style="display:grid;grid-template-columns:30% minmax(0,1fr);gap:14px;margin-bottom:14px;align-items:stretch">'
+    + leftRow2Stack
+    + '<div style="min-width:0">' + verificationHtml    + '</div>'
+    + '</div>';
+
+  // Final assembly: TopRow → SecondRow → analyticsHtml → Roster tables → Caveats.
+  html = topRowHtml + secondRowHtml + analyticsHtml + rosterTablesHtml;
 
   var caveats = [];
   function teamCountAtGroup(roster, group) { return roster.filter(function(p){ return _tlV2PosGroup(p.pos) === group; }).length; }
