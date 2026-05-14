@@ -319,6 +319,7 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div class="nav-group-buttons">
       <button onclick="showPage('fwar',this)">Player Statistics</button>
       <button onclick="showPage('targets',this)">Player Expected Statistics</button>
+      <button onclick="showPage('milb',this)">Minor League Stats</button>
     </div>
   </div>
 </nav>
@@ -803,6 +804,12 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div id="targets-tab-pitchers" class="trade-tab-content">
       <div id="targets-pit-body"><div class="loading">Loading...</div></div>
     </div>
+  </div>
+
+  <div class="page" id="page-milb">
+    <div class="page-title">Minor League Stats</div>
+    <div class="page-subtitle">Triple-A through Single-A hitting and pitching leaders, refreshed from the MLB Stats API. Filter by level, MLB parent organization, and player kind.</div>
+    <div id="milb-body"><div class="loading">Loading minor league stats...</div></div>
   </div>
 
   <div class="page" id="page-guide">
@@ -3107,9 +3114,10 @@ function showPage(name, btn) {
   if (name === 'targets') renderTargetsPage();
   if (name === 'sgp') renderSGPRosPage();
   if (name === 'teamroster') buildTeamRosterSelector();
+  if (name === 'milb') renderMiLBPage();
   if (name === 'guide') {} // static content, no render needed
   // Expand main to full width for wide-table pages
-  document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'models' || name === 'rosters' || name === 'teamroster' || name === 'historic' || name === 'targets' || name === 'sgp' || name === 'tradelab' || name === 'lineuporg') ? 'none' : '';
+  document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'models' || name === 'rosters' || name === 'teamroster' || name === 'historic' || name === 'targets' || name === 'sgp' || name === 'tradelab' || name === 'lineuporg' || name === 'milb') ? 'none' : '';
   if (name === 'trade' && (TA.activeTab === 'sgp-hit' || TA.activeTab === 'sgp-pit')) {
     document.querySelector('main').style.maxWidth = 'none';
   }
@@ -19989,6 +19997,292 @@ function renderTargetsPage() {
     el.innerHTML = '<div class="error-msg">targets_hitting.json not found - run the GitHub Action first.</div>';
   });
 }
+
+// ── Minor League Stats page ──────────────────────────────────────────────
+// Loads minor_league_hitters.json + minor_league_pitchers.json (produced by
+// fetch_minor_league_stats.py) and renders a filterable, sortable table.
+window._milbState = window._milbState || {
+  hitters: null, pitchers: null, loaded: false, loading: false, error: null,
+  kind: 'hit',           // 'hit' | 'pit'
+  level: 'ALL',          // 'ALL' | 'AAA' | 'AA' | 'A+' | 'A'
+  org: 'ALL',            // 'ALL' or MLB abbrev (e.g. 'NYY')
+  search: '',
+  sortCol: 'HR', sortDir: 'desc',
+  limit: 100             // visible rows; "Show more" extends
+};
+
+function renderMiLBPage() {
+  var el = document.getElementById('milb-body');
+  if (!el) return;
+  var st = window._milbState;
+  // Lazy-load data once.
+  if (!st.loaded && !st.loading) {
+    st.loading = true;
+    el.innerHTML = '<div class="loading">Loading minor league stats...</div>';
+    Promise.all([
+      loadJSON('minor_league_hitters.json').catch(function(e){ console.warn('Minors hitters load failed:', e); return null; }),
+      loadJSON('minor_league_pitchers.json').catch(function(e){ console.warn('Minors pitchers load failed:', e); return null; })
+    ]).then(function(res){
+      st.hitters  = res[0] || [];
+      st.pitchers = res[1] || [];
+      st.loaded = true;
+      st.loading = false;
+      if (!res[0] && !res[1]) {
+        st.error = 'No minor league data found. Run fetch_minor_league_stats.py to generate the JSON files.';
+      }
+      renderMiLBPage();
+    });
+    return;
+  }
+  if (st.error) {
+    el.innerHTML = '<div class="card" style="padding:20px;text-align:center;color:var(--muted)">'+_loEsc(st.error)+'</div>';
+    return;
+  }
+  el.innerHTML = _milbBuildHtml();
+}
+
+function _milbBuildHtml() {
+  var st = window._milbState;
+  var data = (st.kind === 'hit') ? (st.hitters || []) : (st.pitchers || []);
+
+  // Filter
+  var rows = data.filter(function(p){
+    if (st.level !== 'ALL' && (p.level || '') !== st.level) return false;
+    if (st.org   !== 'ALL' && (p.org   || '') !== st.org)   return false;
+    if (st.search) {
+      var s = st.search.toLowerCase();
+      if ((p.name || '').toLowerCase().indexOf(s) === -1
+          && (p.team || '').toLowerCase().indexOf(s) === -1) return false;
+    }
+    return true;
+  });
+
+  // Sort
+  var col = st.sortCol, dir = st.sortDir;
+  rows.sort(function(a,b){
+    var av = a[col], bv = b[col];
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    if (typeof av === 'string') return dir === 'desc' ? bv.localeCompare(av) : av.localeCompare(bv);
+    return dir === 'desc' ? bv - av : av - bv;
+  });
+
+  // Org dropdown options: distinct orgs from the full dataset
+  var orgSet = {};
+  data.forEach(function(p){ if (p.org) orgSet[p.org] = 1; });
+  var orgList = Object.keys(orgSet).sort();
+
+  var levels = ['ALL','AAA','AA','A+','A'];
+  function pill(active, label, onClick) {
+    var style = active
+      ? 'padding:3px 9px;font-size:11px;border:0.5px solid transparent;border-radius:12px;background:#5a594f;color:#fff;cursor:pointer;font-family:inherit;font-weight:500'
+      : 'padding:3px 9px;font-size:11px;border:0.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--muted);cursor:pointer;font-family:inherit';
+    return '<button onclick="'+onClick+'" style="'+style+'">'+label+'</button>';
+  }
+
+  var h = '';
+  h += '<div class="card" style="padding:14px 16px;margin-bottom:14px">';
+  // Filter row
+  h += '<div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:8px">';
+  // Hitter / Pitcher toggle
+  h += '<div style="display:flex;gap:4px">';
+  h += pill(st.kind === 'hit', 'Hitters', "window._milbSetKind('hit')");
+  h += pill(st.kind === 'pit', 'Pitchers', "window._milbSetKind('pit')");
+  h += '</div>';
+  h += '<div style="width:1px;height:18px;background:var(--border)"></div>';
+  // Level
+  h += '<span style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Level</span>';
+  h += '<div style="display:flex;gap:4px">';
+  levels.forEach(function(L){
+    h += pill(st.level === L, L === 'ALL' ? 'All' : L, "window._milbSetLevel('"+L+"')");
+  });
+  h += '</div>';
+  h += '<div style="width:1px;height:18px;background:var(--border)"></div>';
+  // Org dropdown
+  h += '<span style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Org</span>';
+  h += '<select onchange="window._milbSetOrg(this.value)" style="padding:3px 8px;font-size:11px;border:0.5px solid var(--border);border-radius:5px;background:var(--card);color:var(--text);font-family:inherit">';
+  h += '<option value="ALL"'+(st.org==='ALL'?' selected':'')+'>All orgs</option>';
+  orgList.forEach(function(o){
+    h += '<option value="'+_loEsc(o)+'"'+(st.org===o?' selected':'')+'>'+_loEsc(o)+'</option>';
+  });
+  h += '</select>';
+  h += '<div style="width:1px;height:18px;background:var(--border)"></div>';
+  // Search
+  h += '<input type="text" oninput="window._milbSetSearch(this.value)" placeholder="Search player or team" value="'+_loEsc(st.search)+'" style="padding:3px 8px;font-size:11px;border:0.5px solid var(--border);border-radius:5px;background:var(--card);color:var(--text);font-family:inherit;min-width:200px">';
+  // Right-aligned counter
+  h += '<div style="margin-left:auto;font-size:11px;color:var(--muted)">'+rows.length.toLocaleString()+' players</div>';
+  h += '</div>';
+  h += '</div>';
+
+  // Table
+  if (!rows.length) {
+    h += '<div class="card" style="padding:30px;text-align:center;color:var(--muted)">No players match these filters.</div>';
+    return h;
+  }
+
+  var visible = rows.slice(0, st.limit);
+  var hasMore = rows.length > st.limit;
+
+  h += '<div class="card" style="padding:0;overflow:hidden">';
+  h += '<div style="overflow:auto;max-height:70vh">';
+  h += '<table style="width:100%;border-collapse:collapse;font-size:11px">';
+  h += '<thead style="position:sticky;top:0;background:var(--bg);z-index:1"><tr style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">';
+  function th(colKey, label, align) {
+    var arrow = '';
+    if (st.sortCol === colKey) arrow = (st.sortDir === 'desc') ? ' \u25be' : ' \u25b4';
+    var alignStyle = align === 'left' ? 'text-align:left' : 'text-align:right';
+    return '<th onclick="window._milbSort(\''+colKey+'\')" style="'+alignStyle+';padding:8px 6px;font-weight:600;cursor:pointer;user-select:none;border-bottom:0.5px solid var(--border)">'+label+arrow+'</th>';
+  }
+  h += th('name','Player','left');
+  h += th('level','Lvl','left');
+  h += th('team','Team','left');
+  h += th('org','Org','left');
+  h += th('pos','Pos','left');
+  h += th('age','Age','right');
+  if (st.kind === 'hit') {
+    h += th('G','G','right');
+    h += th('AB','AB','right');
+    h += th('R','R','right');
+    h += th('H','H','right');
+    h += th('2B','2B','right');
+    h += th('3B','3B','right');
+    h += th('HR','HR','right');
+    h += th('RBI','RBI','right');
+    h += th('BB','BB','right');
+    h += th('SO','SO','right');
+    h += th('SB','SB','right');
+    h += th('AVG','AVG','right');
+    h += th('OBP','OBP','right');
+    h += th('SLG','SLG','right');
+    h += th('OPS','OPS','right');
+  } else {
+    h += th('G','G','right');
+    h += th('GS','GS','right');
+    h += th('IP','IP','right');
+    h += th('W','W','right');
+    h += th('L','L','right');
+    h += th('SV','SV','right');
+    h += th('HLD','HLD','right');
+    h += th('K','K','right');
+    h += th('BB','BB','right');
+    h += th('H','H','right');
+    h += th('ER','ER','right');
+    h += th('ERA','ERA','right');
+    h += th('WHIP','WHIP','right');
+    h += th('K9','K/9','right');
+    h += th('BB9','BB/9','right');
+  }
+  h += '</tr></thead><tbody>';
+
+  function fmtN(v) { return v == null ? '\u2014' : (typeof v === 'number' ? (v % 1 === 0 ? v : v.toFixed(2)) : v); }
+  function fmtAvg(v) { return v == null ? '\u2014' : (v < 1 ? v.toFixed(3).replace(/^0\./, '.') : v.toFixed(3)); }
+  function fmtRate(v, d) { return v == null ? '\u2014' : v.toFixed(d||2); }
+
+  visible.forEach(function(p){
+    h += '<tr style="border-top:0.5px solid var(--border)">';
+    h += '<td style="padding:6px 8px;font-weight:500">'+_loEsc(p.name || '')+'</td>';
+    var lvlBg = p.level === 'AAA' ? 'rgba(29,158,117,0.10);color:#0F6E56'
+              : p.level === 'AA'  ? 'rgba(186,117,23,0.10);color:#854f0b'
+              : p.level === 'A+'  ? 'rgba(24,95,165,0.10);color:#0C447C'
+              : 'rgba(150,150,150,0.12);color:#5a594f';
+    h += '<td style="padding:6px 6px"><span style="font-size:9px;padding:1px 5px;border-radius:3px;background:'+lvlBg.split(';')[0]+';color:'+lvlBg.split(';')[1].split(':')[1]+';font-weight:600;letter-spacing:0.04em">'+_loEsc(p.level || '')+'</span></td>';
+    h += '<td style="padding:6px 6px;color:var(--muted)">'+_loEsc(p.team || '')+'</td>';
+    h += '<td style="padding:6px 6px;color:var(--muted);font-weight:500">'+_loEsc(p.org || '')+'</td>';
+    h += '<td style="padding:6px 6px;color:var(--muted)">'+_loEsc(p.pos || '')+'</td>';
+    h += '<td style="text-align:right;padding:6px 6px">'+(p.age == null ? '\u2014' : p.age)+'</td>';
+    if (st.kind === 'hit') {
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.G)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.AB)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.R)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.H)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p['2B'])+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p['3B'])+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtN(p.HR)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.RBI)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.BB)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.SO)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.SB)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtAvg(p.AVG)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtAvg(p.OBP)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtAvg(p.SLG)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtAvg(p.OPS)+'</td>';
+    } else {
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.G)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.GS)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtRate(p.IP, 1)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.W)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.L)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.SV)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.HLD)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtN(p.K)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.BB)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.H)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.ER)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtRate(p.ERA, 2)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtRate(p.WHIP, 2)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtRate(p.K9, 1)+'</td>';
+      h += '<td style="text-align:right;padding:6px 6px">'+fmtRate(p.BB9, 1)+'</td>';
+    }
+    h += '</tr>';
+  });
+  h += '</tbody></table></div>';
+  if (hasMore) {
+    h += '<div style="padding:10px;text-align:center;border-top:0.5px solid var(--border);background:var(--bg)">';
+    h += '<button onclick="window._milbShowMore()" style="padding:5px 14px;font-size:11px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);border-radius:5px;cursor:pointer;font-family:inherit">Show more ('+(rows.length - st.limit).toLocaleString()+' more) </button>';
+    h += '</div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+// State setters — each re-renders the page.
+window._milbSetKind = function(k) {
+  if (!window._milbState) return;
+  window._milbState.kind = k;
+  // Adjust default sort column when switching kinds.
+  if (k === 'hit' && ['IP','W','K','SV','ERA','WHIP'].indexOf(window._milbState.sortCol) !== -1) {
+    window._milbState.sortCol = 'HR'; window._milbState.sortDir = 'desc';
+  } else if (k === 'pit' && ['HR','RBI','AVG','OBP','SLG','OPS','AB'].indexOf(window._milbState.sortCol) !== -1) {
+    window._milbState.sortCol = 'K'; window._milbState.sortDir = 'desc';
+  }
+  window._milbState.limit = 100;
+  renderMiLBPage();
+};
+window._milbSetLevel = function(L) {
+  if (!window._milbState) return;
+  window._milbState.level = L;
+  window._milbState.limit = 100;
+  renderMiLBPage();
+};
+window._milbSetOrg = function(o) {
+  if (!window._milbState) return;
+  window._milbState.org = o || 'ALL';
+  window._milbState.limit = 100;
+  renderMiLBPage();
+};
+window._milbSetSearch = function(v) {
+  if (!window._milbState) return;
+  window._milbState.search = v || '';
+  window._milbState.limit = 100;
+  renderMiLBPage();
+};
+window._milbSort = function(col) {
+  if (!window._milbState) return;
+  if (window._milbState.sortCol === col) {
+    window._milbState.sortDir = (window._milbState.sortDir === 'desc') ? 'asc' : 'desc';
+  } else {
+    window._milbState.sortCol = col;
+    window._milbState.sortDir = (col === 'name' || col === 'team' || col === 'org' || col === 'level' || col === 'pos') ? 'asc' : 'desc';
+  }
+  renderMiLBPage();
+};
+window._milbShowMore = function() {
+  if (!window._milbState) return;
+  window._milbState.limit += 200;
+  renderMiLBPage();
+};
+
 
 function drawTargetsTable() {
   var el = document.getElementById('targets-body');
