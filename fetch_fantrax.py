@@ -1680,6 +1680,26 @@ try:
             team_info = _milb_team_map.get(tid, {})
             sport = r.get("sport") or {}
             sport_id = sport.get("id") or 0
+            # Counting stats needed for advanced metrics
+            ab  = stat.get("atBats") or 0
+            h   = stat.get("hits") or 0
+            hr  = stat.get("homeRuns") or 0
+            bb  = stat.get("baseOnBalls") or 0
+            so  = stat.get("strikeOuts") or 0
+            hbp = stat.get("hitByPitch") or 0
+            sf  = stat.get("sacFlies") or 0
+            sh  = stat.get("sacBunts") or 0
+            pa  = stat.get("plateAppearances") or (ab + bb + hbp + sf + sh)
+            avg = _milb_f(stat.get("avg"))
+            slg = _milb_f(stat.get("slg"))
+            # Advanced rate stats
+            bb_pct = (bb / pa) if pa > 0 else None
+            k_pct  = (so / pa) if pa > 0 else None
+            bb_k   = (bb / so) if so > 0 else None
+            iso    = (slg - avg) if (slg is not None and avg is not None) else None
+            # BABIP = (H - HR) / (AB - K - HR + SF)
+            babip_denom = ab - so - hr + sf
+            babip = ((h - hr) / babip_denom) if babip_denom > 0 else None
             out.append({
                 "name": player.get("fullName") or "",
                 "mlbamId": player.get("id") or 0,
@@ -1690,21 +1710,30 @@ try:
                 "org": team_info.get("parent_org") or "",
                 "level": _MILB_LEVELS.get(sport_id, ""),
                 "G": stat.get("gamesPlayed") or 0,
-                "AB": stat.get("atBats") or 0,
+                "PA": pa,
+                "AB": ab,
                 "R": stat.get("runs") or 0,
-                "H": stat.get("hits") or 0,
+                "H": h,
                 "2B": stat.get("doubles") or 0,
                 "3B": stat.get("triples") or 0,
-                "HR": stat.get("homeRuns") or 0,
+                "HR": hr,
                 "RBI": stat.get("rbi") or 0,
-                "BB": stat.get("baseOnBalls") or 0,
-                "SO": stat.get("strikeOuts") or 0,
+                "BB": bb,
+                "SO": so,
+                "HBP": hbp,
+                "SF": sf,
                 "SB": stat.get("stolenBases") or 0,
                 "CS": stat.get("caughtStealing") or 0,
-                "AVG": _milb_f(stat.get("avg")),
+                "AVG": avg,
                 "OBP": _milb_f(stat.get("obp")),
-                "SLG": _milb_f(stat.get("slg")),
+                "SLG": slg,
                 "OPS": _milb_f(stat.get("ops")),
+                # Advanced
+                "BB_pct":  round(bb_pct, 4)  if bb_pct  is not None else None,
+                "K_pct":   round(k_pct,  4)  if k_pct   is not None else None,
+                "BB_K":    round(bb_k,   3)  if bb_k    is not None else None,
+                "ISO":     round(iso,    3)  if iso     is not None else None,
+                "BABIP":   round(babip,  3)  if babip   is not None else None,
             })
         return out
 
@@ -1719,6 +1748,31 @@ try:
             sport = r.get("sport") or {}
             sport_id = sport.get("id") or 0
             ip = _milb_ip(stat.get("inningsPitched"))
+            # Counting stats needed for advanced metrics
+            so   = stat.get("strikeOuts") or 0
+            bb   = stat.get("baseOnBalls") or 0
+            h_a  = stat.get("hits") or 0
+            hr_a = stat.get("homeRuns") or 0
+            r_a  = stat.get("runs") or 0
+            er   = stat.get("earnedRuns") or 0
+            hbp  = stat.get("hitByPitch") or 0
+            bf   = stat.get("battersFaced") or 0
+            ab_a = stat.get("atBats") or 0
+            sf_a = stat.get("sacFlies") or 0
+            outs = ip * 3
+            # Advanced rate stats
+            k_pct    = (so / bf) if bf > 0 else None
+            bb_pct   = (bb / bf) if bf > 0 else None
+            kbb_pct  = ((so - bb) / bf) if bf > 0 else None
+            hr9      = (hr_a * 9 / ip) if ip > 0 else None
+            kbb      = (so / bb) if bb > 0 else None
+            avg_a    = (h_a / ab_a) if ab_a > 0 else None
+            # BABIP-against = (H - HR) / (AB - K - HR + SF)
+            babip_denom = ab_a - so - hr_a + sf_a
+            babip_a  = ((h_a - hr_a) / babip_denom) if babip_denom > 0 else None
+            # LOB% = (H + BB + HBP - R) / (H + BB + HBP - 1.4*HR)  — standard simplified formula
+            lob_denom = h_a + bb + hbp - 1.4 * hr_a
+            lob_pct = ((h_a + bb + hbp - r_a) / lob_denom) if lob_denom > 0 else None
             out.append({
                 "name": player.get("fullName") or "",
                 "mlbamId": player.get("id") or 0,
@@ -1731,19 +1785,31 @@ try:
                 "G": stat.get("gamesPlayed") or 0,
                 "GS": stat.get("gamesStarted") or 0,
                 "IP": ip,
+                "BF": bf,
                 "W": stat.get("wins") or 0,
                 "L": stat.get("losses") or 0,
                 "SV": stat.get("saves") or 0,
                 "HLD": stat.get("holds") or 0,
                 "SVH3": (stat.get("saves") or 0) + (stat.get("holds") or 0),
-                "K": stat.get("strikeOuts") or 0,
-                "BB": stat.get("baseOnBalls") or 0,
-                "H": stat.get("hits") or 0,
-                "ER": stat.get("earnedRuns") or 0,
+                "K": so,
+                "BB": bb,
+                "HBP": hbp,
+                "H": h_a,
+                "HR": hr_a,
+                "ER": er,
                 "ERA": _milb_f(stat.get("era")),
                 "WHIP": _milb_f(stat.get("whip")),
                 "K9": _milb_f(stat.get("strikeoutsPer9Inn")),
                 "BB9": _milb_f(stat.get("walksPer9Inn")),
+                # Advanced
+                "K_pct":    round(k_pct,   4) if k_pct   is not None else None,
+                "BB_pct":   round(bb_pct,  4) if bb_pct  is not None else None,
+                "KBB_pct":  round(kbb_pct, 4) if kbb_pct is not None else None,
+                "KBB":      round(kbb,     2) if kbb     is not None else None,
+                "HR9":      round(hr9,     2) if hr9     is not None else None,
+                "AVG_a":    round(avg_a,   3) if avg_a   is not None else None,
+                "BABIP_a":  round(babip_a, 3) if babip_a is not None else None,
+                "LOB_pct":  round(lob_pct, 4) if lob_pct is not None else None,
             })
         return out
 
