@@ -20046,6 +20046,98 @@ function _milbBuildHtml() {
   var st = window._milbState;
   var data = (st.kind === 'hit') ? (st.hitters || []) : (st.pitchers || []);
 
+  // ── Grading mode: compute per-level z-scores + Grade + Grade Pool rank ──
+  // Done once per render across the FULL dataset (not the filtered view),
+  // so a player's grade is stable regardless of what filters are applied.
+  // Each player gets _grade (formula sum) and _gradePool (rank within level,
+  // 1=best). Players below MIN_PA are excluded from the pool (null grade).
+  if (st.tableMode === 'grade' && st.kind === 'hit') {
+    var MIN_PA = 20;
+    // Compute per-level mean/std of each input metric.
+    // Inputs: ISO, (BB% - K%), (SB/AB), BABIP, OBP
+    function bbk(p) { return (p.BB_pct != null && p.K_pct != null) ? (p.BB_pct - p.K_pct) : null; }
+    function sbab(p) { return (p.AB && p.AB > 0) ? (p.SB / p.AB) : null; }
+    var inputs = {
+      ISO:   function(p){ return p.ISO; },
+      BBK:   bbk,
+      SBAB:  sbab,
+      BABIP: function(p){ return p.BABIP; },
+      OBP:   function(p){ return p.OBP; }
+    };
+    // Cache the computed values on each player so we don't recompute
+    // in the body cell render.
+    data.forEach(function(p){
+      p._bbk  = bbk(p);
+      p._sbab = sbab(p);
+    });
+    // Per-level pool: build {level: {ISO:{mean,std,vals}, BBK:..., ...}}
+    var poolsByLevel = {};
+    data.forEach(function(p){
+      if ((p.PA || 0) < MIN_PA) return;
+      var lvl = p.level || '';
+      if (!poolsByLevel[lvl]) poolsByLevel[lvl] = {};
+      Object.keys(inputs).forEach(function(k){
+        var v = inputs[k](p);
+        if (v == null || isNaN(v)) return;
+        if (!poolsByLevel[lvl][k]) poolsByLevel[lvl][k] = { vals: [] };
+        poolsByLevel[lvl][k].vals.push(v);
+      });
+    });
+    Object.keys(poolsByLevel).forEach(function(lvl){
+      Object.keys(poolsByLevel[lvl]).forEach(function(k){
+        var arr = poolsByLevel[lvl][k].vals;
+        var n = arr.length;
+        if (n === 0) { poolsByLevel[lvl][k].mean = 0; poolsByLevel[lvl][k].std = 1; return; }
+        var sum = 0; arr.forEach(function(v){ sum += v; });
+        var mean = sum / n;
+        var ssq = 0; arr.forEach(function(v){ ssq += (v - mean) * (v - mean); });
+        var std = Math.sqrt(ssq / n);
+        if (std < 1e-9) std = 1; // avoid div-by-zero in degenerate pools
+        poolsByLevel[lvl][k].mean = mean;
+        poolsByLevel[lvl][k].std  = std;
+      });
+    });
+    // Compute Grade for each qualifying player (below-MIN_PA stays null).
+    data.forEach(function(p){
+      p._grade = null;
+      p._gradePool = null;
+      if ((p.PA || 0) < MIN_PA) return;
+      var lvl = p.level || '';
+      var pool = poolsByLevel[lvl];
+      if (!pool) return;
+      function z(key, raw) {
+        if (raw == null || isNaN(raw)) return null;
+        var s = pool[key];
+        if (!s) return null;
+        return (raw - s.mean) / s.std;
+      }
+      var zISO   = z('ISO',   p.ISO);
+      var zBBK   = z('BBK',   p._bbk);
+      var zSBAB  = z('SBAB',  p._sbab);
+      var zBABIP = z('BABIP', p.BABIP);
+      var zOBP   = z('OBP',   p.OBP);
+      // Formula: 0.38*z(ISO) + 0.27*z(BB-K%) + 0.17*z(SB/AB) - 0.10*z(BABIP) + 0.08*z(OBP)
+      // Skip if any required input is missing (avoids skewed partial grades).
+      if (zISO==null || zBBK==null || zSBAB==null || zBABIP==null || zOBP==null) return;
+      p._grade = 0.38*zISO + 0.27*zBBK + 0.17*zSBAB - 0.10*zBABIP + 0.08*zOBP;
+    });
+    // Compute Grade Pool: rank within level by Grade desc. Cache pool size.
+    var byLevel = {};
+    data.forEach(function(p){
+      if (p._grade == null) return;
+      var lvl = p.level || '';
+      if (!byLevel[lvl]) byLevel[lvl] = [];
+      byLevel[lvl].push(p);
+    });
+    Object.keys(byLevel).forEach(function(lvl){
+      byLevel[lvl].sort(function(a,b){ return b._grade - a._grade; });
+      byLevel[lvl].forEach(function(p, idx){
+        p._gradePool = idx + 1;
+        p._gradePoolSize = byLevel[lvl].length;
+      });
+    });
+  }
+
   // Filter
   var rows = data.filter(function(p){
     if (st.level !== 'ALL' && (p.level || '') !== st.level) return false;
@@ -20097,6 +20189,7 @@ function _milbBuildHtml() {
   h += '<div style="display:flex;gap:4px">';
   h += pill(st.tableMode === 'std', 'Standard', "window._milbSetTableMode('std')");
   h += pill(st.tableMode === 'adv', 'Advanced', "window._milbSetTableMode('adv')");
+  h += pill(st.tableMode === 'grade', 'Grading', "window._milbSetTableMode('grade')");
   h += '</div>';
   h += '<div style="width:1px;height:18px;background:var(--border)"></div>';
   // Level
@@ -20142,15 +20235,47 @@ function _milbBuildHtml() {
     var alignStyle = align === 'left' ? 'text-align:left' : 'text-align:right';
     return '<th onclick="window._milbSort(\''+colKey+'\')" style="'+alignStyle+';padding:8px 6px;font-weight:600;cursor:pointer;user-select:none;border-bottom:0.5px solid var(--border)">'+label+arrow+'</th>';
   }
+  var isGrade = (st.tableMode === 'grade');
+  var isAdv   = (st.tableMode === 'adv');
+  // Grade currently only applies to hitters. For pitchers in grade mode we
+  // fall back to Standard columns and skip Grade/GradePool headers.
+  var showGradeCols = (isGrade && st.kind === 'hit');
+  if (showGradeCols) {
+    h += th('_grade', 'Grade', 'right');
+    h += th('_gradePool', 'Grade Pool', 'right');
+  }
   h += th('name','Player','left');
   h += th('level','Lvl','left');
   h += th('team','Team','left');
   h += th('org','Org','left');
   h += th('pos','Pos','left');
   h += th('age','Age','right');
-  var isAdv = (st.tableMode === 'adv');
   if (st.kind === 'hit') {
-    if (!isAdv) {
+    if (isGrade) {
+      // Grading mode: show formula inputs + standard counting stats
+      h += th('ISO','ISO','right');
+      h += th('BB_pct','BB%','right');
+      h += th('K_pct','K%','right');
+      h += th('_bbk','BB-K%','right');
+      h += th('_sbab','SB/AB','right');
+      h += th('BABIP','BABIP','right');
+      h += th('OBP','OBP','right');
+      h += '<th style="border-left:0.5px solid var(--border);padding:8px 6px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;font-size:10px">Standard</th>';
+      h += th('G','G','right');
+      h += th('AB','AB','right');
+      h += th('R','R','right');
+      h += th('H','H','right');
+      h += th('2B','2B','right');
+      h += th('3B','3B','right');
+      h += th('HR','HR','right');
+      h += th('RBI','RBI','right');
+      h += th('BB','BB','right');
+      h += th('SO','SO','right');
+      h += th('SB','SB','right');
+      h += th('AVG','AVG','right');
+      h += th('SLG','SLG','right');
+      h += th('OPS','OPS','right');
+    } else if (!isAdv) {
       h += th('G','G','right');
       h += th('AB','AB','right');
       h += th('R','R','right');
@@ -20221,6 +20346,23 @@ function _milbBuildHtml() {
 
   visible.forEach(function(p){
     h += '<tr style="border-top:0.5px solid var(--border)">';
+    // Grade + Grade Pool cells (only in grade mode, hitter kind).
+    if (showGradeCols) {
+      var g = p._grade;
+      var gColor, gBg;
+      if (g == null) { gColor = 'var(--muted)'; gBg = 'transparent'; }
+      else if (g >=  1.5) { gColor = '#0F6E56'; gBg = 'rgba(29,158,117,0.16)'; }
+      else if (g >=  0.5) { gColor = '#1e6b3a'; gBg = 'rgba(29,158,117,0.08)'; }
+      else if (g >= -0.5) { gColor = 'var(--text)'; gBg = 'transparent'; }
+      else if (g >= -1.5) { gColor = '#a05a1f'; gBg = 'rgba(186,117,23,0.08)'; }
+      else                { gColor = '#c0392b'; gBg = 'rgba(192,57,43,0.10)'; }
+      var gTxt = (g == null) ? '\u2014' : (g >= 0 ? '+' : '') + g.toFixed(2);
+      h += '<td style="text-align:right;padding:6px 6px;font-weight:600;color:'+gColor+';background:'+gBg+'">'+gTxt+'</td>';
+      var gp = p._gradePool;
+      var gpSize = p._gradePoolSize;
+      var gpTxt = (gp == null) ? '\u2014' : (gp + ' / ' + (gpSize || '?'));
+      h += '<td style="text-align:right;padding:6px 6px;color:var(--muted);font-size:10px" title="Rank within ' + _loEsc(p.level || '') + ' by Grade">'+gpTxt+'</td>';
+    }
     h += '<td style="padding:6px 8px;font-weight:500">'+_loEsc(p.name || '')+'</td>';
     var lvlBg = p.level === 'AAA' ? 'rgba(29,158,117,0.10);color:#0F6E56'
               : p.level === 'AA'  ? 'rgba(186,117,23,0.10);color:#854f0b'
@@ -20233,8 +20375,33 @@ function _milbBuildHtml() {
     h += '<td style="text-align:right;padding:6px 6px">'+(p.age == null ? '\u2014' : p.age)+'</td>';
     // Helpers for advanced rate formatting
     function fmtPct(v) { return v == null ? '\u2014' : (v * 100).toFixed(1) + '%'; }
+    function fmtSBAB(v) { return v == null ? '\u2014' : v.toFixed(3).replace(/^0\./, '.'); }
     if (st.kind === 'hit') {
-      if (!isAdv) {
+      if (isGrade) {
+        // Grading mode: formula inputs first, then divider, then Standard counting stats
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+(p.ISO == null ? '\u2014' : p.ISO.toFixed(3).replace(/^0\./,'.'))+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtPct(p.BB_pct)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtPct(p.K_pct)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtPct(p._bbk)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtSBAB(p._sbab)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+(p.BABIP == null ? '\u2014' : p.BABIP.toFixed(3).replace(/^0\./,'.'))+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+(p.OBP == null ? '\u2014' : p.OBP.toFixed(3).replace(/^0\./,'.'))+'</td>';
+        h += '<td style="border-left:0.5px solid var(--border);padding:0"></td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.G)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.AB)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.R)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.H)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p['2B'])+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p['3B'])+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtN(p.HR)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.RBI)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.BB)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.SO)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.SB)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+(p.AVG == null ? '\u2014' : p.AVG.toFixed(3).replace(/^0\./,'.'))+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+(p.SLG == null ? '\u2014' : p.SLG.toFixed(3).replace(/^0\./,'.'))+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+(p.OPS == null ? '\u2014' : p.OPS.toFixed(3).replace(/^0\./,'.'))+'</td>';
+      } else if (!isAdv) {
         h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.G)+'</td>';
         h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.AB)+'</td>';
         h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.R)+'</td>';
@@ -20324,22 +20491,34 @@ window._milbSetKind = function(k) {
 };
 window._milbSetTableMode = function(mode) {
   if (!window._milbState) return;
-  window._milbState.tableMode = (mode === 'adv') ? 'adv' : 'std';
+  window._milbState.tableMode = (mode === 'adv') ? 'adv' : (mode === 'grade') ? 'grade' : 'std';
   // If the current sort column doesn't exist in the new column set, reset to
   // a sensible default. Counting-stat columns disappear in Advanced; rate
-  // columns are mostly Advanced-only.
+  // columns are mostly Advanced-only. Grade mode adds _grade / _gradePool.
   var stdHitCols = ['G','AB','R','H','2B','3B','HR','RBI','BB','SO','SB','AVG','OBP','SLG','OPS'];
   var advHitCols = ['G','PA','BB_pct','K_pct','BB_K','AVG','OBP','SLG','OPS','ISO','BABIP'];
+  var gradeHitCols = ['_grade','_gradePool','ISO','BB_pct','K_pct','_bbk','_sbab','BABIP','OBP',
+                      'G','AB','R','H','2B','3B','HR','RBI','BB','SO','SB','AVG','SLG','OPS'];
   var stdPitCols = ['G','GS','IP','W','L','SV','HLD','K','BB','H','ER','ERA','WHIP','K9','BB9'];
   var advPitCols = ['G','IP','K9','BB9','HR9','KBB','K_pct','BB_pct','KBB_pct','AVG_a','WHIP','BABIP_a','LOB_pct','ERA'];
   var ALL_FIXED = ['name','level','team','org','pos','age'];
-  var valid = (window._milbState.kind === 'hit')
-    ? (window._milbState.tableMode === 'adv' ? advHitCols : stdHitCols)
-    : (window._milbState.tableMode === 'adv' ? advPitCols : stdPitCols);
+  var valid;
+  if (window._milbState.kind === 'hit') {
+    valid = window._milbState.tableMode === 'grade' ? gradeHitCols
+          : window._milbState.tableMode === 'adv'   ? advHitCols
+                                                    : stdHitCols;
+  } else {
+    // Pitchers in grade mode fall back to standard pitcher columns.
+    valid = window._milbState.tableMode === 'adv' ? advPitCols : stdPitCols;
+  }
   if (ALL_FIXED.indexOf(window._milbState.sortCol) === -1 && valid.indexOf(window._milbState.sortCol) === -1) {
-    window._milbState.sortCol = (window._milbState.kind === 'hit')
-      ? (window._milbState.tableMode === 'adv' ? 'OPS' : 'HR')
-      : (window._milbState.tableMode === 'adv' ? 'K_pct' : 'K');
+    if (window._milbState.kind === 'hit') {
+      window._milbState.sortCol = window._milbState.tableMode === 'grade' ? '_grade'
+                                : window._milbState.tableMode === 'adv'   ? 'OPS'
+                                                                          : 'HR';
+    } else {
+      window._milbState.sortCol = window._milbState.tableMode === 'adv' ? 'K_pct' : 'K';
+    }
     window._milbState.sortDir = 'desc';
   }
   window._milbState.limit = 100;
