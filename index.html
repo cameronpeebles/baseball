@@ -20191,6 +20191,140 @@ function _milbBuildHtml() {
     });
   }
 
+  // ── Grading mode: pitchers ──────────────────────────────────────────────
+  // Pitcher Grade = 0.42*z(K-BB%) + 0.23*z(K/9) - 0.15*z(BB/9) - 0.10*z(HR/9)
+  //                 - 0.05*z(WHIP) - 0.05*z(LOB%_excess80)
+  // LOB% penalty is non-linear: only counts the excess above 80% strand rate.
+  // Players below MIN_IP are excluded from the pool (null grade).
+  if (st.tableMode === 'grade' && st.kind === 'pit') {
+    var MIN_IP = 10;
+    // LOB% excess: how far above 0.80 the strand rate sits. Sustainable
+    // strand rates (~70-80%) contribute 0; only lucky strand rates carry
+    // a regression-risk penalty.
+    function lobExcess(p) {
+      if (p.LOB_pct == null) return null;
+      return Math.max(0, p.LOB_pct - 0.80);
+    }
+    var inputsP = {
+      KBB:  function(p){ return p.KBB_pct; },
+      K9:   function(p){ return p.K9; },
+      BB9:  function(p){ return p.BB9; },
+      HR9:  function(p){ return p.HR9; },
+      WHIP: function(p){ return p.WHIP; },
+      LOBX: lobExcess
+    };
+    data.forEach(function(p){ p._lobx = lobExcess(p); });
+    var poolsByLevelP = {};
+    data.forEach(function(p){
+      if ((p.IP || 0) < MIN_IP) return;
+      var lvl = p.level || '';
+      if (!poolsByLevelP[lvl]) poolsByLevelP[lvl] = {};
+      Object.keys(inputsP).forEach(function(k){
+        var v = inputsP[k](p);
+        if (v == null || isNaN(v)) return;
+        if (!poolsByLevelP[lvl][k]) poolsByLevelP[lvl][k] = { vals: [] };
+        poolsByLevelP[lvl][k].vals.push(v);
+      });
+    });
+    Object.keys(poolsByLevelP).forEach(function(lvl){
+      Object.keys(poolsByLevelP[lvl]).forEach(function(k){
+        var arr = poolsByLevelP[lvl][k].vals;
+        var n = arr.length;
+        if (n === 0) { poolsByLevelP[lvl][k].mean = 0; poolsByLevelP[lvl][k].std = 1; return; }
+        var sum = 0; arr.forEach(function(v){ sum += v; });
+        var mean = sum / n;
+        var ssq = 0; arr.forEach(function(v){ ssq += (v - mean) * (v - mean); });
+        var std = Math.sqrt(ssq / n);
+        if (std < 1e-9) std = 1;
+        poolsByLevelP[lvl][k].mean = mean;
+        poolsByLevelP[lvl][k].std  = std;
+      });
+    });
+    data.forEach(function(p){
+      p._grade = null;
+      p._gradePct = null;
+      p._archetype = null;
+      if ((p.IP || 0) < MIN_IP) return;
+      var lvl = p.level || '';
+      var pool = poolsByLevelP[lvl];
+      if (!pool) return;
+      function z(key, raw) {
+        if (raw == null || isNaN(raw)) return null;
+        var s = pool[key];
+        if (!s) return null;
+        return (raw - s.mean) / s.std;
+      }
+      var zKBB  = z('KBB',  p.KBB_pct);
+      var zK9   = z('K9',   p.K9);
+      var zBB9  = z('BB9',  p.BB9);
+      var zHR9  = z('HR9',  p.HR9);
+      var zWHIP = z('WHIP', p.WHIP);
+      var zLOBX = z('LOBX', p._lobx);
+      if (zKBB==null || zK9==null || zBB9==null || zHR9==null || zWHIP==null || zLOBX==null) return;
+      p._grade = 0.42*zKBB + 0.23*zK9 - 0.15*zBB9 - 0.10*zHR9 - 0.05*zWHIP - 0.05*zLOBX;
+    });
+    // Percentile within level
+    var byLevelP = {};
+    data.forEach(function(p){
+      if (p._grade == null) return;
+      var lvl = p.level || '';
+      if (!byLevelP[lvl]) byLevelP[lvl] = [];
+      byLevelP[lvl].push(p);
+    });
+    Object.keys(byLevelP).forEach(function(lvl){
+      var arr = byLevelP[lvl];
+      arr.sort(function(a,b){ return b._grade - a._grade; });
+      var n = arr.length;
+      arr.forEach(function(p, idx){
+        p._gradePct = Math.round((n - idx) / n * 100);
+      });
+    });
+    // Archetype classification — hard thresholds, precedence order matters.
+    // Smoke & Mirrors is checked first so lucky pitchers don't get praised
+    // as Ace Alphas.
+    function classifyP(p) {
+      var kbb = p.KBB_pct, k9 = p.K9, bb9 = p.BB9, hr9 = p.HR9, whip = p.WHIP, lob = p.LOB_pct;
+      function gt(v, t) { return v != null && v >  t; }
+      function ge(v, t) { return v != null && v >= t; }
+      function lt(v, t) { return v != null && v <  t; }
+      function inRange(v, lo, hi) { return v != null && v >= lo && v <= hi; }
+      // 1. Smoke & Mirrors (warning bucket — comes first)
+      //    K-BB%<12%, K/9<9.0, BB/9>3.5, HR/9>1.1, WHIP>1.25, LOB%>82%
+      if (lt(kbb, 0.12) && lt(k9, 9.0) && gt(bb9, 3.5)
+          && gt(hr9, 1.1) && gt(whip, 1.25) && gt(lob, 0.82)) {
+        return 'Smoke & Mirrors';
+      }
+      // 2. Ace Alpha — top-tier SP1 profile
+      //    K-BB%>22%, K/9>11.5, BB/9<3.0, HR/9<0.8, WHIP<1.10, LOB% 72-82%
+      if (gt(kbb, 0.22) && gt(k9, 11.5) && lt(bb9, 3.0)
+          && lt(hr9, 0.8) && lt(whip, 1.10) && inRange(lob, 0.72, 0.82)) {
+        return 'Ace Alpha';
+      }
+      // 3. Whiff Monster — high-K, command-volatile (LOB% any)
+      //    K-BB%>24%, K/9>13.0, BB/9<4.5, HR/9<1.2, WHIP<1.30
+      if (gt(kbb, 0.24) && gt(k9, 13.0) && lt(bb9, 4.5)
+          && lt(hr9, 1.2) && lt(whip, 1.30)) {
+        return 'Whiff Monster';
+      }
+      // 4. Command Surgeon — efficiency profile
+      //    K-BB%>18%, K/9 9.0-11.0, BB/9<2.0, HR/9<1.0, WHIP<1.08, LOB% 70-80%
+      if (gt(kbb, 0.18) && inRange(k9, 9.0, 11.0) && lt(bb9, 2.0)
+          && lt(hr9, 1.0) && lt(whip, 1.08) && inRange(lob, 0.70, 0.80)) {
+        return 'Command Surgeon';
+      }
+      // 5. Ratio Stabilizer — reliable SP3/SP4
+      //    K-BB%>14%, K/9 8.0-10.5, BB/9<3.2, HR/9<0.9, WHIP<1.18, LOB% 72-80%
+      if (gt(kbb, 0.14) && inRange(k9, 8.0, 10.5) && lt(bb9, 3.2)
+          && lt(hr9, 0.9) && lt(whip, 1.18) && inRange(lob, 0.72, 0.80)) {
+        return 'Ratio Stabilizer';
+      }
+      return null;
+    }
+    data.forEach(function(p){
+      p._archetype = (p._grade != null) ? classifyP(p) : null;
+    });
+  }
+
   // Filter
   var rows = data.filter(function(p){
     if (st.level !== 'ALL' && (p.level || '') !== st.level) return false;
@@ -20200,10 +20334,10 @@ function _milbBuildHtml() {
       if ((p.name || '').toLowerCase().indexOf(s) === -1
           && (p.team || '').toLowerCase().indexOf(s) === -1) return false;
     }
-    // Archetype filter only applies in Grading mode (hitters).
-    if (st.tableMode === 'grade' && st.kind === 'hit' && st.archetypeFilter !== 'ALL') {
+    // Archetype filter applies in Grading mode (both hitters and pitchers).
+    if (st.tableMode === 'grade' && st.archetypeFilter !== 'ALL') {
       if (st.archetypeFilter === 'NONE') {
-        if (p._archetype) return false; // show only unclassified
+        if (p._archetype) return false;
       } else {
         if ((p._archetype || '') !== st.archetypeFilter) return false;
       }
@@ -20276,21 +20410,30 @@ function _milbBuildHtml() {
   h += '<div style="margin-left:auto;font-size:11px;color:var(--muted)">'+rows.length.toLocaleString()+' players</div>';
   h += '</div>';
 
-  // ── Archetype filter pills (Grading mode, hitters only) ─────────────────
-  if (st.tableMode === 'grade' && st.kind === 'hit') {
-    var ARCHETYPES = ['All-Around Elite', 'Dinger Monster', 'OBP Machine', 'Chaos Speed Demon', 'Mirage Bat'];
+  // ── Archetype filter pills (Grading mode, both hitters and pitchers) ────
+  if (st.tableMode === 'grade') {
+    var HIT_ARCHETYPES = ['All-Around Elite', 'Dinger Monster', 'OBP Machine', 'Chaos Speed Demon', 'Mirage Bat'];
+    var PIT_ARCHETYPES = ['Ace Alpha', 'Whiff Monster', 'Command Surgeon', 'Ratio Stabilizer', 'Smoke & Mirrors'];
+    var ARCHETYPES = (st.kind === 'hit') ? HIT_ARCHETYPES : PIT_ARCHETYPES;
     var ARCH_COLORS = {
+      // Hitters
       'All-Around Elite':  { fg:'#0F6E56', bg:'rgba(29,158,117,0.14)' },
       'Dinger Monster':    { fg:'#854f0b', bg:'rgba(186,117,23,0.14)' },
       'OBP Machine':       { fg:'#0C447C', bg:'rgba(24,95,165,0.14)' },
       'Chaos Speed Demon': { fg:'#7d3f9c', bg:'rgba(125,63,156,0.14)' },
-      'Mirage Bat':        { fg:'#c0392b', bg:'rgba(192,57,43,0.14)' }
+      'Mirage Bat':        { fg:'#c0392b', bg:'rgba(192,57,43,0.14)' },
+      // Pitchers
+      'Ace Alpha':         { fg:'#0F6E56', bg:'rgba(29,158,117,0.14)' },
+      'Whiff Monster':     { fg:'#854f0b', bg:'rgba(186,117,23,0.14)' },
+      'Command Surgeon':   { fg:'#0C447C', bg:'rgba(24,95,165,0.14)' },
+      'Ratio Stabilizer':  { fg:'#7d3f9c', bg:'rgba(125,63,156,0.14)' },
+      'Smoke & Mirrors':   { fg:'#c0392b', bg:'rgba(192,57,43,0.14)' }
     };
     h += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">';
     h += '<span style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Archetype</span>';
     h += pill(st.archetypeFilter === 'ALL', 'All', "window._milbSetArchetype('ALL')");
     ARCHETYPES.forEach(function(a){
-      var c = ARCH_COLORS[a];
+      var c = ARCH_COLORS[a] || { fg:'var(--muted)', bg:'transparent' };
       var active = (st.archetypeFilter === a);
       var style = active
         ? 'padding:3px 9px;font-size:11px;border:0.5px solid '+c.fg+';border-radius:12px;background:'+c.bg+';color:'+c.fg+';cursor:pointer;font-family:inherit;font-weight:600'
@@ -20323,9 +20466,8 @@ function _milbBuildHtml() {
   }
   var isGrade = (st.tableMode === 'grade');
   var isAdv   = (st.tableMode === 'adv');
-  // Grade currently only applies to hitters. For pitchers in grade mode we
-  // fall back to Standard columns and skip grade-specific headers.
-  var showGradeCols = (isGrade && st.kind === 'hit');
+  // Grade columns now apply to both hitters and pitchers in grade mode.
+  var showGradeCols = isGrade;
   if (showGradeCols) {
     h += th('_gradePct', 'Grade', 'right');
     h += th('_archetype', 'Archetype', 'left');
@@ -20391,7 +20533,28 @@ function _milbBuildHtml() {
       h += th('BABIP','BABIP','right');
     }
   } else {
-    if (!isAdv) {
+    if (isGrade) {
+      // Grading mode (pitchers): formula inputs + standard counting stats
+      h += th('KBB_pct','K-BB%','right');
+      h += th('K9','K/9','right');
+      h += th('BB9','BB/9','right');
+      h += th('HR9','HR/9','right');
+      h += th('WHIP','WHIP','right');
+      h += th('LOB_pct','LOB%','right');
+      h += '<th style="border-left:0.5px solid var(--border);padding:8px 6px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;font-size:10px">Standard</th>';
+      h += th('G','G','right');
+      h += th('GS','GS','right');
+      h += th('IP','IP','right');
+      h += th('W','W','right');
+      h += th('L','L','right');
+      h += th('SV','SV','right');
+      h += th('HLD','HLD','right');
+      h += th('K','K','right');
+      h += th('BB','BB','right');
+      h += th('H','H','right');
+      h += th('ER','ER','right');
+      h += th('ERA','ERA','right');
+    } else if (!isAdv) {
       h += th('G','G','right');
       h += th('GS','GS','right');
       h += th('IP','IP','right');
@@ -20526,7 +20689,28 @@ function _milbBuildHtml() {
         h += '<td style="text-align:right;padding:6px 6px">'+(p.BABIP == null ? '\u2014' : p.BABIP.toFixed(3).replace(/^0\./,'.'))+'</td>';
       }
     } else {
-      if (!isAdv) {
+      if (isGrade) {
+        // Grading mode (pitchers): formula inputs first, then divider, then Standard
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtPct(p.KBB_pct)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtRate(p.K9, 1)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtRate(p.BB9, 1)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtRate(p.HR9, 2)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtRate(p.WHIP, 2)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtPct(p.LOB_pct)+'</td>';
+        h += '<td style="border-left:0.5px solid var(--border);padding:0"></td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.G)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.GS)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtRate(p.IP, 1)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.W)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.L)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.SV)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.HLD)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtN(p.K)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.BB)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.H)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.ER)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtRate(p.ERA, 2)+'</td>';
+      } else if (!isAdv) {
         h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.G)+'</td>';
         h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.GS)+'</td>';
         h += '<td style="text-align:right;padding:6px 6px">'+fmtRate(p.IP, 1)+'</td>';
@@ -20581,6 +20765,11 @@ window._milbSetKind = function(k) {
   } else if (k === 'pit' && ['HR','RBI','AVG','OBP','SLG','OPS','AB'].indexOf(window._milbState.sortCol) !== -1) {
     window._milbState.sortCol = 'K'; window._milbState.sortDir = 'desc';
   }
+  // Archetype names don't carry over between kinds (e.g. 'Dinger Monster' is
+  // hitter-only). Reset the filter when switching kind in Grading mode.
+  if (window._milbState.tableMode === 'grade') {
+    window._milbState.archetypeFilter = 'ALL';
+  }
   window._milbState.limit = 100;
   renderMiLBPage();
 };
@@ -20598,6 +20787,8 @@ window._milbSetTableMode = function(mode) {
                       'G','AB','R','H','2B','3B','HR','RBI','BB','SO','SB','AVG','SLG','OPS'];
   var stdPitCols = ['G','GS','IP','W','L','SV','HLD','K','BB','H','ER','ERA','WHIP','K9','BB9'];
   var advPitCols = ['G','IP','K9','BB9','HR9','KBB','K_pct','BB_pct','KBB_pct','AVG_a','WHIP','BABIP_a','LOB_pct','ERA'];
+  var gradePitCols = ['_gradePct','_archetype','KBB_pct','K9','BB9','HR9','WHIP','LOB_pct',
+                      'G','GS','IP','W','L','SV','HLD','K','BB','H','ER','ERA'];
   var ALL_FIXED = ['name','level','team','org','pos','age'];
   var valid;
   if (window._milbState.kind === 'hit') {
@@ -20605,7 +20796,9 @@ window._milbSetTableMode = function(mode) {
           : window._milbState.tableMode === 'adv'   ? advHitCols
                                                     : stdHitCols;
   } else {
-    valid = window._milbState.tableMode === 'adv' ? advPitCols : stdPitCols;
+    valid = window._milbState.tableMode === 'grade' ? gradePitCols
+          : window._milbState.tableMode === 'adv'   ? advPitCols
+                                                    : stdPitCols;
   }
   if (ALL_FIXED.indexOf(window._milbState.sortCol) === -1 && valid.indexOf(window._milbState.sortCol) === -1) {
     if (window._milbState.kind === 'hit') {
@@ -20613,7 +20806,9 @@ window._milbSetTableMode = function(mode) {
                                 : window._milbState.tableMode === 'adv'   ? 'OPS'
                                                                           : 'HR';
     } else {
-      window._milbState.sortCol = window._milbState.tableMode === 'adv' ? 'K_pct' : 'K';
+      window._milbState.sortCol = window._milbState.tableMode === 'grade' ? '_gradePct'
+                                : window._milbState.tableMode === 'adv'   ? 'K_pct'
+                                                                          : 'K';
     }
     window._milbState.sortDir = 'desc';
   }
