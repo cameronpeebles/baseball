@@ -1550,3 +1550,227 @@ except Exception as _e:
         "schedule": {},
         "error":    str(_e)
     })
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MiLB stats fetch (MLB Stats API — public, no auth)
+# Pulls AAA / AA / A+ / A hitting + pitching season stats and writes
+# data/minor_league_hitters.json and data/minor_league_pitchers.json.
+# Isolated with try/except so any failure here doesn't affect Fantrax data.
+# ─────────────────────────────────────────────────────────────────────────────
+try:
+    import time as _time
+    import datetime as _milb_dt
+
+    _MILB_API = "https://statsapi.mlb.com/api/v1"
+    _MILB_LEVELS = {11: "AAA", 12: "AA", 13: "A+", 14: "A"}
+    _MILB_PAGE_SIZE = 1000
+    _MILB_DELAY = 0.4
+    _MILB_SEASON = _milb_dt.datetime.now().year
+
+    print(f"\n[MiLB] fetching stats for {_MILB_SEASON} ({', '.join(_MILB_LEVELS.values())})...")
+
+    # Use a fresh session — the Fantrax session has cookies + headers that
+    # don't apply to MLB.com.
+    _milb_sess = requests.Session()
+    _milb_sess.headers.update({
+        "User-Agent": "BluebonnetBaseball/1.0",
+        "Accept": "application/json",
+    })
+
+    def _milb_get(path, params):
+        url = f"{_MILB_API}/{path.lstrip('/')}"
+        for attempt in range(3):
+            try:
+                resp = _milb_sess.get(url, params=params, timeout=30)
+                resp.raise_for_status()
+                return resp.json()
+            except requests.RequestException as _e:
+                wait = 2 ** attempt
+                print(f"  [MiLB warn] {url} attempt {attempt + 1} failed: {_e}. retrying in {wait}s")
+                _time.sleep(wait)
+        raise RuntimeError(f"Failed to fetch {url}")
+
+    def _milb_age(birthdate, season):
+        if not birthdate:
+            return None
+        try:
+            bd = _milb_dt.datetime.strptime(birthdate, "%Y-%m-%d")
+            ref = _milb_dt.datetime(season, 7, 1)
+            return ref.year - bd.year - ((ref.month, ref.day) < (bd.month, bd.day))
+        except (ValueError, TypeError):
+            return None
+
+    def _milb_f(v):
+        if v is None or v == "" or v == "-.--":
+            return None
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return None
+
+    def _milb_ip(v):
+        # MLB IP format: "76.2" means 76 + 2/3 innings.
+        if v is None:
+            return 0.0
+        try:
+            s = str(v)
+            if "." in s:
+                whole, frac = s.split(".")
+                return int(whole) + int(frac) / 3.0
+            return float(s)
+        except (TypeError, ValueError):
+            return 0.0
+
+    # Build team→parent-org map (e.g. minor league team ID → "NYY")
+    print("  [MiLB] building team→org map...")
+    _teams_data = _milb_get("teams", {
+        "sportIds": ",".join(str(s) for s in _MILB_LEVELS.keys()),
+        "season": _MILB_SEASON,
+    })
+    _milb_team_map = {}
+    for _t in _teams_data.get("teams", []):
+        _tid = _t.get("id")
+        if not _tid:
+            continue
+        _milb_team_map[_tid] = {
+            "team_abbrev": _t.get("abbreviation") or "",
+            "team_name": _t.get("name") or "",
+            "parent_org_id": _t.get("parentOrgId") or 0,
+        }
+    # Resolve parent org IDs → abbreviations via MLB sport (sportId=1)
+    _mlb_data = _milb_get("teams", {"sportIds": "1", "season": _MILB_SEASON})
+    _parent_abbrev = {_t["id"]: _t.get("abbreviation", "") for _t in _mlb_data.get("teams", [])}
+    for _info in _milb_team_map.values():
+        _info["parent_org"] = _parent_abbrev.get(_info["parent_org_id"], "")
+    print(f"  [MiLB] {len(_milb_team_map)} teams mapped")
+
+    def _milb_fetch_stats(group, sport_id):
+        rows = []
+        offset = 0
+        while True:
+            data = _milb_get("stats", {
+                "stats": "season",
+                "group": group,
+                "sportIds": sport_id,
+                "season": _MILB_SEASON,
+                "limit": _MILB_PAGE_SIZE,
+                "offset": offset,
+                "playerPool": "All",
+            })
+            splits = []
+            for grp in data.get("stats", []):
+                splits.extend(grp.get("splits", []))
+            if not splits:
+                break
+            rows.extend(splits)
+            if len(splits) < _MILB_PAGE_SIZE:
+                break
+            offset += _MILB_PAGE_SIZE
+            _time.sleep(_MILB_DELAY)
+        return rows
+
+    def _milb_xform_hit(rows):
+        out = []
+        for r in rows:
+            player = r.get("player") or {}
+            team = r.get("team") or {}
+            stat = r.get("stat") or {}
+            tid = team.get("id")
+            team_info = _milb_team_map.get(tid, {})
+            sport = r.get("sport") or {}
+            sport_id = sport.get("id") or 0
+            out.append({
+                "name": player.get("fullName") or "",
+                "mlbamId": player.get("id") or 0,
+                "age": _milb_age(player.get("birthDate"), _MILB_SEASON),
+                "pos": (player.get("primaryPosition") or {}).get("abbreviation") or "",
+                "team": team_info.get("team_abbrev") or team.get("abbreviation") or "",
+                "team_name": team.get("name") or "",
+                "org": team_info.get("parent_org") or "",
+                "level": _MILB_LEVELS.get(sport_id, ""),
+                "G": stat.get("gamesPlayed") or 0,
+                "AB": stat.get("atBats") or 0,
+                "R": stat.get("runs") or 0,
+                "H": stat.get("hits") or 0,
+                "2B": stat.get("doubles") or 0,
+                "3B": stat.get("triples") or 0,
+                "HR": stat.get("homeRuns") or 0,
+                "RBI": stat.get("rbi") or 0,
+                "BB": stat.get("baseOnBalls") or 0,
+                "SO": stat.get("strikeOuts") or 0,
+                "SB": stat.get("stolenBases") or 0,
+                "CS": stat.get("caughtStealing") or 0,
+                "AVG": _milb_f(stat.get("avg")),
+                "OBP": _milb_f(stat.get("obp")),
+                "SLG": _milb_f(stat.get("slg")),
+                "OPS": _milb_f(stat.get("ops")),
+            })
+        return out
+
+    def _milb_xform_pit(rows):
+        out = []
+        for r in rows:
+            player = r.get("player") or {}
+            team = r.get("team") or {}
+            stat = r.get("stat") or {}
+            tid = team.get("id")
+            team_info = _milb_team_map.get(tid, {})
+            sport = r.get("sport") or {}
+            sport_id = sport.get("id") or 0
+            ip = _milb_ip(stat.get("inningsPitched"))
+            out.append({
+                "name": player.get("fullName") or "",
+                "mlbamId": player.get("id") or 0,
+                "age": _milb_age(player.get("birthDate"), _MILB_SEASON),
+                "pos": (player.get("primaryPosition") or {}).get("abbreviation") or "P",
+                "team": team_info.get("team_abbrev") or team.get("abbreviation") or "",
+                "team_name": team.get("name") or "",
+                "org": team_info.get("parent_org") or "",
+                "level": _MILB_LEVELS.get(sport_id, ""),
+                "G": stat.get("gamesPlayed") or 0,
+                "GS": stat.get("gamesStarted") or 0,
+                "IP": ip,
+                "W": stat.get("wins") or 0,
+                "L": stat.get("losses") or 0,
+                "SV": stat.get("saves") or 0,
+                "HLD": stat.get("holds") or 0,
+                "SVH3": (stat.get("saves") or 0) + (stat.get("holds") or 0),
+                "K": stat.get("strikeOuts") or 0,
+                "BB": stat.get("baseOnBalls") or 0,
+                "H": stat.get("hits") or 0,
+                "ER": stat.get("earnedRuns") or 0,
+                "ERA": _milb_f(stat.get("era")),
+                "WHIP": _milb_f(stat.get("whip")),
+                "K9": _milb_f(stat.get("strikeoutsPer9Inn")),
+                "BB9": _milb_f(stat.get("walksPer9Inn")),
+            })
+        return out
+
+    _all_hitters = []
+    _all_pitchers = []
+    for _sid, _label in _MILB_LEVELS.items():
+        print(f"  [MiLB] [{_label}] hitting...")
+        _rows_h = _milb_fetch_stats("hitting", _sid)
+        _hits = _milb_xform_hit(_rows_h)
+        print(f"  [MiLB] [{_label}] {len(_hits)} hitters")
+        _all_hitters.extend(_hits)
+
+        print(f"  [MiLB] [{_label}] pitching...")
+        _rows_p = _milb_fetch_stats("pitching", _sid)
+        _pits = _milb_xform_pit(_rows_p)
+        print(f"  [MiLB] [{_label}] {len(_pits)} pitchers")
+        _all_pitchers.extend(_pits)
+        _time.sleep(_MILB_DELAY)
+
+    # Stable sort for diff-friendly JSON
+    _all_hitters.sort(key=lambda p: (p.get("level", ""), p.get("org", ""), p.get("name", "")))
+    _all_pitchers.sort(key=lambda p: (p.get("level", ""), p.get("org", ""), p.get("name", "")))
+
+    save("minor_league_hitters.json", _all_hitters)
+    save("minor_league_pitchers.json", _all_pitchers)
+    print(f"[MiLB] done: {len(_all_hitters)} hitters, {len(_all_pitchers)} pitchers")
+
+except Exception as _milb_err:
+    print(f"  WARN: MiLB fetch failed: {_milb_err}")
+    # Don't fail the whole script — Fantrax data is the critical part.
