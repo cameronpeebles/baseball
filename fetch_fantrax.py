@@ -1657,6 +1657,10 @@ try:
                 "limit": _MILB_PAGE_SIZE,
                 "offset": offset,
                 "playerPool": "All",
+                # By default the stats endpoint returns minimal player data
+                # (id/fullName only). Hydrate to include birthDate and
+                # primaryPosition so age and pos populate correctly.
+                "hydrate": "person(birthDate,primaryPosition)",
             })
             splits = []
             for grp in data.get("stats", []):
