@@ -478,6 +478,117 @@
                 },
                 {
                   "scorer": {
+                    "teamName": "Philadelphia Phillies",
+                    "urlName": "kyle-schwarber",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03cag_96_19.png",
+                    "scorerId": "03cag",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "014"
+                    ],
+                    "defaultPosId": "013",
+                    "posShortNames": "UT",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
+                      {
+                        "tooltip": "May 12, 9:51 PM: Schwarber went 1-for-3 with a solo...",
+                        "typeId": "9"
+                      },
+                      {
+                        "tooltip": "Bats Left",
+                        "typeId": "16"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "014"
+                    ],
+                    "teamId": "10180",
+                    "name": "Kyle Schwarber",
+                    "teamShortName": "PHI",
+                    "shortName": "K. Schwarber"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "014",
+                  "cells": [
+                    {
+                      "content": "33"
+                    },
+                    {
+                      "content": "PHI 0<br/>@BOS 0",
+                      "eventId": "06ipy",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "ranger-suarez",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03et8_96_10.png",
+                          "scorerId": "03et8",
+                          "upcomingEventStatusId": "1",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "In starting lineup",
+                              "typeId": "12"
+                            },
+                            {
+                              "tooltip": "LHP",
+                              "typeId": "16"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "Ranger Suarez",
+                          "shortName": "R. Suarez"
+                        },
+                        "header": "Probable Starter for Boston:",
+                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 41 &nbsp;<b>K</b> 34 &nbsp;<b>ERA</b> 2.63 &nbsp;<b>WHIP</b> 0.902 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "160"
+                    },
+                    {
+                      "content": "29"
+                    },
+                    {
+                      "content": "36"
+                    },
+                    {
+                      "content": "17"
+                    },
+                    {
+                      "content": "28"
+                    },
+                    {
+                      "content": "1"
+                    },
+                    {
+                      "content": ".225"
+                    },
+                    {
+                      "content": "44"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "014"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
                     "teamName": "Los Angeles Dodgers",
                     "urlName": "freddie-freeman",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs01cgo_96_16.png",
@@ -588,121 +699,6 @@
                     "002",
                     "014",
                     "006"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
-                    "teamName": "Philadelphia Phillies",
-                    "urlName": "kyle-schwarber",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03cag_96_19.png",
-                    "scorerId": "03cag",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "014"
-                    ],
-                    "defaultPosId": "013",
-                    "posShortNames": "UT",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 2",
-                        "typeId": "22"
-                      },
-                      {
-                        "tooltip": "May 12, 9:51 PM: Schwarber went 1-for-3 with a solo...",
-                        "typeId": "9"
-                      },
-                      {
-                        "tooltip": "Bats Left",
-                        "typeId": "16"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "014"
-                    ],
-                    "teamId": "10180",
-                    "name": "Kyle Schwarber",
-                    "teamShortName": "PHI",
-                    "shortName": "K. Schwarber"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "014",
-                  "cells": [
-                    {
-                      "content": "33"
-                    },
-                    {
-                      "content": "@BOS<br/>Thu 4:45PM",
-                      "eventId": "06ipy",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "ranger-suarez",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03et8_96_10.png",
-                          "scorerId": "03et8",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "May 10, 2:45 PM: Suarez (hamstring) is scheduled to...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "LHP",
-                              "typeId": "16"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Ranger Suarez",
-                          "shortName": "R. Suarez"
-                        },
-                        "header": "Probable Starter for Boston:",
-                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 39 &nbsp;<b>K</b> 32 &nbsp;<b>ERA</b> 2.77 &nbsp;<b>WHIP</b> 0.949 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "159"
-                    },
-                    {
-                      "content": "29"
-                    },
-                    {
-                      "content": "36"
-                    },
-                    {
-                      "content": "17"
-                    },
-                    {
-                      "content": "28"
-                    },
-                    {
-                      "content": "1"
-                    },
-                    {
-                      "content": ".226"
-                    },
-                    {
-                      "content": "43"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "014"
                   ],
                   "actions": [
                     {
@@ -929,6 +925,119 @@
                 },
                 {
                   "scorer": {
+                    "teamName": "Philadelphia Phillies",
+                    "urlName": "adolis-garcia",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04aq4_96_10.png",
+                    "scorerId": "04aq4",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "012"
+                    ],
+                    "defaultPosId": "011",
+                    "posShortNames": "OF",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
+                      {
+                        "tooltip": "May 3, 11:13 AM: Garcia is out of the lineup for...",
+                        "typeId": "8"
+                      },
+                      {
+                        "tooltip": "Bats Right",
+                        "typeId": "17"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "012",
+                      "014"
+                    ],
+                    "teamId": "10180",
+                    "name": "Adolis Garcia",
+                    "teamShortName": "PHI",
+                    "shortName": "A. Garcia"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "012",
+                  "cells": [
+                    {
+                      "content": "33"
+                    },
+                    {
+                      "content": "PHI 0<br/>@BOS 0",
+                      "eventId": "06ipy",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "ranger-suarez",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03et8_96_10.png",
+                          "scorerId": "03et8",
+                          "upcomingEventStatusId": "1",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "In starting lineup",
+                              "typeId": "12"
+                            },
+                            {
+                              "tooltip": "LHP",
+                              "typeId": "16"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "Ranger Suarez",
+                          "shortName": "R. Suarez"
+                        },
+                        "header": "Probable Starter for Boston:",
+                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 41 &nbsp;<b>K</b> 34 &nbsp;<b>ERA</b> 2.63 &nbsp;<b>WHIP</b> 0.902 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "155"
+                    },
+                    {
+                      "content": "15"
+                    },
+                    {
+                      "content": "35"
+                    },
+                    {
+                      "content": "4"
+                    },
+                    {
+                      "content": "13"
+                    },
+                    {
+                      "content": "1"
+                    },
+                    {
+                      "content": ".226"
+                    },
+                    {
+                      "content": "43"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "012",
+                    "014"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
                     "teamName": "Cleveland Guardians",
                     "urlName": "steven-kwan",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04pr1_96_5.png",
@@ -1025,7 +1134,7 @@
                     "icons": [
                       {
                         "tooltip": "May 7, 5:06 PM: Bellinger went 3-for-5 with a triple,...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -1078,123 +1187,6 @@
                     },
                     {
                       "content": "43"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "012",
-                    "014"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
-                    "teamName": "Philadelphia Phillies",
-                    "urlName": "adolis-garcia",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04aq4_96_10.png",
-                    "scorerId": "04aq4",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "012"
-                    ],
-                    "defaultPosId": "011",
-                    "posShortNames": "OF",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 4",
-                        "typeId": "24"
-                      },
-                      {
-                        "tooltip": "May 3, 11:13 AM: Garcia is out of the lineup for...",
-                        "typeId": "8"
-                      },
-                      {
-                        "tooltip": "Bats Right",
-                        "typeId": "17"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "012",
-                      "014"
-                    ],
-                    "teamId": "10180",
-                    "name": "Adolis Garcia",
-                    "teamShortName": "PHI",
-                    "shortName": "A. Garcia"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "012",
-                  "cells": [
-                    {
-                      "content": "33"
-                    },
-                    {
-                      "content": "@BOS<br/>Thu 4:45PM",
-                      "eventId": "06ipy",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "ranger-suarez",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03et8_96_10.png",
-                          "scorerId": "03et8",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "May 10, 2:45 PM: Suarez (hamstring) is scheduled to...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "LHP",
-                              "typeId": "16"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Ranger Suarez",
-                          "shortName": "R. Suarez"
-                        },
-                        "header": "Probable Starter for Boston:",
-                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 39 &nbsp;<b>K</b> 32 &nbsp;<b>ERA</b> 2.77 &nbsp;<b>WHIP</b> 0.949 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "154"
-                    },
-                    {
-                      "content": "15"
-                    },
-                    {
-                      "content": "35"
-                    },
-                    {
-                      "content": "4"
-                    },
-                    {
-                      "content": "13"
-                    },
-                    {
-                      "content": "1"
-                    },
-                    {
-                      "content": ".227"
-                    },
-                    {
-                      "content": "42"
                     }
                   ],
                   "statusId": "1",
@@ -1435,7 +1427,7 @@
                       "content": "32"
                     },
                     {
-                      "content": "@ATL<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -1450,10 +1442,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 12:32 AM: Sale (6-2) allowed three runs (two...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -1464,7 +1452,7 @@
                           "shortName": "C. Sale"
                         },
                         "header": "Probable Starter for Atlanta:",
-                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 49 &nbsp;<b>K</b> 56 &nbsp;<b>ERA</b> 2.20 &nbsp;<b>WHIP</b> 0.878 &nbsp;"
+                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 50 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 2.16 &nbsp;<b>WHIP</b> 0.900 &nbsp;"
                       }
                     },
                     {
@@ -1489,7 +1477,7 @@
                       "content": ".194"
                     },
                     {
-                      "content": "42"
+                      "content": "43"
                     }
                   ],
                   "statusId": "1",
@@ -1773,7 +1761,7 @@
                       "content": "31"
                     },
                     {
-                      "content": "@ATL<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -1788,10 +1776,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 12:32 AM: Sale (6-2) allowed three runs (two...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -1802,11 +1786,11 @@
                           "shortName": "C. Sale"
                         },
                         "header": "Probable Starter for Atlanta:",
-                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 49 &nbsp;<b>K</b> 56 &nbsp;<b>ERA</b> 2.20 &nbsp;<b>WHIP</b> 0.878 &nbsp;"
+                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 50 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 2.16 &nbsp;<b>WHIP</b> 0.900 &nbsp;"
                       }
                     },
                     {
-                      "content": "106"
+                      "content": "107"
                     },
                     {
                       "content": "19"
@@ -1824,10 +1808,10 @@
                       "content": "0"
                     },
                     {
-                      "content": ".274"
+                      "content": ".271"
                     },
                     {
-                      "content": "29"
+                      "content": "30"
                     }
                   ],
                   "statusId": "1",
@@ -2409,7 +2393,7 @@
                       "content": "35"
                     },
                     {
-                      "content": "@ATL<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -2424,10 +2408,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 12:32 AM: Sale (6-2) allowed three runs (two...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -2438,7 +2418,7 @@
                           "shortName": "C. Sale"
                         },
                         "header": "Probable Starter for Atlanta:",
-                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 49 &nbsp;<b>K</b> 56 &nbsp;<b>ERA</b> 2.20 &nbsp;<b>WHIP</b> 0.878 &nbsp;"
+                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 50 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 2.16 &nbsp;<b>WHIP</b> 0.900 &nbsp;"
                       }
                     },
                     {
@@ -2995,7 +2975,7 @@
                       "content": "32"
                     },
                     {
-                      "content": "CHC<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -3008,10 +2988,6 @@
                             {
                               "tooltip": "In starting lineup",
                               "typeId": "12"
-                            },
-                            {
-                              "tooltip": "May 12, 9:15 AM: Brown is slated to start Thursday's...",
-                              "typeId": "9"
                             },
                             {
                               "tooltip": "RHP",
@@ -3123,7 +3099,7 @@
                       "content": "32"
                     },
                     {
-                      "content": "@BOS<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "eventId": "06ipy",
                       "popOver": {
                         "scorer": {
@@ -3138,10 +3114,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 10, 2:45 PM: Suarez (hamstring) is scheduled to...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -3152,7 +3124,7 @@
                           "shortName": "R. Suarez"
                         },
                         "header": "Probable Starter for Boston:",
-                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 39 &nbsp;<b>K</b> 32 &nbsp;<b>ERA</b> 2.77 &nbsp;<b>WHIP</b> 0.949 &nbsp;"
+                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 41 &nbsp;<b>K</b> 34 &nbsp;<b>ERA</b> 2.63 &nbsp;<b>WHIP</b> 0.902 &nbsp;"
                       }
                     },
                     {
@@ -4120,7 +4092,7 @@
                       "content": "27"
                     },
                     {
-                      "content": "CHC<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -4133,10 +4105,6 @@
                             {
                               "tooltip": "In starting lineup",
                               "typeId": "12"
-                            },
-                            {
-                              "tooltip": "May 12, 9:15 AM: Brown is slated to start Thursday's...",
-                              "typeId": "9"
                             },
                             {
                               "tooltip": "RHP",
@@ -6024,7 +5992,7 @@
                       "content": "25"
                     },
                     {
-                      "content": "CHC<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -6037,10 +6005,6 @@
                             {
                               "tooltip": "In starting lineup",
                               "typeId": "12"
-                            },
-                            {
-                              "tooltip": "May 12, 9:15 AM: Brown is slated to start Thursday's...",
-                              "typeId": "9"
                             },
                             {
                               "tooltip": "RHP",
@@ -6057,7 +6021,7 @@
                       }
                     },
                     {
-                      "content": "173"
+                      "content": "174"
                     },
                     {
                       "content": "37"
@@ -6075,10 +6039,10 @@
                       "content": "1"
                     },
                     {
-                      "content": ".295"
+                      "content": ".293"
                     },
                     {
-                      "content": "43"
+                      "content": "44"
                     }
                   ],
                   "statusId": "1",
@@ -6591,7 +6555,7 @@
                       "content": "24"
                     },
                     {
-                      "content": "@ATL<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -6606,10 +6570,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 12:32 AM: Sale (6-2) allowed three runs (two...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -6620,7 +6580,7 @@
                           "shortName": "C. Sale"
                         },
                         "header": "Probable Starter for Atlanta:",
-                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 49 &nbsp;<b>K</b> 56 &nbsp;<b>ERA</b> 2.20 &nbsp;<b>WHIP</b> 0.878 &nbsp;"
+                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 50 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 2.16 &nbsp;<b>WHIP</b> 0.900 &nbsp;"
                       }
                     },
                     {
@@ -6645,7 +6605,7 @@
                       "content": ".236"
                     },
                     {
-                      "content": "43"
+                      "content": "44"
                     }
                   ],
                   "statusId": "1",
@@ -7373,7 +7333,7 @@
                       "content": "24"
                     },
                     {
-                      "content": "@ATL<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -7388,10 +7348,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 12:32 AM: Sale (6-2) allowed three runs (two...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -7402,11 +7358,11 @@
                           "shortName": "C. Sale"
                         },
                         "header": "Probable Starter for Atlanta:",
-                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 49 &nbsp;<b>K</b> 56 &nbsp;<b>ERA</b> 2.20 &nbsp;<b>WHIP</b> 0.878 &nbsp;"
+                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 50 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 2.16 &nbsp;<b>WHIP</b> 0.900 &nbsp;"
                       }
                     },
                     {
-                      "content": "86"
+                      "content": "87"
                     },
                     {
                       "content": "10"
@@ -7424,10 +7380,10 @@
                       "content": "2"
                     },
                     {
-                      "content": ".267"
+                      "content": ".264"
                     },
                     {
-                      "content": "36"
+                      "content": "37"
                     }
                   ],
                   "statusId": "1",
@@ -8122,37 +8078,8 @@
                       "content": "21"
                     },
                     {
-                      "content": "@BOS<br/>Thu 4:45PM",
-                      "eventId": "06ipy",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "ranger-suarez",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03et8_96_10.png",
-                          "scorerId": "03et8",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "May 10, 2:45 PM: Suarez (hamstring) is scheduled to...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "LHP",
-                              "typeId": "16"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Ranger Suarez",
-                          "shortName": "R. Suarez"
-                        },
-                        "header": "Probable Starter for Boston:",
-                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 39 &nbsp;<b>K</b> 32 &nbsp;<b>ERA</b> 2.77 &nbsp;<b>WHIP</b> 0.949 &nbsp;"
-                      }
+                      "content": "PHI 0<br/>@BOS 0",
+                      "eventId": "06ipy"
                     },
                     {
                       "content": "0"
@@ -9357,7 +9284,7 @@
                       "content": "23"
                     },
                     {
-                      "content": "@BOS<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "eventId": "06ipy",
                       "popOver": {
                         "scorer": {
@@ -9372,10 +9299,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 10, 2:45 PM: Suarez (hamstring) is scheduled to...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -9386,7 +9309,7 @@
                           "shortName": "R. Suarez"
                         },
                         "header": "Probable Starter for Boston:",
-                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 39 &nbsp;<b>K</b> 32 &nbsp;<b>ERA</b> 2.77 &nbsp;<b>WHIP</b> 0.949 &nbsp;"
+                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 41 &nbsp;<b>K</b> 34 &nbsp;<b>ERA</b> 2.63 &nbsp;<b>WHIP</b> 0.902 &nbsp;"
                       }
                     },
                     {
@@ -9486,7 +9409,7 @@
                       "content": "26"
                     },
                     {
-                      "content": "@ATL<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -9501,10 +9424,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 12:32 AM: Sale (6-2) allowed three runs (two...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -9515,7 +9434,7 @@
                           "shortName": "C. Sale"
                         },
                         "header": "Probable Starter for Atlanta:",
-                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 49 &nbsp;<b>K</b> 56 &nbsp;<b>ERA</b> 2.20 &nbsp;<b>WHIP</b> 0.878 &nbsp;"
+                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 50 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 2.16 &nbsp;<b>WHIP</b> 0.900 &nbsp;"
                       }
                     },
                     {
@@ -10148,7 +10067,7 @@
                       "content": "30"
                     },
                     {
-                      "content": "@ATL<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -10163,10 +10082,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 12:32 AM: Sale (6-2) allowed three runs (two...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -10177,7 +10092,7 @@
                           "shortName": "C. Sale"
                         },
                         "header": "Probable Starter for Atlanta:",
-                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 49 &nbsp;<b>K</b> 56 &nbsp;<b>ERA</b> 2.20 &nbsp;<b>WHIP</b> 0.878 &nbsp;"
+                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 50 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 2.16 &nbsp;<b>WHIP</b> 0.900 &nbsp;"
                       }
                     },
                     {
@@ -11701,7 +11616,7 @@
                       "content": "32"
                     },
                     {
-                      "content": "@BOS<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "eventId": "06ipy",
                       "popOver": {
                         "scorer": {
@@ -11716,10 +11631,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 10, 2:45 PM: Suarez (hamstring) is scheduled to...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -11730,11 +11641,11 @@
                           "shortName": "R. Suarez"
                         },
                         "header": "Probable Starter for Boston:",
-                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 39 &nbsp;<b>K</b> 32 &nbsp;<b>ERA</b> 2.77 &nbsp;<b>WHIP</b> 0.949 &nbsp;"
+                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 41 &nbsp;<b>K</b> 34 &nbsp;<b>ERA</b> 2.63 &nbsp;<b>WHIP</b> 0.902 &nbsp;"
                       }
                     },
                     {
-                      "content": "171"
+                      "content": "172"
                     },
                     {
                       "content": "24"
@@ -11752,10 +11663,10 @@
                       "content": "5"
                     },
                     {
-                      "content": ".234"
+                      "content": ".233"
                     },
                     {
-                      "content": "42"
+                      "content": "43"
                     }
                   ],
                   "statusId": "1",
@@ -11820,7 +11731,7 @@
                       "content": "32"
                     },
                     {
-                      "content": "CHC<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -11833,10 +11744,6 @@
                             {
                               "tooltip": "In starting lineup",
                               "typeId": "12"
-                            },
-                            {
-                              "tooltip": "May 12, 9:15 AM: Brown is slated to start Thursday's...",
-                              "typeId": "9"
                             },
                             {
                               "tooltip": "RHP",
@@ -11874,7 +11781,7 @@
                       "content": ".295"
                     },
                     {
-                      "content": "43"
+                      "content": "44"
                     }
                   ],
                   "statusId": "1",
@@ -13068,7 +12975,7 @@
                       "content": "22"
                     },
                     {
-                      "content": "PHI<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "eventId": "06ipy",
                       "popOver": {
                         "scorer": {
@@ -13083,10 +12990,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 7:55 AM: Luzardo didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -13097,7 +13000,7 @@
                           "shortName": "J. Luzardo"
                         },
                         "header": "Probable Starter for Philadelphia:",
-                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 43.2 &nbsp;<b>K</b> 57 &nbsp;<b>ERA</b> 5.77 &nbsp;<b>WHIP</b> 1.397 &nbsp;"
+                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 44.2 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 5.64 &nbsp;<b>WHIP</b> 1.366 &nbsp;"
                       }
                     },
                     {
@@ -14645,7 +14548,7 @@
                       "content": "24"
                     },
                     {
-                      "content": "@ATL<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -14660,10 +14563,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 12:32 AM: Sale (6-2) allowed three runs (two...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -14674,7 +14573,7 @@
                           "shortName": "C. Sale"
                         },
                         "header": "Probable Starter for Atlanta:",
-                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 49 &nbsp;<b>K</b> 56 &nbsp;<b>ERA</b> 2.20 &nbsp;<b>WHIP</b> 0.878 &nbsp;"
+                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 50 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 2.16 &nbsp;<b>WHIP</b> 0.900 &nbsp;"
                       }
                     },
                     {
@@ -15416,7 +15315,7 @@
                       "content": "30"
                     },
                     {
-                      "content": "PHI<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "pitcher": true,
                       "eventId": "06ipy",
                       "popOver": {
@@ -15432,10 +15331,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 7:55 AM: Luzardo didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -15446,20 +15341,20 @@
                           "shortName": "J. Luzardo"
                         },
                         "header": "Probable Starter for Philadelphia:",
-                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 43.2 &nbsp;<b>K</b> 57 &nbsp;<b>ERA</b> 5.77 &nbsp;<b>WHIP</b> 1.397 &nbsp;"
+                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 44.2 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 5.64 &nbsp;<b>WHIP</b> 1.366 &nbsp;"
                       }
                     },
                     {
-                      "content": "39"
+                      "content": "41"
                     },
                     {
-                      "content": "2.77"
+                      "content": "2.63"
                     },
                     {
-                      "content": "0.949"
+                      "content": "0.902"
                     },
                     {
-                      "content": "32"
+                      "content": "34"
                     },
                     {
                       "content": "2"
@@ -15489,7 +15384,7 @@
                       "content": "0"
                     },
                     {
-                      "content": "7"
+                      "content": "8"
                     }
                   ],
                   "statusId": "1",
@@ -17784,7 +17679,7 @@
                       "content": "28"
                     },
                     {
-                      "content": "@ATL<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -17799,10 +17694,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 12:32 AM: Sale (6-2) allowed three runs (two...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -17813,7 +17704,7 @@
                           "shortName": "C. Sale"
                         },
                         "header": "Probable Starter for Atlanta:",
-                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 49 &nbsp;<b>K</b> 56 &nbsp;<b>ERA</b> 2.20 &nbsp;<b>WHIP</b> 0.878 &nbsp;"
+                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 50 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 2.16 &nbsp;<b>WHIP</b> 0.900 &nbsp;"
                       }
                     },
                     {
@@ -17838,7 +17729,7 @@
                       "content": ".230"
                     },
                     {
-                      "content": "42"
+                      "content": "43"
                     }
                   ],
                   "statusId": "1",
@@ -17902,7 +17793,7 @@
                       "content": "28"
                     },
                     {
-                      "content": "@BOS<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "eventId": "06ipy",
                       "popOver": {
                         "scorer": {
@@ -17917,10 +17808,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 10, 2:45 PM: Suarez (hamstring) is scheduled to...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -17931,11 +17818,11 @@
                           "shortName": "R. Suarez"
                         },
                         "header": "Probable Starter for Boston:",
-                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 39 &nbsp;<b>K</b> 32 &nbsp;<b>ERA</b> 2.77 &nbsp;<b>WHIP</b> 0.949 &nbsp;"
+                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 41 &nbsp;<b>K</b> 34 &nbsp;<b>ERA</b> 2.63 &nbsp;<b>WHIP</b> 0.902 &nbsp;"
                       }
                     },
                     {
-                      "content": "140"
+                      "content": "141"
                     },
                     {
                       "content": "23"
@@ -17953,10 +17840,10 @@
                       "content": "3"
                     },
                     {
-                      "content": ".343"
+                      "content": ".340"
                     },
                     {
-                      "content": "39"
+                      "content": "40"
                     }
                   ],
                   "statusId": "1",
@@ -18106,7 +17993,7 @@
                       "content": "22"
                     },
                     {
-                      "content": "@BOS<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "eventId": "06ipy",
                       "popOver": {
                         "scorer": {
@@ -18121,10 +18008,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 10, 2:45 PM: Suarez (hamstring) is scheduled to...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -18135,7 +18018,7 @@
                           "shortName": "R. Suarez"
                         },
                         "header": "Probable Starter for Boston:",
-                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 39 &nbsp;<b>K</b> 32 &nbsp;<b>ERA</b> 2.77 &nbsp;<b>WHIP</b> 0.949 &nbsp;"
+                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 41 &nbsp;<b>K</b> 34 &nbsp;<b>ERA</b> 2.63 &nbsp;<b>WHIP</b> 0.902 &nbsp;"
                       }
                     },
                     {
@@ -19298,7 +19181,7 @@
                       "content": "26"
                     },
                     {
-                      "content": "PHI<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "eventId": "06ipy",
                       "popOver": {
                         "scorer": {
@@ -19313,10 +19196,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 7:55 AM: Luzardo didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -19327,7 +19206,7 @@
                           "shortName": "J. Luzardo"
                         },
                         "header": "Probable Starter for Philadelphia:",
-                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 43.2 &nbsp;<b>K</b> 57 &nbsp;<b>ERA</b> 5.77 &nbsp;<b>WHIP</b> 1.397 &nbsp;"
+                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 44.2 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 5.64 &nbsp;<b>WHIP</b> 1.366 &nbsp;"
                       }
                     },
                     {
@@ -19426,7 +19305,7 @@
                       "content": "28"
                     },
                     {
-                      "content": "@BOS<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "eventId": "06ipy",
                       "popOver": {
                         "scorer": {
@@ -19441,10 +19320,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 10, 2:45 PM: Suarez (hamstring) is scheduled to...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -19455,7 +19330,7 @@
                           "shortName": "R. Suarez"
                         },
                         "header": "Probable Starter for Boston:",
-                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 39 &nbsp;<b>K</b> 32 &nbsp;<b>ERA</b> 2.77 &nbsp;<b>WHIP</b> 0.949 &nbsp;"
+                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 41 &nbsp;<b>K</b> 34 &nbsp;<b>ERA</b> 2.63 &nbsp;<b>WHIP</b> 0.902 &nbsp;"
                       }
                     },
                     {
@@ -20746,7 +20621,7 @@
                       "content": "22"
                     },
                     {
-                      "content": "CHC<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -20759,10 +20634,6 @@
                             {
                               "tooltip": "In starting lineup",
                               "typeId": "12"
-                            },
-                            {
-                              "tooltip": "May 12, 9:15 AM: Brown is slated to start Thursday's...",
-                              "typeId": "9"
                             },
                             {
                               "tooltip": "RHP",
@@ -23159,7 +23030,7 @@
                       "content": "29"
                     },
                     {
-                      "content": "@ATL<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -23174,10 +23045,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 12:32 AM: Sale (6-2) allowed three runs (two...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -23188,11 +23055,11 @@
                           "shortName": "C. Sale"
                         },
                         "header": "Probable Starter for Atlanta:",
-                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 49 &nbsp;<b>K</b> 56 &nbsp;<b>ERA</b> 2.20 &nbsp;<b>WHIP</b> 0.878 &nbsp;"
+                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 50 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 2.16 &nbsp;<b>WHIP</b> 0.900 &nbsp;"
                       }
                     },
                     {
-                      "content": "169"
+                      "content": "170"
                     },
                     {
                       "content": "20"
@@ -23210,10 +23077,10 @@
                       "content": "8"
                     },
                     {
-                      "content": ".272"
+                      "content": ".271"
                     },
                     {
-                      "content": "42"
+                      "content": "43"
                     }
                   ],
                   "statusId": "1",
@@ -23278,7 +23145,7 @@
                       "content": "32"
                     },
                     {
-                      "content": "@ATL<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -23293,10 +23160,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 12:32 AM: Sale (6-2) allowed three runs (two...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -23307,17 +23170,17 @@
                           "shortName": "C. Sale"
                         },
                         "header": "Probable Starter for Atlanta:",
-                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 49 &nbsp;<b>K</b> 56 &nbsp;<b>ERA</b> 2.20 &nbsp;<b>WHIP</b> 0.878 &nbsp;"
+                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 50 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 2.16 &nbsp;<b>WHIP</b> 0.900 &nbsp;"
                       }
                     },
                     {
-                      "content": "167"
+                      "content": "168"
                     },
                     {
                       "content": "17"
                     },
                     {
-                      "content": "41"
+                      "content": "42"
                     },
                     {
                       "content": "4"
@@ -23329,10 +23192,10 @@
                       "content": "2"
                     },
                     {
-                      "content": ".246"
+                      "content": ".250"
                     },
                     {
-                      "content": "42"
+                      "content": "43"
                     }
                   ],
                   "statusId": "1",
@@ -23492,7 +23355,7 @@
                       "content": "33"
                     },
                     {
-                      "content": "@BOS<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "eventId": "06ipy",
                       "popOver": {
                         "scorer": {
@@ -23507,10 +23370,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 10, 2:45 PM: Suarez (hamstring) is scheduled to...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -23521,11 +23380,11 @@
                           "shortName": "R. Suarez"
                         },
                         "header": "Probable Starter for Boston:",
-                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 39 &nbsp;<b>K</b> 32 &nbsp;<b>ERA</b> 2.77 &nbsp;<b>WHIP</b> 0.949 &nbsp;"
+                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 41 &nbsp;<b>K</b> 34 &nbsp;<b>ERA</b> 2.63 &nbsp;<b>WHIP</b> 0.902 &nbsp;"
                       }
                     },
                     {
-                      "content": "154"
+                      "content": "155"
                     },
                     {
                       "content": "25"
@@ -23543,10 +23402,10 @@
                       "content": "2"
                     },
                     {
-                      "content": ".266"
+                      "content": ".265"
                     },
                     {
-                      "content": "43"
+                      "content": "44"
                     }
                   ],
                   "statusId": "1",
@@ -23815,7 +23674,7 @@
                       "content": "31"
                     },
                     {
-                      "content": "@ATL<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -23830,10 +23689,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 12:32 AM: Sale (6-2) allowed three runs (two...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -23844,17 +23699,17 @@
                           "shortName": "C. Sale"
                         },
                         "header": "Probable Starter for Atlanta:",
-                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 49 &nbsp;<b>K</b> 56 &nbsp;<b>ERA</b> 2.20 &nbsp;<b>WHIP</b> 0.878 &nbsp;"
+                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 50 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 2.16 &nbsp;<b>WHIP</b> 0.900 &nbsp;"
                       }
                     },
                     {
-                      "content": "151"
+                      "content": "152"
                     },
                     {
                       "content": "32"
                     },
                     {
-                      "content": "34"
+                      "content": "35"
                     },
                     {
                       "content": "9"
@@ -23866,10 +23721,10 @@
                       "content": "2"
                     },
                     {
-                      "content": ".225"
+                      "content": ".230"
                     },
                     {
-                      "content": "41"
+                      "content": "42"
                     }
                   ],
                   "statusId": "1",
@@ -24263,7 +24118,7 @@
                       "content": "34"
                     },
                     {
-                      "content": "PHI<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "eventId": "06ipy",
                       "popOver": {
                         "scorer": {
@@ -24278,10 +24133,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 7:55 AM: Luzardo didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -24292,7 +24143,7 @@
                           "shortName": "J. Luzardo"
                         },
                         "header": "Probable Starter for Philadelphia:",
-                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 43.2 &nbsp;<b>K</b> 57 &nbsp;<b>ERA</b> 5.77 &nbsp;<b>WHIP</b> 1.397 &nbsp;"
+                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 44.2 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 5.64 &nbsp;<b>WHIP</b> 1.366 &nbsp;"
                       }
                     },
                     {
@@ -24317,7 +24168,7 @@
                       "content": ".252"
                     },
                     {
-                      "content": "40"
+                      "content": "41"
                     }
                   ],
                   "statusId": "1",
@@ -25271,7 +25122,7 @@
                     "icons": [
                       {
                         "tooltip": "May 13, 5:18 PM: Bradish (2-5) picked up the win...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -27213,7 +27064,7 @@
                       "content": "35"
                     },
                     {
-                      "content": "CHC<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -27226,10 +27077,6 @@
                             {
                               "tooltip": "In starting lineup",
                               "typeId": "12"
-                            },
-                            {
-                              "tooltip": "May 12, 9:15 AM: Brown is slated to start Thursday's...",
-                              "typeId": "9"
                             },
                             {
                               "tooltip": "RHP",
@@ -29478,7 +29325,7 @@
                     "icons": [
                       {
                         "tooltip": "May 7, 5:00 PM: Grisham went 3-for-5 with a double,...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -31248,7 +31095,7 @@
                       "content": "26"
                     },
                     {
-                      "content": "CHC<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -31261,10 +31108,6 @@
                             {
                               "tooltip": "In starting lineup",
                               "typeId": "12"
-                            },
-                            {
-                              "tooltip": "May 12, 9:15 AM: Brown is slated to start Thursday's...",
-                              "typeId": "9"
                             },
                             {
                               "tooltip": "RHP",
@@ -31947,7 +31790,7 @@
                       },
                       {
                         "tooltip": "May 7, 4:59 PM: The Padres transferred Musgrove (elbow)...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -32669,7 +32512,7 @@
                       "content": "25"
                     },
                     {
-                      "content": "CHC<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -32682,10 +32525,6 @@
                             {
                               "tooltip": "In starting lineup",
                               "typeId": "12"
-                            },
-                            {
-                              "tooltip": "May 12, 9:15 AM: Brown is slated to start Thursday's...",
-                              "typeId": "9"
                             },
                             {
                               "tooltip": "RHP",
@@ -34487,7 +34326,7 @@
                     "icons": [
                       {
                         "tooltip": "May 13, 5:00 PM: Nimmo (ankle) will start in right field...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -35053,7 +34892,7 @@
                       "content": "25"
                     },
                     {
-                      "content": "PHI<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "eventId": "06ipy",
                       "popOver": {
                         "scorer": {
@@ -35068,10 +34907,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 7:55 AM: Luzardo didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -35082,7 +34917,7 @@
                           "shortName": "J. Luzardo"
                         },
                         "header": "Probable Starter for Philadelphia:",
-                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 43.2 &nbsp;<b>K</b> 57 &nbsp;<b>ERA</b> 5.77 &nbsp;<b>WHIP</b> 1.397 &nbsp;"
+                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 44.2 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 5.64 &nbsp;<b>WHIP</b> 1.366 &nbsp;"
                       }
                     },
                     {
@@ -35107,7 +34942,7 @@
                       "content": ".281"
                     },
                     {
-                      "content": "40"
+                      "content": "41"
                     }
                   ],
                   "statusId": "1",
@@ -35479,7 +35314,7 @@
                       "content": "23"
                     },
                     {
-                      "content": "PHI<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "eventId": "06ipy",
                       "popOver": {
                         "scorer": {
@@ -35494,10 +35329,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 7:55 AM: Luzardo didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -35508,7 +35339,7 @@
                           "shortName": "J. Luzardo"
                         },
                         "header": "Probable Starter for Philadelphia:",
-                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 43.2 &nbsp;<b>K</b> 57 &nbsp;<b>ERA</b> 5.77 &nbsp;<b>WHIP</b> 1.397 &nbsp;"
+                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 44.2 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 5.64 &nbsp;<b>WHIP</b> 1.366 &nbsp;"
                       }
                     },
                     {
@@ -35661,7 +35492,7 @@
                       },
                       {
                         "tooltip": "May 13, 5:10 PM: Donovan is out of the lineup for...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -35972,37 +35803,8 @@
                       "content": "20"
                     },
                     {
-                      "content": "PHI<br/>Thu 4:45PM",
-                      "eventId": "06ipy",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "jesus-luzardo",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs041r1_96_9.png",
-                          "scorerId": "041r1",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "May 9, 7:55 AM: Luzardo didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "LHP",
-                              "typeId": "16"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Jesus Luzardo",
-                          "shortName": "J. Luzardo"
-                        },
-                        "header": "Probable Starter for Philadelphia:",
-                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 43.2 &nbsp;<b>K</b> 57 &nbsp;<b>ERA</b> 5.77 &nbsp;<b>WHIP</b> 1.397 &nbsp;"
-                      }
+                      "content": "PHI 0<br/>@BOS 0",
+                      "eventId": "06ipy"
                     },
                     {
                       "content": "0"
@@ -36484,7 +36286,7 @@
                       "content": "28"
                     },
                     {
-                      "content": "@ATL<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -36499,10 +36301,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 12:32 AM: Sale (6-2) allowed three runs (two...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -36513,7 +36311,7 @@
                           "shortName": "C. Sale"
                         },
                         "header": "Probable Starter for Atlanta:",
-                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 49 &nbsp;<b>K</b> 56 &nbsp;<b>ERA</b> 2.20 &nbsp;<b>WHIP</b> 0.878 &nbsp;"
+                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 50 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 2.16 &nbsp;<b>WHIP</b> 0.900 &nbsp;"
                       }
                     },
                     {
@@ -36842,7 +36640,7 @@
                       "content": "36"
                     },
                     {
-                      "content": "PHI<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "eventId": "06ipy",
                       "popOver": {
                         "scorer": {
@@ -36857,10 +36655,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 7:55 AM: Luzardo didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -36871,7 +36665,7 @@
                           "shortName": "J. Luzardo"
                         },
                         "header": "Probable Starter for Philadelphia:",
-                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 43.2 &nbsp;<b>K</b> 57 &nbsp;<b>ERA</b> 5.77 &nbsp;<b>WHIP</b> 1.397 &nbsp;"
+                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 44.2 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 5.64 &nbsp;<b>WHIP</b> 1.366 &nbsp;"
                       }
                     },
                     {
@@ -36970,7 +36764,7 @@
                       "content": "36"
                     },
                     {
-                      "content": "CHC<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -36983,10 +36777,6 @@
                             {
                               "tooltip": "In starting lineup",
                               "typeId": "12"
-                            },
-                            {
-                              "tooltip": "May 12, 9:15 AM: Brown is slated to start Thursday's...",
-                              "typeId": "9"
                             },
                             {
                               "tooltip": "RHP",
@@ -37724,7 +37514,7 @@
                       "content": "23"
                     },
                     {
-                      "content": "PHI<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "eventId": "06ipy",
                       "popOver": {
                         "scorer": {
@@ -37739,10 +37529,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 7:55 AM: Luzardo didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -37753,7 +37539,7 @@
                           "shortName": "J. Luzardo"
                         },
                         "header": "Probable Starter for Philadelphia:",
-                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 43.2 &nbsp;<b>K</b> 57 &nbsp;<b>ERA</b> 5.77 &nbsp;<b>WHIP</b> 1.397 &nbsp;"
+                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 44.2 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 5.64 &nbsp;<b>WHIP</b> 1.366 &nbsp;"
                       }
                     },
                     {
@@ -38078,7 +37864,7 @@
                       "content": "35"
                     },
                     {
-                      "content": "@BOS<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "eventId": "06ipy",
                       "popOver": {
                         "scorer": {
@@ -38093,10 +37879,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 10, 2:45 PM: Suarez (hamstring) is scheduled to...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -38107,7 +37889,7 @@
                           "shortName": "R. Suarez"
                         },
                         "header": "Probable Starter for Boston:",
-                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 39 &nbsp;<b>K</b> 32 &nbsp;<b>ERA</b> 2.77 &nbsp;<b>WHIP</b> 0.949 &nbsp;"
+                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 41 &nbsp;<b>K</b> 34 &nbsp;<b>ERA</b> 2.63 &nbsp;<b>WHIP</b> 0.902 &nbsp;"
                       }
                     },
                     {
@@ -38202,7 +37984,7 @@
                       "content": "29"
                     },
                     {
-                      "content": "PHI<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "eventId": "06ipy",
                       "popOver": {
                         "scorer": {
@@ -38217,10 +37999,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 7:55 AM: Luzardo didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -38231,7 +38009,7 @@
                           "shortName": "J. Luzardo"
                         },
                         "header": "Probable Starter for Philadelphia:",
-                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 43.2 &nbsp;<b>K</b> 57 &nbsp;<b>ERA</b> 5.77 &nbsp;<b>WHIP</b> 1.397 &nbsp;"
+                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 44.2 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 5.64 &nbsp;<b>WHIP</b> 1.366 &nbsp;"
                       }
                     },
                     {
@@ -42045,7 +41823,7 @@
                       "content": "24"
                     },
                     {
-                      "content": "PHI<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "eventId": "06ipy",
                       "popOver": {
                         "scorer": {
@@ -42060,10 +41838,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 7:55 AM: Luzardo didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -42074,7 +41848,7 @@
                           "shortName": "J. Luzardo"
                         },
                         "header": "Probable Starter for Philadelphia:",
-                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 43.2 &nbsp;<b>K</b> 57 &nbsp;<b>ERA</b> 5.77 &nbsp;<b>WHIP</b> 1.397 &nbsp;"
+                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 44.2 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 5.64 &nbsp;<b>WHIP</b> 1.366 &nbsp;"
                       }
                     },
                     {
@@ -42687,7 +42461,7 @@
                       "content": "28"
                     },
                     {
-                      "content": "@BOS<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "pitcher": true,
                       "eventId": "06ipy",
                       "popOver": {
@@ -42703,10 +42477,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 10, 2:45 PM: Suarez (hamstring) is scheduled to...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -42717,20 +42487,20 @@
                           "shortName": "R. Suarez"
                         },
                         "header": "Probable Starter for Boston:",
-                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 39 &nbsp;<b>K</b> 32 &nbsp;<b>ERA</b> 2.77 &nbsp;<b>WHIP</b> 0.949 &nbsp;"
+                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 41 &nbsp;<b>K</b> 34 &nbsp;<b>ERA</b> 2.63 &nbsp;<b>WHIP</b> 0.902 &nbsp;"
                       }
                     },
                     {
-                      "content": "43.2"
+                      "content": "44.2"
                     },
                     {
-                      "content": "5.77"
+                      "content": "5.64"
                     },
                     {
-                      "content": "1.397"
+                      "content": "1.366"
                     },
                     {
-                      "content": "57"
+                      "content": "58"
                     },
                     {
                       "content": "3"
@@ -42760,7 +42530,7 @@
                       "content": "0"
                     },
                     {
-                      "content": "8"
+                      "content": "9"
                     }
                   ],
                   "statusId": "1",
@@ -45402,7 +45172,7 @@
                       "content": "29"
                     },
                     {
-                      "content": "CHC<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -45415,10 +45185,6 @@
                             {
                               "tooltip": "In starting lineup",
                               "typeId": "12"
-                            },
-                            {
-                              "tooltip": "May 12, 9:15 AM: Brown is slated to start Thursday's...",
-                              "typeId": "9"
                             },
                             {
                               "tooltip": "RHP",
@@ -45456,7 +45222,7 @@
                       "content": ".216"
                     },
                     {
-                      "content": "43"
+                      "content": "44"
                     }
                   ],
                   "statusId": "1",
@@ -45639,6 +45405,119 @@
                 },
                 {
                   "scorer": {
+                    "teamName": "Boston Red Sox",
+                    "urlName": "wilyer-abreu",
+                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs060x1_96_4.png",
+                    "scorerId": "060x1",
+                    "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
+                    "posIdsNoFlex": [
+                      "012"
+                    ],
+                    "defaultPosId": "011",
+                    "posShortNames": "OF",
+                    "team": false,
+                    "icons": [
+                      {
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
+                      },
+                      {
+                        "tooltip": "May 9, 9:05 AM: Abreu went 1-for-2 with two walks and a...",
+                        "typeId": "9"
+                      },
+                      {
+                        "tooltip": "Bats Left",
+                        "typeId": "16"
+                      }
+                    ],
+                    "rookie": false,
+                    "minorsEligible": false,
+                    "posIds": [
+                      "012",
+                      "014"
+                    ],
+                    "teamId": "10020",
+                    "name": "Wilyer Abreu",
+                    "teamShortName": "BOS",
+                    "shortName": "W. Abreu"
+                  },
+                  "eligibleStatusIds": [
+                    "1",
+                    "2"
+                  ],
+                  "posId": "012",
+                  "cells": [
+                    {
+                      "content": "26"
+                    },
+                    {
+                      "content": "PHI 0<br/>@BOS 0",
+                      "eventId": "06ipy",
+                      "popOver": {
+                        "scorer": {
+                          "urlName": "jesus-luzardo",
+                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs041r1_96_9.png",
+                          "scorerId": "041r1",
+                          "upcomingEventStatusId": "1",
+                          "team": false,
+                          "icons": [
+                            {
+                              "tooltip": "In starting lineup",
+                              "typeId": "12"
+                            },
+                            {
+                              "tooltip": "LHP",
+                              "typeId": "16"
+                            }
+                          ],
+                          "rookie": false,
+                          "minorsEligible": false,
+                          "name": "Jesus Luzardo",
+                          "shortName": "J. Luzardo"
+                        },
+                        "header": "Probable Starter for Philadelphia:",
+                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 44.2 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 5.64 &nbsp;<b>WHIP</b> 1.366 &nbsp;"
+                      }
+                    },
+                    {
+                      "content": "155"
+                    },
+                    {
+                      "content": "20"
+                    },
+                    {
+                      "content": "47"
+                    },
+                    {
+                      "content": "6"
+                    },
+                    {
+                      "content": "18"
+                    },
+                    {
+                      "content": "3"
+                    },
+                    {
+                      "content": ".303"
+                    },
+                    {
+                      "content": "42"
+                    }
+                  ],
+                  "statusId": "1",
+                  "eligiblePosIds": [
+                    "012",
+                    "014"
+                  ],
+                  "actions": [
+                    {
+                      "typeId": "4"
+                    }
+                  ]
+                },
+                {
+                  "scorer": {
                     "teamName": "Washington Nationals",
                     "urlName": "cj-abrams",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04qk8_96_8.png",
@@ -45720,123 +45599,6 @@
                     "014",
                     "005",
                     "007"
-                  ],
-                  "actions": [
-                    {
-                      "typeId": "4"
-                    }
-                  ]
-                },
-                {
-                  "scorer": {
-                    "teamName": "Boston Red Sox",
-                    "urlName": "wilyer-abreu",
-                    "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs060x1_96_4.png",
-                    "scorerId": "060x1",
-                    "upcomingEventStatusId": "1",
-                    "disableLineupChange": true,
-                    "posIdsNoFlex": [
-                      "012"
-                    ],
-                    "defaultPosId": "011",
-                    "posShortNames": "OF",
-                    "team": false,
-                    "icons": [
-                      {
-                        "tooltip": "Batting Order: 3",
-                        "typeId": "23"
-                      },
-                      {
-                        "tooltip": "May 9, 9:05 AM: Abreu went 1-for-2 with two walks and a...",
-                        "typeId": "9"
-                      },
-                      {
-                        "tooltip": "Bats Left",
-                        "typeId": "16"
-                      }
-                    ],
-                    "rookie": false,
-                    "minorsEligible": false,
-                    "posIds": [
-                      "012",
-                      "014"
-                    ],
-                    "teamId": "10020",
-                    "name": "Wilyer Abreu",
-                    "teamShortName": "BOS",
-                    "shortName": "W. Abreu"
-                  },
-                  "eligibleStatusIds": [
-                    "1",
-                    "2"
-                  ],
-                  "posId": "012",
-                  "cells": [
-                    {
-                      "content": "26"
-                    },
-                    {
-                      "content": "PHI<br/>Thu 4:45PM",
-                      "eventId": "06ipy",
-                      "popOver": {
-                        "scorer": {
-                          "urlName": "jesus-luzardo",
-                          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs041r1_96_9.png",
-                          "scorerId": "041r1",
-                          "upcomingEventStatusId": "1",
-                          "team": false,
-                          "icons": [
-                            {
-                              "tooltip": "In starting lineup",
-                              "typeId": "12"
-                            },
-                            {
-                              "tooltip": "May 9, 7:55 AM: Luzardo didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
-                              "tooltip": "LHP",
-                              "typeId": "16"
-                            }
-                          ],
-                          "rookie": false,
-                          "minorsEligible": false,
-                          "name": "Jesus Luzardo",
-                          "shortName": "J. Luzardo"
-                        },
-                        "header": "Probable Starter for Philadelphia:",
-                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 43.2 &nbsp;<b>K</b> 57 &nbsp;<b>ERA</b> 5.77 &nbsp;<b>WHIP</b> 1.397 &nbsp;"
-                      }
-                    },
-                    {
-                      "content": "154"
-                    },
-                    {
-                      "content": "20"
-                    },
-                    {
-                      "content": "47"
-                    },
-                    {
-                      "content": "6"
-                    },
-                    {
-                      "content": "18"
-                    },
-                    {
-                      "content": "3"
-                    },
-                    {
-                      "content": ".305"
-                    },
-                    {
-                      "content": "41"
-                    }
-                  ],
-                  "statusId": "1",
-                  "eligiblePosIds": [
-                    "012",
-                    "014"
                   ],
                   "actions": [
                     {
@@ -46099,7 +45861,7 @@
                       "content": "29"
                     },
                     {
-                      "content": "PHI<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "eventId": "06ipy",
                       "popOver": {
                         "scorer": {
@@ -46114,10 +45876,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 7:55 AM: Luzardo didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -46128,11 +45886,11 @@
                           "shortName": "J. Luzardo"
                         },
                         "header": "Probable Starter for Philadelphia:",
-                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 43.2 &nbsp;<b>K</b> 57 &nbsp;<b>ERA</b> 5.77 &nbsp;<b>WHIP</b> 1.397 &nbsp;"
+                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 44.2 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 5.64 &nbsp;<b>WHIP</b> 1.366 &nbsp;"
                       }
                     },
                     {
-                      "content": "147"
+                      "content": "148"
                     },
                     {
                       "content": "19"
@@ -46150,10 +45908,10 @@
                       "content": "9"
                     },
                     {
-                      "content": ".184"
+                      "content": ".182"
                     },
                     {
-                      "content": "37"
+                      "content": "38"
                     }
                   ],
                   "statusId": "1",
@@ -46306,7 +46064,7 @@
                       "content": "25"
                     },
                     {
-                      "content": "CHC<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -46319,10 +46077,6 @@
                             {
                               "tooltip": "In starting lineup",
                               "typeId": "12"
-                            },
-                            {
-                              "tooltip": "May 12, 9:15 AM: Brown is slated to start Thursday's...",
-                              "typeId": "9"
                             },
                             {
                               "tooltip": "RHP",
@@ -46360,7 +46114,7 @@
                       "content": ".311"
                     },
                     {
-                      "content": "40"
+                      "content": "41"
                     }
                   ],
                   "statusId": "1",
@@ -46428,7 +46182,7 @@
                       "content": "28"
                     },
                     {
-                      "content": "CHC<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -46441,10 +46195,6 @@
                             {
                               "tooltip": "In starting lineup",
                               "typeId": "12"
-                            },
-                            {
-                              "tooltip": "May 12, 9:15 AM: Brown is slated to start Thursday's...",
-                              "typeId": "9"
                             },
                             {
                               "tooltip": "RHP",
@@ -47859,7 +47609,7 @@
                       "content": "32"
                     },
                     {
-                      "content": "@ATL<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -47874,10 +47624,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 12:32 AM: Sale (6-2) allowed three runs (two...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -47888,7 +47634,7 @@
                           "shortName": "C. Sale"
                         },
                         "header": "Probable Starter for Atlanta:",
-                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 49 &nbsp;<b>K</b> 56 &nbsp;<b>ERA</b> 2.20 &nbsp;<b>WHIP</b> 0.878 &nbsp;"
+                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 50 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 2.16 &nbsp;<b>WHIP</b> 0.900 &nbsp;"
                       }
                     },
                     {
@@ -48595,7 +48341,7 @@
                       "content": "37"
                     },
                     {
-                      "content": "CHC<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "pitcher": true,
                       "eventId": "06k05",
                       "popOver": {
@@ -48609,10 +48355,6 @@
                             {
                               "tooltip": "In starting lineup",
                               "typeId": "12"
-                            },
-                            {
-                              "tooltip": "May 12, 9:15 AM: Brown is slated to start Thursday's...",
-                              "typeId": "9"
                             },
                             {
                               "tooltip": "RHP",
@@ -48629,16 +48371,16 @@
                       }
                     },
                     {
-                      "content": "49"
+                      "content": "50"
                     },
                     {
-                      "content": "2.20"
+                      "content": "2.16"
                     },
                     {
-                      "content": "0.878"
+                      "content": "0.900"
                     },
                     {
-                      "content": "56"
+                      "content": "58"
                     },
                     {
                       "content": "6"
@@ -48668,7 +48410,7 @@
                       "content": "0"
                     },
                     {
-                      "content": "8"
+                      "content": "9"
                     }
                   ],
                   "statusId": "1",
@@ -51093,6 +50835,7 @@
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03fi0_96_14.png",
                     "scorerId": "03fi0",
                     "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "003"
                     ],
@@ -51135,7 +50878,7 @@
                       "content": "29"
                     },
                     {
-                      "content": "CHC<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -51148,10 +50891,6 @@
                             {
                               "tooltip": "In starting lineup",
                               "typeId": "12"
-                            },
-                            {
-                              "tooltip": "May 12, 9:15 AM: Brown is slated to start Thursday's...",
-                              "typeId": "9"
                             },
                             {
                               "tooltip": "RHP",
@@ -51189,7 +50928,7 @@
                       "content": ".295"
                     },
                     {
-                      "content": "43"
+                      "content": "44"
                     }
                   ],
                   "statusId": "1",
@@ -53037,6 +52776,7 @@
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04o2w_96_4.png",
                     "scorerId": "04o2w",
                     "upcomingEventStatusId": "1",
+                    "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "017"
                     ],
@@ -53077,7 +52817,7 @@
                       "content": "26"
                     },
                     {
-                      "content": "@ATL<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "pitcher": true,
                       "eventId": "06k05",
                       "popOver": {
@@ -53093,10 +52833,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 12:32 AM: Sale (6-2) allowed three runs (two...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -53107,20 +52843,20 @@
                           "shortName": "C. Sale"
                         },
                         "header": "Probable Starter for Atlanta:",
-                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 49 &nbsp;<b>K</b> 56 &nbsp;<b>ERA</b> 2.20 &nbsp;<b>WHIP</b> 0.878 &nbsp;"
+                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 50 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 2.16 &nbsp;<b>WHIP</b> 0.900 &nbsp;"
                       }
                     },
                     {
-                      "content": "29.2"
+                      "content": "30"
                     },
                     {
-                      "content": "1.82"
+                      "content": "1.80"
                     },
                     {
-                      "content": "0.910"
+                      "content": "0.900"
                     },
                     {
-                      "content": "27"
+                      "content": "28"
                     },
                     {
                       "content": "1"
@@ -53150,7 +52886,7 @@
                       "content": "0"
                     },
                     {
-                      "content": "13"
+                      "content": "14"
                     }
                   ],
                   "statusId": "1",
@@ -53319,7 +53055,7 @@
                       "content": "38"
                     },
                     {
-                      "content": "PHI<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "eventId": "06ipy",
                       "popOver": {
                         "scorer": {
@@ -53334,10 +53070,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 7:55 AM: Luzardo didn't factor into the decision...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -53348,7 +53080,7 @@
                           "shortName": "J. Luzardo"
                         },
                         "header": "Probable Starter for Philadelphia:",
-                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 43.2 &nbsp;<b>K</b> 57 &nbsp;<b>ERA</b> 5.77 &nbsp;<b>WHIP</b> 1.397 &nbsp;"
+                        "content": "<b>W</b> 3 &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 44.2 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 5.64 &nbsp;<b>WHIP</b> 1.366 &nbsp;"
                       }
                     },
                     {
@@ -53932,6 +53664,7 @@
                     "urlName": "dylan-lee",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs041vm_96_6.png",
                     "scorerId": "041vm",
+                    "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "017"
                     ],
@@ -53968,7 +53701,7 @@
                       "content": "31"
                     },
                     {
-                      "content": "CHC<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -53981,10 +53714,6 @@
                             {
                               "tooltip": "In starting lineup",
                               "typeId": "12"
-                            },
-                            {
-                              "tooltip": "May 12, 9:15 AM: Brown is slated to start Thursday's...",
-                              "typeId": "9"
                             },
                             {
                               "tooltip": "RHP",
@@ -54270,6 +53999,7 @@
                     "urlName": "colin-rea",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02bzn_96_10.png",
                     "scorerId": "02bzn",
+                    "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "017"
                     ],
@@ -54306,7 +54036,7 @@
                       "content": "35"
                     },
                     {
-                      "content": "@ATL<br/>Thu 5:15PM",
+                      "content": "CHC 0<br/>@ATL 0",
                       "eventId": "06k05",
                       "popOver": {
                         "scorer": {
@@ -54321,10 +54051,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 9, 12:32 AM: Sale (6-2) allowed three runs (two...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -54335,7 +54061,7 @@
                           "shortName": "C. Sale"
                         },
                         "header": "Probable Starter for Atlanta:",
-                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 49 &nbsp;<b>K</b> 56 &nbsp;<b>ERA</b> 2.20 &nbsp;<b>WHIP</b> 0.878 &nbsp;"
+                        "content": "<b>W</b> 6 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 50 &nbsp;<b>K</b> 58 &nbsp;<b>ERA</b> 2.16 &nbsp;<b>WHIP</b> 0.900 &nbsp;"
                       }
                     },
                     {
@@ -54438,7 +54164,7 @@
                       "content": "29"
                     },
                     {
-                      "content": "@BOS<br/>Thu 4:45PM",
+                      "content": "PHI 0<br/>@BOS 0",
                       "eventId": "06ipy",
                       "popOver": {
                         "scorer": {
@@ -54453,10 +54179,6 @@
                               "typeId": "12"
                             },
                             {
-                              "tooltip": "May 10, 2:45 PM: Suarez (hamstring) is scheduled to...",
-                              "typeId": "9"
-                            },
-                            {
                               "tooltip": "LHP",
                               "typeId": "16"
                             }
@@ -54467,7 +54189,7 @@
                           "shortName": "R. Suarez"
                         },
                         "header": "Probable Starter for Boston:",
-                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 39 &nbsp;<b>K</b> 32 &nbsp;<b>ERA</b> 2.77 &nbsp;<b>WHIP</b> 0.949 &nbsp;"
+                        "content": "<b>W</b> 2 &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 41 &nbsp;<b>K</b> 34 &nbsp;<b>ERA</b> 2.63 &nbsp;<b>WHIP</b> 0.902 &nbsp;"
                       }
                     },
                     {
