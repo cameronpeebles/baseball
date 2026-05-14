@@ -22899,6 +22899,17 @@ window._tlV2ClearTrade = function() {
   _tlV2RenderBuild();
 };
 
+// Apply a counter-offer suggestion: replaces sendA with the suggested combo.
+// keysEnc is a comma-separated string of URI-encoded player keys.
+window._tlV2ApplyCounterOffer = function(keysEnc) {
+  if (!keysEnc) return;
+  var keys = keysEnc.split(',').map(function(k){
+    try { return decodeURIComponent(k); } catch(e) { return k; }
+  }).filter(Boolean);
+  window._tlV2.sendA = keys;
+  _tlV2RenderBuild();
+};
+
 // ── Trade Verification card ───────────────────────────────────────────────
 // Dedicated Trade Lab renderer (replaces the previous Workshop-renderer
 // hijack). Supports arbitrary N-for-M trades with mixed hitter+pitcher on
@@ -23493,20 +23504,194 @@ function _tlV2RenderBuild() {
   // in the left rail (rather than alongside the wide analytics block).
   // Since it'll live in the narrow 30% column, stack the two delta cards
   // vertically instead of using a 2-col grid.
+
+  // Detect the "counter-offer" state: HOME hasn't picked anyone yet but
+  // AWAY has 1+ players in the trade. In this state, the Verdict card
+  // replaces its delta-cards content with suggestions for HOME-side combos
+  // that would balance the trade — 1/2/3 player options ranked by fairness
+  // and HOME efficiency.
+  var counterOfferMode = (sendA.length === 0 && sendB.length > 0);
+
+  // Compute counter-offer suggestions: enumerate HOME rosters and pick the
+  // top 3 combos (1-, 2-, or 3-player) that approximate AWAY's view of the
+  // target combo's value. Scored by fairness (close to even from AWAY's
+  // need-lens) × HOME efficiency (HOME values what it sends less than AWAY
+  // values it).
+  function computeCounterOffers() {
+    // Target combo = whatever AWAY has selected. Need AWAY's value of these
+    // players (their ROS SGP through AWAY's needs).
+    var awayWeights = nwB.catWeights || {};
+    function valueThroughWeights(playerRow, weights) {
+      // Compute SGP × cat-weights from the player's per-cat allocation.
+      if (!playerRow || !playerRow.fp) return 0;
+      var per = (typeof _tlV2PlayerCatSGP === 'function') ? _tlV2PlayerCatSGP(playerRow) : {};
+      var sum = 0;
+      Object.keys(per).forEach(function(c){ sum += (per[c] || 0) * (weights[c] || 1); });
+      return sum;
+    }
+    // AWAY's view of the target combo:
+    var targetAwayValue = 0;
+    sendB.forEach(function(k){
+      var p = byKeyB[k]; if (!p) return;
+      // Recompute the player's ROS SGP through AWAY's needs — but byKeyB[].rosSGP
+      // is HOME-weighted (Trade Lab convention). Use raw ROS as a baseline and
+      // scale by AWAY's cat-weights from per-cat allocation.
+      // _tlV2PlayerCatSGP allocates rosSGP across cats; if rosSGP is HOME-
+      // weighted, that distorts the cat split. Acceptable approximation here.
+      targetAwayValue += valueThroughWeights(p, awayWeights);
+    });
+
+    // Pool of HOME players available to offer (exclude already-selected,
+    // exclude IL+RES so we don't suggest sending injured players).
+    var pool = (rosterA || []).filter(function(p){
+      if (sendA.indexOf(p.key) !== -1) return false;
+      if (p.status === '3') return false; // skip IL
+      return true;
+    });
+    if (!pool.length) return [];
+
+    // Pre-compute each pool player's value through both lenses.
+    pool.forEach(function(p){
+      p._awayVal = valueThroughWeights(p, awayWeights);
+      p._homeVal = p.rosSGP || 0; // already HOME-weighted
+    });
+    // Cap pool to top 30 candidates by awayValue (AWAY would care more about
+    // their high-value pieces) to keep combinatorial cost low.
+    pool = pool.slice().sort(function(a,b){ return b._awayVal - a._awayVal; }).slice(0, 30);
+
+    var combos = [];
+    function scoreCombo(players, tag) {
+      var offerAwayVal = 0, sacrificeHomeVal = 0;
+      players.forEach(function(p){ offerAwayVal += p._awayVal; sacrificeHomeVal += p._homeVal; });
+      var imbalance = Math.abs(offerAwayVal - targetAwayValue);
+      var fairness = 1 / (imbalance + 0.5);
+      // Efficiency: how much value AWAY perceives per unit HOME sacrifices.
+      // Higher = HOME giving up less for what AWAY perceives as equivalent.
+      var efficiency = (sacrificeHomeVal > 0.01) ? (offerAwayVal / sacrificeHomeVal) : 1;
+      var score = fairness * 0.6 + Math.min(efficiency, 3) * 0.4;
+      // Penalize wildly under-value offers (AWAY would reject)
+      if (offerAwayVal < targetAwayValue * 0.6) score *= 0.4;
+      // Penalize over-value offers (HOME overpays)
+      if (offerAwayVal > targetAwayValue * 1.6) score *= 0.6;
+      combos.push({
+        players: players.slice(),
+        offerAwayVal: offerAwayVal,
+        sacrificeHomeVal: sacrificeHomeVal,
+        imbalance: imbalance,
+        score: score,
+        size: players.length,
+        tag: tag
+      });
+    }
+
+    // 1-player combos
+    pool.forEach(function(p){ scoreCombo([p], '1'); });
+    // 2-player combos
+    for (var i = 0; i < pool.length; i++) {
+      for (var j = i+1; j < pool.length; j++) {
+        scoreCombo([pool[i], pool[j]], '2');
+      }
+    }
+    // 3-player combos (cap pool to top 15 for 3-combos to keep cost manageable)
+    var pool3 = pool.slice(0, 15);
+    for (var i3 = 0; i3 < pool3.length; i3++) {
+      for (var j3 = i3+1; j3 < pool3.length; j3++) {
+        for (var k3 = j3+1; k3 < pool3.length; k3++) {
+          scoreCombo([pool3[i3], pool3[j3], pool3[k3]], '3');
+        }
+      }
+    }
+    combos.sort(function(a,b){ return b.score - a.score; });
+
+    // Pick the top one of each size + one extra to fill the top 3.
+    var picks = [];
+    var seenSizes = {};
+    combos.forEach(function(c){
+      if (picks.length >= 3) return;
+      if (seenSizes[c.size]) return;
+      seenSizes[c.size] = true;
+      picks.push(c);
+    });
+    // Fill remaining slots with next-best regardless of size, avoiding dupes.
+    combos.forEach(function(c){
+      if (picks.length >= 3) return;
+      if (picks.indexOf(c) !== -1) return;
+      picks.push(c);
+    });
+    // Tag the picks for display: fairest = lowest imbalance, efficient = best
+    // value-per-sacrifice ratio.
+    var fairest = picks.slice().sort(function(a,b){ return a.imbalance - b.imbalance; })[0];
+    var efficient = picks.slice().sort(function(a,b){
+      return (b.offerAwayVal/Math.max(0.01,b.sacrificeHomeVal)) - (a.offerAwayVal/Math.max(0.01,a.sacrificeHomeVal));
+    })[0];
+    picks.forEach(function(c){
+      if (c === fairest) c.displayTag = 'FAIREST';
+      else if (c === efficient && efficient !== fairest) c.displayTag = 'EFFICIENT';
+      else c.displayTag = c.size === 1 ? 'SIMPLE 1-FOR-1' : (c.size + '-PLAYER');
+    });
+    return { picks: picks, targetAwayValue: targetAwayValue };
+  }
+
   var verdictHtml = '';
-  // Outer white card so the gradient shading reads against a clear surface.
-  verdictHtml += '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:6px">';
-  // Inner shaded panel — keeps the green→red vertical gradient as before.
-  verdictHtml += '<div style="background:linear-gradient(to bottom, rgba(29,158,117,0.05), rgba(192,57,43,0.04));border-radius:8px;padding:10px 12px">';
-  verdictHtml += '<div style="margin-bottom:8px">';
-  verdictHtml += '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:1px">Verdict</div>';
-  verdictHtml += '<div style="font-size:14px;font-weight:500;color:'+v.color+';line-height:1.2">'+_loEsc(v.label)+'</div>';
-  verdictHtml += '</div>';
-  verdictHtml += '<div style="display:flex;flex-direction:column;gap:6px">';
-  verdictHtml += deltaCardHtml(nameA, weightedDeltaA, sentASGP, sentBSGP, 'HOME', '#5a594f', 'rgba(136,135,128,0.18)');
-  verdictHtml += deltaCardHtml(nameB, weightedDeltaB, sentBSGP, sentASGP, 'AWAY', '#0C447C', 'rgba(24,95,165,0.12)');
-  verdictHtml += '</div>';
-  verdictHtml += '</div></div>'; // close inner shade + outer white card
+  if (counterOfferMode) {
+    // ── Counter-offer mode ──────────────────────────────────────────────
+    var co;
+    try { co = computeCounterOffers(); } catch(e) { console.warn('[TradeLab] counter-offers failed:', e); co = null; }
+    // Title text: list AWAY-side player names.
+    var targetNames = sendB.map(function(k){ return (byKeyB[k] && byKeyB[k].name) || k; }).join(' + ');
+    verdictHtml += '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:6px">';
+    verdictHtml += '<div style="background:linear-gradient(to bottom, rgba(45,90,61,0.04), rgba(186,117,23,0.05));border-radius:8px;padding:10px 12px">';
+    verdictHtml += '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px">';
+    verdictHtml += '<div>';
+    verdictHtml += '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:1px">Counter-offers</div>';
+    verdictHtml += '<div style="font-size:13px;font-weight:500;line-height:1.2;color:var(--text)">To get '+_loEsc(targetNames)+'</div>';
+    verdictHtml += '</div>';
+    verdictHtml += '</div>';
+    if (co && co.picks && co.picks.length) {
+      verdictHtml += '<div style="font-size:10px;color:var(--muted);margin-bottom:8px;line-height:1.3">Combinations of HOME players that approximate '+_loEsc(nameB)+'\u2019s value of the target (+'+co.targetAwayValue.toFixed(2)+' AWAY-weighted), ranked by fairness &times; HOME efficiency.</div>';
+      verdictHtml += '<div style="display:flex;flex-direction:column;gap:6px">';
+      co.picks.forEach(function(c){
+        var tagBg = c.displayTag === 'FAIREST' ? 'rgba(29,158,117,0.12)' : c.displayTag === 'EFFICIENT' ? 'rgba(186,117,23,0.10)' : 'rgba(150,150,150,0.18)';
+        var tagFg = c.displayTag === 'FAIREST' ? '#0F6E56'              : c.displayTag === 'EFFICIENT' ? '#854f0b'             : '#5a594f';
+        var balDelta = c.offerAwayVal - co.targetAwayValue;
+        var balCol  = Math.abs(balDelta) < 0.5 ? '#0F6E56' : balDelta < 0 ? '#c0392b' : '#4a9a68';
+        var balSign = balDelta >= 0 ? '+' : '\u2212';
+        // Encode keys for Apply button (URI-safe).
+        var keysEnc = c.players.map(function(p){ return encodeURIComponent(p.key); }).join(',');
+        verdictHtml += '<div style="background:rgba(255,255,255,0.5);border-radius:6px;padding:8px 10px">';
+        verdictHtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">';
+        verdictHtml += '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:'+tagBg+';color:'+tagFg+';font-weight:600;letter-spacing:0.04em">'+c.displayTag+'</span>';
+        verdictHtml += '<span style="font-size:10px;color:var(--muted)">Bal: <strong style="color:'+balCol+'">'+balSign+Math.abs(balDelta).toFixed(2)+'</strong></span>';
+        verdictHtml += '<button onclick="window._tlV2ApplyCounterOffer(\''+keysEnc+'\')" style="margin-left:auto;padding:2px 8px;font-size:10px;border:0.5px solid var(--accent);background:rgba(45,90,61,0.06);color:var(--accent);border-radius:4px;cursor:pointer;font-family:inherit">Apply</button>';
+        verdictHtml += '</div>';
+        verdictHtml += '<div style="font-size:11px;line-height:1.5">';
+        c.players.forEach(function(p, idx){
+          if (idx > 0) verdictHtml += ' <span style="color:var(--muted)">+</span> ';
+          verdictHtml += '<span style="font-weight:500">'+_loEsc(p.name)+'</span> <span style="color:var(--muted);font-size:9px">'+_loEsc(p.pos||'')+(p._homeVal != null ? ' '+(p._homeVal>=0?'+':'') + p._homeVal.toFixed(2) : '')+'</span>';
+        });
+        verdictHtml += '</div></div>';
+      });
+      verdictHtml += '</div>';
+    } else {
+      verdictHtml += '<div style="font-size:11px;color:var(--muted);padding:8px 0;text-align:center">No counter-offers available. Try picking a HOME-side starting point manually.</div>';
+    }
+    verdictHtml += '</div></div>'; // close inner panel + outer card
+  } else {
+    // ── Verdict mode (default) ───────────────────────────────────────────
+    // Outer white card so the gradient shading reads against a clear surface.
+    verdictHtml += '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:6px">';
+    // Inner shaded panel — keeps the green→red vertical gradient as before.
+    verdictHtml += '<div style="background:linear-gradient(to bottom, rgba(29,158,117,0.05), rgba(192,57,43,0.04));border-radius:8px;padding:10px 12px">';
+    verdictHtml += '<div style="margin-bottom:8px">';
+    verdictHtml += '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:1px">Verdict</div>';
+    verdictHtml += '<div style="font-size:14px;font-weight:500;color:'+v.color+';line-height:1.2">'+_loEsc(v.label)+'</div>';
+    verdictHtml += '</div>';
+    verdictHtml += '<div style="display:flex;flex-direction:column;gap:6px">';
+    verdictHtml += deltaCardHtml(nameA, weightedDeltaA, sentASGP, sentBSGP, 'HOME', '#5a594f', 'rgba(136,135,128,0.18)');
+    verdictHtml += deltaCardHtml(nameB, weightedDeltaB, sentBSGP, sentASGP, 'AWAY', '#0C447C', 'rgba(24,95,165,0.12)');
+    verdictHtml += '</div>';
+    verdictHtml += '</div></div>'; // close inner shade + outer white card
+  }
 
   // ── Team Needs (both teams, side by side) ───────────────────────────────
   // Shows category rank (1 = least need, N = most need) so the user can see
