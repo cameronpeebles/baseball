@@ -716,6 +716,7 @@
                     "urlName": "luis-arraez",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03mew_96_10.png",
                     "scorerId": "03mew",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002",
@@ -725,6 +726,10 @@
                     "posShortNames": "1B,2B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
                       {
                         "tooltip": "May 14, 12:21 PM: Arraez went 2-for-3 with a walk in...",
                         "typeId": "14"
@@ -1520,7 +1525,7 @@
                       },
                       {
                         "tooltip": "May 13, 4:08 PM: Muncy is not in the Dodgers' starting...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -7114,7 +7119,7 @@
                       },
                       {
                         "tooltip": "May 13, 4:19 PM: Caglianone is out of the lineup for...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "On this team's trade block",
@@ -7528,6 +7533,7 @@
                     "urlName": "bryce-eldridge",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05u96_96_2.png",
                     "scorerId": "05u96",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "014"
@@ -7536,6 +7542,10 @@
                     "posShortNames": "UT",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
                       {
                         "tooltip": "May 11, 6:33 PM: Manger Tony Vitello stated Monday that...",
                         "typeId": "9"
@@ -18557,6 +18567,7 @@
                     "urlName": "jesus-rodriguez",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs052h8_96_1.png",
                     "scorerId": "052h8",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "001"
@@ -18565,6 +18576,10 @@
                     "posShortNames": "C",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
                       {
                         "tooltip": "May 12, 4:37 PM: Rodriguez isn't in the lineup for...",
                         "typeId": "9"
@@ -22981,6 +22996,7 @@
                     "urlName": "willy-adames",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03atq_96_14.png",
                     "scorerId": "03atq",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "005"
@@ -22989,6 +23005,10 @@
                     "posShortNames": "SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 6",
+                        "typeId": "26"
+                      },
                       {
                         "tooltip": "May 13, 10:54 AM: Adames went 2-for-4 with a run scored...",
                         "typeId": "9"
@@ -28964,6 +28984,7 @@
                     "urlName": "rafael-devers",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs030uc_96_14.png",
                     "scorerId": "030uc",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002"
@@ -28972,6 +28993,10 @@
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
                       {
                         "tooltip": "May 12, 7:07 AM: Devers went 2-for-3 with a solo home...",
                         "typeId": "9"
@@ -29627,7 +29652,7 @@
                       },
                       {
                         "tooltip": "May 13, 4:18 PM: Jensen is out of the lineup for...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -34534,6 +34559,7 @@
                     "urlName": "matt-chapman",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03d6s_96_11.png",
                     "scorerId": "03d6s",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "004"
@@ -34542,6 +34568,10 @@
                     "posShortNames": "3B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 7",
+                        "typeId": "27"
+                      },
                       {
                         "tooltip": "May 12, 4:40 PM: Chapman isn't in the lineup for...",
                         "typeId": "9"
@@ -35275,6 +35305,7 @@
                     "urlName": "casey-schmitt",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05jp4_96_4.png",
                     "scorerId": "05jp4",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002",
@@ -35286,8 +35317,12 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
+                      },
+                      {
                         "tooltip": "May 13, 4:21 PM: Schmitt is not in the Giants' starting...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
