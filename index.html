@@ -21352,7 +21352,8 @@ function _tlBuildPlayerCard(p, isHit, teamId) {
 window._tlV2 = window._tlV2 || { teamA: null, teamB: null, sendA: [], sendB: [], activeTab: 'build', sortA: { col: 'curr', dir: 'desc' }, sortB: { col: 'curr', dir: 'desc' } };
 // Visibility toggles + filters for the per-side roster tables. Stored on the
 // global so they persist across renders.
-if (window._tlV2.showAllCols == null) window._tlV2.showAllCols = false;
+if (window._tlV2.statsMode == null) window._tlV2.statsMode = 'curr';
+if (window._tlV2.showAllCols == null) window._tlV2.showAllCols = false; // legacy, unused
 if (!window._tlV2.posFilter) window._tlV2.posFilter = { A_hit:'ALL', A_pit:'ALL', B_hit:'ALL', B_pit:'ALL' };
 // Ensure sort fields exist for existing sessions where the object was already created.
 if (!window._tlV2.sortA) window._tlV2.sortA = { col: 'curr', dir: 'desc' };
@@ -21977,7 +21978,7 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState,
   function _stripFP(n) { return (n||'').replace(/\s*\([^)]*\).*$/, '').trim(); }
   function _nrm(n) { return _stripFP(n).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
   var wantHit = (kind === 'hit');
-  var showAll = !!(window._tlV2 && window._tlV2.showAllCols);
+  var statsMode = (window._tlV2 && window._tlV2.statsMode === 'ros') ? 'ros' : 'curr';
   var posFilterKey = side + '_' + kind;
   var posFilter = (window._tlV2 && window._tlV2.posFilter && window._tlV2.posFilter[posFilterKey]) || 'ALL';
   var isAway = (side === 'B');
@@ -22031,18 +22032,29 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState,
       rosRaw: p.rosRawSGP != null ? p.rosRawSGP : null,
       ros:  p.rosSGP != null ? p.rosSGP : null
     };
+    // Cat-stat source flips on statsMode: 'curr' pulls from cs (current
+    // season actuals), 'ros' pulls from p.fp (FantasyPros ROS projections).
+    var fp = p.fp || {};
+    var src = (statsMode === 'ros') ? fp : cs;
+    function pullNum(key) {
+      var v = src[key];
+      return (v != null && !isNaN(v)) ? +v : null;
+    }
     if (wantHit) {
-      base.R   = (cs.R   != null && !isNaN(cs.R))   ? cs.R   : null;
-      base.HR  = (cs.HR  != null && !isNaN(cs.HR))  ? cs.HR  : null;
-      base.RBI = (cs.RBI != null && !isNaN(cs.RBI)) ? cs.RBI : null;
-      base.SB  = (cs.SB  != null && !isNaN(cs.SB))  ? cs.SB  : null;
-      base.AVG = (cs.AVG != null && !isNaN(cs.AVG)) ? cs.AVG : null;
+      base.R   = pullNum('R');
+      base.HR  = pullNum('HR');
+      base.RBI = pullNum('RBI');
+      base.SB  = pullNum('SB');
+      base.AVG = pullNum('AVG');
     } else {
-      base.W    = (cs.W    != null && !isNaN(cs.W))    ? cs.W    : null;
-      base.K    = (cs.K    != null && !isNaN(cs.K))    ? cs.K    : null;
-      base.SVH3 = (cs.SVH3 != null && !isNaN(cs.SVH3)) ? cs.SVH3 : null;
-      base.ERA  = (cs.ERA  != null && !isNaN(cs.ERA))  ? cs.ERA  : null;
-      base.WHIP = (cs.WHIP != null && !isNaN(cs.WHIP)) ? cs.WHIP : null;
+      base.W    = pullNum('W');
+      base.K    = pullNum('K');
+      // ROS projections may store saves as 'SV' rather than 'SVH3' — fall back.
+      base.SVH3 = (src.SVH3 != null && !isNaN(src.SVH3)) ? +src.SVH3
+                : (src.SV   != null && !isNaN(src.SV))   ? +src.SV
+                : null;
+      base.ERA  = pullNum('ERA');
+      base.WHIP = pullNum('WHIP');
     }
     return base;
   });
@@ -22136,25 +22148,23 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState,
   h += '<table style="width:100%;border-collapse:collapse;font-size:11px">';
   h += '<thead><tr style="background:var(--bg);font-size:10px;color:var(--muted)">';
   h += thSort('name', 'Player', 'left');
-  // Cat stat columns + ratings columns ONLY when "show all" is enabled.
-  if (showAll) {
-    if (wantHit) {
-      h += thSort('R',   'R',   'right');
-      h += thSort('HR',  'HR',  'right');
-      h += thSort('RBI', 'RBI', 'right');
-      h += thSort('SB',  'SB',  'right');
-      h += thSort('AVG', 'AVG', 'right');
-    } else {
-      h += thSort('W',    'W',    'right');
-      h += thSort('K',    'K',    'right');
-      h += thSort('SVH3', 'SVH3', 'right');
-      h += thSort('ERA',  'ERA',  'right');
-      h += thSort('WHIP', 'WHIP', 'right');
-    }
-    h += thSort('fwarPct', 'fWAR%',    'right');
-    h += thSort('pos_rat', 'Pos',      'right');
+  // Cat stat columns — always visible; source flips on statsMode (Curr/ROS).
+  if (wantHit) {
+    h += thSort('R',   'R',   'right');
+    h += thSort('HR',  'HR',  'right');
+    h += thSort('RBI', 'RBI', 'right');
+    h += thSort('SB',  'SB',  'right');
+    h += thSort('AVG', 'AVG', 'right');
+  } else {
+    h += thSort('W',    'W',    'right');
+    h += thSort('K',    'K',    'right');
+    h += thSort('SVH3', 'SVH3', 'right');
+    h += thSort('ERA',  'ERA',  'right');
+    h += thSort('WHIP', 'WHIP', 'right');
   }
-  // Always-visible core columns.
+  h += thSort('fwarPct', 'fWAR%',    'right');
+  h += thSort('pos_rat', 'Pos',      'right');
+  // SGP columns + action.
   h += thSort('curr',    'Curr SGP', 'right');
   h += thSort('rosRaw',  'Raw ROS',  'right');
   h += thSort('ros',     'Need-wtd ROS',  'right');
@@ -22180,23 +22190,21 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState,
     h += '</div>';
     h += '<div style="font-size:9px;color:var(--muted)">'+_loEsc(r.pos)+(r.mlb?' &middot; '+_loEsc(r.mlb):'')+'</div>';
     h += '</td>';
-    if (showAll) {
-      if (wantHit) {
-        h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.R)+'</td>';
-        h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.HR)+'</td>';
-        h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.RBI)+'</td>';
-        h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.SB)+'</td>';
-        h += '<td style="text-align:right;padding:6px 5px">'+fmtAvg(r.AVG)+'</td>';
-      } else {
-        h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.W)+'</td>';
-        h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.K)+'</td>';
-        h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.SVH3)+'</td>';
-        h += '<td style="text-align:right;padding:6px 5px">'+fmtEraWhip(r.ERA, 2)+'</td>';
-        h += '<td style="text-align:right;padding:6px 5px">'+fmtEraWhip(r.WHIP, 2)+'</td>';
-      }
-      h += '<td style="text-align:right;padding:6px 5px;color:'+pctColor(r.fwarPct)+';font-weight:500">'+fmtPct(r.fwarPct)+'</td>';
-      h += '<td style="text-align:right;padding:6px 5px;color:'+pctColor(r.pos_rat)+';font-weight:500">'+fmtPct(r.pos_rat)+'</td>';
+    if (wantHit) {
+      h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.R)+'</td>';
+      h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.HR)+'</td>';
+      h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.RBI)+'</td>';
+      h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.SB)+'</td>';
+      h += '<td style="text-align:right;padding:6px 5px">'+fmtAvg(r.AVG)+'</td>';
+    } else {
+      h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.W)+'</td>';
+      h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.K)+'</td>';
+      h += '<td style="text-align:right;padding:6px 5px">'+fmtCount(r.SVH3)+'</td>';
+      h += '<td style="text-align:right;padding:6px 5px">'+fmtEraWhip(r.ERA, 2)+'</td>';
+      h += '<td style="text-align:right;padding:6px 5px">'+fmtEraWhip(r.WHIP, 2)+'</td>';
     }
+    h += '<td style="text-align:right;padding:6px 5px;color:'+pctColor(r.fwarPct)+';font-weight:500">'+fmtPct(r.fwarPct)+'</td>';
+    h += '<td style="text-align:right;padding:6px 5px;color:'+pctColor(r.pos_rat)+';font-weight:500">'+fmtPct(r.pos_rat)+'</td>';
     h += '<td style="text-align:right;padding:6px 5px;color:'+sgpColor(r.curr)+';font-weight:500">'+(r.curr==null?'\u2014':fmtNum(r.curr,2))+'</td>';
     h += '<td style="text-align:right;padding:6px 5px;color:'+sgpColor(r.rosRaw)+';font-weight:500">'+(r.rosRaw==null?'\u2014':fmtNum(r.rosRaw,2))+'</td>';
     h += '<td style="text-align:right;padding:6px 5px;color:'+sgpColor(r.ros)+';font-weight:500">'+(r.ros==null?'\u2014':fmtNum(r.ros,2))+'</td>';
@@ -22231,8 +22239,11 @@ window._tlV2SortRoster = function(side, kind, colKey) {
 };
 
 // Toggle the "Show all stats" mode for roster tables (off by default).
+// Toggle between current-season cat stats and ROS projected cat stats in the
+// roster tables. fWAR%, Pos rating, and the SGP columns stay visible in both
+// modes — only the cat-stat source flips.
 window._tlV2ToggleCols = function() {
-  window._tlV2.showAllCols = !window._tlV2.showAllCols;
+  window._tlV2.statsMode = (window._tlV2.statsMode === 'ros') ? 'curr' : 'ros';
   _tlV2RenderBuild();
 };
 
@@ -23307,11 +23318,14 @@ function _tlV2RenderBuild() {
     return c;
   }
   // ── Roster controls bar (above both team cards) ─────────────────────────
-  // Houses the "Show all stats" toggle and the AWAY fit-coloring legend.
-  var showAllNow = !!(window._tlV2 && window._tlV2.showAllCols);
-  var toggleLabel = showAllNow ? 'Hide cat stats &amp; ratings' : 'Show cat stats &amp; ratings';
+  // Houses the Curr/ROS cat-stat mode toggle and the AWAY fit-coloring legend.
+  var statsModeNow = (window._tlV2 && window._tlV2.statsMode === 'ros') ? 'ros' : 'curr';
+  var toggleLabel = statsModeNow === 'ros' ? 'Showing: ROS cat stats &middot; switch to Curr' : 'Showing: Curr cat stats &middot; switch to ROS';
+  var toggleBg    = statsModeNow === 'ros' ? 'rgba(45,90,61,0.06)' : 'var(--surface)';
+  var toggleColor = statsModeNow === 'ros' ? 'var(--accent)' : 'var(--muted)';
+  var toggleBorder= statsModeNow === 'ros' ? 'var(--accent)' : 'var(--border)';
   var rosterControlsHtml = '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:8px">';
-  rosterControlsHtml += '<button onclick="window._tlV2ToggleCols()" style="padding:4px 10px;font-size:11px;border:0.5px solid var(--border);background:var(--surface);color:var(--muted);border-radius:5px;cursor:pointer;font-family:inherit">'+toggleLabel+'</button>';
+  rosterControlsHtml += '<button onclick="window._tlV2ToggleCols()" style="padding:4px 10px;font-size:11px;border:0.5px solid '+toggleBorder+';background:'+toggleBg+';color:'+toggleColor+';border-radius:5px;cursor:pointer;font-family:inherit;font-weight:500">'+toggleLabel+'</button>';
   rosterControlsHtml += '<div style="display:flex;align-items:center;gap:8px;font-size:10px;color:var(--muted)">';
   rosterControlsHtml += '<span>AWAY fit:</span>';
   rosterControlsHtml += '<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:14px;height:10px;background:rgba(29,158,117,0.10);border:0.5px solid rgba(29,158,117,0.30);border-radius:2px"></span>Strong (Need-wtd &ge; +3)</span>';
