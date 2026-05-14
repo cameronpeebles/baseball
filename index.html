@@ -20004,6 +20004,7 @@ function renderTargetsPage() {
 window._milbState = window._milbState || {
   hitters: null, pitchers: null, loaded: false, loading: false, error: null,
   kind: 'hit',           // 'hit' | 'pit'
+  tableMode: 'std',      // 'std' | 'adv' — Standard or Advanced stat columns
   level: 'ALL',          // 'ALL' | 'AAA' | 'AA' | 'A+' | 'A'
   org: 'ALL',            // 'ALL' or MLB abbrev (e.g. 'NYY')
   search: '',
@@ -20091,6 +20092,13 @@ function _milbBuildHtml() {
   h += pill(st.kind === 'pit', 'Pitchers', "window._milbSetKind('pit')");
   h += '</div>';
   h += '<div style="width:1px;height:18px;background:var(--border)"></div>';
+  // Standard / Advanced toggle
+  h += '<span style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Stats</span>';
+  h += '<div style="display:flex;gap:4px">';
+  h += pill(st.tableMode === 'std', 'Standard', "window._milbSetTableMode('std')");
+  h += pill(st.tableMode === 'adv', 'Advanced', "window._milbSetTableMode('adv')");
+  h += '</div>';
+  h += '<div style="width:1px;height:18px;background:var(--border)"></div>';
   // Level
   h += '<span style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Level</span>';
   h += '<div style="display:flex;gap:4px">';
@@ -20140,38 +20148,70 @@ function _milbBuildHtml() {
   h += th('org','Org','left');
   h += th('pos','Pos','left');
   h += th('age','Age','right');
+  var isAdv = (st.tableMode === 'adv');
   if (st.kind === 'hit') {
-    h += th('G','G','right');
-    h += th('AB','AB','right');
-    h += th('R','R','right');
-    h += th('H','H','right');
-    h += th('2B','2B','right');
-    h += th('3B','3B','right');
-    h += th('HR','HR','right');
-    h += th('RBI','RBI','right');
-    h += th('BB','BB','right');
-    h += th('SO','SO','right');
-    h += th('SB','SB','right');
-    h += th('AVG','AVG','right');
-    h += th('OBP','OBP','right');
-    h += th('SLG','SLG','right');
-    h += th('OPS','OPS','right');
+    if (!isAdv) {
+      h += th('G','G','right');
+      h += th('AB','AB','right');
+      h += th('R','R','right');
+      h += th('H','H','right');
+      h += th('2B','2B','right');
+      h += th('3B','3B','right');
+      h += th('HR','HR','right');
+      h += th('RBI','RBI','right');
+      h += th('BB','BB','right');
+      h += th('SO','SO','right');
+      h += th('SB','SB','right');
+      h += th('AVG','AVG','right');
+      h += th('OBP','OBP','right');
+      h += th('SLG','SLG','right');
+      h += th('OPS','OPS','right');
+    } else {
+      h += th('G','G','right');
+      h += th('PA','PA','right');
+      h += th('BB_pct','BB%','right');
+      h += th('K_pct','K%','right');
+      h += th('BB_K','BB/K','right');
+      h += th('AVG','AVG','right');
+      h += th('OBP','OBP','right');
+      h += th('SLG','SLG','right');
+      h += th('OPS','OPS','right');
+      h += th('ISO','ISO','right');
+      h += th('BABIP','BABIP','right');
+    }
   } else {
-    h += th('G','G','right');
-    h += th('GS','GS','right');
-    h += th('IP','IP','right');
-    h += th('W','W','right');
-    h += th('L','L','right');
-    h += th('SV','SV','right');
-    h += th('HLD','HLD','right');
-    h += th('K','K','right');
-    h += th('BB','BB','right');
-    h += th('H','H','right');
-    h += th('ER','ER','right');
-    h += th('ERA','ERA','right');
-    h += th('WHIP','WHIP','right');
-    h += th('K9','K/9','right');
-    h += th('BB9','BB/9','right');
+    if (!isAdv) {
+      h += th('G','G','right');
+      h += th('GS','GS','right');
+      h += th('IP','IP','right');
+      h += th('W','W','right');
+      h += th('L','L','right');
+      h += th('SV','SV','right');
+      h += th('HLD','HLD','right');
+      h += th('K','K','right');
+      h += th('BB','BB','right');
+      h += th('H','H','right');
+      h += th('ER','ER','right');
+      h += th('ERA','ERA','right');
+      h += th('WHIP','WHIP','right');
+      h += th('K9','K/9','right');
+      h += th('BB9','BB/9','right');
+    } else {
+      h += th('G','G','right');
+      h += th('IP','IP','right');
+      h += th('K9','K/9','right');
+      h += th('BB9','BB/9','right');
+      h += th('HR9','HR/9','right');
+      h += th('KBB','K/BB','right');
+      h += th('K_pct','K%','right');
+      h += th('BB_pct','BB%','right');
+      h += th('KBB_pct','K-BB%','right');
+      h += th('AVG_a','AVG','right');
+      h += th('WHIP','WHIP','right');
+      h += th('BABIP_a','BABIP','right');
+      h += th('LOB_pct','LOB%','right');
+      h += th('ERA','ERA','right');
+    }
   }
   h += '</tr></thead><tbody>';
 
@@ -20191,38 +20231,71 @@ function _milbBuildHtml() {
     h += '<td style="padding:6px 6px;color:var(--muted);font-weight:500">'+_loEsc(p.org || '')+'</td>';
     h += '<td style="padding:6px 6px;color:var(--muted)">'+_loEsc(p.pos || '')+'</td>';
     h += '<td style="text-align:right;padding:6px 6px">'+(p.age == null ? '\u2014' : p.age)+'</td>';
+    // Helpers for advanced rate formatting
+    function fmtPct(v) { return v == null ? '\u2014' : (v * 100).toFixed(1) + '%'; }
     if (st.kind === 'hit') {
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.G)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.AB)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.R)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.H)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p['2B'])+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p['3B'])+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtN(p.HR)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.RBI)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.BB)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.SO)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.SB)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtAvg(p.AVG)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtAvg(p.OBP)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtAvg(p.SLG)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtAvg(p.OPS)+'</td>';
+      if (!isAdv) {
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.G)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.AB)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.R)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.H)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p['2B'])+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p['3B'])+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtN(p.HR)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.RBI)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.BB)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.SO)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.SB)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtAvg(p.AVG)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtAvg(p.OBP)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtAvg(p.SLG)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtAvg(p.OPS)+'</td>';
+      } else {
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.G)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.PA)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtPct(p.BB_pct)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtPct(p.K_pct)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+(p.BB_K == null ? '\u2014' : p.BB_K.toFixed(2))+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtAvg(p.AVG)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtAvg(p.OBP)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtAvg(p.SLG)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtAvg(p.OPS)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+(p.ISO == null ? '\u2014' : p.ISO.toFixed(3).replace(/^0\./,'.'))+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+(p.BABIP == null ? '\u2014' : p.BABIP.toFixed(3).replace(/^0\./,'.'))+'</td>';
+      }
     } else {
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.G)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.GS)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtRate(p.IP, 1)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.W)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.L)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.SV)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.HLD)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtN(p.K)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.BB)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.H)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.ER)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtRate(p.ERA, 2)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtRate(p.WHIP, 2)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtRate(p.K9, 1)+'</td>';
-      h += '<td style="text-align:right;padding:6px 6px">'+fmtRate(p.BB9, 1)+'</td>';
+      if (!isAdv) {
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.G)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.GS)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtRate(p.IP, 1)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.W)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.L)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.SV)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.HLD)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtN(p.K)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.BB)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.H)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.ER)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtRate(p.ERA, 2)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtRate(p.WHIP, 2)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtRate(p.K9, 1)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtRate(p.BB9, 1)+'</td>';
+      } else {
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtN(p.G)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtRate(p.IP, 1)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtRate(p.K9, 1)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtRate(p.BB9, 1)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtRate(p.HR9, 2)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+(p.KBB == null ? '\u2014' : p.KBB.toFixed(2))+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtPct(p.K_pct)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtPct(p.BB_pct)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtPct(p.KBB_pct)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+(p.AVG_a == null ? '\u2014' : p.AVG_a.toFixed(3).replace(/^0\./,'.'))+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtRate(p.WHIP, 2)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+(p.BABIP_a == null ? '\u2014' : p.BABIP_a.toFixed(3).replace(/^0\./,'.'))+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px">'+fmtPct(p.LOB_pct)+'</td>';
+        h += '<td style="text-align:right;padding:6px 6px;font-weight:500">'+fmtRate(p.ERA, 2)+'</td>';
+      }
     }
     h += '</tr>';
   });
@@ -20245,6 +20318,29 @@ window._milbSetKind = function(k) {
     window._milbState.sortCol = 'HR'; window._milbState.sortDir = 'desc';
   } else if (k === 'pit' && ['HR','RBI','AVG','OBP','SLG','OPS','AB'].indexOf(window._milbState.sortCol) !== -1) {
     window._milbState.sortCol = 'K'; window._milbState.sortDir = 'desc';
+  }
+  window._milbState.limit = 100;
+  renderMiLBPage();
+};
+window._milbSetTableMode = function(mode) {
+  if (!window._milbState) return;
+  window._milbState.tableMode = (mode === 'adv') ? 'adv' : 'std';
+  // If the current sort column doesn't exist in the new column set, reset to
+  // a sensible default. Counting-stat columns disappear in Advanced; rate
+  // columns are mostly Advanced-only.
+  var stdHitCols = ['G','AB','R','H','2B','3B','HR','RBI','BB','SO','SB','AVG','OBP','SLG','OPS'];
+  var advHitCols = ['G','PA','BB_pct','K_pct','BB_K','AVG','OBP','SLG','OPS','ISO','BABIP'];
+  var stdPitCols = ['G','GS','IP','W','L','SV','HLD','K','BB','H','ER','ERA','WHIP','K9','BB9'];
+  var advPitCols = ['G','IP','K9','BB9','HR9','KBB','K_pct','BB_pct','KBB_pct','AVG_a','WHIP','BABIP_a','LOB_pct','ERA'];
+  var ALL_FIXED = ['name','level','team','org','pos','age'];
+  var valid = (window._milbState.kind === 'hit')
+    ? (window._milbState.tableMode === 'adv' ? advHitCols : stdHitCols)
+    : (window._milbState.tableMode === 'adv' ? advPitCols : stdPitCols);
+  if (ALL_FIXED.indexOf(window._milbState.sortCol) === -1 && valid.indexOf(window._milbState.sortCol) === -1) {
+    window._milbState.sortCol = (window._milbState.kind === 'hit')
+      ? (window._milbState.tableMode === 'adv' ? 'OPS' : 'HR')
+      : (window._milbState.tableMode === 'adv' ? 'K_pct' : 'K');
+    window._milbState.sortDir = 'desc';
   }
   window._milbState.limit = 100;
   renderMiLBPage();
