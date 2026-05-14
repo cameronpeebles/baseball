@@ -21418,37 +21418,76 @@ function _tlV2CatWeights(teamId) {
 // Rate cats (AVG/ERA/WHIP): proportional impact on team aggregate.
 // We approximate by splitting the player's total ROS SGP across their relevant
 // cats using FantasyPros category projections as weights.
-function _tlV2PlayerCatSGP(player) {
+// Compute per-category SGP for a single player from raw projected stats and
+// the league SGP divisors (matches the math in rosSgpForHitter /
+// rosSgpForPitcher inside _buildPlayerSgpLookups). Optionally accepts a
+// `weights` object mapping cat → need-multiplier; if provided, each per-cat
+// SGP is multiplied by its cat weight (so summing across cats yields the
+// need-weighted total ROS SGP, matching Verdict's number).
+//
+// Rate-stat math (AVG/ERA/WHIP): computes the player's contribution as the
+// change to a fixed pool baseline if the player's AB (or IP) is added to the
+// pool. Trust scaling damps unreliable small-sample projections.
+function _tlV2PlayerCatSGP(player, weights) {
   var out = { R:0,HR:0,RBI:0,SB:0,AVG:0, W:0,K:0,SVH3:0,ERA:0,WHIP:0 };
   if (!player || !player.fp) return out;
   var fp = player.fp;
-  var rosSGP = player.rosSGP || 0;
-  if (Math.abs(rosSGP) < 0.001) return out;
-  // Use the player's projected counting stats as proportional weights.
-  // For hitters: R/HR/RBI/SB + AVG. For pitchers: K/W/SVH3 + ERA/WHIP.
+  var D2 = (typeof SGP_D !== 'undefined') ? SGP_D
+    : { r:65.4, hr:21.2, rbi:54.8, sb:17.0, avg:0.008, w:15.3, k:216.8, svh3:18.5, era:0.106, whip:0.0191 };
+  // Pool baselines match those in _buildPlayerSgpLookups.
+  var POOL_AB = 4000, POOL_AVG = 0.260, POOL_IP = 1300, POOL_ERA = 3.90, POOL_WHIP = 1.20;
+  var W = weights || {};
+  function wt(cat) { var v = W[cat]; return (v == null || isNaN(v)) ? 1 : +v; }
+
   if (player.isHit) {
-    var R = parseFloat(fp.R||0), HR = parseFloat(fp.HR||0), RBI = parseFloat(fp.RBI||0), SB = parseFloat(fp.SB||0);
-    // Scale each by typical roto category importance (rough heuristic):
-    // R/HR/RBI/SB roughly equal volume → 0.2 each, AVG → 0.2.
-    var counts = { R: R, HR: HR*4.5, RBI: RBI, SB: SB*5 }; // weighted to similar magnitudes
-    var totalC = 0; Object.keys(counts).forEach(function(c){ totalC += counts[c]; });
-    if (totalC > 0) {
-      Object.keys(counts).forEach(function(c){
-        out[c] = rosSGP * 0.8 * (counts[c] / totalC); // 80% to counting cats
-      });
+    var R   = parseFloat(fp.R||0);
+    var HR  = parseFloat(fp.HR||0);
+    var RBI = parseFloat(fp.RBI||0);
+    var SB  = parseFloat(fp.SB||0);
+    var AB  = parseFloat(fp.AB||0);
+    var AVG = parseFloat(fp.AVG||0);
+    // Hits projected: prefer explicit H, else derive from AVG × AB.
+    var H = (fp.H && +fp.H > 0) ? parseFloat(fp.H) : (AVG && AB ? AVG * AB : 0);
+    // Counting-stat SGP: raw / per-cat divisor, then × need-weight.
+    out.R   = (R   / D2.r)   * wt('R');
+    out.HR  = (HR  / D2.hr)  * wt('HR');
+    out.RBI = (RBI / D2.rbi) * wt('RBI');
+    out.SB  = (SB  / D2.sb)  * wt('SB');
+    // AVG: rate-stat impact on the pool if this player's H/AB are added.
+    if (H > 0 && AB > 0) {
+      var nH = POOL_AVG * POOL_AB + H;
+      var nAB = POOL_AB + AB;
+      // Trust-damp by AB sample size (cap at AB=350).
+      var avgTrust = Math.min(1, AB / 350);
+      out.AVG = (((nH / nAB) - POOL_AVG) / D2.avg) * avgTrust * wt('AVG');
     }
-    out['AVG'] = rosSGP * 0.2; // 20% to AVG
+    // Overall trust damp by AB sample size (cap at AB=250). Matches lookups.
+    var hTrust = Math.min(1, (AB || 0) / 250);
+    ['R','HR','RBI','SB','AVG'].forEach(function(c){ out[c] *= hTrust; });
   } else {
-    var W = parseFloat(fp.W||0), K = parseFloat(fp.K||0), SVH3 = parseFloat(fp.SVH3||fp.SV||0);
-    var countsP = { W: W*8, K: K, SVH3: SVH3*3 };
-    var totalP = 0; Object.keys(countsP).forEach(function(c){ totalP += countsP[c]; });
-    if (totalP > 0) {
-      Object.keys(countsP).forEach(function(c){
-        out[c] = rosSGP * 0.6 * (countsP[c] / totalP); // 60% to counting cats
-      });
+    var Wp   = parseFloat(fp.W||0);
+    var Kp   = parseFloat(fp.K||0);
+    var SVH3 = parseFloat(fp.SVH3 || fp.SV || 0);
+    var IP   = parseFloat(fp.IP||0);
+    var ERA  = parseFloat(fp.ERA);
+    var WHIP = parseFloat(fp.WHIP);
+    out.W    = (Wp   / D2.w)    * wt('W');
+    out.K    = (Kp   / D2.k)    * wt('K');
+    out.SVH3 = (SVH3 / D2.svh3) * wt('SVH3');
+    if (!isNaN(ERA) && IP > 0) {
+      var tER = POOL_ERA * POOL_IP / 9;
+      var pER = ERA * IP / 9;
+      var nIP = POOL_IP + IP;
+      out.ERA = ((POOL_ERA - (tER + pER) / nIP * 9) / D2.era) * wt('ERA');
     }
-    out['ERA']  = rosSGP * 0.2;
-    out['WHIP'] = rosSGP * 0.2;
+    if (!isNaN(WHIP) && IP > 0) {
+      var tBR = POOL_WHIP * POOL_IP;
+      var pBR = WHIP * IP;
+      var nIP2 = POOL_IP + IP;
+      out.WHIP = ((POOL_WHIP - (tBR + pBR) / nIP2) / D2.whip) * wt('WHIP');
+    }
+    // No global trust scaling on pitchers — IP-weighting in the rate-stat
+    // formula already damps small-sample contributions.
   }
   return out;
 }
