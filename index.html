@@ -20004,9 +20004,10 @@ function renderTargetsPage() {
 window._milbState = window._milbState || {
   hitters: null, pitchers: null, loaded: false, loading: false, error: null,
   kind: 'hit',           // 'hit' | 'pit'
-  tableMode: 'std',      // 'std' | 'adv' — Standard or Advanced stat columns
+  tableMode: 'std',      // 'std' | 'adv' | 'grade'
   level: 'ALL',          // 'ALL' | 'AAA' | 'AA' | 'A+' | 'A'
   org: 'ALL',            // 'ALL' or MLB abbrev (e.g. 'NYY')
+  archetypeFilter: 'ALL',// 'ALL' or archetype name (Grading mode only)
   search: '',
   sortCol: 'HR', sortDir: 'desc',
   limit: 100             // visible rows; "Show more" extends
@@ -20046,17 +20047,22 @@ function _milbBuildHtml() {
   var st = window._milbState;
   var data = (st.kind === 'hit') ? (st.hitters || []) : (st.pitchers || []);
 
-  // ── Grading mode: compute per-level z-scores + Grade + Grade Pool rank ──
+  // ── Grading mode: compute per-level z-scores, Grade percentile, Archetype ──
   // Done once per render across the FULL dataset (not the filtered view),
   // so a player's grade is stable regardless of what filters are applied.
-  // Each player gets _grade (formula sum) and _gradePool (rank within level,
-  // 1=best). Players below MIN_PA are excluded from the pool (null grade).
+  // Each player gets:
+  //   p._grade      — raw weighted z-score sum (formula output)
+  //   p._gradePct   — percentile rank within level (0-100, 100 = best)
+  //   p._archetype  — classification bucket from the hard-threshold cascade
+  //                   ('Mirage Bat' | 'All-Around Elite' | 'Dinger Monster' |
+  //                   'Chaos Speed Demon' | 'OBP Machine' | null)
+  // Players below MIN_PA are excluded from the pool (null grade).
   if (st.tableMode === 'grade' && st.kind === 'hit') {
     var MIN_PA = 20;
-    // Compute per-level mean/std of each input metric.
-    // Inputs: ISO, (BB% - K%), (SB/AB), BABIP, OBP
-    function bbk(p) { return (p.BB_pct != null && p.K_pct != null) ? (p.BB_pct - p.K_pct) : null; }
-    function sbab(p) { return (p.AB && p.AB > 0) ? (p.SB / p.AB) : null; }
+    // SB rate uses SB/PA per the archetype table (different from SB/AB).
+    function bbk(p)   { return (p.BB_pct != null && p.K_pct != null) ? (p.BB_pct - p.K_pct) : null; }
+    function sbab(p)  { return (p.AB && p.AB > 0) ? (p.SB / p.AB) : null; }
+    function sbpa(p)  { return (p.PA && p.PA > 0) ? (p.SB / p.PA) : null; }
     var inputs = {
       ISO:   function(p){ return p.ISO; },
       BBK:   bbk,
@@ -20064,13 +20070,13 @@ function _milbBuildHtml() {
       BABIP: function(p){ return p.BABIP; },
       OBP:   function(p){ return p.OBP; }
     };
-    // Cache the computed values on each player so we don't recompute
-    // in the body cell render.
+    // Cache derived values for body cell rendering and archetype rules.
     data.forEach(function(p){
       p._bbk  = bbk(p);
       p._sbab = sbab(p);
+      p._sbpa = sbpa(p);
     });
-    // Per-level pool: build {level: {ISO:{mean,std,vals}, BBK:..., ...}}
+    // Per-level pool stats for each input metric.
     var poolsByLevel = {};
     data.forEach(function(p){
       if ((p.PA || 0) < MIN_PA) return;
@@ -20092,15 +20098,16 @@ function _milbBuildHtml() {
         var mean = sum / n;
         var ssq = 0; arr.forEach(function(v){ ssq += (v - mean) * (v - mean); });
         var std = Math.sqrt(ssq / n);
-        if (std < 1e-9) std = 1; // avoid div-by-zero in degenerate pools
+        if (std < 1e-9) std = 1;
         poolsByLevel[lvl][k].mean = mean;
         poolsByLevel[lvl][k].std  = std;
       });
     });
-    // Compute Grade for each qualifying player (below-MIN_PA stays null).
+    // Compute raw Grade for each qualifying player.
     data.forEach(function(p){
       p._grade = null;
-      p._gradePool = null;
+      p._gradePct = null;
+      p._archetype = null;
       if ((p.PA || 0) < MIN_PA) return;
       var lvl = p.level || '';
       var pool = poolsByLevel[lvl];
@@ -20116,12 +20123,11 @@ function _milbBuildHtml() {
       var zSBAB  = z('SBAB',  p._sbab);
       var zBABIP = z('BABIP', p.BABIP);
       var zOBP   = z('OBP',   p.OBP);
-      // Formula: 0.38*z(ISO) + 0.27*z(BB-K%) + 0.17*z(SB/AB) - 0.10*z(BABIP) + 0.08*z(OBP)
-      // Skip if any required input is missing (avoids skewed partial grades).
       if (zISO==null || zBBK==null || zSBAB==null || zBABIP==null || zOBP==null) return;
       p._grade = 0.38*zISO + 0.27*zBBK + 0.17*zSBAB - 0.10*zBABIP + 0.08*zOBP;
     });
-    // Compute Grade Pool: rank within level by Grade desc. Cache pool size.
+    // Convert raw Grade → per-level percentile (0-100, 100 = best).
+    // Percentile = (N - rank + 1) / N * 100 using descending rank.
     var byLevel = {};
     data.forEach(function(p){
       if (p._grade == null) return;
@@ -20130,11 +20136,58 @@ function _milbBuildHtml() {
       byLevel[lvl].push(p);
     });
     Object.keys(byLevel).forEach(function(lvl){
-      byLevel[lvl].sort(function(a,b){ return b._grade - a._grade; });
-      byLevel[lvl].forEach(function(p, idx){
-        p._gradePool = idx + 1;
-        p._gradePoolSize = byLevel[lvl].length;
+      var arr = byLevel[lvl];
+      arr.sort(function(a,b){ return b._grade - a._grade; }); // best first
+      var n = arr.length;
+      arr.forEach(function(p, idx){
+        // Top player → 100, bottom → ~0. Use (n - idx) / n × 100 so the best
+        // player gets exactly 100 and ties break by stable sort order.
+        p._gradePct = Math.round((n - idx) / n * 100);
       });
+    });
+    // Archetype classification — hard thresholds, precedence order matters.
+    // Mirage Bat is checked first so unsustainable-luck players don't get
+    // praised as Dinger Monsters.
+    function classify(p) {
+      var iso = p.ISO, bbk = p._bbk, k = p.K_pct, obp = p.OBP, sbpa = p._sbpa, babip = p.BABIP;
+      function ge(v, t) { return v != null && v >= t; }
+      function gt(v, t) { return v != null && v >  t; }
+      function lt(v, t) { return v != null && v <  t; }
+      // 1. Mirage Bat / Fake Breakout
+      //    ISO <.170, BB-K% <-15%, K% >.26, BABIP >.380. OBP/SB any.
+      if (lt(iso, 0.170) && lt(bbk, -0.15) && gt(k, 0.26) && gt(babip, 0.380)) {
+        return 'Mirage Bat';
+      }
+      // 2. All-Around Elite
+      //    ISO >.220, BB-K% >-5%, K% <24%, OBP >.360, SB/PA >.03, BABIP <.360
+      if (gt(iso, 0.220) && gt(bbk, -0.05) && lt(k, 0.24)
+          && gt(obp, 0.360) && gt(sbpa, 0.03) && lt(babip, 0.360)) {
+        return 'All-Around Elite';
+      }
+      // 3. Dinger Monster
+      //    ISO >.275, BB-K% >-15%, K% <32%, OBP >.340, BABIP <.380 preferred
+      //    (Treating BABIP as hard per user choice.)
+      if (gt(iso, 0.275) && gt(bbk, -0.15) && lt(k, 0.32)
+          && gt(obp, 0.340) && lt(babip, 0.380)) {
+        return 'Dinger Monster';
+      }
+      // 4. Chaos Speed Demon
+      //    ISO <.180 acceptable, BB-K% >-12% preferred, K% <30%, OBP >.340,
+      //    SB/PA >.08, BABIP <.370
+      if (lt(iso, 0.180) && gt(bbk, -0.12) && lt(k, 0.30)
+          && gt(obp, 0.340) && gt(sbpa, 0.08) && lt(babip, 0.370)) {
+        return 'Chaos Speed Demon';
+      }
+      // 5. OBP Machine
+      //    ISO .140-.200, BB-K% ≥0%, K% <18%, OBP >.380, SB/PA <.04, BABIP <.350
+      if (ge(iso, 0.140) && lt(iso, 0.200) && ge(bbk, 0) && lt(k, 0.18)
+          && gt(obp, 0.380) && lt(sbpa, 0.04) && lt(babip, 0.350)) {
+        return 'OBP Machine';
+      }
+      return null;
+    }
+    data.forEach(function(p){
+      p._archetype = (p._grade != null) ? classify(p) : null;
     });
   }
 
@@ -20146,6 +20199,14 @@ function _milbBuildHtml() {
       var s = st.search.toLowerCase();
       if ((p.name || '').toLowerCase().indexOf(s) === -1
           && (p.team || '').toLowerCase().indexOf(s) === -1) return false;
+    }
+    // Archetype filter only applies in Grading mode (hitters).
+    if (st.tableMode === 'grade' && st.kind === 'hit' && st.archetypeFilter !== 'ALL') {
+      if (st.archetypeFilter === 'NONE') {
+        if (p._archetype) return false; // show only unclassified
+      } else {
+        if ((p._archetype || '') !== st.archetypeFilter) return false;
+      }
     }
     return true;
   });
@@ -20214,6 +20275,31 @@ function _milbBuildHtml() {
   // Right-aligned counter
   h += '<div style="margin-left:auto;font-size:11px;color:var(--muted)">'+rows.length.toLocaleString()+' players</div>';
   h += '</div>';
+
+  // ── Archetype filter pills (Grading mode, hitters only) ─────────────────
+  if (st.tableMode === 'grade' && st.kind === 'hit') {
+    var ARCHETYPES = ['All-Around Elite', 'Dinger Monster', 'OBP Machine', 'Chaos Speed Demon', 'Mirage Bat'];
+    var ARCH_COLORS = {
+      'All-Around Elite':  { fg:'#0F6E56', bg:'rgba(29,158,117,0.14)' },
+      'Dinger Monster':    { fg:'#854f0b', bg:'rgba(186,117,23,0.14)' },
+      'OBP Machine':       { fg:'#0C447C', bg:'rgba(24,95,165,0.14)' },
+      'Chaos Speed Demon': { fg:'#7d3f9c', bg:'rgba(125,63,156,0.14)' },
+      'Mirage Bat':        { fg:'#c0392b', bg:'rgba(192,57,43,0.14)' }
+    };
+    h += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">';
+    h += '<span style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Archetype</span>';
+    h += pill(st.archetypeFilter === 'ALL', 'All', "window._milbSetArchetype('ALL')");
+    ARCHETYPES.forEach(function(a){
+      var c = ARCH_COLORS[a];
+      var active = (st.archetypeFilter === a);
+      var style = active
+        ? 'padding:3px 9px;font-size:11px;border:0.5px solid '+c.fg+';border-radius:12px;background:'+c.bg+';color:'+c.fg+';cursor:pointer;font-family:inherit;font-weight:600'
+        : 'padding:3px 9px;font-size:11px;border:0.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--muted);cursor:pointer;font-family:inherit';
+      h += '<button onclick="window._milbSetArchetype(\''+a.replace(/\u0027/g, "\\u0027")+'\')" style="'+style+'">'+_loEsc(a)+'</button>';
+    });
+    h += pill(st.archetypeFilter === 'NONE', 'Unclassified', "window._milbSetArchetype('NONE')");
+    h += '</div>';
+  }
   h += '</div>';
 
   // Table
@@ -20238,11 +20324,11 @@ function _milbBuildHtml() {
   var isGrade = (st.tableMode === 'grade');
   var isAdv   = (st.tableMode === 'adv');
   // Grade currently only applies to hitters. For pitchers in grade mode we
-  // fall back to Standard columns and skip Grade/GradePool headers.
+  // fall back to Standard columns and skip grade-specific headers.
   var showGradeCols = (isGrade && st.kind === 'hit');
   if (showGradeCols) {
-    h += th('_grade', 'Grade', 'right');
-    h += th('_gradePool', 'Grade Pool', 'right');
+    h += th('_gradePct', 'Grade', 'right');
+    h += th('_archetype', 'Archetype', 'left');
   }
   h += th('name','Player','left');
   h += th('level','Lvl','left');
@@ -20346,22 +20432,31 @@ function _milbBuildHtml() {
 
   visible.forEach(function(p){
     h += '<tr style="border-top:0.5px solid var(--border)">';
-    // Grade + Grade Pool cells (only in grade mode, hitter kind).
+    // Grade percentile + Archetype cells (Grading mode, hitters only).
     if (showGradeCols) {
-      var g = p._grade;
+      var gp = p._gradePct;
       var gColor, gBg;
-      if (g == null) { gColor = 'var(--muted)'; gBg = 'transparent'; }
-      else if (g >=  1.5) { gColor = '#0F6E56'; gBg = 'rgba(29,158,117,0.16)'; }
-      else if (g >=  0.5) { gColor = '#1e6b3a'; gBg = 'rgba(29,158,117,0.08)'; }
-      else if (g >= -0.5) { gColor = 'var(--text)'; gBg = 'transparent'; }
-      else if (g >= -1.5) { gColor = '#a05a1f'; gBg = 'rgba(186,117,23,0.08)'; }
-      else                { gColor = '#c0392b'; gBg = 'rgba(192,57,43,0.10)'; }
-      var gTxt = (g == null) ? '\u2014' : (g >= 0 ? '+' : '') + g.toFixed(2);
-      h += '<td style="text-align:right;padding:6px 6px;font-weight:600;color:'+gColor+';background:'+gBg+'">'+gTxt+'</td>';
-      var gp = p._gradePool;
-      var gpSize = p._gradePoolSize;
-      var gpTxt = (gp == null) ? '\u2014' : (gp + ' / ' + (gpSize || '?'));
-      h += '<td style="text-align:right;padding:6px 6px;color:var(--muted);font-size:10px" title="Rank within ' + _loEsc(p.level || '') + ' by Grade">'+gpTxt+'</td>';
+      if (gp == null)        { gColor = 'var(--muted)'; gBg = 'transparent'; }
+      else if (gp >= 90)     { gColor = '#0F6E56'; gBg = 'rgba(29,158,117,0.16)'; }
+      else if (gp >= 70)     { gColor = '#1e6b3a'; gBg = 'rgba(29,158,117,0.08)'; }
+      else if (gp >= 40)     { gColor = 'var(--text)'; gBg = 'transparent'; }
+      else if (gp >= 20)     { gColor = '#a05a1f'; gBg = 'rgba(186,117,23,0.08)'; }
+      else                   { gColor = '#c0392b'; gBg = 'rgba(192,57,43,0.10)'; }
+      var gTxt = (gp == null) ? '\u2014' : gp.toString();
+      h += '<td style="text-align:right;padding:6px 6px;font-weight:600;color:'+gColor+';background:'+gBg+'" title="Percentile within ' + _loEsc(p.level || '') + ' (100 = best)">'+gTxt+'</td>';
+      var aType = p._archetype;
+      if (aType) {
+        var aColors = {
+          'All-Around Elite':  { fg:'#0F6E56', bg:'rgba(29,158,117,0.14)' },
+          'Dinger Monster':    { fg:'#854f0b', bg:'rgba(186,117,23,0.14)' },
+          'OBP Machine':       { fg:'#0C447C', bg:'rgba(24,95,165,0.14)' },
+          'Chaos Speed Demon': { fg:'#7d3f9c', bg:'rgba(125,63,156,0.14)' },
+          'Mirage Bat':        { fg:'#c0392b', bg:'rgba(192,57,43,0.14)' }
+        }[aType] || { fg:'var(--muted)', bg:'transparent' };
+        h += '<td style="padding:6px 6px"><span style="font-size:9px;padding:2px 7px;border-radius:10px;background:'+aColors.bg+';color:'+aColors.fg+';font-weight:600;letter-spacing:0.02em;white-space:nowrap">'+_loEsc(aType)+'</span></td>';
+      } else {
+        h += '<td style="padding:6px 6px;color:var(--muted);font-size:10px">\u2014</td>';
+      }
     }
     h += '<td style="padding:6px 8px;font-weight:500">'+_loEsc(p.name || '')+'</td>';
     var lvlBg = p.level === 'AAA' ? 'rgba(29,158,117,0.10);color:#0F6E56'
@@ -20492,12 +20587,14 @@ window._milbSetKind = function(k) {
 window._milbSetTableMode = function(mode) {
   if (!window._milbState) return;
   window._milbState.tableMode = (mode === 'adv') ? 'adv' : (mode === 'grade') ? 'grade' : 'std';
+  // Clear archetype filter when leaving grade mode so it doesn't apply
+  // unexpectedly next time.
+  if (window._milbState.tableMode !== 'grade') window._milbState.archetypeFilter = 'ALL';
   // If the current sort column doesn't exist in the new column set, reset to
-  // a sensible default. Counting-stat columns disappear in Advanced; rate
-  // columns are mostly Advanced-only. Grade mode adds _grade / _gradePool.
+  // a sensible default.
   var stdHitCols = ['G','AB','R','H','2B','3B','HR','RBI','BB','SO','SB','AVG','OBP','SLG','OPS'];
   var advHitCols = ['G','PA','BB_pct','K_pct','BB_K','AVG','OBP','SLG','OPS','ISO','BABIP'];
-  var gradeHitCols = ['_grade','_gradePool','ISO','BB_pct','K_pct','_bbk','_sbab','BABIP','OBP',
+  var gradeHitCols = ['_gradePct','_archetype','ISO','BB_pct','K_pct','_bbk','_sbab','BABIP','OBP',
                       'G','AB','R','H','2B','3B','HR','RBI','BB','SO','SB','AVG','SLG','OPS'];
   var stdPitCols = ['G','GS','IP','W','L','SV','HLD','K','BB','H','ER','ERA','WHIP','K9','BB9'];
   var advPitCols = ['G','IP','K9','BB9','HR9','KBB','K_pct','BB_pct','KBB_pct','AVG_a','WHIP','BABIP_a','LOB_pct','ERA'];
@@ -20508,12 +20605,11 @@ window._milbSetTableMode = function(mode) {
           : window._milbState.tableMode === 'adv'   ? advHitCols
                                                     : stdHitCols;
   } else {
-    // Pitchers in grade mode fall back to standard pitcher columns.
     valid = window._milbState.tableMode === 'adv' ? advPitCols : stdPitCols;
   }
   if (ALL_FIXED.indexOf(window._milbState.sortCol) === -1 && valid.indexOf(window._milbState.sortCol) === -1) {
     if (window._milbState.kind === 'hit') {
-      window._milbState.sortCol = window._milbState.tableMode === 'grade' ? '_grade'
+      window._milbState.sortCol = window._milbState.tableMode === 'grade' ? '_gradePct'
                                 : window._milbState.tableMode === 'adv'   ? 'OPS'
                                                                           : 'HR';
     } else {
@@ -20521,6 +20617,12 @@ window._milbSetTableMode = function(mode) {
     }
     window._milbState.sortDir = 'desc';
   }
+  window._milbState.limit = 100;
+  renderMiLBPage();
+};
+window._milbSetArchetype = function(a) {
+  if (!window._milbState) return;
+  window._milbState.archetypeFilter = a || 'ALL';
   window._milbState.limit = 100;
   renderMiLBPage();
 };
