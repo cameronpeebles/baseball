@@ -10836,12 +10836,15 @@ function predictH2H(a, b) {
   window._h2hRemainingSchedule = function(teamName, fullSchedule, currentPeriod) {
     if (!Array.isArray(fullSchedule)) return [];
     var current = currentPeriod || 1;
+    var target = (teamName || '').trim().toLowerCase();
     var out = [];
     fullSchedule.forEach(function(g){
       var wk = (g.week != null) ? g.week : g.period;
       if (wk == null || wk < current) return;
-      if (g.away === teamName)       out.push({ week: wk, opponent: g.home });
-      else if (g.home === teamName)  out.push({ week: wk, opponent: g.away });
+      var away = (g.away || '').trim().toLowerCase();
+      var home = (g.home || '').trim().toLowerCase();
+      if (away === target)       out.push({ week: wk, opponent: g.home });
+      else if (home === target)  out.push({ week: wk, opponent: g.away });
     });
     out.sort(function(a,b){ return a.week - b.week; });
     return out;
@@ -10875,7 +10878,34 @@ function predictH2H(a, b) {
     var schedule = _h2hRemainingSchedule(teamName, fullSchedule, currentPeriod);
     var weeksRemaining = schedule.length;
     if (weeksRemaining === 0) {
-      return { error: 'No remaining matchups found for "'+teamName+'".' };
+      // Build diagnostic info to help the user figure out what went wrong.
+      var teamsInSchedule = {};
+      (fullSchedule || []).forEach(function(g){
+        if (g.away) teamsInSchedule[g.away] = 1;
+        if (g.home) teamsInSchedule[g.home] = 1;
+      });
+      var scheduleTeamList = Object.keys(teamsInSchedule).sort();
+      var maxScheduleWeek = 0;
+      (fullSchedule || []).forEach(function(g){
+        var wk = (g.week != null) ? g.week : g.period;
+        if (wk > maxScheduleWeek) maxScheduleWeek = wk;
+      });
+      var target = (teamName || '').trim().toLowerCase();
+      var fuzzyMatches = scheduleTeamList.filter(function(t){
+        var lt = t.toLowerCase();
+        return lt.indexOf(target) !== -1 || target.indexOf(lt) !== -1;
+      });
+      return {
+        error: 'No remaining matchups found for "'+teamName+'".',
+        diagnostics: {
+          currentPeriod: currentPeriod,
+          maxScheduleWeek: maxScheduleWeek,
+          seasonComplete: currentPeriod > maxScheduleWeek,
+          teamsInSchedule: scheduleTeamList,
+          fuzzyMatches: fuzzyMatches,
+          sampleScheduleRow: (fullSchedule || [])[0] || null
+        }
+      };
     }
 
     var empirical = _h2hBuildEmpiricalMeans(stats, { recentBias: opts.recentBias || 'last4' });
