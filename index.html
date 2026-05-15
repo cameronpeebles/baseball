@@ -10660,6 +10660,323 @@ function predictH2H(a, b) {
   };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// H2H Weekly-Win Predictor
+//
+// Predicts each team's ROS week-by-week H2H category wins by blending
+// historical empirical means (from joe_stats.json) with FP ROS projections
+// (from each player's `fp` block in the roster).
+//
+// Public entry point: _h2hPredictTeam(teamName) → forward-looking outlook.
+// Helpers (also exported on window for console debugging):
+//   _h2hBuildEmpiricalMeans(stats, opts)
+//   _h2hBuildFPMeansPerTeam(weeksRemaining)
+//   _h2hBlendMeans(empirical, fp, opts)
+//   _h2hRemainingSchedule(teamName, fullSchedule, currentPeriod)
+//
+// Tunables (defaults match the user's request for 70/30 empirical/FP blend):
+//   blendEmpirical = 0.70
+//   blendFP        = 0.30
+//   recentBias     = 'last4' | 'all'  — when 'last4', recent weeks count 2× in empirical mean
+// ─────────────────────────────────────────────────────────────────────────────
+
+(function() {
+  // Filter to "real" weeks: rows where any cat is non-zero, since some periods
+  // may carry over the empty-rows-then-stop sentinel from the fetcher.
+  function hasAnyStats(row) {
+    return ALL_CATS.some(function(c){ return (row[c] || 0) !== 0; });
+  }
+
+  // Per-team empirical weekly mean for each cat across played weeks.
+  // recentBias='last4' weights the most recent 4 weeks 2× to favor current form.
+  window._h2hBuildEmpiricalMeans = function(stats, opts) {
+    opts = opts || {};
+    var recentBias = opts.recentBias || 'last4';
+    var byTeam = {};
+    (stats || []).forEach(function(r){
+      if (!hasAnyStats(r)) return;
+      if (!byTeam[r.team]) byTeam[r.team] = [];
+      byTeam[r.team].push(r);
+    });
+    var maxWeek = 0;
+    (stats || []).forEach(function(r){ if (r.week > maxWeek && hasAnyStats(r)) maxWeek = r.week; });
+    var out = {};
+    Object.keys(byTeam).forEach(function(team){
+      var rows = byTeam[team].slice().sort(function(a,b){ return a.week - b.week; });
+      // Build weights: recent weeks count 2×, older weeks 1×.
+      var weights = rows.map(function(r){
+        if (recentBias === 'last4' && r.week >= maxWeek - 3) return 2;
+        return 1;
+      });
+      var totalW = weights.reduce(function(s,w){ return s + w; }, 0);
+      if (totalW === 0) { out[team] = null; return; }
+      var mean = { team: team, weeksPlayed: rows.length };
+      ALL_CATS.forEach(function(cat){
+        var sum = 0;
+        for (var i = 0; i < rows.length; i++) sum += (rows[i][cat] || 0) * weights[i];
+        mean[cat] = sum / totalW;
+      });
+      // Also expose simple unweighted std-dev per cat for callers that want it.
+      var stds = {};
+      ALL_CATS.forEach(function(cat){
+        var ssq = 0; rows.forEach(function(r){ var d = (r[cat] || 0) - mean[cat]; ssq += d*d; });
+        stds[cat] = rows.length >= 2 ? Math.sqrt(ssq / (rows.length - 1)) : 0;
+      });
+      mean._std = stds;
+      out[team] = mean;
+    });
+    return out;
+  };
+
+  // Per-team FP ROS projection expressed as a weekly average.
+  // Sums each player's fp.{R,HR,...} across the roster, then divides by
+  // weeksRemaining to get weekly-equivalent production. Skips IL/Reserve.
+  window._h2hBuildFPMeansPerTeam = function(weeksRemaining) {
+    var out = {};
+    var teamInfo = (window.S && S.teamInfo) || {};
+    if (typeof _tlV2GetTeamRoster !== 'function' || !weeksRemaining || weeksRemaining < 1) {
+      return out;
+    }
+    Object.keys(teamInfo).forEach(function(tid){
+      var team = teamInfo[tid] || {};
+      var teamName = team.name || tid;
+      var roster;
+      try { roster = _tlV2GetTeamRoster(tid) || []; } catch(e) { roster = []; }
+      var totals = {
+        R:0,HR:0,RBI:0,SB:0, K:0,W:0,SVH3:0,
+        // For rate stats, accumulate hits/AB and ER/IP/BR/IP weighted denominators.
+        _hits:0, _ab:0,  _er9:0, _ip:0, _br:0
+      };
+      roster.forEach(function(p){
+        // Skip IL (status=3) — those players don't contribute weekly stats.
+        if (p.status === '3') return;
+        var fp = p.fp || {};
+        if (p.isHit) {
+          totals.R   += parseFloat(fp.R   || 0);
+          totals.HR  += parseFloat(fp.HR  || 0);
+          totals.RBI += parseFloat(fp.RBI || 0);
+          totals.SB  += parseFloat(fp.SB  || 0);
+          var ab = parseFloat(fp.AB || 0);
+          var avg = parseFloat(fp.AVG || 0);
+          if (ab > 0 && !isNaN(avg)) {
+            totals._ab   += ab;
+            totals._hits += ab * avg;
+          }
+        } else {
+          totals.K    += parseFloat(fp.K    || 0);
+          totals.W    += parseFloat(fp.W    || 0);
+          // Saves+holds: FP may store as SVH3 or SV; prefer SVH3.
+          var svh3 = (fp.SVH3 != null) ? parseFloat(fp.SVH3) : parseFloat(fp.SV || 0);
+          totals.SVH3 += isNaN(svh3) ? 0 : svh3;
+          var ip = parseFloat(fp.IP || 0);
+          var era = parseFloat(fp.ERA);
+          var whip = parseFloat(fp.WHIP);
+          if (ip > 0) {
+            totals._ip += ip;
+            if (!isNaN(era))  totals._er9 += era  * ip / 9;
+            if (!isNaN(whip)) totals._br  += whip * ip;
+          }
+        }
+      });
+      var perWeek = {
+        team: teamName, teamId: tid,
+        R:   totals.R   / weeksRemaining,
+        HR:  totals.HR  / weeksRemaining,
+        RBI: totals.RBI / weeksRemaining,
+        SB:  totals.SB  / weeksRemaining,
+        K:   totals.K   / weeksRemaining,
+        W:   totals.W   / weeksRemaining,
+        SVH3: totals.SVH3 / weeksRemaining,
+        // Rate stats: collapse to team-level rates (NOT divided by weeks —
+        // they're already per-stat ratios).
+        AVG:  totals._ab > 0 ? (totals._hits / totals._ab) : 0,
+        ERA:  totals._ip > 0 ? (totals._er9 * 9 / totals._ip) : 0,
+        WHIP: totals._ip > 0 ? (totals._br / totals._ip) : 0
+      };
+      out[teamName] = perWeek;
+    });
+    return out;
+  };
+
+  // Blend two per-cat mean maps: result = wE*empirical + wF*fp.
+  // For rate stats (AVG/ERA/WHIP), blend the rates directly. For counting
+  // stats, blend the per-week numbers.
+  window._h2hBlendMeans = function(empirical, fp, opts) {
+    opts = opts || {};
+    var wE = (opts.blendEmpirical != null) ? opts.blendEmpirical : 0.70;
+    var wF = (opts.blendFP        != null) ? opts.blendFP        : 0.30;
+    var out = {};
+    var teams = {};
+    Object.keys(empirical || {}).forEach(function(t){ teams[t] = 1; });
+    Object.keys(fp        || {}).forEach(function(t){ teams[t] = 1; });
+    Object.keys(teams).forEach(function(t){
+      var e = (empirical || {})[t];
+      var f = (fp        || {})[t];
+      // If one side is missing, fall back to whichever exists at full weight.
+      if (!e && !f) { out[t] = null; return; }
+      if (!e) { out[t] = Object.assign({}, f, { team: t, _source: 'fp_only' }); return; }
+      if (!f) { out[t] = Object.assign({}, e, { team: t, _source: 'empirical_only' }); return; }
+      var blended = { team: t, _source: 'blend' };
+      ALL_CATS.forEach(function(cat){
+        var ev = e[cat] || 0;
+        var fv = f[cat] || 0;
+        blended[cat] = wE * ev + wF * fv;
+      });
+      // Preserve std-dev if empirical has it.
+      if (e._std) blended._std = e._std;
+      out[t] = blended;
+    });
+    return out;
+  };
+
+  // List a team's remaining schedule given the full season schedule and
+  // the period currently in progress (inclusive). Returns [{week, opponent}].
+  // Uses the same period/week key inconsistency tolerance as the rest of the
+  // codebase: handles both 'period' and 'week' field names.
+  window._h2hRemainingSchedule = function(teamName, fullSchedule, currentPeriod) {
+    if (!Array.isArray(fullSchedule)) return [];
+    var current = currentPeriod || 1;
+    var out = [];
+    fullSchedule.forEach(function(g){
+      var wk = (g.week != null) ? g.week : g.period;
+      if (wk == null || wk < current) return;
+      if (g.away === teamName)       out.push({ week: wk, opponent: g.home });
+      else if (g.home === teamName)  out.push({ week: wk, opponent: g.away });
+    });
+    out.sort(function(a,b){ return a.week - b.week; });
+    return out;
+  };
+
+  // Main entry point: compute a team's ROS outlook.
+  // Returns an object with:
+  //   team, weeksRemaining,
+  //   blended:       { [teamName]: per-cat mean }   — used for predictions
+  //   schedule:      [{week, opponent}]
+  //   weekly:        [{week, opponent, perCat:{R:'win'|'loss'|'tie',…}, awayPct}]
+  //   total:         { W, L, T, totalCatBattles }
+  //   perCat:        { R:{wins, losses, ties, winPct}, … }  — season-long
+  //   currentPeriod, empirical, fp
+  //
+  // SYNC vs ASYNC: if called without joe_stats / full_schedule loaded, returns
+  // a Promise; once loaded, all calls are synchronous. To force eager load,
+  // call _h2hPredictTeam.preload() once at startup.
+  function _runPrediction(teamName, opts) {
+    opts = opts || {};
+    var stats         = window._joeStatsCache;
+    var fullSchedule  = window._fullSchedule;
+    // Determine currentPeriod = first period with no joe_stats rows.
+    var byPeriod = {};
+    stats.forEach(function(r){ if (!byPeriod[r.week]) byPeriod[r.week] = []; byPeriod[r.week].push(r); });
+    var currentPeriod = 1;
+    while (byPeriod[currentPeriod] && byPeriod[currentPeriod].some(hasAnyStats)) currentPeriod++;
+
+    // Weeks remaining: count distinct weeks in fullSchedule from currentPeriod onward
+    // for the requested team.
+    var schedule = _h2hRemainingSchedule(teamName, fullSchedule, currentPeriod);
+    var weeksRemaining = schedule.length;
+    if (weeksRemaining === 0) {
+      return { error: 'No remaining matchups found for "'+teamName+'".' };
+    }
+
+    var empirical = _h2hBuildEmpiricalMeans(stats, { recentBias: opts.recentBias || 'last4' });
+    var fp        = _h2hBuildFPMeansPerTeam(weeksRemaining);
+    var blended   = _h2hBlendMeans(empirical, fp, {
+      blendEmpirical: (opts.blendEmpirical != null) ? opts.blendEmpirical : 0.70,
+      blendFP:        (opts.blendFP        != null) ? opts.blendFP        : 0.30
+    });
+
+    var selfMean = blended[teamName];
+    if (!selfMean) {
+      return { error: 'No projected stats available for "'+teamName+'".' };
+    }
+
+    // Per-cat tally across the schedule, plus per-week breakdown.
+    var perCat = {};
+    ALL_CATS.forEach(function(c){ perCat[c] = { wins: 0, losses: 0, ties: 0 }; });
+    var weekly = [];
+    var totalAwayPts = 0;
+    schedule.forEach(function(g){
+      var oppMean = blended[g.opponent];
+      if (!oppMean) {
+        // No projection for opponent — treat as a coinflip in each cat.
+        var coin = { week: g.week, opponent: g.opponent, perCat: {}, awayPct: 0.5, opponentMissing: true };
+        ALL_CATS.forEach(function(c){ perCat[c].ties += 1; coin.perCat[c] = 'tie'; });
+        weekly.push(coin);
+        totalAwayPts += ALL_CATS.length * 0.5;
+        return;
+      }
+      var h2h = predictH2H(selfMean, oppMean);
+      totalAwayPts += h2h.awayPts;
+      var entry = { week: g.week, opponent: g.opponent, perCat: {}, awayPct: h2h.awayPct };
+      h2h.categories.forEach(function(catRow){
+        var r = catRow.result; // 'away'|'home'|'tie'
+        var c = catRow.cat;
+        if (r === 'away')      perCat[c].wins   += 1;
+        else if (r === 'home') perCat[c].losses += 1;
+        else                   perCat[c].ties   += 1;
+        entry.perCat[c] = (r === 'away') ? 'win' : (r === 'home') ? 'loss' : 'tie';
+      });
+      weekly.push(entry);
+    });
+    Object.keys(perCat).forEach(function(c){
+      var x = perCat[c];
+      var total = x.wins + x.losses + x.ties;
+      x.winPct = total > 0 ? ((x.wins + 0.5 * x.ties) / total) : 0;
+    });
+    var totalCatBattles = weeksRemaining * ALL_CATS.length;
+    var totalW = 0, totalL = 0, totalT = 0;
+    Object.keys(perCat).forEach(function(c){
+      totalW += perCat[c].wins;
+      totalL += perCat[c].losses;
+      totalT += perCat[c].ties;
+    });
+
+    return {
+      team: teamName,
+      currentPeriod: currentPeriod,
+      weeksRemaining: weeksRemaining,
+      schedule: schedule,
+      blended: blended,
+      empirical: empirical,
+      fp: fp,
+      weekly: weekly,
+      perCat: perCat,
+      total: { W: totalW, L: totalL, T: totalT, totalCatBattles: totalCatBattles, weeklyWinPct: totalAwayPts / totalCatBattles }
+    };
+  }
+
+  // Public wrapper. Sync if data already cached; Promise otherwise.
+  // Usage: _h2hPredictTeam('REL REL').then(r => console.log(r))
+  // Or after preload(): const r = _h2hPredictTeam('REL REL');
+  window._h2hPredictTeam = function(teamName, opts) {
+    if (window._joeStatsCache && window._fullSchedule) {
+      return _runPrediction(teamName, opts);
+    }
+    // Lazy-load both files, then run synchronously.
+    return Promise.all([
+      window._joeStatsCache ? Promise.resolve(window._joeStatsCache) : loadJSON('joe_stats.json'),
+      window._fullSchedule  ? Promise.resolve(window._fullSchedule)  : loadJSON('full_schedule.json')
+    ]).then(function(results){
+      window._joeStatsCache = results[0];
+      window._fullSchedule  = results[1];
+      return _runPrediction(teamName, opts);
+    });
+  };
+  window._h2hPredictTeam.preload = function() {
+    if (window._joeStatsCache && window._fullSchedule) return Promise.resolve();
+    return Promise.all([
+      window._joeStatsCache ? Promise.resolve(window._joeStatsCache) : loadJSON('joe_stats.json'),
+      window._fullSchedule  ? Promise.resolve(window._fullSchedule)  : loadJSON('full_schedule.json')
+    ]).then(function(results){
+      window._joeStatsCache = results[0];
+      window._fullSchedule  = results[1];
+    });
+  };
+
+  // Convenience: cache joe_stats for the predictor on the existing matchup page load.
+  window._h2hSetJoeStatsCache = function(stats) { window._joeStatsCache = stats; };
+})();
+
 function renderMatchPredictions() {
   if (matchupRendered) return;
   matchupRendered = true;
@@ -10671,6 +10988,7 @@ function renderMatchPredictions() {
     var stats = results[0];
     var fullSchedule = results[1]; // [{period, away, home}, ...]
     window._fullSchedule = fullSchedule;
+    window._joeStatsCache = stats;  // also cache for H2H predictor
     buildMatchupPage(stats, fullSchedule);
   }).catch(function(e) {
     document.getElementById('matchup-body').innerHTML =
