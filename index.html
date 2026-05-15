@@ -11505,11 +11505,242 @@ function _h2hRenderResult(teamNames, selectedTeam, r) {
     return;
   }
   var html = '';
+  html += _h2hLeagueOverviewHtml(selectedTeam);
   html += _h2hHeaderHtml(teamNames, selectedTeam);
   html += _h2hSummaryHtml(r);
   html += _h2hPerCatTableHtml(r);
   html += _h2hWeeklyGridHtml(r);
   el.innerHTML = html;
+  // Charts need to be initialized AFTER DOM is in place.
+  _h2hRenderLeagueCharts(selectedTeam);
+}
+
+// Build a league-wide overview for the range chart + scatter. For each team:
+//   - mid:  projected cat win % vs their ACTUAL remaining schedule
+//   - low:  cat win % vs the EASIEST possible remaining schedule (per-week
+//           swap each opponent for whichever team is league-weakest that week)
+//   - high: cat win % vs HARDEST possible (per-week swap to league-strongest)
+//   - scheduleStrength: avg opponent win % among the team's actual opponents
+// Cached on window._h2hLeagueOverviewCache so we only compute once per page open.
+function _h2hBuildLeagueOverview() {
+  if (window._h2hLeagueOverviewCache) return window._h2hLeagueOverviewCache;
+  var teamInfo = (window.S && S.teamInfo) || {};
+  var teamNames = Object.keys(teamInfo)
+    .map(function(id){ return (teamInfo[id] || {}).name || ''; })
+    .filter(Boolean);
+  if (teamNames.length === 0) return null;
+  // First pass: get each team's actual outlook + blended weekly means.
+  var teamResults = {};
+  teamNames.forEach(function(t){
+    try { teamResults[t] = _h2hPredictTeam(t); } catch(e) { teamResults[t] = null; }
+  });
+  // Compute each team's overall "strength" rating using their own projection
+  // against the LEAGUE AVERAGE opponent. This is a stable per-team baseline
+  // used to identify "easiest" and "hardest" opponents.
+  var strengths = {};
+  teamNames.forEach(function(t){
+    var r = teamResults[t];
+    if (!r || r.error) { strengths[t] = 0.5; return; }
+    strengths[t] = r.total.weeklyWinPct;
+  });
+  // Build sorted list of teams by strength for easy / hardest lookup.
+  var sortedByStr = teamNames.slice().sort(function(a,b){ return strengths[a] - strengths[b]; });
+  // Now for each team, simulate three scenarios: actual schedule, easiest,
+  // and hardest. The schedule list comes from each team's own `schedule`
+  // (returned by predictTeam) — we walk it and swap opponents as needed.
+  var overview = teamNames.map(function(t){
+    var r = teamResults[t];
+    if (!r || r.error || !r.weekly) {
+      return { team: t, low: 0, mid: 0, high: 0, scheduleStrength: 0.5, weeksRemaining: 0 };
+    }
+    var selfMean = r.blended[t];
+    if (!selfMean) {
+      return { team: t, low: 0, mid: 0, high: 0, scheduleStrength: 0.5, weeksRemaining: 0 };
+    }
+    var totalActual = 0, totalEasy = 0, totalHard = 0;
+    var totalBattles = 0;
+    var oppStrSum = 0, oppCount = 0;
+    // Helper: get this team's weekly cat-win pct vs a specific opponent.
+    function pctVs(oppName) {
+      var oppMean = r.blended[oppName];
+      if (!oppMean) return 0.5;
+      var h = predictH2H(selfMean, oppMean);
+      return h.awayPct;
+    }
+    // For "easiest" pick the league-weakest team that ISN'T self.
+    // For "hardest" pick the league-strongest team that ISN'T self.
+    var weakest = sortedByStr.filter(function(x){ return x !== t; })[0];
+    var strongest = sortedByStr.filter(function(x){ return x !== t; }).slice(-1)[0];
+    r.weekly.forEach(function(wk){
+      // Actual: use the weekly result we already have.
+      var actualPct = wk.awayPct;
+      totalActual += actualPct * ALL_CATS.length;
+      totalBattles += ALL_CATS.length;
+      // Easiest: opponent is weakest team.
+      totalEasy += pctVs(weakest) * ALL_CATS.length;
+      // Hardest: opponent is strongest team.
+      totalHard += pctVs(strongest) * ALL_CATS.length;
+      // Track opponent strength for schedule strength metric.
+      if (strengths[wk.opponent] != null) {
+        oppStrSum += strengths[wk.opponent];
+        oppCount++;
+      }
+    });
+    var schedStrength = oppCount > 0 ? (oppStrSum / oppCount) : 0.5;
+    return {
+      team: t,
+      low:  Math.round((totalActual === 0 ? 0 : totalEasy / totalBattles) * 100),
+      mid:  Math.round((totalActual === 0 ? 0 : totalActual / totalBattles) * 100),
+      high: Math.round((totalActual === 0 ? 0 : totalHard / totalBattles) * 100),
+      scheduleStrength: Math.round(schedStrength * 100),
+      weeksRemaining: r.weeksRemaining
+    };
+  });
+  // Sort by expected (mid) descending.
+  overview.sort(function(a,b){ return b.mid - a.mid; });
+  // Easiest = WORST opponent → highest win %, so "low" comes from easy, "high" from hard.
+  // Wait — easy schedule means MORE wins, hard means FEWER. So the easy scenario
+  // is the HIGH end and the hard scenario is the LOW end. Fix the labels.
+  overview.forEach(function(o){
+    var easy = o.low, hard = o.high;
+    o.low = Math.min(easy, hard);
+    o.high = Math.max(easy, hard);
+  });
+  window._h2hLeagueOverviewCache = overview;
+  return overview;
+}
+
+function _h2hLeagueOverviewHtml(selectedTeam) {
+  var ov = _h2hBuildLeagueOverview();
+  if (!ov || ov.length === 0) return '';
+  var h = '';
+  // ── Range bars card ────────────────────────────────────────────────────
+  h += '<div class="card" style="padding:0;margin-bottom:14px;overflow:hidden">';
+  h += '<div style="padding:10px 14px;border-bottom:0.5px solid var(--border)">';
+  h += '<div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Projected ROS cat win % &middot; range &amp; expected</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Range = win % vs easiest possible schedule to hardest. Dot = expected outcome against actual remaining schedule.</div>';
+  h += '</div>';
+  h += '<div style="padding:14px 16px">';
+  ov.forEach(function(t){
+    var isMe = (t.team === selectedTeam);
+    var tier, fillBg, dotBg;
+    if (t.mid >= 55)      { tier='contender'; fillBg='rgba(29,158,117,0.25)'; dotBg='#1D9E75'; }
+    else if (t.mid >= 45) { tier='mid';       fillBg='rgba(136,135,128,0.30)'; dotBg='#888780'; }
+    else                  { tier='trailing';  fillBg='rgba(192,57,43,0.20)';  dotBg='#c0392b'; }
+    if (isMe) { dotBg = '#0F6E56'; }
+    var nameStyle = isMe ? 'font-weight:600;color:#0F6E56' : 'font-weight:500;color:var(--text)';
+    var pctStyle  = isMe ? 'font-weight:600;color:#0F6E56' : 'font-weight:500;color:var(--text)';
+    h += '<div style="display:grid;grid-template-columns:160px 1fr 56px;gap:12px;align-items:center;padding:6px 0;font-size:11px">';
+    h += '<div style="text-align:right;'+nameStyle+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'
+       + (isMe ? '\u25b6 ' : '') + _loEsc(t.team) + '</div>';
+    // Range track
+    h += '<div style="position:relative;height:18px;background:rgba(150,150,150,0.10);border-radius:9px">';
+    h += '<div style="position:absolute;top:5px;height:8px;background:'+fillBg+';border-radius:4px;left:'+t.low+'%;width:'+Math.max(0, t.high - t.low)+'%"></div>';
+    h += '<div style="position:absolute;top:1px;width:16px;height:16px;border-radius:50%;background:'+dotBg+';border:2px solid var(--card);box-sizing:border-box;left:calc('+t.mid+'% - 8px)" title="Expected: '+t.mid+'%"></div>';
+    h += '</div>';
+    h += '<div style="text-align:right;'+pctStyle+';font-variant-numeric:tabular-nums">'+t.mid+'%</div>';
+    h += '</div>';
+  });
+  // Axis labels
+  h += '<div style="display:grid;grid-template-columns:160px 1fr 56px;gap:12px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">';
+  h += '<div></div>';
+  h += '<div style="display:flex;justify-content:space-between"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>';
+  h += '<div></div>';
+  h += '</div>';
+  h += '</div>';
+  // Legend
+  h += '<div style="padding:8px 16px 14px;display:flex;gap:14px;font-size:11px;color:var(--muted);flex-wrap:wrap;border-top:0.5px solid var(--border)">';
+  h += '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:32px;height:8px;background:rgba(29,158,117,0.25);border-radius:4px"></span>Contender (\u226555% expected)</span>';
+  h += '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:32px;height:8px;background:rgba(136,135,128,0.30);border-radius:4px"></span>Mid (45\u201355%)</span>';
+  h += '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:32px;height:8px;background:rgba(192,57,43,0.20);border-radius:4px"></span>Trailing (&lt;45%)</span>';
+  h += '</div>';
+  h += '</div>';
+
+  // ── Schedule-strength scatter card ─────────────────────────────────────
+  h += '<div class="card" style="padding:0;margin-bottom:14px;overflow:hidden">';
+  h += '<div style="padding:10px 14px;border-bottom:0.5px solid var(--border)">';
+  h += '<div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Remaining outlook vs schedule strength</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Y = projected ROS cat win %. X = average opponent strength on remaining schedule. Top-right = strong team with easy slate; bottom-right = strong team with hard slate.</div>';
+  h += '</div>';
+  h += '<div style="padding:14px 16px"><div style="position:relative;width:100%;height:340px"><canvas id="h2h-scatter-canvas" role="img" aria-label="Scatter plot of 10 teams plotted by projected win rate and remaining schedule difficulty"></canvas></div></div>';
+  h += '</div>';
+
+  return h;
+}
+
+// Render the Chart.js scatter after the DOM is in place. Range bars are pure
+// HTML so they render automatically — only the scatter needs JS.
+function _h2hRenderLeagueCharts(selectedTeam) {
+  var ov = _h2hBuildLeagueOverview();
+  if (!ov || ov.length === 0) return;
+  var canvas = document.getElementById('h2h-scatter-canvas');
+  if (!canvas) return;
+  if (typeof Chart === 'undefined') return;
+  // Destroy any previous instance (e.g. on re-render after team change).
+  if (window._h2hScatterChart) {
+    try { window._h2hScatterChart.destroy(); } catch(e) {}
+    window._h2hScatterChart = null;
+  }
+  var datasets = ov.map(function(t){
+    var isMe = (t.team === selectedTeam);
+    return {
+      label: t.team,
+      data: [{ x: t.scheduleStrength, y: t.mid }],
+      backgroundColor: isMe ? '#1D9E75' : '#888780',
+      pointRadius: isMe ? 9 : 7,
+      pointHoverRadius: 11,
+      borderColor: 'rgba(255,255,255,0.95)',
+      borderWidth: 1.5
+    };
+  });
+  // Plugin to draw team labels next to each dot.
+  var labelPlugin = {
+    id: 'h2hLabels',
+    afterDatasetsDraw: function(chart) {
+      var ctx = chart.ctx;
+      ctx.save();
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      chart.data.datasets.forEach(function(ds){
+        var meta = chart.getDatasetMeta(chart.data.datasets.indexOf(ds));
+        if (!meta || !meta.data || !meta.data[0]) return;
+        var pt = meta.data[0];
+        var isMe = ds.label === selectedTeam;
+        ctx.fillStyle = isMe ? '#0F6E56' : '#5F5E5A';
+        ctx.font = (isMe ? '600 ' : '500 ') + '10px sans-serif';
+        ctx.fillText(ds.label, pt.x + 12, pt.y);
+      });
+      ctx.restore();
+    }
+  };
+  window._h2hScatterChart = new Chart(canvas, {
+    type: 'scatter',
+    data: { datasets: datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: function(c){ return c.dataset.label + ': ' + c.parsed.y + '% wins, ' + c.parsed.x + ' sched'; } } }
+      },
+      scales: {
+        x: {
+          min: 25, max: 75,
+          title: { display: true, text: 'Avg opponent strength (higher = harder)', font: { size: 11 }, color: '#888780' },
+          ticks: { font: { size: 11 }, color: '#888780', callback: function(v){ return v + '%'; } },
+          grid: { color: 'rgba(128,128,128,0.08)' }
+        },
+        y: {
+          min: 25, max: 75,
+          title: { display: true, text: 'Projected ROS cat win %', font: { size: 11 }, color: '#888780' },
+          ticks: { font: { size: 11 }, color: '#888780', callback: function(v){ return v + '%'; } },
+          grid: { color: 'rgba(128,128,128,0.08)' }
+        }
+      }
+    },
+    plugins: [labelPlugin]
+  });
 }
 
 function _h2hHeaderHtml(teamNames, selectedTeam) {
