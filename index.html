@@ -837,6 +837,8 @@ td.neg { color: #c0392b; font-weight: 500; }
       <button class="trade-tab" onclick="showGuideTab('archetype',this)">Team Archetype</button>
       <button class="trade-tab" onclick="showGuideTab('ros',this)">ROS</button>
       <button class="trade-tab" onclick="showGuideTab('lineup',this)">Lineup</button>
+      <button class="trade-tab" onclick="showGuideTab('h2hpred',this)">H2H Pred</button>
+      <button class="trade-tab" onclick="showGuideTab('milb',this)">MiLB Data</button>
     </div>
 
     <!-- Site Flow (default tab) -->
@@ -3035,6 +3037,269 @@ td.neg { color: #c0392b; font-weight: 500; }
         </div>
       </div>
 
+    </div>
+
+    <!-- H2H Predictor -->
+    <div id="guide-tab-h2hpred" class="trade-tab-content">
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">H2H Predictor &mdash; what it does</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <p>For each team, projects how many category battles they'll win over the rest of the season against their actual remaining schedule. Because the league is H2H Each Category, the relevant currency isn't "total SGP" &mdash; it's "how often do you beat your weekly opponent in each cat." This page surfaces that directly.</p>
+          <p style="margin-top:10px"><strong>Where it lives:</strong> Team Data &rarr; H2H Predictor. Pick a team from the dropdown, get three cards: a summary, a per-cat outlook, and a week-by-week schedule.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">How the projection is built</span><span style="font-size:12px;color:var(--muted)">Empirical + FP blend</span></div>
+        <div class="card-body" style="padding:20px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 1 &mdash; Empirical weekly means:</strong> For every team, compute the weighted mean of their per-week cat totals from <code style="background:var(--surface);padding:1px 5px;border-radius:3px">standings_schedule.json</code>. The most recent 4 weeks count 2&times; (recency bias), older weeks 1&times;.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 2 &mdash; FP ROS per week:</strong> Sum each player's FantasyPros ROS projections across the team's roster (skipping IL), divide by weeks remaining. Rate stats (AVG/ERA/WHIP) collapse to team-level ratios. IL players are excluded.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 3 &mdash; Blend 70 / 30:</strong> Projected weekly mean = 0.70 &times; empirical + 0.30 &times; FP. Empirical leans heavier because it captures everything FP misses (call-ups, hot streaks, slumps, lineup changes). FP keeps the projection forward-looking when rosters change.</div>
+            <div style="padding:10px 14px;background:var(--accent-light);border-radius:8px;font-size:12px;line-height:1.6;border:1px solid var(--accent)"><strong>Step 4 &mdash; Simulate the schedule:</strong> For each remaining week, look up the opponent from <code style="background:var(--surface);padding:1px 5px;border-radius:3px">full_schedule.json</code>, run <code style="background:var(--surface);padding:1px 5px;border-radius:3px">predictH2H(yourMean, oppMean)</code>. Tally per-cat W/L/T across all weeks.</div>
+          </div>
+
+          <p style="font-size:12px;color:var(--muted);margin-top:14px;line-height:1.6"><strong style="color:var(--text)">Why means and not variance:</strong> The simpler "mean vs mean" produces a deterministic prediction per cat per week. A more sophisticated approach would treat each cat as a normal distribution with empirical variance and compute true win probability via a convolution. v1 uses means for clarity; variance-aware mode is on the backlog.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Reading the three cards</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+
+          <div style="font-weight:700;font-size:13px;margin-bottom:8px">Summary card</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+            <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:6px"><strong>Weeks remaining:</strong> matchups left in the regular season for the selected team.</div>
+            <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:6px"><strong>Avg weekly W-L-T:</strong> projected typical week record. <code style="background:var(--surface);padding:1px 5px;border-radius:3px">6.0-4.0-0.0</code> means winning 6 of 10 cats most weeks.</div>
+            <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:6px"><strong>ROS cat record:</strong> total W-L-T across every remaining cat battle (weeks &times; 10 cats).</div>
+            <div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:6px"><strong>Cat win %:</strong> the headline rate. Green &ge; 60%, light green &ge; 50%, amber &ge; 40%, red &lt; 40%.</div>
+          </div>
+
+          <div style="font-weight:700;font-size:13px;margin-bottom:8px">Per-category outlook</div>
+          <p style="font-size:12px;margin-bottom:10px">One row per cat. Shows your projected weekly mean vs the league avg, then projected wins/losses/ties across remaining weeks, and a tier badge:</p>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+            <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(29,158,117,0.18);color:#0F6E56;font-weight:600">Dominant &ge; 70%</span>
+            <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(29,158,117,0.10);color:#1e6b3a;font-weight:600">Favored 55-70%</span>
+            <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(150,150,150,0.14);color:#5a594f;font-weight:600">Coinflip 45-55%</span>
+            <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(186,117,23,0.10);color:#a05a1f;font-weight:600">Underdog 30-45%</span>
+            <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(192,57,43,0.12);color:#c0392b;font-weight:600">Dominated &lt; 30%</span>
+          </div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:14px">The most actionable cells are <strong>Coinflip</strong> &mdash; those are the cats where one well-targeted trade can flip you from losing the week to winning it.</p>
+
+          <div style="font-weight:700;font-size:13px;margin-bottom:8px">Weekly schedule grid</div>
+          <p style="font-size:12px">Row per remaining week. Cells show the predicted result for each cat (<strong style="color:#0F6E56">W</strong> / <strong style="color:#c0392b">L</strong> / T) for that specific matchup, plus the predicted total record. Rows tint green when projected to win the week, red when projected to lose.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Caveats &amp; limits</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <ul style="margin:0;padding-left:20px;line-height:1.8">
+            <li><strong>No variance modeling.</strong> A coinflip cat could swing either way in a real week. Roughly: the closer to 50%, the noisier the prediction.</li>
+            <li><strong>Static rosters.</strong> Empirical means use the team that <em>was on the field</em> the past few weeks, not the team that <em>will be</em> next week. The 30% FP weight partially corrects this for known roster moves, but waiver wire churn isn't modeled.</li>
+            <li><strong>Schedule-strength dependent.</strong> A team's outlook depends on who they play. Two teams with identical projections can have very different ROS records if one draws stronger opponents.</li>
+            <li><strong>Streaming punters not modeled.</strong> If a team is intentionally punting SVH3 or ERA, their projection still treats those cats as honest efforts.</li>
+            <li><strong>SVH3 vs SV.</strong> Fantrax stores saves+holds under "SVH3" on the schedule view. The parser handles the canonical name plus 'SV+H' and 'SV' as fallbacks.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Console API</span><span style="font-size:12px;color:var(--muted)">For programmatic queries</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <p style="margin-bottom:14px">Everything the page renders is exposed on <code style="background:var(--surface);padding:1px 5px;border-radius:3px">window._h2hPredictTeam</code>. Useful for one-off queries or building your own views.</p>
+          <div style="font-family:monospace;font-size:11px;background:var(--surface);padding:12px 14px;border-radius:6px;line-height:1.8">
+            // Get full outlook for one team<br>
+            const r = await _h2hPredictTeam('REL REL');<br>
+            <br>
+            // Tunable: blend weights + recency bias<br>
+            _h2hPredictTeam('REL REL', &#123;<br>
+            &nbsp;&nbsp;blendEmpirical: 0.5, blendFP: 0.5,<br>
+            &nbsp;&nbsp;recentBias: 'all'  // or 'last4' (default)<br>
+            &#125;);<br>
+            <br>
+            // Compare projected weekly means across teams<br>
+            console.log(r.blended);<br>
+            <br>
+            // Walk through remaining schedule<br>
+            r.weekly.forEach(w =&gt; console.log(w.week, w.opponent, w.perCat));
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MiLB Data -->
+    <div id="guide-tab-milb" class="trade-tab-content">
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Minor League Stats &mdash; what it does</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <p>Full-season minor league stats for every affiliated player (AAA / AA / A+ / A), refreshed daily. Three view modes:</p>
+          <ul style="margin:10px 0;padding-left:20px;line-height:1.8">
+            <li><strong>Standard:</strong> classic counting stats (G, AB, R, H, 2B, 3B, HR, RBI, BB, SO, SB, AVG, OBP, SLG, OPS for hitters; G, GS, IP, W, L, SV, HLD, K, BB, H, ER, ERA, WHIP, K/9, BB/9 for pitchers).</li>
+            <li><strong>Advanced:</strong> rate stats and ratios (BB%, K%, BB/K, ISO, BABIP for hitters; K/9, BB/9, HR/9, K%, BB%, K-BB%, AVG-against, BABIP-against, LOB% for pitchers).</li>
+            <li><strong>Grading:</strong> default mode. Shows a composite grade percentile + archetype classification. Explained below.</li>
+          </ul>
+          <p style="margin-top:10px"><strong>Where it lives:</strong> Player Data &rarr; Minor League Stats.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Hitter Grade formula</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <p>A composite of five inputs, weighted toward sustainability:</p>
+          <div style="font-family:monospace;font-size:11px;background:var(--surface);padding:12px 14px;border-radius:6px;line-height:1.8;margin:12px 0">
+            Grade = 0.38 &middot; z(ISO)<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ 0.27 &middot; z(BB% &minus; K%)<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ 0.17 &middot; z(SB / AB)<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&minus; 0.10 &middot; z(BABIP)<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ 0.08 &middot; z(OBP)
+          </div>
+          <div style="font-weight:700;font-size:13px;margin:14px 0 6px">Why these weights</div>
+          <ul style="margin:0;padding-left:20px;line-height:1.8">
+            <li><strong>ISO (38%):</strong> Power is the most predictive carry-skill across levels.</li>
+            <li><strong>BB-K% (27%):</strong> Plate discipline scales better than contact rate alone.</li>
+            <li><strong>SB/AB (17%):</strong> Speed = real fantasy value, and SB rate stabilizes faster than total SB.</li>
+            <li><strong>BABIP (&minus;10%):</strong> Penalty, not a reward. High BABIP indicates unsustainable batted-ball luck.</li>
+            <li><strong>OBP (8%):</strong> Small positive; mostly already captured by BB-K%.</li>
+          </ul>
+          <p style="margin-top:10px;font-size:12px;color:var(--muted)"><strong style="color:var(--text)">Minimum sample:</strong> PA &ge; 20. Below that, no grade computed.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Pitcher Grade formula</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <p>Same structure, different inputs. Heavy on K and command:</p>
+          <div style="font-family:monospace;font-size:11px;background:var(--surface);padding:12px 14px;border-radius:6px;line-height:1.8;margin:12px 0">
+            Grade = 0.42 &middot; z(K&minus;BB%)<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ 0.23 &middot; z(K/9)<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&minus; 0.15 &middot; z(BB/9)<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&minus; 0.10 &middot; z(HR/9)<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&minus; 0.05 &middot; z(WHIP)<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&minus; 0.05 &middot; z(LOB%_excess)
+          </div>
+          <div style="font-weight:700;font-size:13px;margin:14px 0 6px">Why these weights</div>
+          <ul style="margin:0;padding-left:20px;line-height:1.8">
+            <li><strong>K-BB% (42%):</strong> The single best predictor of MLB success for minor leaguers. K/9 alone overweights effort-K guys with bad command.</li>
+            <li><strong>K/9 (23%):</strong> Volume of swings-and-misses. Pairs with K-BB% to reward both rate and raw stuff.</li>
+            <li><strong>BB/9 (&minus;15%):</strong> Penalty. Command issues don't get better in the majors.</li>
+            <li><strong>HR/9 (&minus;10%):</strong> Penalty. Persistent contact-quality issue.</li>
+            <li><strong>WHIP (&minus;5%):</strong> Light penalty; mostly redundant with BB/9 and HR/9.</li>
+            <li><strong>LOB%_excess (&minus;5%):</strong> <em>Non-linear</em> penalty = max(0, LOB% &minus; 0.80). Sustainable strand rates (70-80%) score 0; only strand rates above 80% get docked for unsustainable luck. This avoids penalizing genuine aces who happen to strand a normal share of runners.</li>
+          </ul>
+          <p style="margin-top:10px;font-size:12px;color:var(--muted)"><strong style="color:var(--text)">Minimum sample:</strong> IP &ge; 10.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">From raw grade to percentile</span><span style="font-size:12px;color:var(--muted)">Per-level z-score pool</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <p>The raw weighted z-sum (typically &minus;3 to +3) gets converted to a 0-100 percentile <strong>within the player's level</strong>. So a AAA hitter's grade is computed against the AAA pool, AA against AA, etc. A .200 ISO grades very differently in AAA vs. A-ball &mdash; that's correct.</p>
+          <p style="margin-top:10px">The shown Grade is the percentile (100 = best in their level, 0 = worst). Same convention as Player Ratings elsewhere on the site.</p>
+
+          <div style="font-weight:700;font-size:13px;margin:14px 0 6px">Color tiers (Grade column)</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(29,158,117,0.16);color:#0F6E56;font-weight:600">&ge; 90 elite</span>
+            <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(29,158,117,0.08);color:#1e6b3a;font-weight:600">70-89 strong</span>
+            <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:transparent;border:0.5px solid var(--border);color:var(--text);font-weight:600">40-69 average</span>
+            <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(186,117,23,0.08);color:#a05a1f;font-weight:600">20-39 weak</span>
+            <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(192,57,43,0.10);color:#c0392b;font-weight:600">&lt; 20 poor</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Hitter Archetypes</span><span style="font-size:12px;color:var(--muted)">Hard-threshold cascade</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <p>Archetype is a label, not a score. Players are checked against each bucket in <strong>precedence order</strong> &mdash; the first match wins. Warning buckets (Mirage Bat) are checked first so unsustainable performers don't get praised as elites.</p>
+
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;border-left:3px solid #c0392b">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(192,57,43,0.14);color:#c0392b;font-weight:600">Mirage Bat</span><span style="font-size:11px;color:var(--muted)">Checked first &mdash; warning bucket</span></div>
+              <div style="font-size:12px;line-height:1.6;font-family:monospace;color:var(--muted)">ISO &lt; .170 &nbsp;&middot;&nbsp; BB-K% &lt; &minus;15% &nbsp;&middot;&nbsp; K% &gt; 26% &nbsp;&middot;&nbsp; BABIP &gt; .380</div>
+              <div style="font-size:12px;margin-top:4px">Inflated stats riding on batted-ball luck. ERA-equivalent for hitters &mdash; will regress.</div>
+            </div>
+
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;border-left:3px solid #0F6E56">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(29,158,117,0.14);color:#0F6E56;font-weight:600">All-Around Elite</span></div>
+              <div style="font-size:12px;line-height:1.6;font-family:monospace;color:var(--muted)">ISO &gt; .220 &nbsp;&middot;&nbsp; BB-K% &gt; &minus;5% &nbsp;&middot;&nbsp; K% &lt; 24% &nbsp;&middot;&nbsp; OBP &gt; .360 &nbsp;&middot;&nbsp; SB/PA &gt; .03 &nbsp;&middot;&nbsp; BABIP &lt; .360</div>
+              <div style="font-size:12px;margin-top:4px">5-category contributor with sustainable skills. Top-tier prospect profile.</div>
+            </div>
+
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;border-left:3px solid #854f0b">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(186,117,23,0.14);color:#854f0b;font-weight:600">Dinger Monster</span></div>
+              <div style="font-size:12px;line-height:1.6;font-family:monospace;color:var(--muted)">ISO &gt; .275 &nbsp;&middot;&nbsp; BB-K% &gt; &minus;15% &nbsp;&middot;&nbsp; K% &lt; 32% &nbsp;&middot;&nbsp; OBP &gt; .340 &nbsp;&middot;&nbsp; BABIP &lt; .380</div>
+              <div style="font-size:12px;margin-top:4px">Massive HR upside. Higher K tolerance than All-Around Elite.</div>
+            </div>
+
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;border-left:3px solid #7d3f9c">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(125,63,156,0.14);color:#7d3f9c;font-weight:600">Chaos Speed Demon</span></div>
+              <div style="font-size:12px;line-height:1.6;font-family:monospace;color:var(--muted)">ISO &lt; .180 &nbsp;&middot;&nbsp; BB-K% &gt; &minus;12% &nbsp;&middot;&nbsp; K% &lt; 30% &nbsp;&middot;&nbsp; OBP &gt; .340 &nbsp;&middot;&nbsp; SB/PA &gt; .08 &nbsp;&middot;&nbsp; BABIP &lt; .370</div>
+              <div style="font-size:12px;margin-top:4px">SB-driven fantasy upside. Profile lacks power but the speed plays.</div>
+            </div>
+
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;border-left:3px solid #0C447C">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(24,95,165,0.14);color:#0C447C;font-weight:600">OBP Machine</span></div>
+              <div style="font-size:12px;line-height:1.6;font-family:monospace;color:var(--muted)">.140 &le; ISO &lt; .200 &nbsp;&middot;&nbsp; BB-K% &ge; 0% &nbsp;&middot;&nbsp; K% &lt; 18% &nbsp;&middot;&nbsp; OBP &gt; .380 &nbsp;&middot;&nbsp; SB/PA &lt; .04 &nbsp;&middot;&nbsp; BABIP &lt; .350</div>
+              <div style="font-size:12px;margin-top:4px">Elite discipline and contact, modest power.</div>
+            </div>
+          </div>
+          <p style="margin-top:14px;font-size:12px;color:var(--muted)">Most players land in <strong style="color:var(--text)">Unclassified</strong> (&mdash;) because the criteria are intentionally strict. The classified ones are the standouts.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Pitcher Archetypes</span><span style="font-size:12px;color:var(--muted)">Same cascade structure</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <p>Same precedence-ordered logic. Warning bucket (Smoke &amp; Mirrors) first.</p>
+
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;border-left:3px solid #c0392b">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(192,57,43,0.14);color:#c0392b;font-weight:600">Smoke &amp; Mirrors</span><span style="font-size:11px;color:var(--muted)">Checked first</span></div>
+              <div style="font-size:12px;line-height:1.6;font-family:monospace;color:var(--muted)">K-BB% &lt; 12% &nbsp;&middot;&nbsp; K/9 &lt; 9 &nbsp;&middot;&nbsp; BB/9 &gt; 3.5 &nbsp;&middot;&nbsp; HR/9 &gt; 1.1 &nbsp;&middot;&nbsp; WHIP &gt; 1.25 &nbsp;&middot;&nbsp; LOB% &gt; 82%</div>
+              <div style="font-size:12px;margin-top:4px">ERA outperforming underlying skill. Will regress hard once strand rate normalizes.</div>
+            </div>
+
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;border-left:3px solid #0F6E56">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(29,158,117,0.14);color:#0F6E56;font-weight:600">Ace Alpha</span></div>
+              <div style="font-size:12px;line-height:1.6;font-family:monospace;color:var(--muted)">K-BB% &gt; 22% &nbsp;&middot;&nbsp; K/9 &gt; 11.5 &nbsp;&middot;&nbsp; BB/9 &lt; 3.0 &nbsp;&middot;&nbsp; HR/9 &lt; 0.8 &nbsp;&middot;&nbsp; WHIP &lt; 1.10 &nbsp;&middot;&nbsp; LOB% 72-82%</div>
+              <div style="font-size:12px;margin-top:4px">SP1 profile with dominance + control. Strand rate in the sustainable zone.</div>
+            </div>
+
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;border-left:3px solid #854f0b">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(186,117,23,0.14);color:#854f0b;font-weight:600">Whiff Monster</span></div>
+              <div style="font-size:12px;line-height:1.6;font-family:monospace;color:var(--muted)">K-BB% &gt; 24% &nbsp;&middot;&nbsp; K/9 &gt; 13.0 &nbsp;&middot;&nbsp; BB/9 &lt; 4.5 &nbsp;&middot;&nbsp; HR/9 &lt; 1.2 &nbsp;&middot;&nbsp; WHIP &lt; 1.30 &nbsp;&middot;&nbsp; LOB% any</div>
+              <div style="font-size:12px;margin-top:4px">Massive K upside with looser command tolerance. LOB% unconstrained.</div>
+            </div>
+
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;border-left:3px solid #0C447C">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(24,95,165,0.14);color:#0C447C;font-weight:600">Command Surgeon</span></div>
+              <div style="font-size:12px;line-height:1.6;font-family:monospace;color:var(--muted)">K-BB% &gt; 18% &nbsp;&middot;&nbsp; K/9 9-11 &nbsp;&middot;&nbsp; BB/9 &lt; 2.0 &nbsp;&middot;&nbsp; HR/9 &lt; 1.0 &nbsp;&middot;&nbsp; WHIP &lt; 1.08 &nbsp;&middot;&nbsp; LOB% 70-80%</div>
+              <div style="font-size:12px;margin-top:4px">Elite efficiency and ratio stabilization. Lower-K but reliable.</div>
+            </div>
+
+            <div style="padding:12px 14px;background:var(--bg);border-radius:8px;border-left:3px solid #7d3f9c">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(125,63,156,0.14);color:#7d3f9c;font-weight:600">Ratio Stabilizer</span></div>
+              <div style="font-size:12px;line-height:1.6;font-family:monospace;color:var(--muted)">K-BB% &gt; 14% &nbsp;&middot;&nbsp; K/9 8-10.5 &nbsp;&middot;&nbsp; BB/9 &lt; 3.2 &nbsp;&middot;&nbsp; HR/9 &lt; 0.9 &nbsp;&middot;&nbsp; WHIP &lt; 1.18 &nbsp;&middot;&nbsp; LOB% 72-80%</div>
+              <div style="font-size:12px;margin-top:4px">SP3/SP4 fantasy profile. Lower K-rate but doesn't bleed ratios.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">How to use the filter pills</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <p>In Grading mode, a second row of pills appears below the main filters: <strong>All</strong>, one pill per archetype, and <strong>Unclassified</strong>. Click any archetype to filter the table to just those players. Useful patterns:</p>
+          <ul style="margin:10px 0;padding-left:20px;line-height:1.8">
+            <li><strong>Dinger Monster + level=AA</strong> &rarr; emerging power bats one level from the show.</li>
+            <li><strong>Smoke &amp; Mirrors</strong> &rarr; rostered pitchers whose ERA flatters them &mdash; trade-away candidates.</li>
+            <li><strong>Chaos Speed Demon + age &lt; 22</strong> &rarr; young speed plays for SB-needy teams.</li>
+            <li><strong>Ace Alpha + level=AAA</strong> &rarr; the prospect-watch shortlist for adds.</li>
+          </ul>
+          <p style="margin-top:10px;font-size:12px;color:var(--muted)">Switching between Hitters and Pitchers resets the archetype filter so you don't get confused-by-context "no results" screens.</p>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -11256,9 +11521,25 @@ function _h2hHeaderHtml(teamNames, selectedTeam) {
     h += '<option value="'+_loEsc(t)+'"'+sel+'>'+_loEsc(t)+'</option>';
   });
   h += '</select>';
+  // "How this works" pill — links to the Site Guide H2H Pred tab.
+  h += '<button onclick="window._h2hOpenGuide()" style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:4px 10px;font-size:11px;border:0.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--muted);cursor:pointer;font-family:inherit">';
+  h += '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+  h += 'How this works</button>';
   h += '</div>';
   return h;
 }
+
+// Jump to the Site Guide H2H Pred tab.
+window._h2hOpenGuide = function() {
+  if (typeof showPage === 'function') {
+    var btn = document.querySelector('button[onclick*="showPage(\'guide\'"]');
+    showPage('guide', btn);
+    setTimeout(function(){
+      var tabBtn = document.querySelector('#guide-tabs button[onclick*="showGuideTab(\'h2hpred\'"]');
+      if (tabBtn && typeof showGuideTab === 'function') showGuideTab('h2hpred', tabBtn);
+    }, 50);
+  }
+};
 
 function _h2hSummaryHtml(r) {
   var totalBattles = r.total.totalCatBattles;
