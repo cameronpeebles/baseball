@@ -3055,7 +3055,7 @@ td.neg { color: #c0392b; font-weight: 500; }
           <div style="display:flex;flex-direction:column;gap:8px">
             <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 1 &mdash; Empirical weekly means:</strong> For every team, compute the weighted mean of their per-week cat totals from <code style="background:var(--surface);padding:1px 5px;border-radius:3px">standings_schedule.json</code>. The most recent 4 weeks count 2&times; (recency bias), older weeks 1&times;.</div>
             <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 2 &mdash; FP ROS per week:</strong> Sum each player's FantasyPros ROS projections across the team's roster (skipping IL), divide by weeks remaining. Rate stats (AVG/ERA/WHIP) collapse to team-level ratios. IL players are excluded.</div>
-            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 3 &mdash; Blend 70 / 30:</strong> Projected weekly mean = 0.70 &times; empirical + 0.30 &times; FP. Empirical leans heavier because it captures everything FP misses (call-ups, hot streaks, slumps, lineup changes). FP keeps the projection forward-looking when rosters change.</div>
+            <div style="padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.6"><strong>Step 3 &mdash; Blend 50 / 50:</strong> Projected weekly mean = 0.50 &times; empirical + 0.50 &times; FP. Equal weighting balances empirical signal (captures call-ups, hot streaks, lineup changes that FP misses) with forward-looking projections (which adjust for who's expected to play ROS).</div>
             <div style="padding:10px 14px;background:var(--accent-light);border-radius:8px;font-size:12px;line-height:1.6;border:1px solid var(--accent)"><strong>Step 4 &mdash; Simulate the schedule:</strong> For each remaining week, look up the opponent from <code style="background:var(--surface);padding:1px 5px;border-radius:3px">full_schedule.json</code>, run <code style="background:var(--surface);padding:1px 5px;border-radius:3px">predictH2H(yourMean, oppMean)</code>. Tally per-cat W/L/T across all weeks.</div>
           </div>
 
@@ -3114,7 +3114,7 @@ td.neg { color: #c0392b; font-weight: 500; }
             <br>
             // Tunable: blend weights + recency bias<br>
             _h2hPredictTeam('REL REL', &#123;<br>
-            &nbsp;&nbsp;blendEmpirical: 0.5, blendFP: 0.5,<br>
+            &nbsp;&nbsp;blendEmpirical: 0.7, blendFP: 0.3,<br>
             &nbsp;&nbsp;recentBias: 'all'  // or 'last4' (default)<br>
             &#125;);<br>
             <br>
@@ -10947,9 +10947,9 @@ function predictH2H(a, b) {
 //   _h2hBlendMeans(empirical, fp, opts)
 //   _h2hRemainingSchedule(teamName, fullSchedule, currentPeriod)
 //
-// Tunables (defaults match the user's request for 70/30 empirical/FP blend):
-//   blendEmpirical = 0.70
-//   blendFP        = 0.30
+// Tunables (defaults: 50/50 empirical/FP blend):
+//   blendEmpirical = 0.50
+//   blendFP        = 0.50
 //   recentBias     = 'last4' | 'all'  — when 'last4', recent weeks count 2× in empirical mean
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -11100,8 +11100,8 @@ function predictH2H(a, b) {
   // stats, blend the per-week numbers.
   window._h2hBlendMeans = function(empirical, fp, opts) {
     opts = opts || {};
-    var wE = (opts.blendEmpirical != null) ? opts.blendEmpirical : 0.70;
-    var wF = (opts.blendFP        != null) ? opts.blendFP        : 0.30;
+    var wE = (opts.blendEmpirical != null) ? opts.blendEmpirical : 0.50;
+    var wF = (opts.blendFP        != null) ? opts.blendFP        : 0.50;
     var out = {};
     var teams = {};
     Object.keys(empirical || {}).forEach(function(t){ teams[t] = 1; });
@@ -11208,8 +11208,8 @@ function predictH2H(a, b) {
     var empirical = _h2hBuildEmpiricalMeans(stats, { recentBias: opts.recentBias || 'last4' });
     var fp        = _h2hBuildFPMeansPerTeam(weeksRemaining);
     var blended   = _h2hBlendMeans(empirical, fp, {
-      blendEmpirical: (opts.blendEmpirical != null) ? opts.blendEmpirical : 0.70,
-      blendFP:        (opts.blendFP        != null) ? opts.blendFP        : 0.30
+      blendEmpirical: (opts.blendEmpirical != null) ? opts.blendEmpirical : 0.50,
+      blendFP:        (opts.blendFP        != null) ? opts.blendFP        : 0.50
     });
 
     var selfMean = blended[teamName];
