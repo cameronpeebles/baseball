@@ -7775,15 +7775,6 @@ function _rosAdBuildPanelHtml() {
   // RIGHT: Add (All Players)
   h += '<div>';
   h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px">Add Player</div>';
-  // Position pills — all 10 always shown. Selecting a hitter pos auto-filters
-  // to hitters; selecting a pitcher pos auto-filters to pitchers (via search).
-  var addPills = ['ALL','C','1B','2B','3B','SS','OF','DH','SP','RP'];
-  h += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">';
-  addPills.forEach(function(pos){
-    var active = (_rosAdPosPill===pos) ? 'active' : '';
-    h += '<button class="pill ros-ad-pos-pill '+active+'" onclick="rosAdSetPos(\''+pos+'\',this)" style="padding:2px 7px;font-size:10px">'+pos+'</button>';
-  });
-  h += '</div>';
   h += '<div style="position:relative;z-index:100">';
   h += '<div style="display:flex;gap:4px">';
   h += '<input id="ros-add-search" type="text" placeholder="Search all players..." oninput="rosAdSearch(this.value)" onfocus="rosAdShow(&quot;add&quot;)" onblur="rosAdHide(&quot;add&quot;)" style="' + inputStyle + ';flex:1">';
