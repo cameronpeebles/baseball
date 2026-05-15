@@ -19995,12 +19995,12 @@ function renderTargetsPage() {
 window._milbState = window._milbState || {
   hitters: null, pitchers: null, loaded: false, loading: false, error: null,
   kind: 'hit',           // 'hit' | 'pit'
-  tableMode: 'std',      // 'std' | 'adv' | 'grade'
+  tableMode: 'grade',    // 'std' | 'adv' | 'grade' — default to Grading
   level: 'ALL',          // 'ALL' | 'AAA' | 'AA' | 'A+' | 'A'
   org: 'ALL',            // 'ALL' or MLB abbrev (e.g. 'NYY')
   archetypeFilter: 'ALL',// 'ALL' or archetype name (Grading mode only)
   search: '',
-  sortCol: 'HR', sortDir: 'desc',
+  sortCol: '_gradePct', sortDir: 'desc',
   limit: 100             // visible rows; "Show more" extends
 };
 
@@ -20396,7 +20396,7 @@ function _milbBuildHtml() {
   h += '</select>';
   h += '<div style="width:1px;height:18px;background:var(--border)"></div>';
   // Search
-  h += '<input type="text" oninput="window._milbSetSearch(this.value)" placeholder="Search player or team" value="'+_loEsc(st.search)+'" style="padding:3px 8px;font-size:11px;border:0.5px solid var(--border);border-radius:5px;background:var(--card);color:var(--text);font-family:inherit;min-width:200px">';
+  h += '<input id="milb-search-input" type="text" oninput="window._milbSetSearch(this.value)" placeholder="Search player or team" value="'+_loEsc(st.search)+'" style="padding:3px 8px;font-size:11px;border:0.5px solid var(--border);border-radius:5px;background:var(--card);color:var(--text);font-family:inherit;min-width:200px">';
   // Right-aligned counter
   h += '<div style="margin-left:auto;font-size:11px;color:var(--muted)">'+rows.length.toLocaleString()+' players</div>';
   h += '</div>';
@@ -20826,9 +20826,23 @@ window._milbSetOrg = function(o) {
 };
 window._milbSetSearch = function(v) {
   if (!window._milbState) return;
+  // Capture cursor position before re-render so we can restore it after.
+  // Without this, the input element is destroyed by renderMiLBPage(),
+  // losing focus and limiting users to one keystroke at a time.
+  var inputEl = document.getElementById('milb-search-input');
+  var caret = inputEl ? inputEl.selectionStart : null;
   window._milbState.search = v || '';
   window._milbState.limit = 100;
   renderMiLBPage();
+  // After re-render, the input is a fresh DOM node — refocus and restore
+  // cursor position so the user can keep typing.
+  var newInput = document.getElementById('milb-search-input');
+  if (newInput) {
+    newInput.focus();
+    if (caret != null) {
+      try { newInput.setSelectionRange(caret, caret); } catch(e) { /* ignore */ }
+    }
+  }
 };
 window._milbSort = function(col) {
   if (!window._milbState) return;
