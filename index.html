@@ -11002,28 +11002,128 @@ function predictH2H(a, b) {
   // Public wrapper. Sync if data already cached; Promise otherwise.
   // Usage: _h2hPredictTeam('REL REL').then(r => console.log(r))
   // Or after preload(): const r = _h2hPredictTeam('REL REL');
+  // Parse `standings_schedule.json` into the flat row shape the predictor
+  // expects: [{team, week, R, HR, RBI, SB, AVG, K, W, SVH3, ERA, WHIP}, ...]
+  //
+  // The schedule file has one table per scoring period, captioned "Scoring
+  // Period N". Each table has fixedHeader/fixedCells (team) and header/cells
+  // (stat columns). This is the SAME data source the Fantrax Data → By Period
+  // tab renders, so we know it has real per-week cat totals.
+  function _h2hParseScheduleData(data) {
+    var teamInfo = (data && data.data && data.data.fantasyTeamInfo) || (window.S && S.teamInfo) || {};
+    var tables = (data && data.data && data.data.tableList) || [];
+    var rows = [];
+    tables.forEach(function(t){
+      if (t.tableType === 'SECTION_HEADING') return;
+      var caption = t.caption || '';
+      var m = caption.match(/scoring period\s+(\d+)/i);
+      if (!m) return;
+      var period = parseInt(m[1], 10);
+      if (!period) return;
+      var fh = (t.fixedHeader && t.fixedHeader.cells) || [];
+      var vh = (t.header && t.header.cells) || [];
+      // Build header-key → column-index map from vh.
+      var idx = {};
+      vh.forEach(function(h, i){
+        if (h.key)       idx[h.key.toUpperCase()]       = i;
+        if (h.shortName) idx[h.shortName.toUpperCase()] = i;
+        if (h.name)      idx[h.name.toUpperCase()]      = i;
+      });
+      function readCell(cells, key) {
+        var i = idx[(key || '').toUpperCase()];
+        if (i == null) return 0;
+        var c = cells[i] || {};
+        var v = c.content;
+        if (v == null || v === '') return 0;
+        var n = parseFloat(v);
+        return isNaN(n) ? 0 : n;
+      }
+      // Locate team name. The fixedCells row contains the team — first cell
+      // with teamId resolves through teamInfo, fallback to its `content`.
+      (t.rows || []).forEach(function(row){
+        var fc = row.fixedCells || [];
+        var teamName = '';
+        for (var i = 0; i < fc.length; i++) {
+          if (fc[i] && fc[i].teamId) {
+            var ti = teamInfo[fc[i].teamId] || {};
+            teamName = ti.name || fc[i].content || '';
+            if (teamName) break;
+          }
+        }
+        if (!teamName) {
+          // Some rows put the team name directly in fixedCells content
+          for (var j = 0; j < fc.length; j++) {
+            if (fc[j] && fc[j].content && typeof fc[j].content === 'string'
+                && !/^\d+(\.\d+)?$/.test(fc[j].content.trim())) {
+              teamName = fc[j].content.trim();
+              break;
+            }
+          }
+        }
+        if (!teamName) return;
+        var cells = row.cells || [];
+        // Fantrax exposes pitching W under different keys depending on layout —
+        // try the most-specific first. Same for saves+holds.
+        var pitchW = readCell(cells, 'W');
+        // The W column appears twice in the header (matchup W + pitching W).
+        // If the H2H matchup table is the one being read, we want the *second*
+        // W instance — but most schedule tables only have stat columns, so the
+        // single "W" maps to pitching wins. If we ever see headers in a
+        // different layout, this will need adjusting.
+        rows.push({
+          team: teamName,
+          week: period,
+          R:    readCell(cells, 'R'),
+          HR:   readCell(cells, 'HR'),
+          RBI:  readCell(cells, 'RBI'),
+          SB:   readCell(cells, 'SB'),
+          AVG:  readCell(cells, 'AVG'),
+          K:    readCell(cells, 'K'),
+          W:    pitchW,
+          SVH3: readCell(cells, 'SVH3') || readCell(cells, 'SV+H') || readCell(cells, 'SV'),
+          ERA:  readCell(cells, 'ERA'),
+          WHIP: readCell(cells, 'WHIP')
+        });
+      });
+    });
+    return rows;
+  }
+  window._h2hParseScheduleData = _h2hParseScheduleData;
+
+  // Lazy-load + parse the schedule file, populate the predictor cache.
+  function _h2hLoadStats() {
+    if (window._joeStatsCache && window._joeStatsCache._hasRealStats) {
+      return Promise.resolve(window._joeStatsCache);
+    }
+    return loadJSON('standings_schedule.json').then(function(data){
+      var rows = _h2hParseScheduleData(data);
+      rows._hasRealStats = true;
+      window._joeStatsCache = rows;
+      return rows;
+    });
+  }
+
   window._h2hPredictTeam = function(teamName, opts) {
-    if (window._joeStatsCache && window._fullSchedule) {
+    if (window._joeStatsCache && window._joeStatsCache._hasRealStats && window._fullSchedule) {
       return _runPrediction(teamName, opts);
     }
-    // Lazy-load both files, then run synchronously.
     return Promise.all([
-      window._joeStatsCache ? Promise.resolve(window._joeStatsCache) : loadJSON('joe_stats.json'),
-      window._fullSchedule  ? Promise.resolve(window._fullSchedule)  : loadJSON('full_schedule.json')
+      _h2hLoadStats(),
+      window._fullSchedule ? Promise.resolve(window._fullSchedule) : loadJSON('full_schedule.json')
     ]).then(function(results){
-      window._joeStatsCache = results[0];
-      window._fullSchedule  = results[1];
+      window._fullSchedule = results[1];
       return _runPrediction(teamName, opts);
     });
   };
   window._h2hPredictTeam.preload = function() {
-    if (window._joeStatsCache && window._fullSchedule) return Promise.resolve();
+    if (window._joeStatsCache && window._joeStatsCache._hasRealStats && window._fullSchedule) {
+      return Promise.resolve();
+    }
     return Promise.all([
-      window._joeStatsCache ? Promise.resolve(window._joeStatsCache) : loadJSON('joe_stats.json'),
-      window._fullSchedule  ? Promise.resolve(window._fullSchedule)  : loadJSON('full_schedule.json')
+      _h2hLoadStats(),
+      window._fullSchedule ? Promise.resolve(window._fullSchedule) : loadJSON('full_schedule.json')
     ]).then(function(results){
-      window._joeStatsCache = results[0];
-      window._fullSchedule  = results[1];
+      window._fullSchedule = results[1];
     });
   };
 
