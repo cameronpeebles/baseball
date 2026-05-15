@@ -10681,14 +10681,38 @@ function predictH2H(a, b) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 (function() {
-  // Filter to "real" weeks: rows where any cat is non-zero, since some periods
-  // may carry over the empty-rows-then-stop sentinel from the fetcher.
+  // A week is considered "played" only when at least one PURE COUNTING stat
+  // is non-zero. ERA/WHIP/AVG can be non-zero from API defaults or carry-overs
+  // for unplayed weeks, so we ignore them here. R/HR/K/W can only be > 0
+  // if real games occurred. Handles both 'SV' (fetcher's current field name)
+  // and 'SVH3' (the actual league category) so the predictor works regardless
+  // of which the data was saved under.
   function hasAnyStats(row) {
-    return ALL_CATS.some(function(c){ return (row[c] || 0) !== 0; });
+    if ((row.R   || 0) > 0) return true;
+    if ((row.HR  || 0) > 0) return true;
+    if ((row.RBI || 0) > 0) return true;
+    if ((row.SB  || 0) > 0) return true;
+    if ((row.K   || 0) > 0) return true;
+    if ((row.W   || 0) > 0) return true;
+    if ((row.SV   || 0) > 0) return true;
+    if ((row.SVH3 || 0) > 0) return true;
+    return false;
   }
 
   // Per-team empirical weekly mean for each cat across played weeks.
   // recentBias='last4' weights the most recent 4 weeks 2× to favor current form.
+  // Read a stat value from a row, transparently handling the SV ↔ SVH3
+  // field name mismatch between fetch_fantrax.py (which saves 'SV') and the
+  // predictor's ALL_CATS (which uses 'SVH3' per the league config).
+  function readStat(row, cat) {
+    if (cat === 'SVH3') {
+      var v = row.SVH3;
+      if (v == null) v = row.SV;
+      return v || 0;
+    }
+    return row[cat] || 0;
+  }
+
   window._h2hBuildEmpiricalMeans = function(stats, opts) {
     opts = opts || {};
     var recentBias = opts.recentBias || 'last4';
@@ -10713,13 +10737,13 @@ function predictH2H(a, b) {
       var mean = { team: team, weeksPlayed: rows.length };
       ALL_CATS.forEach(function(cat){
         var sum = 0;
-        for (var i = 0; i < rows.length; i++) sum += (rows[i][cat] || 0) * weights[i];
+        for (var i = 0; i < rows.length; i++) sum += readStat(rows[i], cat) * weights[i];
         mean[cat] = sum / totalW;
       });
       // Also expose simple unweighted std-dev per cat for callers that want it.
       var stds = {};
       ALL_CATS.forEach(function(cat){
-        var ssq = 0; rows.forEach(function(r){ var d = (r[cat] || 0) - mean[cat]; ssq += d*d; });
+        var ssq = 0; rows.forEach(function(r){ var d = readStat(r, cat) - mean[cat]; ssq += d*d; });
         stds[cat] = rows.length >= 2 ? Math.sqrt(ssq / (rows.length - 1)) : 0;
       });
       mean._std = stds;
