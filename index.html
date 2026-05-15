@@ -309,6 +309,7 @@ td.neg { color: #c0392b; font-weight: 500; }
       <button onclick="showPage('lineuporg',this)">Lineup Organizer</button>
       <button onclick="showPage('ros',this)">Waiver Wire</button>
       <button onclick="showPage('tradelab',this)">Trade Lab</button>
+      <button onclick="showPage('h2hpred',this)">H2H Predictor</button>
     </div>
   </div>
   <div class="nav-group">
@@ -664,6 +665,12 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div class="page-title">Match Predictions</div>
     <div class="page-subtitle">Predicted outcomes for every scoring period based on each team's cumulative average weekly stats.</div>
     <div id="matchup-body"><div class="loading">Loading...</div></div>
+  </div>
+
+  <div class="page" id="page-h2hpred">
+    <div class="page-title">H2H Predictor</div>
+    <div class="page-subtitle">Projects each team's rest-of-season category wins by blending empirical weekly production (70%) with FantasyPros ROS projections (30%), played against the actual remaining schedule.</div>
+    <div id="h2hpred-body"><div class="loading">Loading...</div></div>
   </div>
 
   <div class="page" id="page-tradelab">
@@ -3115,9 +3122,10 @@ function showPage(name, btn) {
   if (name === 'sgp') renderSGPRosPage();
   if (name === 'teamroster') buildTeamRosterSelector();
   if (name === 'milb') renderMiLBPage();
+  if (name === 'h2hpred') renderH2HPredictorPage();
   if (name === 'guide') {} // static content, no render needed
   // Expand main to full width for wide-table pages
-  document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'models' || name === 'rosters' || name === 'teamroster' || name === 'historic' || name === 'targets' || name === 'sgp' || name === 'tradelab' || name === 'lineuporg' || name === 'milb') ? 'none' : '';
+  document.querySelector('main').style.maxWidth = (name === 'fwar' || name === 'models' || name === 'rosters' || name === 'teamroster' || name === 'historic' || name === 'targets' || name === 'sgp' || name === 'tradelab' || name === 'lineuporg' || name === 'milb' || name === 'h2hpred') ? 'none' : '';
   if (name === 'trade' && (TA.activeTab === 'sgp-hit' || TA.activeTab === 'sgp-pit')) {
     document.querySelector('main').style.maxWidth = 'none';
   }
@@ -11154,6 +11162,249 @@ function fmtStat(cat, val) {
   if (cat === 'AVG')  return val.toFixed(3);
   if (cat === 'ERA' || cat === 'WHIP') return val.toFixed(2);
   return Math.round(val);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// H2H Predictor page renderer
+// Dedicated UI for the _h2hPredictTeam engine. Shows per-team ROS outlook:
+// header summary, per-cat win% table, and a week-by-week schedule grid.
+// ─────────────────────────────────────────────────────────────────────────────
+window._h2hPredState = window._h2hPredState || { team: null };
+
+function renderH2HPredictorPage() {
+  var el = document.getElementById('h2hpred-body');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Loading H2H projections…</div>';
+
+  // Preload predictor data (standings_schedule + full_schedule).
+  _h2hPredictTeam.preload().then(function(){
+    // Build team list from teamInfo (filter to active 10 teams).
+    var teamInfo = (window.S && S.teamInfo) || {};
+    var teamNames = Object.keys(teamInfo)
+      .map(function(id){ return (teamInfo[id] || {}).name || ''; })
+      .filter(Boolean)
+      .sort();
+    if (teamNames.length === 0) {
+      el.innerHTML = '<div class="error-msg">No team info loaded yet. Open a different tab first to bootstrap data.</div>';
+      return;
+    }
+    // Default to first team if none selected.
+    if (!window._h2hPredState.team || teamNames.indexOf(window._h2hPredState.team) === -1) {
+      window._h2hPredState.team = teamNames[0];
+    }
+    _h2hRenderPage(teamNames, window._h2hPredState.team);
+  }).catch(function(err){
+    el.innerHTML = '<div class="error-msg">Failed to load H2H data: ' + (err && err.message || err) + '</div>';
+  });
+}
+
+window._h2hSetTeam = function(name) {
+  window._h2hPredState.team = name;
+  var el = document.getElementById('h2hpred-body');
+  if (!el) return;
+  var teamInfo = (window.S && S.teamInfo) || {};
+  var teamNames = Object.keys(teamInfo)
+    .map(function(id){ return (teamInfo[id] || {}).name || ''; })
+    .filter(Boolean)
+    .sort();
+  _h2hRenderPage(teamNames, name);
+};
+
+function _h2hRenderPage(teamNames, selectedTeam) {
+  var el = document.getElementById('h2hpred-body');
+  if (!el) return;
+  var result;
+  try {
+    result = _h2hPredictTeam(selectedTeam);
+  } catch(e) {
+    el.innerHTML = '<div class="error-msg">Predictor error: ' + e.message + '</div>';
+    return;
+  }
+  // result may be a Promise if cache not warm — preload should have handled it,
+  // but guard just in case.
+  if (result && typeof result.then === 'function') {
+    result.then(function(r){ _h2hRenderResult(teamNames, selectedTeam, r); });
+    return;
+  }
+  _h2hRenderResult(teamNames, selectedTeam, result);
+}
+
+function _h2hRenderResult(teamNames, selectedTeam, r) {
+  var el = document.getElementById('h2hpred-body');
+  if (!el) return;
+  if (r && r.error) {
+    el.innerHTML = _h2hHeaderHtml(teamNames, selectedTeam)
+      + '<div class="card" style="padding:24px;text-align:center;color:var(--muted)">'
+      + _loEsc(r.error)
+      + '</div>';
+    return;
+  }
+  var html = '';
+  html += _h2hHeaderHtml(teamNames, selectedTeam);
+  html += _h2hSummaryHtml(r);
+  html += _h2hPerCatTableHtml(r);
+  html += _h2hWeeklyGridHtml(r);
+  el.innerHTML = html;
+}
+
+function _h2hHeaderHtml(teamNames, selectedTeam) {
+  var h = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">';
+  h += '<span style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:500">Team</span>';
+  h += '<select onchange="window._h2hSetTeam(this.value)" style="padding:5px 10px;font-size:13px;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font-family:inherit;min-width:200px">';
+  teamNames.forEach(function(t){
+    var sel = (t === selectedTeam) ? ' selected' : '';
+    h += '<option value="'+_loEsc(t)+'"'+sel+'>'+_loEsc(t)+'</option>';
+  });
+  h += '</select>';
+  h += '</div>';
+  return h;
+}
+
+function _h2hSummaryHtml(r) {
+  var totalBattles = r.total.totalCatBattles;
+  var winPct = r.total.weeklyWinPct;
+  var weeklyW = r.total.W / r.weeksRemaining;
+  var weeklyL = r.total.L / r.weeksRemaining;
+  var weeklyT = r.total.T / r.weeksRemaining;
+  var pctTxt = (winPct * 100).toFixed(0) + '%';
+  var pctColor = winPct >= 0.6 ? '#0F6E56' : winPct >= 0.5 ? '#1e6b3a' : winPct >= 0.4 ? '#a05a1f' : '#c0392b';
+  var h = '';
+  h += '<div class="card" style="padding:14px 16px;margin-bottom:14px">';
+  h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px">';
+  // Weeks remaining
+  h += '<div>';
+  h += '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Weeks remaining</div>';
+  h += '<div style="font-size:22px;font-weight:500;line-height:1.2;margin-top:2px">'+r.weeksRemaining+'</div>';
+  h += '<div style="font-size:10px;color:var(--muted);margin-top:1px">Currently in period '+r.currentPeriod+'</div>';
+  h += '</div>';
+  // Projected weekly W-L-T
+  h += '<div>';
+  h += '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Avg weekly W-L-T</div>';
+  h += '<div style="font-size:22px;font-weight:500;line-height:1.2;margin-top:2px">'+weeklyW.toFixed(1)+'-'+weeklyL.toFixed(1)+'-'+weeklyT.toFixed(1)+'</div>';
+  h += '<div style="font-size:10px;color:var(--muted);margin-top:1px">Per 10-cat matchup</div>';
+  h += '</div>';
+  // ROS cat record
+  h += '<div>';
+  h += '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">ROS cat record</div>';
+  h += '<div style="font-size:22px;font-weight:500;line-height:1.2;margin-top:2px">'+r.total.W+'-'+r.total.L+'-'+r.total.T+'</div>';
+  h += '<div style="font-size:10px;color:var(--muted);margin-top:1px">Across '+totalBattles+' battles</div>';
+  h += '</div>';
+  // Win %
+  h += '<div>';
+  h += '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Cat win %</div>';
+  h += '<div style="font-size:22px;font-weight:500;line-height:1.2;margin-top:2px;color:'+pctColor+'">'+pctTxt+'</div>';
+  h += '<div style="font-size:10px;color:var(--muted);margin-top:1px">Forward-looking</div>';
+  h += '</div>';
+  h += '</div></div>';
+  return h;
+}
+
+function _h2hPerCatTableHtml(r) {
+  var h = '';
+  h += '<div class="card" style="padding:0;margin-bottom:14px;overflow:hidden">';
+  h += '<div style="padding:10px 14px;border-bottom:0.5px solid var(--border)">';
+  h += '<div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Per-category ROS outlook</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Projected weekly win % per category, summed across remaining weeks.</div>';
+  h += '</div>';
+  h += '<div style="overflow:auto">';
+  h += '<table style="width:100%;border-collapse:collapse;font-size:11px">';
+  h += '<thead><tr style="background:var(--bg);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">';
+  h += '<th style="text-align:left;padding:8px 10px;font-weight:600">Cat</th>';
+  h += '<th style="text-align:right;padding:8px 10px;font-weight:600">Your weekly</th>';
+  h += '<th style="text-align:right;padding:8px 10px;font-weight:600">Lg avg</th>';
+  h += '<th style="text-align:right;padding:8px 10px;font-weight:600">Wins</th>';
+  h += '<th style="text-align:right;padding:8px 10px;font-weight:600">Losses</th>';
+  h += '<th style="text-align:right;padding:8px 10px;font-weight:600">Ties</th>';
+  h += '<th style="text-align:right;padding:8px 10px;font-weight:600">Win %</th>';
+  h += '<th style="text-align:left;padding:8px 10px;font-weight:600;width:30%">Outlook</th>';
+  h += '</tr></thead><tbody>';
+  // Compute league averages from all blended teams (for "Lg avg" col)
+  var lgAvg = {};
+  var teamCount = 0;
+  Object.keys(r.blended || {}).forEach(function(t){
+    var m = r.blended[t];
+    if (!m) return;
+    teamCount++;
+    ALL_CATS.forEach(function(c){
+      lgAvg[c] = (lgAvg[c] || 0) + (m[c] || 0);
+    });
+  });
+  ALL_CATS.forEach(function(c){ if (teamCount > 0) lgAvg[c] /= teamCount; });
+  var self = (r.blended || {})[r.team] || {};
+
+  function fmtStat(cat, val) {
+    if (val == null || isNaN(val)) return '—';
+    if (cat === 'AVG')  return val.toFixed(3).replace(/^0\./, '.');
+    if (cat === 'ERA' || cat === 'WHIP') return val.toFixed(2);
+    return val.toFixed(1);
+  }
+
+  ALL_CATS.forEach(function(cat){
+    var row = r.perCat[cat] || { wins:0, losses:0, ties:0, winPct:0 };
+    var pct = row.winPct;
+    var tier, tierBg, tierColor, tierLabel;
+    if (pct >= 0.70)      { tier='dominant'; tierBg='rgba(29,158,117,0.18)'; tierColor='#0F6E56'; tierLabel='Dominant'; }
+    else if (pct >= 0.55) { tier='favored';  tierBg='rgba(29,158,117,0.10)'; tierColor='#1e6b3a'; tierLabel='Favored'; }
+    else if (pct >= 0.45) { tier='coinflip'; tierBg='rgba(150,150,150,0.14)'; tierColor='#5a594f'; tierLabel='Coinflip'; }
+    else if (pct >= 0.30) { tier='underdog'; tierBg='rgba(186,117,23,0.10)'; tierColor='#a05a1f'; tierLabel='Underdog'; }
+    else                  { tier='dominated'; tierBg='rgba(192,57,43,0.12)'; tierColor='#c0392b'; tierLabel='Dominated'; }
+    h += '<tr style="border-top:0.5px solid var(--border)">';
+    h += '<td style="padding:8px 10px;font-weight:500">'+cat+'</td>';
+    h += '<td style="text-align:right;padding:8px 10px">'+fmtStat(cat, self[cat])+'</td>';
+    h += '<td style="text-align:right;padding:8px 10px;color:var(--muted)">'+fmtStat(cat, lgAvg[cat])+'</td>';
+    h += '<td style="text-align:right;padding:8px 10px">'+row.wins+'</td>';
+    h += '<td style="text-align:right;padding:8px 10px">'+row.losses+'</td>';
+    h += '<td style="text-align:right;padding:8px 10px">'+row.ties+'</td>';
+    h += '<td style="text-align:right;padding:8px 10px;font-weight:600;color:'+tierColor+'">'+(pct*100).toFixed(0)+'%</td>';
+    h += '<td style="padding:8px 10px"><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:'+tierBg+';color:'+tierColor+';font-weight:600;letter-spacing:0.02em">'+tierLabel+'</span></td>';
+    h += '</tr>';
+  });
+  h += '</tbody></table></div></div>';
+  return h;
+}
+
+function _h2hWeeklyGridHtml(r) {
+  var h = '';
+  h += '<div class="card" style="padding:0;overflow:hidden">';
+  h += '<div style="padding:10px 14px;border-bottom:0.5px solid var(--border)">';
+  h += '<div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Remaining schedule</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Week-by-week projection. Each cell shows the predicted result for that category.</div>';
+  h += '</div>';
+  h += '<div style="overflow:auto;max-height:500px">';
+  h += '<table style="width:100%;border-collapse:collapse;font-size:11px">';
+  h += '<thead style="position:sticky;top:0;background:var(--bg);z-index:1"><tr style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">';
+  h += '<th style="text-align:left;padding:8px 10px;font-weight:600">Wk</th>';
+  h += '<th style="text-align:left;padding:8px 10px;font-weight:600">Opponent</th>';
+  ALL_CATS.forEach(function(cat){
+    h += '<th style="text-align:center;padding:8px 6px;font-weight:600;min-width:36px">'+cat+'</th>';
+  });
+  h += '<th style="text-align:right;padding:8px 10px;font-weight:600">Total</th>';
+  h += '</tr></thead><tbody>';
+  (r.weekly || []).forEach(function(wk){
+    var weekW = 0;
+    ALL_CATS.forEach(function(c){ if (wk.perCat[c] === 'win') weekW++; });
+    var weekL = 0;
+    ALL_CATS.forEach(function(c){ if (wk.perCat[c] === 'loss') weekL++; });
+    var weekT = ALL_CATS.length - weekW - weekL;
+    var rowColor = weekW > weekL ? 'rgba(29,158,117,0.05)' : weekW < weekL ? 'rgba(192,57,43,0.04)' : 'transparent';
+    h += '<tr style="border-top:0.5px solid var(--border);background:'+rowColor+'">';
+    h += '<td style="padding:6px 10px;font-weight:500">'+wk.week+'</td>';
+    h += '<td style="padding:6px 10px">'+_loEsc(wk.opponent)+'</td>';
+    ALL_CATS.forEach(function(cat){
+      var res = wk.perCat[cat];
+      var bg, fg, txt;
+      if (res === 'win')      { bg='rgba(29,158,117,0.18)'; fg='#0F6E56'; txt='W'; }
+      else if (res === 'loss'){ bg='rgba(192,57,43,0.14)';  fg='#c0392b'; txt='L'; }
+      else                    { bg='rgba(150,150,150,0.10)';fg='#5a594f'; txt='T'; }
+      h += '<td style="text-align:center;padding:0"><span style="display:inline-block;min-width:22px;padding:2px 4px;border-radius:3px;background:'+bg+';color:'+fg+';font-weight:600;font-size:10px">'+txt+'</span></td>';
+    });
+    var totalTxt = weekW + '-' + weekL + (weekT ? '-'+weekT : '');
+    var totalColor = weekW > weekL ? '#0F6E56' : weekW < weekL ? '#c0392b' : 'var(--text)';
+    h += '<td style="text-align:right;padding:6px 10px;font-weight:600;color:'+totalColor+'">'+totalTxt+'</td>';
+    h += '</tr>';
+  });
+  h += '</tbody></table></div></div>';
+  return h;
 }
 
 function buildMatchupPage(stats, fullSchedule) {
