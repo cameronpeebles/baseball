@@ -561,8 +561,8 @@ td.neg { color: #c0392b; font-weight: 500; }
         <div class="card">
           <div class="card-header"><span class="card-title" style="font-size:12px">fWAR calculation</span></div>
           <div class="card-body" style="padding:12px 16px;display:flex;flex-direction:column;gap:7px">
+            <button class="pill" style="padding:8px 14px;font-size:12px;text-align:center" onclick="autoWeightFromCorrelations()">Auto-weight from Correlation Page</button>
             <button class="pill active" style="padding:8px 14px;font-size:12px;text-align:center" onclick="recalculateFWAR()">Recalculate fWAR</button>
-            <button class="pill" style="padding:8px 14px;font-size:12px;background:var(--accent2);border-color:var(--accent2);color:white;text-align:center" onclick="autoWeightFromCorrelations()">Auto-weight from Correlation Page</button>
             <button class="pill" style="padding:8px 14px;font-size:12px;text-align:center" onclick="resetFWARDefaults()">Reset defaults</button>
             <span id="fwar-status" style="font-size:11px;color:var(--muted)"></span>
           </div>
@@ -14126,9 +14126,9 @@ window.refreshAllData = function() {
         buildTradeAnalyzer();
         setTimeout(cb, 600);
     }},
-    { label: 'Applying Hybrid + auto-weights...', fn: function(cb) {
-        // Apply Hybrid positional scarcity preset silently
-        applyFWARPreset('hybrid');
+    { label: 'Applying Hitter Heavy + auto-weights...', fn: function(cb) {
+        // Apply Hitter Heavy positional scarcity preset silently
+        applyFWARPreset('hitter');
         // Apply auto-weights from correlations silently (bypasses DOM status elements)
         silentAutoWeightFromCorrelations(function() { cb(); });
     }},
@@ -17926,7 +17926,7 @@ loadJSON('optimal_fwar_weights.json').then(function(data) {
 });
 
 var FWAR_DEFAULTS = {
-  repRanks:   { C:17, '1B':23, '2B':18, '3B':25, SS:32, OF:85, SP:123, RP:53 },
+  repRanks:   { C:18, '1B':26, '2B':20, '3B':28, SS:38, OF:100, SP:98, RP:42 },
   hitWeights: { R:1, HR:1, RBI:1, SB:1, AVG:1 },
   pitWeights: { W:1, SVH3:1, K:1, ERA:1, WHIP:1 }
 };
@@ -19249,9 +19249,14 @@ function silentAutoWeightFromCorrelations(callback) {
   }
 
   var LOW=['ERA','WHIP'];
+  var dropOutliers = (window._fwarCorrMode === 'no_outliers');
   var catR={};
   CATS_ALL.forEach(function(cat){
     var pairs=dataset.filter(function(d){return d.stats[cat]!=null;}).map(function(d){return [d.stats[cat],d.pts];});
+    if (dropOutliers && typeof _fwarDropOutliers === 'function') {
+      var trim = _fwarDropOutliers(pairs, 2);
+      pairs = trim.kept;
+    }
     var r=pearson(pairs);
     if (r!=null && LOW.indexOf(cat)!==-1) r=-r;
     catR[cat]=r;
@@ -19284,8 +19289,8 @@ function silentAutoWeightFromCorrelations(callback) {
 // (studentized residual > 2) per category before computing Pearson r.
 // Persisted in localStorage so the user's choice survives page reloads.
 window._fwarCorrMode = (function(){
-  try { return localStorage.getItem('fwar_corr_mode') || 'all'; }
-  catch(e) { return 'all'; }
+  try { return localStorage.getItem('fwar_corr_mode') || 'no_outliers'; }
+  catch(e) { return 'no_outliers'; }
 })();
 
 window.setFWARCorrMode = function(mode) {
