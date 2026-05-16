@@ -11810,14 +11810,31 @@ function _h2hRenderLeagueCharts(selectedTeam) {
 }
 
 function _h2hHeaderHtml(teamNames, selectedTeam) {
-  var h = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">';
-  teamNames.forEach(function(t){
-    var isActive = t === selectedTeam;
-    var style = isActive
-      ? 'padding:5px 14px;font-size:12px;border-radius:20px;border:none;cursor:pointer;font-family:inherit;font-weight:500;background:var(--accent);color:#fff'
-      : 'padding:5px 14px;font-size:12px;border-radius:20px;border:0.5px solid var(--border);cursor:pointer;font-family:inherit;font-weight:400;background:var(--card);color:var(--text)';
-    h += '<button onclick="window._h2hSetTeam('+JSON.stringify(t)+')" style="'+style+'">'+_loEsc(t)+'</button>';
+  // Pill-style selector to match the Team Roster page. Uses shortName as the
+  // pill label (e.g. "Team Flu", "BATS"), but passes the full team name into
+  // _h2hSetTeam since the predictor keys off teamInfo[].name.
+  var teamInfo = (window.S && S.teamInfo) || {};
+  // Build display list from teamInfo in its natural order (matches Team Roster
+  // page), but only include teams that are present in teamNames so any
+  // filtering upstream is respected.
+  var orderedIds = Object.keys(teamInfo).filter(function(id){
+    return teamNames.indexOf((teamInfo[id] || {}).name) !== -1;
   });
+  // Fallback: if teamInfo isn't populated for some reason, fall back to
+  // teamNames as-is.
+  var rows = orderedIds.length ? orderedIds.map(function(id){
+    var ti = teamInfo[id] || {};
+    return { name: ti.name || '', label: ti.shortName || ti.name || '' };
+  }) : teamNames.map(function(n){ return { name: n, label: n }; });
+
+  var h = '<div class="team-selector" style="border-bottom:0;padding:0 0 12px;margin-bottom:14px;align-items:center">';
+  rows.forEach(function(r){
+    var cls = 'team-btn' + (r.name === selectedTeam ? ' active' : '');
+    h += '<button class="'+cls+'" onclick="window._h2hSetTeam(\''
+       + _loEsc(r.name).replace(/'/g, "\\'") + '\')">'
+       + _loEsc(r.label) + '</button>';
+  });
+  // "How this works" pill — links to the Site Guide H2H Pred tab.
   h += '<button onclick="window._h2hOpenGuide()" style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:4px 10px;font-size:11px;border:0.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--muted);cursor:pointer;font-family:inherit">';
   h += '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
   h += 'How this works</button>';
@@ -11878,10 +11895,11 @@ function _h2hSummaryHtml(r) {
 
 function _h2hPerCatTableHtml(r) {
   var h = '';
-  h += '<div class="card" style="padding:0;margin:0 auto 14px;overflow:hidden;max-width:760px;width:100%">';
+  // Half-width, centered. Caps at ~640px so it stays readable on wide monitors.
+  h += '<div class="card" style="padding:0;margin:0 auto 14px;overflow:hidden;max-width:640px;width:100%">';
   h += '<div style="padding:10px 14px;border-bottom:0.5px solid var(--border)">';
   h += '<div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Per-category ROS outlook</div>';
-  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Win % is the raw predictor output. Outlook tier reflects how decisive the margin is &mdash; tight leagues get Coinflip even with skewed win %. Season W% shows actual category wins so far this season; arrow = last 2 periods trend.</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Win % is the raw predictor output. Outlook tier reflects how decisive the margin is &mdash; tight leagues get Coinflip even with skewed win %.</div>';
   h += '</div>';
   h += '<div style="overflow:auto">';
   h += '<table style="width:100%;border-collapse:collapse;font-size:11px">';
@@ -11889,71 +11907,17 @@ function _h2hPerCatTableHtml(r) {
   h += '<th style="text-align:left;padding:8px 10px;font-weight:600">Cat</th>';
   h += '<th style="text-align:right;padding:8px 10px;font-weight:600">Your weekly</th>';
   h += '<th style="text-align:right;padding:8px 10px;font-weight:600">Lg avg</th>';
-  h += '<th style="text-align:right;padding:8px 10px;font-weight:600">Season W%</th>';
   h += '<th style="text-align:right;padding:8px 10px;font-weight:600">Wins</th>';
   h += '<th style="text-align:right;padding:8px 10px;font-weight:600">Losses</th>';
   h += '<th style="text-align:right;padding:8px 10px;font-weight:600">Ties</th>';
-  h += '<th style="text-align:right;padding:8px 10px;font-weight:600">ROS Win %</th>';
-  h += '<th style="text-align:left;padding:8px 10px;font-weight:600;width:28%">Outlook</th>';
+  h += '<th style="text-align:right;padding:8px 10px;font-weight:600">Win %</th>';
+  h += '<th style="text-align:left;padding:8px 10px;font-weight:600;width:30%">Outlook</th>';
   h += '</tr></thead><tbody>';
-
-  // ── Compute current-season per-cat W% from standings_schedule ────────────
-  var seasonCatW  = {}; // cat → wins
-  var seasonCatL  = {}; // cat → losses
-  var seasonCatW2 = {}; // cat → wins last 2 periods (for trend)
-  var seasonCatL2 = {}; // cat → losses last 2 periods
-  ALL_CATS.forEach(function(c){ seasonCatW[c]=0; seasonCatL[c]=0; seasonCatW2[c]=0; seasonCatL2[c]=0; });
-  var LOW_GOOD_S = { ERA:1, WHIP:1 };
-
-  var schedData = window.S && S.scheduleData;
-  if (schedData && schedData.data && schedData.data.tableList) {
-    var periodTbls = schedData.data.tableList.filter(function(t){
-      return /scoring period/i.test(t.caption||'') && (t.rows||[]).length > 0;
-    }).sort(function(a,b){
-      var ma=(a.caption||'').match(/(\d+)/), mb=(b.caption||'').match(/(\d+)/);
-      return (ma?parseInt(ma[1]):0)-(mb?parseInt(mb[1]):0);
-    });
-
-    // For each period, build team stat rows then do round-robin H2H per cat
-    periodTbls.forEach(function(tbl, tblIdx) {
-      var isRecent = tblIdx >= periodTbls.length - 2; // last 2 periods
-      var vh = (tbl.header && tbl.header.cells) || [];
-      var hIdx = {};
-      vh.forEach(function(h,i){ if(h.key)hIdx[h.key.toUpperCase()]=i; if(h.shortName)hIdx[h.shortName.toUpperCase()]=i; });
-      var rows = {};
-      (tbl.rows||[]).forEach(function(row){
-        var fc=row.fixedCells||[], cells=row.cells||[];
-        var id=''; fc.forEach(function(c){if(c.teamId)id=c.teamId;});
-        var tn=(S.teamInfo[id]||{}).name||'';
-        if(!tn) return;
-        var stats={};
-        ALL_CATS.forEach(function(c){
-          var i=hIdx[c.toUpperCase()];
-          if(i!=null){var v=parseFloat((cells[i]||{}).content);if(!isNaN(v))stats[c]=v;}
-        });
-        rows[tn]=stats;
-      });
-      // Check if period has real data
-      var myStats = rows[r.team];
-      if (!myStats || Object.keys(myStats).length === 0) return;
-      // Count cat W/L vs each other team
-      Object.keys(rows).forEach(function(opp){
-        if (opp === r.team) return;
-        var oppStats = rows[opp];
-        ALL_CATS.forEach(function(cat){
-          var mv=myStats[cat], ov=oppStats&&oppStats[cat];
-          if(mv==null||ov==null) return;
-          var win = LOW_GOOD_S[cat] ? mv<ov : mv>ov;
-          var loss= LOW_GOOD_S[cat] ? mv>ov : mv<ov;
-          if(win){ seasonCatW[cat]++; if(isRecent)seasonCatW2[cat]++; }
-          else if(loss){ seasonCatL[cat]++; if(isRecent)seasonCatL2[cat]++; }
-        });
-      });
-    });
-  }
-
-  // League avg/min/max
-  var lgAvg = {}, lgMin = {}, lgMax = {};
+  // Compute league averages, min, max from all blended teams (for "Lg avg"
+  // col AND for margin-based tier classification).
+  var lgAvg = {};
+  var lgMin = {};
+  var lgMax = {};
   var teamCount = 0;
   ALL_CATS.forEach(function(c){ lgMin[c] = Infinity; lgMax[c] = -Infinity; });
   Object.keys(r.blended || {}).forEach(function(t){
@@ -11969,6 +11933,8 @@ function _h2hPerCatTableHtml(r) {
   });
   ALL_CATS.forEach(function(c){ if (teamCount > 0) lgAvg[c] /= teamCount; });
   var self = (r.blended || {})[r.team] || {};
+  // Categories where LOW is better (ERA, WHIP). The margin sign flips for
+  // these — a LOWER self vs lgAvg is a positive margin.
   var LOW_GOOD = { ERA:1, WHIP:1 };
 
   function fmtStat(cat, val) {
@@ -11981,11 +11947,15 @@ function _h2hPerCatTableHtml(r) {
   ALL_CATS.forEach(function(cat){
     var row = r.perCat[cat] || { wins:0, losses:0, ties:0, winPct:0 };
     var pct = row.winPct;
+    // Margin-based tier: how much better/worse is REL's weekly mean than the
+    // league average, expressed as % of the league's range in this cat?
+    // This is more honest than raw win%: when the league is bunched tightly,
+    // a thin numeric edge produces lopsided win% but isn't actually decisive.
     var selfVal = self[cat] || 0;
     var avgVal  = lgAvg[cat] || 0;
-    var range   = (lgMax[cat] - lgMin[cat]) || 1;
+    var range   = (lgMax[cat] - lgMin[cat]) || 1;  // avoid div-by-zero
     var raw     = selfVal - avgVal;
-    if (LOW_GOOD[cat]) raw = -raw;
+    if (LOW_GOOD[cat]) raw = -raw;                 // flip for ERA/WHIP
     var marginPct = (raw / range) * 100;
     var tier, tierBg, tierColor, tierLabel;
     if (marginPct >=  25)  { tier='dominant';  tierBg='rgba(29,158,117,0.18)';  tierColor='#0F6E56'; tierLabel='Dominant'; }
@@ -11993,31 +11963,13 @@ function _h2hPerCatTableHtml(r) {
     else if (marginPct >= -10){ tier='coinflip';  tierBg='rgba(150,150,150,0.14)'; tierColor='#5a594f'; tierLabel='Coinflip'; }
     else if (marginPct >= -25){ tier='underdog';  tierBg='rgba(186,117,23,0.10)';  tierColor='#a05a1f'; tierLabel='Underdog'; }
     else                      { tier='dominated'; tierBg='rgba(192,57,43,0.12)';  tierColor='#c0392b'; tierLabel='Dominated'; }
+    // Color the win% number based on raw value, but the tier badge uses margin.
     var pctColor = pct >= 0.55 ? '#0F6E56' : pct >= 0.45 ? '#5a594f' : '#c0392b';
     var marginTxt = (marginPct >= 0 ? '+' : '') + marginPct.toFixed(0) + '%';
-
-    // Season W%
-    var sTotal = seasonCatW[cat] + seasonCatL[cat];
-    var sWpct  = sTotal > 0 ? seasonCatW[cat] / sTotal : null;
-    var sWpctTxt = sWpct != null ? (sWpct*100).toFixed(0)+'%' : '—';
-    var sWpctCol = sWpct == null ? 'var(--muted)' : sWpct >= 0.55 ? '#0F6E56' : sWpct >= 0.45 ? '#5a594f' : '#c0392b';
-
-    // Trend arrow from last 2 periods
-    var t2Total = seasonCatW2[cat] + seasonCatL2[cat];
-    var t2Wpct  = t2Total > 0 ? seasonCatW2[cat] / t2Total : null;
-    var arrow = '';
-    if (t2Wpct != null && sWpct != null) {
-      var diff = t2Wpct - sWpct;
-      if      (diff >  0.08) arrow = '<span style="color:#0F6E56;font-size:12px;margin-left:3px">\u2191</span>';
-      else if (diff < -0.08) arrow = '<span style="color:#c0392b;font-size:12px;margin-left:3px">\u2193</span>';
-      else                   arrow = '<span style="color:var(--muted);font-size:12px;margin-left:3px">\u2192</span>';
-    }
-
     h += '<tr style="border-top:0.5px solid var(--border)">';
     h += '<td style="padding:8px 10px;font-weight:500">'+cat+'</td>';
     h += '<td style="text-align:right;padding:8px 10px">'+fmtStat(cat, self[cat])+'</td>';
     h += '<td style="text-align:right;padding:8px 10px;color:var(--muted)">'+fmtStat(cat, lgAvg[cat])+'</td>';
-    h += '<td style="text-align:right;padding:8px 10px;font-weight:600;color:'+sWpctCol+'">'+sWpctTxt+arrow+'</td>';
     h += '<td style="text-align:right;padding:8px 10px">'+row.wins+'</td>';
     h += '<td style="text-align:right;padding:8px 10px">'+row.losses+'</td>';
     h += '<td style="text-align:right;padding:8px 10px">'+row.ties+'</td>';
@@ -12028,6 +11980,7 @@ function _h2hPerCatTableHtml(r) {
   h += '</tbody></table></div></div>';
   return h;
 }
+
 function _h2hWeeklyGridHtml(r) {
   var h = '';
   // Half-width, centered. The weekly grid has 13 columns so it needs a bit
@@ -17263,40 +17216,14 @@ function buildCorrelations(el) {
     }
   });
 
-  // ── JOE Factor data per team ─────────────────────────────────────────────
-  var joeData = window._joeByTeamWeek || [];
-  var joeSeason = window._joeSeasonData || [];
-
-  // Rebuild season summaries from byTeamWeek
-  var teamJOE = {}; // teamName → {avgActual, avgCase, avgLuck}
-  var teamNames = {};
-  Object.keys(S.teamInfo).forEach(function(id) {
-    teamNames[(S.teamInfo[id].name||'')] = id;
-  });
-
-  var joeByTeam = {};
-  joeData.forEach(function(r) {
-    if (r.actual == null) return;
-    if (!joeByTeam[r.team]) joeByTeam[r.team] = [];
-    joeByTeam[r.team].push(r);
-  });
-  Object.keys(joeByTeam).forEach(function(team) {
-    var rows = joeByTeam[team];
-    var avgActual = rows.reduce(function(s,r){return s+r.actual;},0)/rows.length;
-    var avgCase   = rows.reduce(function(s,r){return s+(r.avgCase||0);},0)/rows.length;
-    var avgLuck   = rows.reduce(function(s,r){return s+((r.actual||0)-(r.avgCase||0));},0)/rows.length;
-    teamJOE[team] = { avgActual: avgActual, avgCase: avgCase, avgLuck: avgLuck };
-  });
-
-  // Build unified dataset: one entry per team
+  // ── Build unified dataset: one entry per team ─────────────────────────────
   var dataset = Object.keys(S.teamInfo).map(function(id) {
     var ti   = S.teamInfo[id];
     var name = ti.name || ti.shortName || id;
     var short = ti.shortName || name;
     var pts  = teamPts[id] || 0;
     var stats = teamStats[id] || {};
-    var joe  = teamJOE[name] || null;
-    return { id: id, name: name, short: short, pts: pts, stats: stats, joe: joe };
+    return { id: id, name: name, short: short, pts: pts, stats: stats };
   }).filter(function(d) { return d.pts > 0; })
     .sort(function(a,b) { return b.pts - a.pts; });
 
@@ -17546,151 +17473,7 @@ function buildCorrelations(el) {
   }
   html += '</div></div>';
 
-  // ── Section 3: Actual vs Expected win% ──────────────────────────────────
-  html += '<div class="card" style="margin-bottom:20px">';
-  html += '<div class="card-header"><span class="card-title">Actual win% vs expected win% (JOE Factor)</span>';
-  html += '<span style="font-size:12px;color:var(--muted)">Points above/below the diagonal = lucky/unlucky</span></div>';
-  html += '<div class="card-body" style="padding:16px 20px">';
-
-  var joeTeams = Object.keys(joeByTeam);
-  if (joeTeams.length) {
-    var W3=500,H3=320,P3=44;
-    var allActual = joeTeams.map(function(t){return teamJOE[t].avgActual;});
-    var allCase   = joeTeams.map(function(t){return teamJOE[t].avgCase;});
-    var xMin3=Math.min.apply(null,allCase)*0.95,  xMax3=Math.max.apply(null,allCase)*1.05;
-    var yMin3=Math.min.apply(null,allActual)*0.95, yMax3=Math.max.apply(null,allActual)*1.05;
-    // Expand to same range for diagonal
-    var axisMin = Math.min(xMin3,yMin3), axisMax = Math.max(xMax3,yMax3);
-    xMin3=axisMin; xMax3=axisMax; yMin3=axisMin; yMax3=axisMax;
-    var xRange3=xMax3-xMin3||1, yRange3=yMax3-yMin3||1;
-
-    html += '<svg viewBox="0 0 ' + W3 + ' ' + H3 + '" style="width:100%;max-width:600px;height:auto;display:block">';
-    // Grid
-    for (var gi3=0;gi3<=4;gi3++) {
-      var gy3=P3+(H3-P3*2)*(gi3/4);
-      var gx3=P3+(H3-P3*2)*(gi3/4);
-      html += '<line x1="' + P3 + '" y1="' + gy3 + '" x2="' + (W3-8) + '" y2="' + gy3 + '" stroke="var(--border)" stroke-width="0.5"/>';
-      var yLbl = (axisMin+(axisMax-axisMin)*((4-gi3)/4)*100).toFixed(0)+'%';
-      html += '<text x="' + (P3-4) + '" y="' + (gy3+4) + '" text-anchor="end" font-size="9" fill="var(--muted)">' + yLbl + '</text>';
-      var xLbl = (axisMin+(axisMax-axisMin)*(gi3/4)*100).toFixed(0)+'%';
-      html += '<text x="' + (P3+(H3-P3*2)*(gi3/4)) + '" y="' + (H3-P3+14) + '" text-anchor="middle" font-size="9" fill="var(--muted)">' + xLbl + '</text>';
-    }
-    // Diagonal line (equal actual = expected)
-    var diagX1=P3, diagY1=H3-P3;
-    var diagX2=P3+(W3-P3-8), diagY2=P3;
-    html += '<line x1="' + diagX1 + '" y1="' + diagY1 + '" x2="' + diagX2 + '" y2="' + diagY2 + '" stroke="var(--muted)" stroke-width="1" stroke-dasharray="5,4" opacity="0.5"/>';
-    html += '<text x="' + (diagX2-2) + '" y="' + (diagY2-4) + '" font-size="9" fill="var(--muted)" text-anchor="end">Expected = Actual</text>';
-    // Lucky/unlucky labels
-    html += '<text x="' + (W3-60) + '" y="' + (H3-P3-10) + '" font-size="9" fill="#4a9a68" opacity="0.7">Above line = Lucky</text>';
-    html += '<text x="' + (P3+10) + '" y="' + (P3+14) + '" font-size="9" fill="#c0392b" opacity="0.7">Below line = Unlucky</text>';
-    // Dots
-    joeTeams.forEach(function(team) {
-      var joe = teamJOE[team];
-      var tid = teamNames[team];
-      var d3 = dataset.find(function(d){return d.id===tid;});
-      var col3 = d3 ? d3.color : '#888';
-      var short3 = d3 ? d3.short : team.substring(0,8);
-      var cx3 = P3 + (joe.avgCase-axisMin)/xRange3*(W3-P3-8);
-      var cy3 = H3-P3 - (joe.avgActual-axisMin)/yRange3*(H3-P3*2);
-      var luckDiff = joe.avgActual - joe.avgCase;
-      var dotCol = luckDiff > 0.01 ? '#4a9a68' : luckDiff < -0.01 ? '#c0392b' : '#888';
-      html += '<circle cx="' + cx3 + '" cy="' + cy3 + '" r="6" fill="' + col3 + '" stroke="' + dotCol + '" stroke-width="2" opacity="0.9">';
-      html += '<title>' + team + '\nActual: ' + (joe.avgActual*100).toFixed(1) + '%\nExpected: ' + (joe.avgCase*100).toFixed(1) + '%\nLuck: ' + (luckDiff>=0?'+':'') + luckDiff.toFixed(3) + '</title>';
-      html += '</circle>';
-      html += '<text x="' + (cx3+8) + '" y="' + (cy3+4) + '" font-size="9" fill="var(--text)">' + short3.substring(0,7) + '</text>';
-    });
-    html += '<text x="' + (W3/2) + '" y="' + (H3-4) + '" text-anchor="middle" font-size="10" fill="var(--muted)">Expected win% (avg case)</text>';
-    html += '<text x="12" y="' + (H3/2) + '" text-anchor="middle" font-size="10" fill="var(--muted)" transform="rotate(-90,12,' + (H3/2) + ')">Actual win%</text>';
-    html += '</svg>';
-  }
-  html += '</div></div>';
-
-  // ── Section 4: Luck vs Standings rank ───────────────────────────────────
-  html += '<div class="card" style="margin-bottom:20px">';
-  html += '<div class="card-header"><span class="card-title">Luck score vs standings rank</span>';
-  html += '<span style="font-size:12px;color:var(--muted)">Do luckier teams finish higher?</span></div>';
-  html += '<div class="card-body" style="padding:16px 20px">';
-
-  var luckPairs = dataset.map(function(d,rank) {
-    var joe = teamJOE[d.name];
-    if (!joe) return null;
-    return { name: d.short, luck: joe.avgLuck, rank: rank+1, pts: d.pts, color: d.color };
-  }).filter(Boolean);
-
-  if (luckPairs.length >= 3) {
-    var luckR = pearson(luckPairs.map(function(p){return [p.luck, p.pts];}));
-    var W4=500, H4=260, P4=44;
-    var lVals = luckPairs.map(function(p){return p.luck;});
-    var lMin=Math.min.apply(null,lVals), lMax=Math.max.apply(null,lVals);
-    var pVals = luckPairs.map(function(p){return p.pts;});
-    var pMin=Math.min.apply(null,pVals)*0.97, pMax=Math.max.apply(null,pVals)*1.03;
-    var lRange=lMax-lMin||1, pRange=pMax-pMin||1;
-
-    html += '<div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;flex-wrap:wrap">';
-    html += '<div style="font-size:13px">Luck vs Points correlation: <strong style="color:' + corrColor(luckR) + '">r = ' + (luckR>=0?'+':'') + luckR.toFixed(2) + '</strong></div>';
-    html += '<div style="font-size:12px;color:var(--muted)">' + corrLabel(luckR) + '</div>';
-    html += '</div>';
-
-    html += '<svg viewBox="0 0 ' + W4 + ' ' + H4 + '" style="width:100%;max-width:600px;height:auto;display:block">';
-    for (var gi4=0;gi4<=4;gi4++) {
-      var gy4=P4+(H4-P4*2)*(gi4/4);
-      html += '<line x1="' + P4 + '" y1="' + gy4 + '" x2="' + (W4-8) + '" y2="' + gy4 + '" stroke="var(--border)" stroke-width="0.5"/>';
-      html += '<text x="' + (P4-4) + '" y="' + (gy4+4) + '" text-anchor="end" font-size="9" fill="var(--muted)">' + Math.round(pMax-(pRange*(gi4/4))) + '</text>';
-    }
-    // Zero vertical line
-    var zeroX = P4 + (0-lMin)/lRange*(W4-P4-8);
-    html += '<line x1="' + zeroX + '" y1="' + P4 + '" x2="' + zeroX + '" y2="' + (H4-P4) + '" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>';
-    html += '<text x="' + (zeroX+3) + '" y="' + (P4+10) + '" font-size="9" fill="var(--muted)">No luck</text>';
-    // Trend line
-    var n4=luckPairs.length,slx=0,sly=0,slxy=0,slx2=0;
-    luckPairs.forEach(function(p){slx+=p.luck;sly+=p.pts;slxy+=p.luck*p.pts;slx2+=p.luck*p.luck;});
-    var slDen=n4*slx2-slx*slx;
-    if (slDen!==0) {
-      var slSlope=(n4*slxy-slx*sly)/slDen,slInt=(sly-slSlope*slx)/n4;
-      var tlx1=P4+(lMin-lMin)/lRange*(W4-P4-8), tly1=H4-P4-(slSlope*lMin+slInt-pMin)/pRange*(H4-P4*2);
-      var tlx2=P4+(lMax-lMin)/lRange*(W4-P4-8), tly2=H4-P4-(slSlope*lMax+slInt-pMin)/pRange*(H4-P4*2);
-      html += '<line x1="' + tlx1 + '" y1="' + tly1 + '" x2="' + tlx2 + '" y2="' + tly2 + '" stroke="' + corrColor(luckR) + '" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>';
-    }
-    luckPairs.forEach(function(p) {
-      var cx4 = P4 + (p.luck-lMin)/lRange*(W4-P4-8);
-      var cy4 = H4-P4 - (p.pts-pMin)/pRange*(H4-P4*2);
-      html += '<circle cx="' + cx4 + '" cy="' + cy4 + '" r="6" fill="' + p.color + '" opacity="0.85">';
-      html += '<title>' + p.name + '\nLuck: ' + (p.luck>=0?'+':'') + p.luck.toFixed(3) + '\nPoints: ' + p.pts + '</title>';
-      html += '</circle>';
-      html += '<text x="' + (cx4+8) + '" y="' + (cy4+4) + '" font-size="9" fill="var(--text)">' + p.name.substring(0,7) + '</text>';
-    });
-    // X axis labels
-    html += '<text x="' + P4 + '" y="' + (H4-P4+14) + '" font-size="8" fill="var(--muted)">' + (lMin>=0?'+':'') + lMin.toFixed(3) + '</text>';
-    html += '<text x="' + (W4-8) + '" y="' + (H4-P4+14) + '" text-anchor="end" font-size="8" fill="var(--muted)">+' + lMax.toFixed(3) + '</text>';
-    html += '<text x="' + (W4/2) + '" y="' + (H4-4) + '" text-anchor="middle" font-size="10" fill="var(--muted)">Average luck score (actual − expected win%)</text>';
-    html += '<text x="12" y="' + (H4/2) + '" text-anchor="middle" font-size="10" fill="var(--muted)" transform="rotate(-90,12,' + (H4/2) + ')">Fantasy points</text>';
-    html += '</svg>';
-
-    // Insight callout
-    var luckyTeams  = luckPairs.filter(function(p){return p.luck>0.02;}).sort(function(a,b){return b.luck-a.luck;});
-    var unluckyTeams = luckPairs.filter(function(p){return p.luck<-0.02;}).sort(function(a,b){return a.luck-b.luck;});
-    if (luckyTeams.length || unluckyTeams.length) {
-      html += '<div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">';
-      if (luckyTeams.length) {
-        html += '<div style="background:#e8f0eb;border-radius:var(--radius);padding:10px 14px;font-size:12px;flex:1;min-width:160px">';
-        html += '<strong style="color:#2d5a3d">Luckiest:</strong> ';
-        html += luckyTeams.map(function(p){return p.name + ' (+' + p.luck.toFixed(2) + ')';}).join(', ');
-        html += '</div>';
-      }
-      if (unluckyTeams.length) {
-        html += '<div style="background:#fef3e2;border-radius:var(--radius);padding:10px 14px;font-size:12px;flex:1;min-width:160px">';
-        html += '<strong style="color:#b7791f">Unluckiest:</strong> ';
-        html += unluckyTeams.map(function(p){return p.name + ' (' + p.luck.toFixed(2) + ')';}).join(', ');
-        html += '</div>';
-      }
-      html += '</div>';
-    }
-  } else {
-    html += '<div style="color:var(--muted);font-size:13px">Not enough JOE Factor data yet.</div>';
-  }
-  html += '</div></div>';
-
-  // ── Section 5: H2H Win% vs Roto Points ─────────────────────────────────
+  // ── Section 3: H2H Win% vs Roto Points ─────────────────────────────────
   html += '<div class="card" style="margin-bottom:20px">';
   html += '<div class="card-header"><span class="card-title">H2H win% vs standings points</span>';
   html += '<span style="font-size:12px;color:var(--muted)">Do teams that win more matchups earn more roto points?</span></div>';
