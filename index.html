@@ -17399,6 +17399,34 @@ function buildCorrelations(el) {
   html += '</div></div>';
 
   // Individual scatter plots for each cat - 2 per row
+  // Helper: studentized residuals for a set of (x, y) pairs paired with their
+  // dataset id. Returns a Set of ids whose |studentized residual| > threshold.
+  function _corrOutlierIdsForCat(items, threshold) {
+    var n = items.length;
+    var out = {};
+    if (n < 4) return out; // not enough to flag safely
+    var sx=0, sy=0, sxy=0, sx2=0;
+    items.forEach(function(it){ sx+=it.x; sy+=it.y; sxy+=it.x*it.y; sx2+=it.x*it.x; });
+    var den = n*sx2 - sx*sx;
+    if (den === 0) return out;
+    var slope = (n*sxy - sx*sy) / den;
+    var intercept = (sy - slope*sx) / n;
+    var xBar = sx / n;
+    var resids = items.map(function(it){ return it.y - (slope*it.x + intercept); });
+    var rss = resids.reduce(function(s,r){ return s + r*r; }, 0);
+    if (n - 2 <= 0) return out;
+    var se = Math.sqrt(rss / (n - 2));
+    if (se === 0) return out;
+    var sxx = items.reduce(function(s,it){ return s + (it.x-xBar)*(it.x-xBar); }, 0);
+    items.forEach(function(it, i) {
+      var lev = sxx === 0 ? 1/n : (1/n) + ((it.x-xBar)*(it.x-xBar)) / sxx;
+      var denom = se * Math.sqrt(Math.max(0, 1 - lev));
+      var stud = denom === 0 ? 0 : Math.abs(resids[i] / denom);
+      if (stud > threshold) out[it.id] = resids[i]; // store signed residual for tooltip
+    });
+    return out;
+  }
+
   html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">';
   CATS.forEach(function(cat) {
     var cc   = catCorrs.find(function(c){return c.cat===cat;});
@@ -17410,6 +17438,12 @@ function buildCorrelations(el) {
     var yMin  = Math.min.apply(null,yVals)*0.97, yMax = Math.max.apply(null,yVals)*1.03;
     var xRange = xMax-xMin||1, yRange = yMax-yMin||1;
     var W=320, H=180, PAD=32;
+
+    // Pre-compute outliers for this cat using the same rule as the bar chart.
+    var outlierMap = _corrOutlierIdsForCat(
+      pairs.map(function(d){ return { id: d.id, x: d.stats[cat], y: d.pts }; }),
+      2
+    );
 
     html += '<div style="background:var(--bg);border-radius:var(--radius);padding:12px">';
     html += '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">';
@@ -17439,14 +17473,28 @@ function buildCorrelations(el) {
       var py2=H-PAD-(ty2-yMin)/yRange*(H-PAD*2);
       html += '<line x1="' + px1 + '" y1="' + py1 + '" x2="' + px2 + '" y2="' + py2 + '" stroke="' + (cc?corrColor(cc.r):'#aaa') + '" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>';
     }
-    // Points
+    // Points (outliers get heavier dark ring + bold label)
     pairs.forEach(function(d) {
       var cx = PAD + (d.stats[cat]-xMin)/xRange*(W-PAD-8);
       var cy = H-PAD - (d.pts-yMin)/yRange*(H-PAD*2);
-      html += '<circle cx="' + cx + '" cy="' + cy + '" r="5" fill="' + d.color + '" opacity="0.85">';
-      html += '<title>' + d.short + ': ' + cat + '=' + (cat==='AVG'?d.stats[cat].toFixed(3):(cat==='ERA'||cat==='WHIP')?d.stats[cat].toFixed(2):Math.round(d.stats[cat])) + ', Pts=' + d.pts + '</title>';
+      var isOutlier = (outlierMap[d.id] !== undefined);
+      var radius = isOutlier ? 6 : 5;
+      var stroke = isOutlier ? '#1a1814' : 'none';
+      var strokeW = isOutlier ? 2 : 0;
+      var opacity = isOutlier ? 1 : 0.85;
+      var valTxt = (cat==='AVG'?d.stats[cat].toFixed(3):(cat==='ERA'||cat==='WHIP')?d.stats[cat].toFixed(2):Math.round(d.stats[cat]));
+      var tipExtra = '';
+      if (isOutlier) {
+        var resid = outlierMap[d.id];
+        tipExtra = '\nOutlier: ' + (resid >= 0 ? '+' : '') + Math.round(resid) + ' pts vs trend';
+      }
+      html += '<circle cx="' + cx + '" cy="' + cy + '" r="' + radius + '" fill="' + d.color + '" stroke="' + stroke + '" stroke-width="' + strokeW + '" opacity="' + opacity + '">';
+      html += '<title>' + d.short + ': ' + cat + '=' + valTxt + ', Pts=' + d.pts + tipExtra + '</title>';
       html += '</circle>';
-      html += '<text x="' + (cx+7) + '" y="' + (cy+4) + '" font-size="8" fill="var(--muted)" opacity="0.9">' + d.short.substring(0,6) + '</text>';
+      var labelWeight = isOutlier ? '600' : 'normal';
+      var labelFill   = isOutlier ? 'var(--text)' : 'var(--muted)';
+      var labelOpac   = isOutlier ? '1' : '0.9';
+      html += '<text x="' + (cx+7) + '" y="' + (cy+4) + '" font-size="8" font-weight="' + labelWeight + '" fill="' + labelFill + '" opacity="' + labelOpac + '">' + d.short.substring(0,6) + '</text>';
     });
     // X axis labels
     html += '<text x="' + PAD + '" y="' + (H-4) + '" font-size="8" fill="var(--muted)">' + (cat==='AVG'?xMin.toFixed(3):Math.round(xMin)) + '</text>';
