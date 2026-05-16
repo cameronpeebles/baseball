@@ -17864,7 +17864,7 @@ function buildHistoricalCorrelations() {
   function corrColor(r){ if(r==null)return 'var(--muted)'; var a=Math.abs(r); if(a>=0.7)return r>0?'#1e6b3a':'#c0392b'; if(a>=0.4)return r>0?'#4a9a68':'#e67e22'; return '#8a8479'; }
   function corrLabel(r){ if(r==null)return 'n/a'; var a=Math.abs(r); if(a>=0.7)return 'Strong'; if(a>=0.4)return 'Moderate'; if(a>=0.2)return 'Weak'; return 'None'; }
 
-  // Compute correlations
+  // Compute correlations (all team-seasons)
   var catCorrs = CATS_H.map(function(cat) {
     var pairs = allPoints.map(function(p){ return [p[cat], p.pts]; });
     var r = pearsonH(pairs);
@@ -17874,6 +17874,24 @@ function buildHistoricalCorrelations() {
   });
   var sorted = catCorrs.slice().sort(function(a,b){return (b.r||0)-(a.r||0);});
 
+  // Same again, but per-cat we drop studentized residual > 2 before computing r.
+  // Re-uses _corrDropOutliers from the current-season correlations renderer
+  // (hoisted, same script tag).
+  var catCorrsNoOut = CATS_H.map(function(cat) {
+    var pairs = allPoints.map(function(p){ return [p[cat], p.pts]; });
+    var droppedCount = 0;
+    if (typeof _corrDropOutliers === 'function') {
+      var trim = _corrDropOutliers(pairs, 2);
+      pairs = trim.kept;
+      droppedCount = trim.droppedCount;
+    }
+    var r = pearsonH(pairs);
+    var isLow = LOW_H.indexOf(cat) !== -1;
+    if (isLow && r!=null) r = -r;
+    return {cat:cat, label:CAT_LABELS_H[cat], r:r, isLow:isLow, dropped:droppedCount};
+  });
+  var sortedNoOut = catCorrsNoOut.slice().sort(function(a,b){return (b.r||0)-(a.r||0);});
+
   var html = '';
 
   // ── Intro note ────────────────────────────────────────────────────────────
@@ -17882,18 +17900,16 @@ function buildHistoricalCorrelations() {
   html += 'Each dot is one team\'s full season. Colors indicate year. More data = more reliable correlations.';
   html += '</div>';
 
-  // ── Correlation summary bar ───────────────────────────────────────────────
+  // ── Correlation summary bars (dual: All seasons / No outliers) ─────────────
   html += '<div class="card" style="margin-bottom:20px">';
   html += '<div class="card-header"><span class="card-title">Category correlations with points (all 5 seasons)</span>';
   html += '<span style="font-size:12px;color:var(--muted)">What has historically mattered in your league?</span></div>';
   html += '<div class="card-body" style="padding:16px 20px">';
 
-  html += '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px">';
   // Rank-based color gradient: best correlation → dark green, weakest → red.
-  // Mirrors the convention on the current-season Correlations card.
   function rankColorH(idx, total) {
     if (total <= 1) return '#1e6b3a';
-    var t = idx / (total - 1); // 0 (best) → 1 (worst)
+    var t = idx / (total - 1);
     function lerp(a,b,p){ return Math.round(a+(b-a)*p); }
     function hexAt(c1, c2, p) {
       var r1=parseInt(c1.slice(1,3),16), g1=parseInt(c1.slice(3,5),16), b1=parseInt(c1.slice(5,7),16);
@@ -17903,20 +17919,74 @@ function buildHistoricalCorrelations() {
     if (t < 0.5) return hexAt('#1e6b3a', '#a08a3a', t/0.5);
     return hexAt('#a08a3a', '#c0392b', (t-0.5)/0.5);
   }
-  var rankedCorrsH = sorted.filter(function(c){ return c.r != null; });
-  rankedCorrsH.forEach(function(cc, idx) {
-    var barW = Math.round(Math.abs(cc.r)*100);
-    var col = rankColorH(idx, rankedCorrsH.length);
-    html += '<div style="display:flex;align-items:center;gap:10px">';
-    html += '<span style="width:44px;font-size:12px;font-weight:600;text-align:right;color:var(--text)">'+cc.label+'</span>';
-    html += '<div style="flex:1;height:18px;background:var(--bg);border-radius:3px;overflow:hidden">';
-    html += '<div style="height:100%;width:'+barW+'%;background:'+col+';border-radius:3px"></div></div>';
-    html += '<span style="width:110px;font-size:12px;color:'+col+';font-weight:500">'+(cc.r>=0?'+':'−')+Math.abs(cc.r).toFixed(3)+' - '+corrLabel(cc.r)+'</span>';
-    html += '</div>';
-  });
+  function _histBarsHtml(rows, showDropped) {
+    var ranked = rows.filter(function(c){ return c.r != null; });
+    var h = '<div style="display:flex;flex-direction:column;gap:6px">';
+    ranked.forEach(function(cc, idx) {
+      var barW = Math.round(Math.abs(cc.r)*100);
+      var col  = rankColorH(idx, ranked.length);
+      var sign = cc.r >= 0 ? '+' : '−';
+      var droppedSuffix = '';
+      if (showDropped && cc.dropped > 0) {
+        droppedSuffix = ' <span style="color:var(--muted);font-weight:400">(−'+cc.dropped+')</span>';
+      }
+      h += '<div style="display:flex;align-items:center;gap:8px">';
+      h += '<span style="width:38px;font-size:11px;font-weight:600;text-align:right;color:var(--text)">'+cc.label+'</span>';
+      h += '<div style="flex:1;height:16px;background:var(--bg);border-radius:3px;overflow:hidden">';
+      h += '<div style="height:100%;width:'+barW+'%;background:'+col+';border-radius:3px;transition:width 0.3s"></div></div>';
+      h += '<span style="width:108px;font-size:11px;color:'+col+';font-weight:500;white-space:nowrap">'+sign+Math.abs(cc.r).toFixed(3)+' · '+corrLabel(cc.r)+droppedSuffix+'</span>';
+      h += '</div>';
+    });
+    h += '</div>';
+    return h;
+  }
+  html += '<div style="margin-bottom:20px">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;flex-wrap:wrap;gap:8px">';
+  html += '<div style="font-size:11px;color:var(--muted)">Bar lengths show |r|. Color encodes rank (dark green = strongest).</div>';
+  html += '<div style="font-size:11px;color:var(--muted)">Outlier rule: studentized residual &gt; 2</div>';
   html += '</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">';
+  html += '<div>';
+  html += '<div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em">All team-seasons (n=50)</div>';
+  html += _histBarsHtml(sorted, false);
+  html += '</div>';
+  html += '<div>';
+  html += '<div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em">No outliers</div>';
+  html += _histBarsHtml(sortedNoOut, true);
+  html += '</div>';
+  html += '</div></div>';
 
   // ── Scatterplots grid ─────────────────────────────────────────────────────
+  // Helper: which indices in allPoints are regression outliers for THIS cat?
+  // We re-run the studentized-residual calculation locally so we can recover
+  // the index → outlier mapping (the shared _corrDropOutliers helper returns
+  // only kept pairs and a count, not indices). Math is identical.
+  function _histOutlierMapForCat(items, threshold) {
+    var n = items.length;
+    var out = {};
+    if (n < 4) return out;
+    var sx=0, sy=0, sxy=0, sx2=0;
+    items.forEach(function(it){ sx+=it.x; sy+=it.y; sxy+=it.x*it.y; sx2+=it.x*it.x; });
+    var den = n*sx2 - sx*sx;
+    if (den === 0) return out;
+    var slope = (n*sxy - sx*sy) / den;
+    var intercept = (sy - slope*sx) / n;
+    var xBar = sx / n;
+    var resids = items.map(function(it){ return it.y - (slope*it.x + intercept); });
+    var rss = resids.reduce(function(s,r){ return s + r*r; }, 0);
+    if (n - 2 <= 0) return out;
+    var se = Math.sqrt(rss / (n - 2));
+    if (se === 0) return out;
+    var sxx = items.reduce(function(s,it){ return s + (it.x-xBar)*(it.x-xBar); }, 0);
+    items.forEach(function(it, i) {
+      var lev = sxx === 0 ? 1/n : (1/n) + ((it.x-xBar)*(it.x-xBar)) / sxx;
+      var denom = se * Math.sqrt(Math.max(0, 1 - lev));
+      var stud = denom === 0 ? 0 : Math.abs(resids[i] / denom);
+      if (stud > threshold) out[i] = resids[i];
+    });
+    return out;
+  }
+
   html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">';
   CATS_H.forEach(function(cat) {
     var cc = catCorrs.find(function(c){return c.cat===cat;});
@@ -17926,6 +17996,12 @@ function buildHistoricalCorrelations() {
     var yMin=Math.min.apply(null,yVals)*0.95, yMax=Math.max.apply(null,yVals)*1.05;
     var xRange=xMax-xMin||1, yRange=yMax-yMin||1;
     var W=320, H=200, PAD=36;
+
+    // Pre-compute outlier indices for this cat.
+    var outlierMap = _histOutlierMapForCat(
+      allPoints.map(function(p){ return { x: p[cat], y: p.pts }; }),
+      2
+    );
 
     html += '<div style="background:var(--bg);border-radius:var(--radius);padding:12px">';
     html += '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">';
@@ -17940,7 +18016,7 @@ function buildHistoricalCorrelations() {
       html += '<line x1="'+PAD+'" y1="'+gy+'" x2="'+(W-8)+'" y2="'+gy+'" stroke="var(--border)" stroke-width="0.5"/>';
       html += '<text x="'+(PAD-4)+'" y="'+(gy+4)+'" text-anchor="end" font-size="8" fill="var(--muted)">'+Math.round(yMax-(yRange*(gi/4)))+'</text>';
     }
-    // Trend line (per-year + overall)
+    // Trend line
     var n=allPoints.length, sx=0,sy=0,sxy=0,sxx=0;
     allPoints.forEach(function(p){sx+=p[cat];sy+=p.pts;sxy+=p[cat]*p.pts;sxx+=p[cat]*p[cat];});
     var denom=n*sxx-sx*sx;
@@ -17950,13 +18026,23 @@ function buildHistoricalCorrelations() {
       var px2=PAD+(xMax-xMin)/xRange*(W-PAD-8), py2=H-PAD-(slope*xMax+intercept-yMin)/yRange*(H-PAD*2);
       html += '<line x1="'+px1+'" y1="'+py1+'" x2="'+px2+'" y2="'+py2+'" stroke="'+(cc?corrColor(cc.r):'#aaa')+'" stroke-width="2" stroke-dasharray="4,3" opacity="0.8"/>';
     }
-    // Dots colored by year
-    allPoints.forEach(function(p) {
+    // Dots (outliers get a dark ring; non-outliers keep year color only)
+    allPoints.forEach(function(p, i) {
       var cx = PAD+(p[cat]-xMin)/xRange*(W-PAD-8);
       var cy = H-PAD-(p.pts-yMin)/yRange*(H-PAD*2);
       var fmt = cat==='avg'?p[cat].toFixed(3):(cat==='era'||cat==='whip')?p[cat].toFixed(2):Math.round(p[cat]);
-      html += '<circle cx="'+cx+'" cy="'+cy+'" r="4" fill="'+p.color+'" opacity="0.75">';
-      html += '<title>'+p.yr+' Rank '+p.rank+': '+CAT_LABELS_H[cat]+'='+fmt+', Pts='+p.pts+'</title>';
+      var isOutlier = (outlierMap[i] !== undefined);
+      var radius = isOutlier ? 5 : 4;
+      var stroke = isOutlier ? '#1a1814' : 'none';
+      var strokeW = isOutlier ? 1.5 : 0;
+      var opacity = isOutlier ? 1 : 0.75;
+      var tipExtra = '';
+      if (isOutlier) {
+        var resid = outlierMap[i];
+        tipExtra = '\nOutlier: ' + (resid >= 0 ? '+' : '') + Math.round(resid) + ' pts vs trend';
+      }
+      html += '<circle cx="'+cx+'" cy="'+cy+'" r="'+radius+'" fill="'+p.color+'" stroke="'+stroke+'" stroke-width="'+strokeW+'" opacity="'+opacity+'">';
+      html += '<title>'+p.yr+' Rank '+p.rank+': '+CAT_LABELS_H[cat]+'='+fmt+', Pts='+p.pts+tipExtra+'</title>';
       html += '</circle>';
     });
     // X axis
