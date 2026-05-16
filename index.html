@@ -17235,6 +17235,39 @@ window.showCorrTab = function(tab, btn) {
   if (tab === 'historical') buildHistoricalCorrelations();
 };
 
+// Module-scope outlier filter shared by the current-season and historical
+// correlations renderers. Drops pairs whose studentized residual from the OLS
+// fit exceeds the threshold (typically 2). Returns {kept, droppedCount}.
+// Studentized = residual / (SE × sqrt(1 - leverage)), which is the proper
+// test statistic for "this point is unusually far from the trend given its
+// x-position." n < 4 is treated as too small to trim safely.
+window._stdResidDropOutliers = function(pairs, threshold) {
+  var n = pairs.length;
+  if (n < 4) return { kept: pairs.slice(), droppedCount: 0 };
+  var sx=0, sy=0, sxy=0, sx2=0;
+  pairs.forEach(function(p){ sx+=p[0]; sy+=p[1]; sxy+=p[0]*p[1]; sx2+=p[0]*p[0]; });
+  var den = n*sx2 - sx*sx;
+  if (den === 0) return { kept: pairs.slice(), droppedCount: 0 };
+  var slope = (n*sxy - sx*sy) / den;
+  var intercept = (sy - slope*sx) / n;
+  var xBar = sx / n;
+  var resids = pairs.map(function(p){ return p[1] - (slope*p[0] + intercept); });
+  var rss = resids.reduce(function(s,r){ return s + r*r; }, 0);
+  if (n - 2 <= 0) return { kept: pairs.slice(), droppedCount: 0 };
+  var se = Math.sqrt(rss / (n - 2));
+  if (se === 0) return { kept: pairs.slice(), droppedCount: 0 };
+  var sxx = pairs.reduce(function(s,p){ return s + (p[0]-xBar)*(p[0]-xBar); }, 0);
+  var kept = [];
+  var dropped = 0;
+  pairs.forEach(function(p, i) {
+    var lev = sxx === 0 ? 1/n : (1/n) + ((p[0]-xBar)*(p[0]-xBar)) / sxx;
+    var denom = se * Math.sqrt(Math.max(0, 1 - lev));
+    var stud = denom === 0 ? 0 : Math.abs(resids[i] / denom);
+    if (stud > threshold) dropped++; else kept.push(p);
+  });
+  return { kept: kept, droppedCount: dropped };
+};
+
 function renderCorrelations() {
   if (correlationsRendered) return;
   correlationsRendered = true;
@@ -17400,40 +17433,12 @@ function buildCorrelations(el) {
     var den = Math.sqrt((n*sx2-sx*sx) * (n*sy2-sy*sy));
     return den === 0 ? null : num/den;
   }
-  // Drop teams whose studentized residual from the OLS fit exceeds threshold.
-  // Returns { kept: [[x,y],...], droppedCount: n }.
-  function _corrDropOutliers(pairs, threshold) {
-    var n = pairs.length;
-    if (n < 4) return { kept: pairs.slice(), droppedCount: 0 }; // not enough to trim safely
-    var sx=0, sy=0, sxy=0, sx2=0;
-    pairs.forEach(function(p){ sx+=p[0]; sy+=p[1]; sxy+=p[0]*p[1]; sx2+=p[0]*p[0]; });
-    var den = n*sx2 - sx*sx;
-    if (den === 0) return { kept: pairs.slice(), droppedCount: 0 };
-    var slope = (n*sxy - sx*sy) / den;
-    var intercept = (sy - slope*sx) / n;
-    // Mean of x for leverage calc
-    var xBar = sx / n;
-    var resids = pairs.map(function(p){
-      var yhat = slope*p[0] + intercept;
-      return p[1] - yhat;
-    });
-    // RSS and residual SE (with n-2 degrees of freedom for simple linear regression)
-    var rss = resids.reduce(function(s,r){ return s + r*r; }, 0);
-    if (n - 2 <= 0) return { kept: pairs.slice(), droppedCount: 0 };
-    var se = Math.sqrt(rss / (n - 2));
-    if (se === 0) return { kept: pairs.slice(), droppedCount: 0 };
-    // Studentized residual: r_i / (se * sqrt(1 - h_ii)) where h_ii is leverage.
-    var sxx = pairs.reduce(function(s,p){ return s + (p[0]-xBar)*(p[0]-xBar); }, 0);
-    var kept = [];
-    var dropped = 0;
-    pairs.forEach(function(p, i) {
-      var lev = sxx === 0 ? 1/n : (1/n) + ((p[0]-xBar)*(p[0]-xBar)) / sxx;
-      var denom = se * Math.sqrt(Math.max(0, 1 - lev));
-      var stud = denom === 0 ? 0 : Math.abs(resids[i] / denom);
-      if (stud > threshold) dropped++; else kept.push(p);
-    });
-    return { kept: kept, droppedCount: dropped };
-  }
+  // Local alias for the shared studentized-residual outlier filter so the rest
+  // of renderCorrelations stays unchanged. Real implementation is at module
+  // scope (window._stdResidDropOutliers) so buildHistoricalCorrelations can
+  // reach it too.
+  var _corrDropOutliers = window._stdResidDropOutliers;
+
 
   // Build a sorted corr list. dropOutliers=false → original behavior.
   // Returns array of {cat, r, isLow, dropped} sorted desc by r.
@@ -17875,16 +17880,12 @@ function buildHistoricalCorrelations() {
   var sorted = catCorrs.slice().sort(function(a,b){return (b.r||0)-(a.r||0);});
 
   // Same again, but per-cat we drop studentized residual > 2 before computing r.
-  // Re-uses _corrDropOutliers from the current-season correlations renderer
-  // (hoisted, same script tag).
+  // Uses the module-scope window._stdResidDropOutliers helper.
   var catCorrsNoOut = CATS_H.map(function(cat) {
     var pairs = allPoints.map(function(p){ return [p[cat], p.pts]; });
-    var droppedCount = 0;
-    if (typeof _corrDropOutliers === 'function') {
-      var trim = _corrDropOutliers(pairs, 2);
-      pairs = trim.kept;
-      droppedCount = trim.droppedCount;
-    }
+    var trim = window._stdResidDropOutliers(pairs, 2);
+    pairs = trim.kept;
+    var droppedCount = trim.droppedCount;
     var r = pearsonH(pairs);
     var isLow = LOW_H.indexOf(cat) !== -1;
     if (isLow && r!=null) r = -r;
