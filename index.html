@@ -549,6 +549,12 @@ td.neg { color: #c0392b; font-weight: 500; }
               <button id="fwar-preset-hitter"  class="pill" style="font-size:11px;padding:5px 10px" onclick="applyFWARPreset('hitter')">🏏 Hitter Heavy</button>
               <button id="fwar-preset-optimal" class="pill" style="font-size:11px;padding:5px 10px" onclick="applyFWARPreset('optimal')">🎯 Optimal</button>
             </div>
+            <div style="font-size:11px;font-weight:600;color:var(--accent);margin:14px 0 8px">Correlation source</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              <button id="fwar-corr-mode-all"        class="pill" style="font-size:11px;padding:5px 10px" onclick="setFWARCorrMode('all')">All teams</button>
+              <button id="fwar-corr-mode-nooutliers" class="pill" style="font-size:11px;padding:5px 10px" onclick="setFWARCorrMode('no_outliers')">No outliers</button>
+            </div>
+            <div style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.4">Feeds the "Auto-weight from Correlation Page" button. "No outliers" drops teams with studentized residual &gt; 2 per cat.</div>
           </div>
         </div>
 
@@ -17939,6 +17945,8 @@ function renderFWARPage() {
   fwarRendered = true;
   window._fwarRendered = true;
   buildFWARModelInputs();
+  // Sync correlation-source toggle to the persisted mode.
+  if (typeof _fwarUpdateCorrModeButtons === 'function') _fwarUpdateCorrModeButtons();
   // Auto-populate the "Weights applied from correlations" card on first render
   // so users always see the current correlations without needing to click the
   // Auto-weight button. Only runs if season data is loaded.
@@ -19271,11 +19279,72 @@ function silentAutoWeightFromCorrelations(callback) {
   callback();
 }
 
+// ── fWAR correlation source mode ─────────────────────────────────────────────
+// Controls whether autoWeightFromCorrelations() drops regression outliers
+// (studentized residual > 2) per category before computing Pearson r.
+// Persisted in localStorage so the user's choice survives page reloads.
+window._fwarCorrMode = (function(){
+  try { return localStorage.getItem('fwar_corr_mode') || 'all'; }
+  catch(e) { return 'all'; }
+})();
+
+window.setFWARCorrMode = function(mode) {
+  if (mode !== 'all' && mode !== 'no_outliers') return;
+  window._fwarCorrMode = mode;
+  try { localStorage.setItem('fwar_corr_mode', mode); } catch(e) {}
+  _fwarUpdateCorrModeButtons();
+  var statusEl = document.getElementById('fwar-status');
+  if (statusEl) {
+    var label = (mode === 'no_outliers') ? 'No outliers' : 'All teams';
+    statusEl.textContent = 'Correlation source: ' + label + ' — click Auto-weight to apply.';
+  }
+};
+
+function _fwarUpdateCorrModeButtons() {
+  var allBtn = document.getElementById('fwar-corr-mode-all');
+  var nooBtn = document.getElementById('fwar-corr-mode-nooutliers');
+  if (!allBtn || !nooBtn) return;
+  allBtn.classList.toggle('active', window._fwarCorrMode === 'all');
+  nooBtn.classList.toggle('active', window._fwarCorrMode === 'no_outliers');
+}
+
+// Drop teams whose studentized residual > threshold for an (x,y) pair set.
+// Returns { kept: [[x,y],...], droppedCount: n }.
+function _fwarDropOutliers(pairs, threshold) {
+  var n = pairs.length;
+  if (n < 4) return { kept: pairs.slice(), droppedCount: 0 };
+  var sx=0, sy=0, sxy=0, sx2=0;
+  pairs.forEach(function(p){ sx+=p[0]; sy+=p[1]; sxy+=p[0]*p[1]; sx2+=p[0]*p[0]; });
+  var den = n*sx2 - sx*sx;
+  if (den === 0) return { kept: pairs.slice(), droppedCount: 0 };
+  var slope = (n*sxy - sx*sy) / den;
+  var intercept = (sy - slope*sx) / n;
+  var xBar = sx / n;
+  var resids = pairs.map(function(p){ return p[1] - (slope*p[0] + intercept); });
+  var rss = resids.reduce(function(s,r){ return s + r*r; }, 0);
+  if (n - 2 <= 0) return { kept: pairs.slice(), droppedCount: 0 };
+  var se = Math.sqrt(rss / (n - 2));
+  if (se === 0) return { kept: pairs.slice(), droppedCount: 0 };
+  var sxx = pairs.reduce(function(s,p){ return s + (p[0]-xBar)*(p[0]-xBar); }, 0);
+  var kept = [];
+  var dropped = 0;
+  pairs.forEach(function(p, i) {
+    var lev = sxx === 0 ? 1/n : (1/n) + ((p[0]-xBar)*(p[0]-xBar)) / sxx;
+    var denom = se * Math.sqrt(Math.max(0, 1 - lev));
+    var stud = denom === 0 ? 0 : Math.abs(resids[i] / denom);
+    if (stud > threshold) dropped++; else kept.push(p);
+  });
+  return { kept: kept, droppedCount: dropped };
+}
+
 window.autoWeightFromCorrelations = function() {
   var statusEl = document.getElementById('fwar-status');
   var summaryEl = document.getElementById('fwar-weight-summary');
   statusEl.textContent = 'Computing correlations…';
   summaryEl.innerHTML = '';
+
+  var corrMode = window._fwarCorrMode || 'all';
+  var dropOutliers = (corrMode === 'no_outliers');
 
   // Helper: Pearson correlation
   function pearsonLocal(pairs) {
@@ -19364,14 +19433,24 @@ window.autoWeightFromCorrelations = function() {
     }
 
     // Compute r per category vs pts - for ERA/WHIP flip sign (lower=better)
+    // When dropOutliers is true, drop teams whose studentized residual > 2 PER CAT
+    // before computing Pearson, mirroring the Correlations page "No outliers" bars.
     var LOW_CATS_C = ['ERA','WHIP'];
     var catR = {};
+    var catDropped = {}; // cat → number of teams dropped (0 in all-teams mode)
     CATS_ALL.forEach(function(cat){
       var pairs=dataset.filter(function(d){return d.stats[cat]!=null;})
                        .map(function(d){return [d.stats[cat],d.pts];});
+      var droppedCount = 0;
+      if (dropOutliers) {
+        var trim = _fwarDropOutliers(pairs, 2);
+        pairs = trim.kept;
+        droppedCount = trim.droppedCount;
+      }
       var r=pearsonLocal(pairs);
       if (r!=null && LOW_CATS_C.indexOf(cat)!==-1) r=-r; // flip so positive = good
       catR[cat]=r;
+      catDropped[cat]=droppedCount;
     });
 
     // Normalize to 0–1: weight = |r| / max(|r|)
@@ -19412,7 +19491,10 @@ window.autoWeightFromCorrelations = function() {
       {cat:'WHIP', type:'pit', oldW:FWAR.pitWeights['WHIP'], newW:newPitW['WHIP']},
     ];
 
-    var sh='<div class="card"><div class="card-header"><span class="card-title">Weights applied from correlations</span>';
+    var modeBadge = dropOutliers
+      ? '<span style="margin-left:8px;padding:2px 8px;background:#fef3e2;color:#b7791f;border-radius:10px;font-size:10px;font-weight:600;letter-spacing:0.04em">NO OUTLIERS</span>'
+      : '<span style="margin-left:8px;padding:2px 8px;background:var(--accent-light);color:var(--accent);border-radius:10px;font-size:10px;font-weight:600;letter-spacing:0.04em">ALL TEAMS</span>';
+    var sh='<div class="card"><div class="card-header"><span class="card-title">Weights applied from correlations</span>' + modeBadge;
     sh+='<span style="font-size:12px;color:var(--muted)">Normalized |r| vs standings points. Review then click Recalculate fWAR.</span></div>';
     sh+='<div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%;font-size:12px">';
     sh+='<thead><tr>';
@@ -19426,6 +19508,8 @@ window.autoWeightFromCorrelations = function() {
     allCats.forEach(function(c,i){
       var r=catR[c.cat];
       var rStr=r!=null?(r>=0?'+':'')+r.toFixed(2):'-';
+      var dropN=catDropped[c.cat]||0;
+      var rSuffix = dropN > 0 ? ' <span style="font-size:10px;color:var(--muted);font-weight:400">(−'+dropN+')</span>' : '';
       var rCol=r==null?'var(--muted)':Math.abs(r)>=0.7?'#1e6b3a':Math.abs(r)>=0.4?'#4a9a68':'#8a8479';
       var changed=c.oldW!==c.newW;
       var delta=c.newW-c.oldW;
@@ -19438,7 +19522,7 @@ window.autoWeightFromCorrelations = function() {
       sh+='<tr style="'+bgRow+';border-bottom:1px solid var(--border)">';
       sh+='<td style="padding:8px 12px;text-align:left"><strong>'+c.cat+'</strong>';
       sh+='<span style="margin-left:6px;font-size:10px;color:var(--muted)">'+(c.type==='hit'?'batting':'pitching')+'</span></td>';
-      sh+='<td style="padding:8px 12px;text-align:center;font-weight:600;color:'+rCol+'">'+rStr+'</td>';
+      sh+='<td style="padding:8px 12px;text-align:center;font-weight:600;color:'+rCol+'">'+rStr+rSuffix+'</td>';
       sh+='<td style="padding:8px 12px;text-align:center;color:var(--muted)">'+c.oldW.toFixed(2)+'</td>';
       sh+='<td style="padding:8px 12px;text-align:center">';
       sh+='<strong>'+c.newW.toFixed(2)+'</strong>';
@@ -19466,7 +19550,8 @@ window.autoWeightFromCorrelations = function() {
       if (el) el.value=newPitW[c].toFixed(2);
     });
 
-    statusEl.textContent='Weights updated from correlations - review above, then click Recalculate fWAR.';
+    var modeLabel = dropOutliers ? 'no-outliers' : 'all-teams';
+    statusEl.textContent='Weights updated from '+modeLabel+' correlations - review above, then click Recalculate fWAR.';
   }
 
   // If JOE data not loaded yet, trigger it then proceed
