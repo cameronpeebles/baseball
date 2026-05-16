@@ -11909,7 +11909,8 @@ function _h2hHeaderHtml(teamNames, selectedTeam) {
     return { name: ti.name || '', label: ti.shortName || ti.name || '' };
   }) : teamNames.map(function(n){ return { name: n, label: n }; });
 
-  var h = '<div class="team-selector" style="border-bottom:0;padding:0 0 12px;margin-bottom:14px;align-items:center">';
+  var h = '<div class="card" style="padding:10px 14px;margin-bottom:14px">';
+  h += '<div class="team-selector" style="border-bottom:0;padding:0;margin:0;align-items:center">';
   rows.forEach(function(r){
     var cls = 'team-btn' + (r.name === selectedTeam ? ' active' : '');
     h += '<button class="'+cls+'" onclick="window._h2hSetTeam(\''
@@ -11920,6 +11921,7 @@ function _h2hHeaderHtml(teamNames, selectedTeam) {
   h += '<button onclick="window._h2hOpenGuide()" style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:4px 10px;font-size:11px;border:0.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--muted);cursor:pointer;font-family:inherit">';
   h += '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
   h += 'How this works</button>';
+  h += '</div>';
   h += '</div>';
   return h;
 }
