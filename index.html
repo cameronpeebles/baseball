@@ -3520,20 +3520,11 @@ function fetchOnce(globalName, filename, transform) {
 // is expected to populate one of these globals.
 var DATA = {
   fullSchedule:   function(){ return fetchOnce('_fullSchedule',  'full_schedule.json'); },
-  // joeStats: per-period team stat rows from joe_stats.json. Each row is
-  // {team, week, R, HR, RBI, SB, AVG, K, W, SV, ERA, WHIP} for ONE scoring
-  // period. Crucially, this file only contains rows for periods that have
-  // actually been played — the Python loop in fetch_fantrax.py breaks out
-  // when it hits the first period with no data. This matters for the H2H
-  // Predictor's currentPeriod logic, which walks rows until it finds one
-  // with no stats; if we sourced from standings_schedule.json instead, that
-  // file may contain future periods with cumulative/placeholder data and
-  // the walk would never stop. The cache key _joeStatsCache and _hasRealStats
-  // flag are preserved so existing consumers don't change.
-  joeStats:       function(){ return fetchOnce('_joeStatsCache', 'joe_stats.json',
-                              function(d){ var rows = Array.isArray(d) ? d : [];
-                                           rows._hasRealStats = true;
-                                           return rows; }); },
+  // (joeStats removed — the H2H predictor uses its own _h2hLoadStats which
+  // loads + parses standings_schedule.json into the per-team-week stat rows
+  // it expects. joe_stats.json has a similar but distinct shape used by
+  // Match Predictions; mixing them caused currentPeriod-vs-maxScheduleWeek
+  // mismatches in some leagues. Keep them separate.)
   fpHitters:      function(){ return fetchOnce('_rosHitData', 'fantasypros_hitters.json',
                               function(d){ return d || []; }); },
   fpPitchers:     function(){ return fetchOnce('_rosPitData', 'fantasypros_pitchers.json',
@@ -11585,14 +11576,37 @@ function predictH2H(a, b) {
   window._h2hParseScheduleData = _h2hParseScheduleData;
 
   // Lazy-load + parse the schedule file, populate the predictor cache.
-  // Delegates to DATA.joeStats which handles the parse + cache.
-  function _h2hLoadStats() { return DATA.joeStats(); }
+  // This was the original working implementation — _joeStatsCache contains
+  // PARSED standings_schedule data (per-period team stats), distinct from
+  // raw joe_stats.json which has a similar shape but different period
+  // numbering semantics in some leagues. We restore it to avoid the
+  // currentPeriod-walks-past-maxScheduleWeek regression seen when the cache
+  // got populated from joe_stats.json instead.
+  //
+  // _hasRealStats is the gating flag — if the cache was populated by
+  // someone else (e.g. renderMatchPredictions writing raw joe_stats.json),
+  // _hasRealStats won't be set and we'll re-fetch+re-parse here, OVERWRITING
+  // the cache with the predictor's expected shape.
+  function _h2hLoadStats() {
+    if (window._joeStatsCache && window._joeStatsCache._hasRealStats) {
+      return Promise.resolve(window._joeStatsCache);
+    }
+    return loadJSON('standings_schedule.json').then(function(data){
+      var rows = _h2hParseScheduleData(data);
+      rows._hasRealStats = true;
+      window._joeStatsCache = rows;
+      return rows;
+    });
+  }
 
   window._h2hPredictTeam = function(teamName, opts) {
     if (window._joeStatsCache && window._joeStatsCache._hasRealStats && window._fullSchedule) {
       return _runPrediction(teamName, opts);
     }
-    return Promise.all([ DATA.joeStats(), DATA.fullSchedule() ]).then(function(){
+    return Promise.all([
+      _h2hLoadStats(),
+      DATA.fullSchedule()
+    ]).then(function(){
       return _runPrediction(teamName, opts);
     });
   };
@@ -11600,7 +11614,10 @@ function predictH2H(a, b) {
     if (window._joeStatsCache && window._joeStatsCache._hasRealStats && window._fullSchedule) {
       return Promise.resolve();
     }
-    return Promise.all([ DATA.joeStats(), DATA.fullSchedule() ]);
+    return Promise.all([
+      _h2hLoadStats(),
+      DATA.fullSchedule()
+    ]);
   };
 
   // Convenience: cache joe_stats for the predictor on the existing matchup page load.
