@@ -3520,10 +3520,19 @@ function fetchOnce(globalName, filename, transform) {
 // is expected to populate one of these globals.
 var DATA = {
   fullSchedule:   function(){ return fetchOnce('_fullSchedule',  'full_schedule.json'); },
-  joeStats:       function(){ return fetchOnce('_joeStatsCache', 'standings_schedule.json',
-                              function(d){ var rows = (typeof _h2hParseScheduleData === 'function')
-                                                       ? _h2hParseScheduleData(d) : d;
-                                           if (Array.isArray(rows)) rows._hasRealStats = true;
+  // joeStats: per-period team stat rows from joe_stats.json. Each row is
+  // {team, week, R, HR, RBI, SB, AVG, K, W, SV, ERA, WHIP} for ONE scoring
+  // period. Crucially, this file only contains rows for periods that have
+  // actually been played — the Python loop in fetch_fantrax.py breaks out
+  // when it hits the first period with no data. This matters for the H2H
+  // Predictor's currentPeriod logic, which walks rows until it finds one
+  // with no stats; if we sourced from standings_schedule.json instead, that
+  // file may contain future periods with cumulative/placeholder data and
+  // the walk would never stop. The cache key _joeStatsCache and _hasRealStats
+  // flag are preserved so existing consumers don't change.
+  joeStats:       function(){ return fetchOnce('_joeStatsCache', 'joe_stats.json',
+                              function(d){ var rows = Array.isArray(d) ? d : [];
+                                           rows._hasRealStats = true;
                                            return rows; }); },
   fpHitters:      function(){ return fetchOnce('_rosHitData', 'fantasypros_hitters.json',
                               function(d){ return d || []; }); },
@@ -11385,8 +11394,27 @@ function predictH2H(a, b) {
         var lt = t.toLowerCase();
         return lt.indexOf(target) !== -1 || target.indexOf(lt) !== -1;
       });
+      // Distinguish "regular season complete" from "team name mismatch".
+      // - Season-complete: currentPeriod > maxScheduleWeek (every scheduled
+      //   period has been scored). This is informational, not a bug.
+      // - Name-mismatch: schedule still has future periods but our team name
+      //   doesn't appear among scheduled rows. This is the real failure case.
+      var seasonComplete = currentPeriod > maxScheduleWeek;
+      var teamInScheduleAtAll = scheduleTeamList.some(function(t){
+        if (t.toLowerCase() === target) return true;
+        if (typeof _normPlayerKey === 'function' && _normPlayerKey(t) === _normPlayerKey(teamName||'')) return true;
+        return false;
+      });
+      var errMsg;
+      if (seasonComplete) {
+        errMsg = 'The regular season is complete — every scheduled period (1–'+maxScheduleWeek+') has been scored. Nothing to predict for "'+teamName+'".';
+      } else if (!teamInScheduleAtAll) {
+        errMsg = 'No matchups in the schedule mention "'+teamName+'". The schedule data may use a different spelling.';
+      } else {
+        errMsg = 'No remaining matchups found for "'+teamName+'" past period '+currentPeriod+'. They may have already played all their scheduled weeks.';
+      }
       return {
-        error: 'No remaining matchups found for "'+teamName+'".',
+        error: errMsg,
         diagnostics: {
           currentPeriod: currentPeriod,
           maxScheduleWeek: maxScheduleWeek,
@@ -11741,15 +11769,14 @@ function _h2hRenderResult(teamNames, selectedTeam, r) {
   var gutterClose = '</div>';
   if (r && r.error) {
     var diagHtml = '';
-    if (r.diagnostics) {
+    // Only show the diagnostic block when something might be genuinely wrong
+    // (team-name mismatch or partial schedule). For "season complete" the
+    // error message already explains everything; the diagnostic block is noise.
+    if (r.diagnostics && !r.diagnostics.seasonComplete) {
       var d = r.diagnostics;
       diagHtml += '<div style="margin-top:16px;padding:12px;background:var(--bg);border-radius:6px;text-align:left;font-size:11px;color:var(--muted);max-width:680px;margin-left:auto;margin-right:auto">';
       diagHtml += '<div style="font-weight:600;color:var(--text);margin-bottom:6px">Diagnostic info</div>';
-      if (d.seasonComplete) {
-        diagHtml += '<div style="margin-bottom:4px">Season may be complete: current period <strong>'+d.currentPeriod+'</strong> &gt; last scheduled period <strong>'+d.maxScheduleWeek+'</strong>.</div>';
-      } else {
-        diagHtml += '<div style="margin-bottom:4px">Current period: <strong>'+d.currentPeriod+'</strong> · Last scheduled period: <strong>'+d.maxScheduleWeek+'</strong></div>';
-      }
+      diagHtml += '<div style="margin-bottom:4px">Current period: <strong>'+d.currentPeriod+'</strong> · Last scheduled period: <strong>'+d.maxScheduleWeek+'</strong></div>';
       if (d.fuzzyMatches && d.fuzzyMatches.length) {
         diagHtml += '<div style="margin-bottom:4px">Near-match teams in schedule: <strong>'+d.fuzzyMatches.map(_loEsc).join('</strong>, <strong>')+'</strong> — the schedule data may use a different spelling for this team.</div>';
       }
