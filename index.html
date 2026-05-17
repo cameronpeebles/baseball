@@ -3399,20 +3399,62 @@ window.reloadSiteData = function() {
   if (btn) { btn.disabled = true; btn.textContent = 'Reloading…'; }
   loadJSON.bust();
   _resetRenderFlags();
+  // Null the data globals that have early-return guards based on truthiness.
+  // Otherwise the ROS-data IIFE at the bottom of init() sees populated
+  // _rosHitData/_rosPitData and skips the re-fetch, leaving stale projections.
+  if (typeof _rosHitData !== 'undefined') _rosHitData = null;
+  if (typeof _rosPitData !== 'undefined') _rosPitData = null;
+  // Also wipe player-keyed lookups that were populated from the prior data.
+  // (showPage will repopulate as needed.)
+  window._playerCurrSgpHit = {};
+  window._playerCurrSgpPit = {};
+  window._playerRosSgpHit  = {};
+  window._playerRosSgpPit  = {};
+  window._playerRosCatHit  = {};
+  window._playerRosCatPit  = {};
+  window._playerRosPctHit  = {};
+  window._playerRosPctPit  = {};
+  window._lgRatingLookup   = {};
+  window._posRatingLookup  = {};
+  window._fwarPctLookup    = null;
+  window._fwarPctLookupHit = null;
+  window._fwarPctLookupPit = null;
+
   // Identify the currently active page (e.g. 'dashboard', 'fwar') from its DOM id.
   var activePage = document.querySelector('.page.active');
   var activeName = activePage ? activePage.id.replace(/^page-/, '') : 'dashboard';
   var activeNavBtn = document.querySelector('nav button.active');
-  // Re-fire init to reload data, then re-show the active page so its renderer fires.
-  if (typeof init === 'function') {
-    try { init(); } catch(e) { console.warn('reloadSiteData: init failed', e); }
-  }
-  // Wait a tick so init's promises settle, then re-trigger the page render.
-  setTimeout(function(){
-    if (typeof showPage === 'function' && activeNavBtn) {
-      try { showPage(activeName, activeNavBtn); } catch(e) { console.warn('reloadSiteData: showPage failed', e); }
-    }
+
+  function reset() {
     if (btn) { btn.disabled = false; btn.textContent = 'Reload data'; }
+  }
+  function showError(msg) {
+    if (btn) {
+      btn.textContent = 'Reload failed';
+      setTimeout(function(){ btn.disabled = false; btn.textContent = 'Reload data'; }, 2500);
+    }
+    console.error('reloadSiteData:', msg);
+  }
+
+  // Re-fire init to reload data, then re-show the active page so its renderer fires.
+  // init() returns no promise; it kicks off a Promise.all internally that resolves
+  // asynchronously, so we wait a fixed delay before re-rendering the page.
+  // If init throws synchronously we surface that immediately.
+  try {
+    init();
+  } catch(e) {
+    showError(e && e.message || e);
+    return;
+  }
+  setTimeout(function(){
+    try {
+      if (typeof showPage === 'function' && activeNavBtn) {
+        showPage(activeName, activeNavBtn);
+      }
+      reset();
+    } catch(e) {
+      showError(e && e.message || e);
+    }
   }, 400);
 };
 
@@ -3686,9 +3728,7 @@ function init() {
     S.fgHitCols   = (fgHit && fgHit.cols) || ['SLG','xSLG','Barrel%','HardHit%','EV50','BABIP','xwOBA','wOBA'];
     S.fgPitCols   = (fgPit && fgPit.cols) || ['Whiff%','K%','BB%'];
 
-    function normNameJS(n) {
-      return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
-    }
+    function normNameJS(n){ return _normPlayerKey(n); }
     (fgHit.players || []).forEach(function(p) {
       if (p.PlayerName) {
         S.fgHitLookup[p.PlayerName.toLowerCase()] = p;
@@ -3732,9 +3772,7 @@ function init() {
     console.log('Statcast pitchers loaded:', Object.keys(S.scPitLookup).length);
 
     // Build targets lookup eagerly
-    function normNameT(n) {
-      return (n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
-    }
+    function normNameT(n){ return _normPlayerKey(n); }
     S.targetsHitLookup = {};
     (tgtHit || []).forEach(function(t) {
       var k = normNameT(t.name || '');
@@ -4140,7 +4178,7 @@ function drawPlayers(type) {
     var name   = scorer.name || scorer.shortName || '';
     var ftId   = (cells[1] && cells[1].teamId) || '';
     var fw     = fwarLookup[name];
-    var fgRow  = hasFG ? (fgLookup[name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim()] || fgLookup[name.toLowerCase()] || null) : null;
+    var fgRow  = hasFG ? (fgLookup[_normPlayerKey(name)] || fgLookup[name.toLowerCase()] || null) : null;
     return { row: row, scorer: scorer, cells: cells, name: name, ftId: ftId, fw: fw, fgRow: fgRow, isHit: isHit };
   });
 
@@ -4175,15 +4213,18 @@ function drawPlayers(type) {
         if (!parts.some(function(p){return eligible.indexOf(p) !== -1;})) return false;
       }
     }
-    // Archetype filter - uses pre-computed lookups (may be empty on first render)
+    // Archetype filter - uses pre-computed lookups (may be empty on first render).
+    // _findInLookup handles both _normPlayerKey-style keys and raw-lowercase
+    // fallback so accent/punctuation differences don't filter players out.
     if (archFilter && archFilter !== 'ALL') {
-      var fpctA2  = window._fwarPctLookup  ? window._fwarPctLookup[nameLow]  : null;
-      var posRA2  = window._posRatingLookup ? window._posRatingLookup[nameLow] : null;
-      var lgRA2   = window._lgRatingLookup  ? window._lgRatingLookup[nameLow]  : null;
-      var rosPA2  = isHit ? (window._playerRosPctHit||{})[nameLow] : (window._playerRosPctPit||{})[nameLow];
-      var rosSA2  = isHit ? (window._playerRosSgpHit||{})[nameLow] : (window._playerRosSgpPit||{})[nameLow];
+      var entryName = (e.scorer && e.scorer.name) || e.name;
+      var fpctA2  = window._findInLookup(window._fwarPctLookup,   entryName);
+      var posRA2  = window._findInLookup(window._posRatingLookup, entryName);
+      var lgRA2   = window._findInLookup(window._lgRatingLookup,  entryName);
+      var rosPA2  = window._findInLookup(isHit ? window._playerRosPctHit : window._playerRosPctPit, entryName);
+      var rosSA2  = window._findInLookup(isHit ? window._playerRosSgpHit : window._playerRosSgpPit, entryName);
       var arch2   = getArchetype(fpctA2 != null ? fpctA2 / 100 : null, posRA2, lgRA2, rosPA2 != null ? rosPA2 / 100 : null,
-        { kind: isHit ? 'hit' : 'pit', rosSgp: rosSA2, name: e.scorer && e.scorer.name });
+        { kind: isHit ? 'hit' : 'pit', rosSgp: rosSA2, name: entryName });
       if (!arch2 || arch2.name !== archFilter) return false;
     }
     return true;
@@ -4578,7 +4619,7 @@ function showRoster(teamId) {
       var hs = scorer.headshotUrl || '';
       var statusId = row.statusId || '1';
       var fw = fwarLookup[name];
-      var fgRow = hasFG ? (fgLookup[name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim()] || fgLookup[name.toLowerCase()] || null) : null;
+      var fgRow = hasFG ? (fgLookup[_normPlayerKey(name)] || fgLookup[name.toLowerCase()] || null) : null;
 
       html += '<tr>';
       html += '<td class="left"><div class="team-cell">' + (hs ? '<img class="player-hs" src="' + hs + '" alt="" onerror="this.style.display=\'none\'">' : '') + '<span><strong>' + name + '</strong></span></div></td>';
@@ -4599,7 +4640,7 @@ function showRoster(teamId) {
           var fc = fv >= 2 ? '#1e6b3a' : fv >= 0.5 ? '#4a9a68' : fv >= -0.5 ? '#b7791f' : '#c0392b';
           html += '<td style="font-weight:700;color:' + fc + ';white-space:nowrap">' + (fv >= 0 ? '+' : '') + fv.toFixed(2) + '</td>';
           // fWAR%
-          var normN2 = name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+          var normN2 = _normPlayerKey(name);
           var fpct2 = isHitSection
             ? (window._fwarPctLookupHit||window._fwarPctLookup||{})[normN2]||(window._fwarPctLookupHit||window._fwarPctLookup||{})[name.toLowerCase()]
             : (window._fwarPctLookupPit||window._fwarPctLookup||{})[normN2]||(window._fwarPctLookupPit||window._fwarPctLookup||{})[name.toLowerCase()];
@@ -4610,11 +4651,9 @@ function showRoster(teamId) {
       }
 
       // Pos Rating and League Rating
-      var normN3 = name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
-      var posR = (window._posRatingLookup||{})[normN3] != null ? window._posRatingLookup[normN3]
-               : (window._posRatingLookup||{})[name.toLowerCase()];
-      var lgR  = (window._lgRatingLookup||{})[normN3] != null ? window._lgRatingLookup[normN3]
-               : (window._lgRatingLookup||{})[name.toLowerCase()];
+      var normN3 = _normPlayerKey(name);
+      var posR = window._findInLookup(window._posRatingLookup, name);
+      var lgR  = window._findInLookup(window._lgRatingLookup, name);
       // Compute on the fly if still missing (Player Data not yet visited, or
       // boot-time drawPlayers populated keys under name.toLowerCase() but the
       // row name normalizes differently). Previously this passed an empty
@@ -4930,7 +4969,7 @@ function buildTeamRosterCharts(teamId) {
   var allFW = FWAR.hitResults.concat(FWAR.pitResults);
   var fwMap = {};
   allFW.forEach(function(p){ fwMap[p.name] = p; });
-  function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function normN(n){ return _normPlayerKey(n); }
 
   (TA.players || []).filter(function(p){ return p.ftId === teamId; }).forEach(function(p) {
     var fw = fwMap[p.name] || fwMap[normN(p.name)];
@@ -5169,7 +5208,7 @@ function buildTeamRosterCharts(teamId) {
 function buildScatterCard(teamId, containerId) {
   var scEl = document.getElementById(containerId);
   if (!scEl) return;
-  function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function normN(n){ return _normPlayerKey(n); }
   var teamPlayers = (TA.players||[]).filter(function(p){ return p.ftId===teamId; });
   var scatterPlayers = teamPlayers.map(function(p){
     var k=normN(p.name);
@@ -9564,7 +9603,7 @@ function _rosAdRenderStats() {
   var addHs  = addP  ? (addP.hs||'') : '';
   var dropHs = dropPlayers.length > 0 ? (dropPlayers[0].hs||'') : '';
 
-  function normN(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function normN(n){ return _normPlayerKey(n); }
   // Aggregate current stats across all slot-positioned add players (looked up from FP names)
   var addCurrList = _rosAdSelected.filter(function(p){return !!p;}).map(function(p){
     return (window._rosCurrentStats||{})[normN(p._displayName||'')] || null;
@@ -12616,17 +12655,24 @@ window._playerRosCatHit  = window._playerRosCatHit  || {};
 window._playerRosCatPit  = window._playerRosCatPit  || {};
 
 function _normPlayerKey(n) {
-  // Strip parenthetical suffixes, normalize accents (Jesús → Jesus, García → Garcia),
-  // convert internal punctuation (periods, hyphens, em/en dashes, apostrophes,
-  // slashes) to spaces BEFORE stripping non-letters — that way
-  // "Andrew Vaughn-Smith" / "Andrew Vaughn Smith" both produce
-  // "andrew vaughn smith" instead of one becoming "vaughnsmith".
-  // Then lowercase, drop remaining non-letters, collapse whitespace, and strip
-  // common name suffixes (Jr, Sr, II, III, IV).
-  // Finally, collapse runs of single-letter tokens at the start so
-  // "J.D. Martinez" (→ "j d martinez") matches "JD Martinez" (→ "jd martinez").
-  // All become "jd martinez".
+  // Canonical player-name normalizer. Used everywhere the site joins data
+  // across sources (Fantrax roster, FantasyPros ROS, FanGraphs, fWAR results,
+  // current-season stats). Available via window._normName alias.
+  //
+  // Steps, in order:
+  //   1. Strip parenthetical suffixes (e.g. "(SP)" or "(NYY - SP)")
+  //   2. Strip trailing Fantrax status tags (IL/IL10/IL15/DTD/FA/NA)
+  //   3. Normalize accents (Jesús → Jesus, García → Garcia) via NFD decomp
+  //   4. Convert internal punctuation (periods, hyphens, em/en dashes,
+  //      apostrophes, backticks, slashes) to spaces BEFORE stripping
+  //      non-letters — so "Vaughn-Smith" / "Vaughn Smith" both produce
+  //      "vaughn smith" instead of one becoming "vaughnsmith"
+  //   5. Lowercase, drop remaining non-letters, collapse whitespace
+  //   6. Strip name suffixes (Jr, Sr, II, III, IV) — these vary by source
+  //   7. Collapse leading single-letter token runs so "J.D. Martinez"
+  //      (→ "j d martinez") matches "JD Martinez" (→ "jd martinez")
   var raw = (n||'').replace(/\s*\([^)]*\).*$/, '');
+  raw = raw.replace(/\s+(IL\d*|DTD|FA|NA)\s*$/i, '');
   if (raw.normalize) raw = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   raw = raw.replace(/[.\-\u2013\u2014'`/]/g, ' ');
   var k = raw.toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
@@ -12638,6 +12684,25 @@ function _normPlayerKey(n) {
   }
   return parts.join(' ');
 }
+window._normName = _normPlayerKey;
+
+// _findInLookup(lookup, name) — robust player-lookup helper.
+// Tries the canonical normalized key first (handles accents, punctuation,
+// suffixes), then a raw-lowercase fallback (for legacy lookups populated
+// before _normPlayerKey was canonicalized). Returns the value, or null if
+// the player isn't found.
+//
+// Use this anywhere code reads from a player-keyed map. It abstracts the
+// "which normalizer was used to build this lookup" question — as long as the
+// builder used either _normPlayerKey or name.toLowerCase(), we'll find it.
+window._findInLookup = function(lookup, name) {
+  if (!lookup || !name) return null;
+  var norm = _normPlayerKey(name);
+  if (lookup[norm] != null) return lookup[norm];
+  var low = (name || '').toLowerCase();
+  if (lookup[low] != null) return lookup[low];
+  return null;
+};
 
 function _buildPlayerSgpLookups() {
   var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
@@ -13295,9 +13360,7 @@ function drawFARatings() {
     return h;
   }
 
-  function normNameFA(n) {
-    return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
-  }
+  function normNameFA(n){ return _normPlayerKey(n); }
   function getFAMetrics(p, isBat) {
     var k = normNameFA(p.name||'');
     var fwAll = isBat ? FWAR.hitResults : FWAR.pitResults;
@@ -13739,9 +13802,9 @@ window.showFAFixer = function(teamId) {
     var topFAs = (TA.faPlayers || [])
       .filter(function(p) { return p.bestGroup === g; })
       .map(function(p) {
-        var k=(p.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+        var k=_normPlayerKey(p.name);
         var fwAll2=isBat2?FWAR.hitResults:FWAR.pitResults;
-        var fw2=fwAll2?fwAll2.find(function(x){return ((x.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim())===k;}):null;
+        var fw2=fwAll2?fwAll2.find(function(x){return (_normPlayerKey(x.name))===k;}):null;
         p._sortFwar=fw2?fw2.fWAR:-999; return p;
       })
       .sort(function(a, b) { return b._sortFwar - a._sortFwar; })
@@ -13763,10 +13826,10 @@ window.showFAFixer = function(teamId) {
     html += '</tr></thead><tbody>';
 
     topFAs.forEach(function(p) {
-      var nameLow = (p.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
+      var nameLow = _normPlayerKey(p.name);
       var isBat   = (g !== 'SP' && g !== 'RP');
       var fwAll   = isBat ? FWAR.hitResults : FWAR.pitResults;
-      var fw      = fwAll ? fwAll.find(function(x){ return ((x.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim()) === nameLow; }) : null;
+      var fw      = fwAll ? fwAll.find(function(x){ return (_normPlayerKey(x.name)) === nameLow; }) : null;
       var fwarVal = fw ? fw.fWAR : null;
       var fwarPct = isBat ? (window._fwarPctLookupHit||window._fwarPctLookup||{})[nameLow] : (window._fwarPctLookupPit||window._fwarPctLookup||{})[nameLow];
       // Try cached lookup first; compute on the fly if missing (FAs not in lookup)
@@ -14414,7 +14477,7 @@ window.buildNewDash = function(teamId) {
   var teamName = ti.name || ti.shortName || '';
 
   // ── Data gathering ──────────────────────────────────────────────────────
-  function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function normN(n){ return _normPlayerKey(n); }
 
   // fWAR totals by group
   var GC = ['#1a1f5e','#5b8db8','#7bc8a4','#e8d870'];
@@ -14774,7 +14837,7 @@ function renderArchetypePage() {
 
   var GROUPS = ['Infield','Outfield','SP','RP'];
 
-  function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function normN(n){ return _normPlayerKey(n); }
 
   // ── Compute raw scores per team ───────────────────────────────────────────
   var teamScores = teamIds.map(function(teamId) {
@@ -15346,7 +15409,7 @@ window.buildDashboard = function(teamId) {
 // ── Team Diagnostic Card ─────────────────────────────────────────────────────
 function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posData, joeVal) {
   var GROUPS = ['Infield','Outfield','SP','RP'];
-  function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function normN(n){ return _normPlayerKey(n); }
 
   // ── Compute team fWAR% percentile ─────────────────────────────────────
   var teamIds = Object.keys(S.teamInfo);
@@ -15731,7 +15794,7 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
 
   // ── Additional compute for Z-score section ─────────────────────────
 
-  function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function normN(n){ return _normPlayerKey(n); }
   var GROUPS = ['Infield','Outfield','SP','RP'];
   var teamIds = Object.keys(S.teamInfo);
   function teamFwarTotal(tid){
@@ -16444,7 +16507,7 @@ function assembleDashboard(teamId, el) {
   // Expected rank band from diagnostic
   var expBandStr = '-', expRankNum = null;
   var teamIds2 = Object.keys(S.teamInfo);
-  function normN_d(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function normN_d(n){ return _normPlayerKey(n); }
   if (teamIds2.length && window._fwarPctLookupHit) {
     function teamFwarT(tid){ var tot=0; ['Infield','Outfield','SP','RP'].forEach(function(g){ var isH=g==='Infield'||g==='Outfield'; var lk=isH?(window._fwarPctLookupHit||window._fwarPctLookup||{}):(window._fwarPctLookupPit||window._fwarPctLookup||{}); var gp=(TA.players||[]).filter(function(p){return p.ftId===tid&&p.bestGroup===g;}); var s=0,c=0; gp.forEach(function(p){var v=lk[normN_d(p.name)];if(v!=null){s+=v;c++;}}); tot+=c?s/c:0; }); return tot; }
     function teamLgT(tid){ var tot=0; ['Infield','Outfield','SP','RP'].forEach(function(g){ var gp=(TA.players||[]).filter(function(p){return p.ftId===tid&&p.bestGroup===g;}); var s=0,c=0; gp.forEach(function(p){var v=(window._lgRatingLookup||{})[normN_d(p.name)];if(v!=null){s+=v*100;c++;}}); tot+=c?s/c:0; }); return tot; }
@@ -16508,7 +16571,7 @@ function assembleDashboard(teamId, el) {
 
   // ── Inline compute for 7-tile grid ────────────────────────────────────
   var _GROUPS7 = ['Infield','Outfield','SP','RP'];
-  var _normN7  = function(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); };
+  var _normN7 = function(n){ return _normPlayerKey(n); };
   var _teamIds7 = Object.keys(S.teamInfo);
   var _fwTotals = _teamIds7.map(function(tid){
     var total=0;
@@ -16770,7 +16833,7 @@ function assembleDashboard(teamId, el) {
     function fwarTable(players, label, cats) {
       var isHit = label === 'Hitters';
       var fwPctLookup = isHit ? (window._fwarPctLookupHit||window._fwarPctLookup||{}) : (window._fwarPctLookupPit||window._fwarPctLookup||{});
-      function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+      function normN(n){ return _normPlayerKey(n); }
       function rCol(v){ return v==null?'var(--muted)':v>=65?'#1e6b3a':v>=50?'#4a9a68':v>=35?'#b7791f':'#c0392b'; }
 
       var h = '<div style="flex:1;min-width:0">';
@@ -18672,9 +18735,7 @@ window.showFWARProfile = function(name, type) {
   var scLookup = isHit ? S.scHitLookup : S.scPitLookup;
   var hasFG = scLookup && Object.keys(scLookup).length > 0;
   // Try normalized name (statcast_hitting.json uses norm_name), then raw lowercase, then fgLookup fallback
-  function normName(n) {
-    return n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
-  }
+  function normName(n){ return _normPlayerKey(n||''); }
   var nameLowNorm = normName(name);
   var fgFallback = isHit ? S.fgHitLookup : S.fgPitLookup;
   var fgRow2 = hasFG
@@ -18861,7 +18922,7 @@ function rescalePosRatings() {
   var lookup = window._posRatingLookup;
   if (!lookup || !TA.players || !TA.players.length) return;
 
-  function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function normN(n){ return _normPlayerKey(n); }
 
   // Map each player to their bestGroup
   var groups = { Infield:[], Outfield:[], SP:[], RP:[] };
@@ -18889,7 +18950,7 @@ function rescalePosRatings() {
   window._posRatingLookup = lookup;
 
   // Also update overallRating on TA.players so positional strength tiles reflect rescaled values
-  function normN2(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function normN2(n){ return _normPlayerKey(n); }
   (TA.players||[]).forEach(function(p) {
     var k = normN2(p.name);
     var v = lookup[k] != null ? lookup[k] : lookup[(p.name||'').toLowerCase()];
@@ -21296,10 +21357,7 @@ function renderSGPRosPage() {
 }
 
 function buildSGPRos(el, fpHit, fpPit) {
-  function normN(n) {
-    n = (n||'').replace(/\([^)]*\)/g,'').replace(/\s*(IL\d*|DTD|FA|NA)\s*$/i,'');
-    return n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
-  }
+  function normN(n){ return _normPlayerKey(n); }
   function ordSuffix(n){return n===1?'st':n===2?'nd':n===3?'rd':'th';}
   function rc(r){return r>=0.65?'#2d5a3d':r>=0.5?'#4a9a68':r>=0.35?'#b7791f':'#c0392b';}
 
@@ -21657,9 +21715,7 @@ function renderTargetsPage() {
     // Build name-keyed lookup if not already done at startup
     if (!S.targetsHitLookup || !Object.keys(S.targetsHitLookup).length) {
       S.targetsHitLookup = {};
-      function normNameT2(n) {
-        return (n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
-      }
+      function normNameT2(n){ return _normPlayerKey(n); }
       (data || []).forEach(function(t) {
         var k = normNameT2(t.name || '');
         if (k) S.targetsHitLookup[k] = t;
@@ -22555,12 +22611,8 @@ function drawTargetsTable() {
     return;
   }
 
-  // Name normalization - strip accents, lowercase, alpha only
-  function normName(n) {
-    return (n||'').toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
-  }
+  // Name normalization — delegates to canonical _normPlayerKey
+  function normName(n) { return _normPlayerKey(n); }
 
   // fWAR lookup
   var fwarLookup = {};
@@ -23041,7 +23093,7 @@ window.redrawFwarRatingChart = function() {
   var plotData = window._targetPlotData || [];
   if (!plotData.length) return;
 
-  function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function normN(n){ return _normPlayerKey(n); }
   var fwHit = window._fwarPctLookupHit || window._fwarPctLookup || {};
   var lgRat = window._lgRatingLookup || {};
 
@@ -23180,9 +23232,7 @@ function drawPitcherTargetsTable() {
   var el = document.getElementById('targets-pit-body');
   if (!el || !pitTargetsData) return;
 
-  function normName(n) {
-    return (n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
-  }
+  function normName(n){ return _normPlayerKey(n); }
 
   // fWAR lookup (pitchers)
   var fwarLookup = {};
@@ -23485,7 +23535,7 @@ window.redrawPitFwarRatingChart = function() {
   var plotData = window._pitTargetPlotData || [];
   if (!plotData.length) { wrap.innerHTML = ''; return; }
 
-  function normN(n){ return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function normN(n){ return _normPlayerKey(n); }
   var fwPit = window._fwarPctLookupPit || {};
   var lgRat = window._lgRatingLookup || {};
 
@@ -23839,7 +23889,7 @@ function _tlBuildHeatmap() {
   var pitData = _rosPitData || [];
   if (!hitData.length && !pitData.length) return { heatmap:heatmap, teams:teams, FINE_POS:FINE_POS };
 
-  function normN(n){ return (n||'').replace(/\s*\([^)]*\).*$/, '').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function normN(n){ return _normPlayerKey(n); }
   var rosterLookup = window._rosRosterLookup || {};
 
   function processPlayer(p, isHit) {
@@ -24374,8 +24424,7 @@ function _tlV2PartnerCardHtml(myTid, p, idx) {
 function _tlV2RatingsStripHtml(name, isHit, align) {
   if (!name) return '';
   // Strip FantasyPros paren suffix BEFORE normalizing so lookup keys match.
-  function _stripFP(n) { return (n||'').replace(/\s*\([^)]*\).*$/, '').trim(); }
-  function _nrm(n) { return _stripFP(n).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function _nrm(n) { return _normPlayerKey(n); } // _stripFP behavior is folded into _normPlayerKey
   var k = _nrm(name);
   // Curr SGP lookups are keyed via _normPlayerKey (NFD + suffix strip),
   // a slightly different normalizer than the rating ones. Use the right one.
@@ -24567,8 +24616,7 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState,
   // Normalize: FantasyPros names sometimes come in as "Jose Ramirez (CLE - 3B)".
   // Strip the paren suffix BEFORE applying _nrm so the key matches the
   // `scorer.name.toLowerCase()` from Fantrax stat rows — no parens.
-  function _stripFP(n) { return (n||'').replace(/\s*\([^)]*\).*$/, '').trim(); }
-  function _nrm(n) { return _stripFP(n).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function _nrm(n) { return _normPlayerKey(n); } // _stripFP behavior is folded into _normPlayerKey
   var wantHit = (kind === 'hit');
   var statsMode = (window._tlV2 && window._tlV2.statsMode === 'ros') ? 'ros' : 'curr';
   var posFilterKey = side + '_' + kind;
@@ -26485,7 +26533,7 @@ function renderROSTradeLab_legacy_unused() {
     if (!S.hitRows || !S.pitRows) return;
     window._rosRosterLookup = {};
     window._rosCurrentStats = window._rosCurrentStats || {};
-    function normN(n){ return (n||'').replace(/\s*\([^)]*\).*$/, '').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+    function normN(n){ return _normPlayerKey(n); }
     var allRows = (S.hitRows||[]).concat(S.pitRows||[]);
     allRows.forEach(function(row) {
       var sc = row.scorer||{};
@@ -26638,7 +26686,7 @@ function _tlRenderSuggestTab() {
 
 function _tlGetRosterForTeam(teamId) {
   // Returns array of { p, isHit } for rostered players on this team that have ROS data
-  function normN(n){ return (n||'').replace(/\s*\([^)]*\).*$/, '').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function normN(n){ return _normPlayerKey(n); }
   var rosterLookup = window._rosRosterLookup || {};
   var hitData = _rosHitData || [];
   var pitData = _rosPitData || [];
