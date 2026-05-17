@@ -11314,14 +11314,27 @@ function predictH2H(a, b) {
     if (!Array.isArray(fullSchedule)) return [];
     var current = currentPeriod || 1;
     var target = (teamName || '').trim().toLowerCase();
+    // Normalized form for fuzzy fallback (strips accents, punctuation,
+    // collapses internal whitespace) so cosmetic name drift doesn't break
+    // the lookup. _normPlayerKey works for team names too — same rules apply.
+    var targetNorm = (typeof _normPlayerKey === 'function') ? _normPlayerKey(teamName || '') : '';
     var out = [];
     fullSchedule.forEach(function(g){
       var wk = (g.week != null) ? g.week : g.period;
       if (wk == null || wk < current) return;
       var away = (g.away || '').trim().toLowerCase();
       var home = (g.home || '').trim().toLowerCase();
-      if (away === target)       out.push({ week: wk, opponent: g.home });
-      else if (home === target)  out.push({ week: wk, opponent: g.away });
+      // Strict lowercase match first.
+      if (away === target)      { out.push({ week: wk, opponent: g.home }); return; }
+      if (home === target)      { out.push({ week: wk, opponent: g.away }); return; }
+      // Normalized fallback so cosmetic differences (extra spaces, punctuation,
+      // accent variants) don't drop legitimate matchups.
+      if (targetNorm) {
+        var awayNorm = (typeof _normPlayerKey === 'function') ? _normPlayerKey(g.away || '') : '';
+        var homeNorm = (typeof _normPlayerKey === 'function') ? _normPlayerKey(g.home || '') : '';
+        if (awayNorm && awayNorm === targetNorm) { out.push({ week: wk, opponent: g.home }); return; }
+        if (homeNorm && homeNorm === targetNorm) { out.push({ week: wk, opponent: g.away }); return; }
+      }
     });
     out.sort(function(a,b){ return a.week - b.week; });
     return out;
@@ -11727,10 +11740,30 @@ function _h2hRenderResult(teamNames, selectedTeam, r) {
   var gutterOpen  = '<div style="max-width:920px;margin:0 auto;padding:0 4px">';
   var gutterClose = '</div>';
   if (r && r.error) {
+    var diagHtml = '';
+    if (r.diagnostics) {
+      var d = r.diagnostics;
+      diagHtml += '<div style="margin-top:16px;padding:12px;background:var(--bg);border-radius:6px;text-align:left;font-size:11px;color:var(--muted);max-width:680px;margin-left:auto;margin-right:auto">';
+      diagHtml += '<div style="font-weight:600;color:var(--text);margin-bottom:6px">Diagnostic info</div>';
+      if (d.seasonComplete) {
+        diagHtml += '<div style="margin-bottom:4px">Season may be complete: current period <strong>'+d.currentPeriod+'</strong> &gt; last scheduled period <strong>'+d.maxScheduleWeek+'</strong>.</div>';
+      } else {
+        diagHtml += '<div style="margin-bottom:4px">Current period: <strong>'+d.currentPeriod+'</strong> · Last scheduled period: <strong>'+d.maxScheduleWeek+'</strong></div>';
+      }
+      if (d.fuzzyMatches && d.fuzzyMatches.length) {
+        diagHtml += '<div style="margin-bottom:4px">Near-match teams in schedule: <strong>'+d.fuzzyMatches.map(_loEsc).join('</strong>, <strong>')+'</strong> — the schedule data may use a different spelling for this team.</div>';
+      }
+      diagHtml += '<div style="margin-bottom:4px">All teams in <code>full_schedule.json</code>: '+(d.teamsInSchedule||[]).map(_loEsc).join(', ')+'</div>';
+      if (d.sampleScheduleRow) {
+        diagHtml += '<div>Sample schedule row: <code style="font-size:10px">'+_loEsc(JSON.stringify(d.sampleScheduleRow))+'</code></div>';
+      }
+      diagHtml += '</div>';
+    }
     el.innerHTML = gutterOpen
       + _h2hHeaderHtml(teamNames, selectedTeam)
       + '<div class="card" style="padding:24px;text-align:center;color:var(--muted)">'
       + _loEsc(r.error)
+      + diagHtml
       + '</div>'
       + gutterClose;
     return;
