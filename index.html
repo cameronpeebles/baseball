@@ -24185,9 +24185,6 @@ function renderROSTradeLab() {
   if (typeof TA === 'undefined' || !TA.players || !TA.players.length) {
     if (typeof renderTradeAnalyzer === 'function') { try { renderTradeAnalyzer(); } catch (e) {} }
   }
-  if (typeof renderROSPage === 'function' && (!window._rosHitData || !window._rosHitData.length)) {
-    try { renderROSPage(); } catch (e) {}
-  }
   // Initialize team A/B defaults if they haven't been set yet.
   var teamIds = Object.keys((S && S.teamInfo) || {});
   if (!window._tlV2.teamA && teamIds.length) {
@@ -24197,7 +24194,27 @@ function renderROSTradeLab() {
     var aIdx = teamIds.indexOf(window._tlV2.teamA);
     window._tlV2.teamB = teamIds[(aIdx + 1) % teamIds.length];
   }
-  _tlV2RenderBuild();
+  // If FP data is already loaded, render immediately. Otherwise wait for both
+  // FP files via DATA helpers (the loadJSON cache layer dedupes so this won't
+  // re-fetch), then re-render. Without this wait, _tlV2GetTeamRoster reads
+  // empty _rosHitData/_rosPitData and the page stays stuck on "Loading roster
+  // data…" with no re-render ever firing.
+  if (window._rosHitData && window._rosHitData.length && window._rosPitData && window._rosPitData.length) {
+    _tlV2RenderBuild();
+  } else {
+    _tlV2RenderBuild(); // render immediately so the "Loading…" message paints
+    Promise.all([
+      DATA.fpHitters().catch(function(){ _rosHitData = []; return []; }),
+      DATA.fpPitchers().catch(function(){ _rosPitData = []; return []; })
+    ]).then(function(){
+      // Rebuild player SGP lookups if they haven't been built yet (e.g. boot
+      // path didn't reach _buildPlayerSgpLookups before user landed here).
+      if (typeof _buildPlayerSgpLookups === 'function') {
+        try { _buildPlayerSgpLookups(); } catch(e) { console.warn('Player SGP rebuild for Trade Lab failed:', e); }
+      }
+      _tlV2RenderBuild();
+    });
+  }
 }
 
 // (_tlV2RenderTeamPickers removed — team selection is now inside each picker card.)
