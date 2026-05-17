@@ -3766,7 +3766,10 @@ function init() {
         if (!S.hitRows || !S.pitRows) return;
         window._rosRosterLookup = {};
         window._rosCurrentStats = window._rosCurrentStats || {};
-        function normRos(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+        // Delegate to the canonical _normPlayerKey so hyphenated and dotted
+        // names normalize the same way for both Fantrax roster keys and the
+        // FantasyPros lookup that joins against them.
+        function normRos(n){ return _normPlayerKey(n); }
         var _hitIdx = (typeof buildStatIdx === 'function') ? buildStatIdx(S.hitHeaders) : {};
         var _pitIdx = (typeof buildStatIdx === 'function') ? buildStatIdx(S.pitHeaders) : {};
         var allRows = (S.hitRows||[]).concat(S.pitRows||[]);
@@ -4612,18 +4615,32 @@ function showRoster(teamId) {
                : (window._posRatingLookup||{})[name.toLowerCase()];
       var lgR  = (window._lgRatingLookup||{})[normN3] != null ? window._lgRatingLookup[normN3]
                : (window._lgRatingLookup||{})[name.toLowerCase()];
-      // Compute on the fly if still missing (Player Data not yet visited)
+      // Compute on the fly if still missing (Player Data not yet visited, or
+      // boot-time drawPlayers populated keys under name.toLowerCase() but the
+      // row name normalizes differently). Previously this passed an empty
+      // stats object, which always returned null from calcRating — that's why
+      // pitcher league ratings rendered as dashes when the fallback fired.
       if ((posR == null || lgR == null) && window._ratingPools && window._calcRating) {
         var pools2 = window._ratingPools;
         var pCats2 = isHitSection ? BAT_CATS : PIT_CATS;
+        // Build a section-local stat index from this section's headers so we
+        // can extract real stat values from the row's cells.
+        var localIdx2 = (typeof buildStatIdx === 'function') ? buildStatIdx(headers) : {};
+        var rowStats2 = {};
+        pCats2.forEach(function(cat){ rowStats2[cat] = getStatVal(cells, cat, localIdx2); });
+        rowStats2['AB'] = getStatVal(cells, 'AB', localIdx2);
+        rowStats2['IP'] = getStatVal(cells, 'IP', localIdx2);
         var fps2   = playerFinePosAll(pos||'');
         var best2  = null;
-        fps2.forEach(function(fp){ var r2=window._calcRating({},pCats2,pools2.finePools[fp]||[],pos||''); if(r2!=null&&(best2==null||r2>best2)) best2=r2; });
+        fps2.forEach(function(fp){ var r2=window._calcRating(rowStats2,pCats2,pools2.finePools[fp]||[],pos||''); if(r2!=null&&(best2==null||r2>best2)) best2=r2; });
         if (posR == null) posR = best2;
         if (lgR  == null) {
           var lgPool2 = isHitSection ? pools2.lgHitPool : (primaryPos(pos||'')==='SP' ? pools2.lgSpPool : pools2.lgRpPool);
-          lgR = window._calcRating({}, pCats2, lgPool2, pos||'');
+          lgR = window._calcRating(rowStats2, pCats2, lgPool2, pos||'');
         }
+        // Cache for next render so we don't recompute on every row paint.
+        if (posR != null) (window._posRatingLookup||{})[normN3] = posR;
+        if (lgR  != null) (window._lgRatingLookup ||{})[normN3] = lgR;
       }
       html += '<td style="white-space:nowrap">' + rosterRatingBadge(posR != null ? posR : null) + '</td>';
       html += '<td style="white-space:nowrap">' + rosterRatingBadge(lgR  != null ? lgR  : null) + '</td>';
@@ -6232,7 +6249,7 @@ function renderROSPage() {
     // Build player→team lookup AND current season stat lookup from S.hitRows/S.pitRows
     window._rosRosterLookup = {};
     window._rosCurrentStats = {};  // normName → {R,HR,RBI,SB,AVG,AB,K,W,SVH3,ERA,WHIP,IP}
-    function normRos(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); } // S.hitRows names have no suffix
+    function normRos(n){ return _normPlayerKey(n); } // canonical normalizer — see _normPlayerKey for full logic
     var _hitIdx = buildStatIdx ? buildStatIdx(S.hitHeaders) : {};
     var _pitIdx = buildStatIdx ? buildStatIdx(S.pitHeaders) : {};
     var allRows = (S.hitRows||[]).concat(S.pitRows||[]);
@@ -9833,7 +9850,7 @@ function _rosAdBuildLists() {
   var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
   var mults = window._rosCatMultipliers || {};
   var ts = (window._rosTeamStats||{})[_rosSelectedTeam] || {};
-  function normFP(n){ return (n||'').replace(/\s*\([^)]*\).*$/, '').trim().toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  function normFP(n){ return _normPlayerKey(n); } // canonical normalizer — see _normPlayerKey for full logic
 
   // Helper to enrich an FP entry with display fields and team-context SGP
   function enrich(p, isHit) {
@@ -12600,16 +12617,26 @@ window._playerRosCatPit  = window._playerRosCatPit  || {};
 
 function _normPlayerKey(n) {
   // Strip parenthetical suffixes, normalize accents (Jesús → Jesus, García → Garcia),
-  // lowercase, drop non-letters, collapse whitespace. Then strip common name
-  // suffixes (Jr, Sr, II, III, IV) so "Jazz Chisholm Jr" and "Jazz Chisholm"
-  // produce the same key — these vary across data sources.
+  // convert internal punctuation (periods, hyphens, em/en dashes, apostrophes,
+  // slashes) to spaces BEFORE stripping non-letters — that way
+  // "Andrew Vaughn-Smith" / "Andrew Vaughn Smith" both produce
+  // "andrew vaughn smith" instead of one becoming "vaughnsmith".
+  // Then lowercase, drop remaining non-letters, collapse whitespace, and strip
+  // common name suffixes (Jr, Sr, II, III, IV).
+  // Finally, collapse runs of single-letter tokens at the start so
+  // "J.D. Martinez" (→ "j d martinez") matches "JD Martinez" (→ "jd martinez").
+  // All become "jd martinez".
   var raw = (n||'').replace(/\s*\([^)]*\).*$/, '');
-  // NFD decomposition splits accented chars into base+combining, then we strip
-  // the combining diacritical marks (U+0300–U+036F).
   if (raw.normalize) raw = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  raw = raw.replace(/[.\-\u2013\u2014'`/]/g, ' ');
   var k = raw.toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
   k = k.replace(/\s+(jr|sr|ii|iii|iv)$/, '').trim();
-  return k;
+  var parts = k.split(' ');
+  while (parts.length >= 2 && parts[0].length === 1 && parts[1].length === 1) {
+    parts[0] = parts[0] + parts[1];
+    parts.splice(1, 1);
+  }
+  return parts.join(' ');
 }
 
 function _buildPlayerSgpLookups() {
