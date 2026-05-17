@@ -3330,6 +3330,11 @@ if (typeof loadManualPeriods === 'undefined') {
 }
 var BASE = 'https://raw.githubusercontent.com/cameronpeebles/baseball/main/data/';
 
+// Diagnostic logging. Set `window._debug = true` in the browser console to
+// enable tagged debug logs ([TradeSug], [LO], FA-Suggest counts, etc.) that
+// are otherwise suppressed to keep the console clean for actual errors.
+window._debug = window._debug || false;
+
 var S = {
   teamInfo: {}, hitRows: [], pitRows: [],
   hitHeaders: [], pitHeaders: [],
@@ -3480,6 +3485,41 @@ loadJSON.bust = function(name) {
   if (name) delete _loadJSONCache[name];
   else      _loadJSONCache = {};
 };
+
+// fetchOnce(globalName, filename, transform?) — the "lazy-load into a global"
+// pattern, deduplicated. Many consumers used to write:
+//   window.X ? Promise.resolve(window.X) : loadJSON('X.json').then(d => { window.X = d; return d; })
+// fetchOnce replaces all of that. Returns a promise resolving to the value
+// (from window[globalName] if already populated, otherwise from loadJSON).
+// Optional `transform` runs on the freshly-fetched data before caching to the
+// global — used for parsed schedule data, etc.
+function fetchOnce(globalName, filename, transform) {
+  if (window[globalName]) return Promise.resolve(window[globalName]);
+  return loadJSON(filename).then(function(d) {
+    var val = transform ? transform(d) : d;
+    window[globalName] = val;
+    return val;
+  });
+}
+
+// DATA — central manifest of file → cached-global mappings. Each property is
+// a thunk that returns a Promise<value>, using fetchOnce to dedupe. When a
+// data file is renamed, only the line here needs to change.
+// Use these instead of inline loadJSON('foo.json') calls anywhere the result
+// is expected to populate one of these globals.
+var DATA = {
+  fullSchedule:   function(){ return fetchOnce('_fullSchedule',  'full_schedule.json'); },
+  joeStats:       function(){ return fetchOnce('_joeStatsCache', 'standings_schedule.json',
+                              function(d){ var rows = (typeof _h2hParseScheduleData === 'function')
+                                                       ? _h2hParseScheduleData(d) : d;
+                                           if (Array.isArray(rows)) rows._hasRealStats = true;
+                                           return rows; }); },
+  fpHitters:      function(){ return fetchOnce('_rosHitData', 'fantasypros_hitters.json',
+                              function(d){ return d || []; }); },
+  fpPitchers:     function(){ return fetchOnce('_rosPitData', 'fantasypros_pitchers.json',
+                              function(d){ return d || []; }); }
+};
+window.DATA = DATA;
 
 function showPage(name, btn) {
   document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
@@ -3767,10 +3807,9 @@ function init() {
       });
     }
 
-    console.log('FanGraphs hitters loaded:', Object.keys(S.fgHitLookup).length);
-    console.log('Statcast hitters loaded:', Object.keys(S.scHitLookup).length);
-    console.log('Statcast pitchers loaded:', Object.keys(S.scPitLookup).length);
-
+    if (window._debug) console.log('FanGraphs hitters loaded:', Object.keys(S.fgHitLookup).length);
+    if (window._debug) console.log('Statcast hitters loaded:', Object.keys(S.scHitLookup).length);
+    if (window._debug) console.log('Statcast pitchers loaded:', Object.keys(S.scPitLookup).length);
     // Build targets lookup eagerly
     function normNameT(n){ return _normPlayerKey(n); }
     S.targetsHitLookup = {};
@@ -3779,8 +3818,7 @@ function init() {
       if (k) S.targetsHitLookup[k] = t;
     });
     if (tgtHit && tgtHit.length) targetsData = tgtHit;
-    console.log('Targets hitters loaded:', Object.keys(S.targetsHitLookup).length);
-
+    if (window._debug) console.log('Targets hitters loaded:', Object.keys(S.targetsHitLookup).length);
     document.getElementById('ts').textContent = 'Updated ' + new Date().toLocaleString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
 
     renderTableListPage(standings, 'standings-body');
@@ -3847,9 +3885,13 @@ function init() {
       // Skip if data already loaded (e.g., user navigated back)
       if (_rosHitData && _rosPitData) return;
 
-      var hitDone = false, pitDone = false;
-      function maybeRefresh() {
-        if (!hitDone || !pitDone) return;
+      // Load both FP files; refresh dependent UI when both complete.
+      // DATA.fpHitters/fpPitchers populate the _rosHitData/_rosPitData globals
+      // and return [] on parse failure; the .catch here covers network failure.
+      Promise.all([
+        DATA.fpHitters().catch(function(){ _rosHitData = []; return []; }),
+        DATA.fpPitchers().catch(function(){ _rosPitData = []; return []; })
+      ]).then(function(){
         // Build player-level ROS / Curr SGP lookups so the Player Data page
         // can show forward-looking columns + ROS-aware archetypes.
         try { _buildPlayerSgpLookups(); } catch(e) { console.warn('Player SGP lookup build failed:', e); }
@@ -3904,13 +3946,7 @@ function init() {
             }
           }
         } catch(e) { console.warn('ROS panel refresh after ROS load failed:', e); }
-      }
-      loadJSON('fantasypros_hitters.json')
-        .then(function(d){ _rosHitData = d || []; hitDone = true; maybeRefresh(); })
-        .catch(function(){ _rosHitData = []; hitDone = true; maybeRefresh(); });
-      loadJSON('fantasypros_pitchers.json')
-        .then(function(d){ _rosPitData = d || []; pitDone = true; maybeRefresh(); })
-        .catch(function(){ _rosPitData = []; pitDone = true; maybeRefresh(); });
+      });
     })();
 
     renderDashboard();
@@ -4178,7 +4214,7 @@ function drawPlayers(type) {
     var name   = scorer.name || scorer.shortName || '';
     var ftId   = (cells[1] && cells[1].teamId) || '';
     var fw     = fwarLookup[name];
-    var fgRow  = hasFG ? (fgLookup[_normPlayerKey(name)] || fgLookup[name.toLowerCase()] || null) : null;
+    var fgRow  = hasFG ? window._findInLookup(fgLookup, name) : null;
     return { row: row, scorer: scorer, cells: cells, name: name, ftId: ftId, fw: fw, fgRow: fgRow, isHit: isHit };
   });
 
@@ -4471,21 +4507,17 @@ function getPlayerSortVal(e, col, headers) {
   if (col === '__mlb')       return (e.scorer.teamShortName || '').toLowerCase();
   if (col === '__slot')      return e.fw ? (e.fw.assignedSlot || '') : '';
   if (col === '__fwar')      return e.fw ? e.fw.fWAR   : null;
-  if (col === '__fwarPct')   return window._fwarPctLookup ? (window._fwarPctLookup[e.name.toLowerCase()] != null ? window._fwarPctLookup[e.name.toLowerCase()] : null) : null;
+  if (col === '__fwarPct')   return window._findInLookup(window._fwarPctLookup, e.name);
   if (col === '__totalZ')    return e.fw ? e.fw.totalZ : null;
-  if (col === '__posRating') return window._posRatingLookup ? (window._posRatingLookup[e.name.toLowerCase()]||null) : null;
-  if (col === '__lgRating')  return window._lgRatingLookup  ? (window._lgRatingLookup[e.name.toLowerCase()]||null)  : null;
+  if (col === '__posRating') return window._findInLookup(window._posRatingLookup, e.name);
+  if (col === '__lgRating')  return window._findInLookup(window._lgRatingLookup,  e.name);
   if (col === '__currSgp') {
-    var nlc = e.name.toLowerCase();
     var ish = e.isHit !== undefined ? e.isHit : true;
-    var lk = ish ? (window._playerCurrSgpHit||{}) : (window._playerCurrSgpPit||{});
-    return lk[nlc] != null ? lk[nlc] : null;
+    return window._findInLookup(ish ? window._playerCurrSgpHit : window._playerCurrSgpPit, e.name);
   }
   if (col === '__rosSgp') {
-    var nlc2 = e.name.toLowerCase();
     var ish2 = e.isHit !== undefined ? e.isHit : true;
-    var lk2 = ish2 ? (window._playerRosSgpHit||{}) : (window._playerRosSgpPit||{});
-    return lk2[nlc2] != null ? lk2[nlc2] : null;
+    return window._findInLookup(ish2 ? window._playerRosSgpHit : window._playerRosSgpPit, e.name);
   }
   if (col.indexOf('__fg_') === 0) {
     var c = col.slice(5);
@@ -4619,7 +4651,7 @@ function showRoster(teamId) {
       var hs = scorer.headshotUrl || '';
       var statusId = row.statusId || '1';
       var fw = fwarLookup[name];
-      var fgRow = hasFG ? (fgLookup[_normPlayerKey(name)] || fgLookup[name.toLowerCase()] || null) : null;
+      var fgRow = hasFG ? window._findInLookup(fgLookup, name) : null;
 
       html += '<tr>';
       html += '<td class="left"><div class="team-cell">' + (hs ? '<img class="player-hs" src="' + hs + '" alt="" onerror="this.style.display=\'none\'">' : '') + '<span><strong>' + name + '</strong></span></div></td>';
@@ -6355,10 +6387,10 @@ function renderROSPage() {
   rosRendered = true;
   el.innerHTML = '<div class="loading">Loading projections...</div>';
 
-  loadJSON('fantasypros_hitters.json')
+  DATA.fpHitters()
     .then(function(d){ _rosHitData = d || []; hitLoaded = true; tryRender(); })
     .catch(function(){ _rosHitData = []; hitLoaded = true; tryRender(); });
-  loadJSON('fantasypros_pitchers.json')
+  DATA.fpPitchers()
     .then(function(d){ _rosPitData = d || []; pitLoaded = true; tryRender(); })
     .catch(function(){ _rosPitData = []; pitLoaded = true; tryRender(); });
 }
@@ -7166,10 +7198,10 @@ function _rosTradeSugScanPairs(myTeamId) {
   var oppTeamIds = Object.keys(S.teamInfo||{}).filter(function(tid){ return tid !== myTeamId; });
   var debug = window._rosTradeSugDebug;
   if (debug) {
-    console.log('[TradeSug] myTeam', myTeamId, 'opps', oppTeamIds.length);
-    console.log('[TradeSug] _playerRosCatHit keys:', Object.keys(window._playerRosCatHit||{}).length);
-    console.log('[TradeSug] _playerRosCatPit keys:', Object.keys(window._playerRosCatPit||{}).length);
-    console.log('[TradeSug] _rosCurrentStats keys:', Object.keys(window._rosCurrentStats||{}).length);
+    if (window._debug) console.log('[TradeSug] myTeam', myTeamId, 'opps', oppTeamIds.length);
+    if (window._debug) console.log('[TradeSug] _playerRosCatHit keys:', Object.keys(window._playerRosCatHit||{}).length);
+    if (window._debug) console.log('[TradeSug] _playerRosCatPit keys:', Object.keys(window._playerRosCatPit||{}).length);
+    if (window._debug) console.log('[TradeSug] _rosCurrentStats keys:', Object.keys(window._rosCurrentStats||{}).length);
   }
 
   ['hit','pit'].forEach(function(grp){
@@ -7316,10 +7348,10 @@ function _rosTradeSugScanPairs(myTeamId) {
     return b.myDelta - a.myDelta;
   });
   if (debug) {
-    console.log('[TradeSug] total candidates passing filter:', allCandidates.length);
+    if (window._debug) console.log('[TradeSug] total candidates passing filter:', allCandidates.length);
     var nm = window._rosTradeSugNearMiss || [];
     nm.sort(function(a,b){ return b.myD - a.myD; });
-    console.log('[TradeSug] top 10 NEAR MISSES (myD≥0.3, did not pass filter):');
+    if (window._debug) console.log('[TradeSug] top 10 NEAR MISSES (myD≥0.3, did not pass filter):');
     console.table(nm.slice(0,10));
   }
   var hitMutual = [], hitSneaky = [], pitMutual = [], pitSneaky = [];
@@ -8438,9 +8470,9 @@ window._loDiagnostics = function() {
   var cs = window._rosCurrentStats || {};
   var fantraxTeams = {};
   Object.keys(cs).forEach(function(k){ if (cs[k] && cs[k].mlb) fantraxTeams[cs[k].mlb] = (fantraxTeams[cs[k].mlb]||0)+1; });
-  console.log('[LO] Fantrax MLB codes in roster:', Object.keys(fantraxTeams).sort().join(', '));
+  if (window._debug) console.log('[LO] Fantrax MLB codes in roster:', Object.keys(fantraxTeams).sort().join(', '));
   if (pr && pr.schedule) {
-    console.log('[LO] MLB API codes in probables.schedule:', Object.keys(pr.schedule).sort().join(', '));
+    if (window._debug) console.log('[LO] MLB API codes in probables.schedule:', Object.keys(pr.schedule).sort().join(', '));
     var ftSet = {}; Object.keys(fantraxTeams).forEach(function(t){ ftSet[_loNormTeam(t)] = t; });
     var prSet = {}; Object.keys(pr.schedule).forEach(function(t){ prSet[_loNormTeam(t)] = t; });
     var unmatchedFt = Object.keys(ftSet).filter(function(t){ return !prSet[t]; });
@@ -8452,9 +8484,9 @@ window._loDiagnostics = function() {
     console.warn('[LO] No probables loaded. Run fetch_probables.py first.');
   }
   if (pr && pr.games) {
-    console.log('[LO] Today: '+pr.games.length+' games, '+pr.games.filter(function(g){return g.homeSP&&g.awaySP;}).length+' with both SPs.');
+    if (window._debug) console.log('[LO] Today: '+pr.games.length+' games, '+pr.games.filter(function(g){return g.homeSP&&g.awaySP;}).length+' with both SPs.');
     var spNames = []; pr.games.forEach(function(g){ if (g.homeSP) spNames.push(g.homeSP.name); if (g.awaySP) spNames.push(g.awaySP.name); });
-    console.log('[LO] Probable SPs today:', spNames.join(', '));
+    if (window._debug) console.log('[LO] Probable SPs today:', spNames.join(', '));
     // Check how many resolve to FP data
     var spByName = {};
     (_rosPitData||[]).forEach(function(p){
@@ -8467,7 +8499,7 @@ window._loDiagnostics = function() {
       var k = (typeof _normPlayerKey === 'function') ? _normPlayerKey(nm) : nm.toLowerCase();
       if (spByName[k]) resolved++; else unresolved.push(nm);
     });
-    console.log('[LO] '+resolved+' of '+spNames.length+' SPs resolved to FP projection data.');
+    if (window._debug) console.log('[LO] '+resolved+' of '+spNames.length+' SPs resolved to FP projection data.');
     if (unresolved.length) console.warn('[LO] Unresolved SPs:', unresolved);
   }
   // ── IL / status inventory ──────────────────────────────────────────────
@@ -8477,7 +8509,7 @@ window._loDiagnostics = function() {
     var s = (rl[k] && rl[k].statusId != null) ? String(rl[k].statusId) : '?';
     byStatus[s] = (byStatus[s]||0) + 1;
   });
-  console.log('[LO] _rosRosterLookup statusId distribution (often unreliable for IL):', byStatus);
+  if (window._debug) console.log('[LO] _rosRosterLookup statusId distribution (often unreliable for IL):', byStatus);
 
   // Reliable IL source: rosters.json via S.rosterRaw.
   if (S && S.rosterRaw && S.rosterRaw.data && S.rosterRaw.data.rosters) {
@@ -8496,9 +8528,9 @@ window._loDiagnostics = function() {
         });
       });
     });
-    console.log('[LO] rosters.json statusId distribution (RELIABLE):', rByStatus);
+    if (window._debug) console.log('[LO] rosters.json statusId distribution (RELIABLE):', rByStatus);
     if (_loSelectedTeam) {
-      console.log('[LO] Selected team IL players (from rosters.json):', teamIL_real);
+      if (window._debug) console.log('[LO] Selected team IL players (from rosters.json):', teamIL_real);
     }
   } else {
     console.warn('[LO] S.rosterRaw not loaded — cannot verify IL status from rosters.json');
@@ -11498,27 +11530,14 @@ function predictH2H(a, b) {
   window._h2hParseScheduleData = _h2hParseScheduleData;
 
   // Lazy-load + parse the schedule file, populate the predictor cache.
-  function _h2hLoadStats() {
-    if (window._joeStatsCache && window._joeStatsCache._hasRealStats) {
-      return Promise.resolve(window._joeStatsCache);
-    }
-    return loadJSON('standings_schedule.json').then(function(data){
-      var rows = _h2hParseScheduleData(data);
-      rows._hasRealStats = true;
-      window._joeStatsCache = rows;
-      return rows;
-    });
-  }
+  // Delegates to DATA.joeStats which handles the parse + cache.
+  function _h2hLoadStats() { return DATA.joeStats(); }
 
   window._h2hPredictTeam = function(teamName, opts) {
     if (window._joeStatsCache && window._joeStatsCache._hasRealStats && window._fullSchedule) {
       return _runPrediction(teamName, opts);
     }
-    return Promise.all([
-      _h2hLoadStats(),
-      window._fullSchedule ? Promise.resolve(window._fullSchedule) : loadJSON('full_schedule.json')
-    ]).then(function(results){
-      window._fullSchedule = results[1];
+    return Promise.all([ DATA.joeStats(), DATA.fullSchedule() ]).then(function(){
       return _runPrediction(teamName, opts);
     });
   };
@@ -11526,12 +11545,7 @@ function predictH2H(a, b) {
     if (window._joeStatsCache && window._joeStatsCache._hasRealStats && window._fullSchedule) {
       return Promise.resolve();
     }
-    return Promise.all([
-      _h2hLoadStats(),
-      window._fullSchedule ? Promise.resolve(window._fullSchedule) : loadJSON('full_schedule.json')
-    ]).then(function(results){
-      window._fullSchedule = results[1];
-    });
+    return Promise.all([ DATA.joeStats(), DATA.fullSchedule() ]);
   };
 
   // Convenience: cache joe_stats for the predictor on the existing matchup page load.
@@ -11544,11 +11558,10 @@ function renderMatchPredictions() {
 
   Promise.all([
     loadJSON('joe_stats.json'),
-    loadJSON('full_schedule.json')
+    DATA.fullSchedule()
   ]).then(function(results) {
     var stats = results[0];
     var fullSchedule = results[1]; // [{period, away, home}, ...]
-    window._fullSchedule = fullSchedule;
     window._joeStatsCache = stats;  // also cache for H2H predictor
     buildMatchupPage(stats, fullSchedule);
   }).catch(function(e) {
@@ -17106,7 +17119,7 @@ function ensureJOEData(callback) {
                 ? schedData : null;
       return Promise.all([
         src ? Promise.resolve(src) : loadJSON('standings.json'),
-        loadJSON('full_schedule.json')
+        DATA.fullSchedule()
       ]);
     })
     .then(function(res) {
@@ -18274,10 +18287,10 @@ loadJSON('optimal_fwar_weights.json').then(function(data) {
       btn.title = 'Spearman r = ' + (data.spearman_r || '?') + ' across ' + (data.n_team_seasons || '?') + ' team-seasons';
       btn.textContent = '🎯 Optimal (r=' + (data.spearman_r || '?') + ')';
     }
-    console.log('Optimal fWAR weights loaded:', data.positional_ranks);
+    if (window._debug) console.log('Optimal fWAR weights loaded:', data.positional_ranks);
   }
 }).catch(function() {
-  console.log('optimal_fwar_weights.json not yet generated - run the GitHub Action first.');
+  if (window._debug) console.log('optimal_fwar_weights.json not yet generated - run the GitHub Action first.');
 });
 
 var FWAR_DEFAULTS = {
@@ -21352,8 +21365,8 @@ function renderSGPRosPage() {
     _sgpRosBuilt = true;
     buildSGPRos(el, fpHitData || [], fpPitData || []);
   }
-  loadJSON('fantasypros_hitters.json').then(function(d){ fpHitData = d; tryBuild(); }).catch(function(){ tryBuild(); });
-  loadJSON('fantasypros_pitchers.json').then(function(d){ fpPitData = d; tryBuild(); }).catch(function(){ tryBuild(); });
+  DATA.fpHitters().then(function(d){ fpHitData = d; tryBuild(); }).catch(function(){ tryBuild(); });
+  DATA.fpPitchers().then(function(d){ fpPitData = d; tryBuild(); }).catch(function(){ tryBuild(); });
 }
 
 function buildSGPRos(el, fpHit, fpPit) {
@@ -24289,12 +24302,12 @@ function _tlV2RenderSuggest() {
   window._rosTradeSugDebug = origDebug;
 
   var totalScan = (scan.mutual||[]).length + (scan.sneaky||[]).length;
-  console.log('[TradeLab] Suggest scan for', tA, _tlV2GetTeamName(tA), '→', (scan.mutual||[]).length, 'mutual,', (scan.sneaky||[]).length, 'sneaky');
+  if (window._debug) console.log('[TradeLab] Suggest scan for', tA, _tlV2GetTeamName(tA), '→', (scan.mutual||[]).length, 'mutual,', (scan.sneaky||[]).length, 'sneaky');
   if (totalScan === 0) {
     // Quick diagnostic: was the user's roster found at all?
     var myHitters = (typeof _rosTradeSugTeamRoster === 'function') ? _rosTradeSugTeamRoster(tA, true) : [];
     var myPitchers = (typeof _rosTradeSugTeamRoster === 'function') ? _rosTradeSugTeamRoster(tA, false) : [];
-    console.log('[TradeLab] roster gates → hitters:', myHitters.length, 'pitchers:', myPitchers.length);
+    if (window._debug) console.log('[TradeLab] roster gates → hitters:', myHitters.length, 'pitchers:', myPitchers.length);
     if (!myHitters.length && !myPitchers.length) {
       console.warn('[TradeLab] Roster lookup returned 0 — this is the bug. Check _rosCurrentStats / _rosRosterLookup teamId match.');
     }
@@ -26515,12 +26528,12 @@ function renderROSTradeLab_legacy_unused() {
     var pending = (needHit ? 1 : 0) + (needPit ? 1 : 0);
     function done() { pending--; if (pending <= 0) cb(); }
     if (needHit) {
-      loadJSON('fantasypros_hitters.json')
+      DATA.fpHitters()
         .then(function(d){ _rosHitData = d || []; done(); })
         .catch(function(){ _rosHitData = []; done(); });
     }
     if (needPit) {
-      loadJSON('fantasypros_pitchers.json')
+      DATA.fpPitchers()
         .then(function(d){ _rosPitData = d || []; done(); })
         .catch(function(){ _rosPitData = []; done(); });
     }
