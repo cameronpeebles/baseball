@@ -24787,7 +24787,7 @@ function _tlV2RenderRosterTableHtml(side, teamName, roster, sendKeys, sortState,
     var currSgp = p.isHit ? (window._playerCurrSgpHit||{})[sgpKey] : (window._playerCurrSgpPit||{})[sgpKey];
     var cs = p.cs || {};
     var base = {
-      key: p.key, name: _stripFP(nm), pos: p.pos || '',
+      key: p.key, name: (nm || '').replace(/\s*\([^)]*\).*$/, '').trim(), pos: p.pos || '',
       mlb: cs.mlb || '',
       isHit: p.isHit,
       status: p.status || '1',
