@@ -3493,8 +3493,19 @@ loadJSON.bust = function(name) {
 // (from window[globalName] if already populated, otherwise from loadJSON).
 // Optional `transform` runs on the freshly-fetched data before caching to the
 // global — used for parsed schedule data, etc.
+//
+// Empty arrays/objects are treated as "not loaded" so a previous fetch that
+// errored to [] doesn't poison the cache. In JavaScript, `if (X)` is truthy
+// for both [] and {}, which is the wrong default for this use case — the
+// FP loaders specifically set [] on network failure, and we want subsequent
+// calls to retry rather than re-resolve to the cached empty result.
 function fetchOnce(globalName, filename, transform) {
-  if (window[globalName]) return Promise.resolve(window[globalName]);
+  var cur = window[globalName];
+  var hasContent = cur != null && (
+    Array.isArray(cur) ? cur.length > 0 :
+    (typeof cur === 'object' ? Object.keys(cur).length > 0 : true)
+  );
+  if (hasContent) return Promise.resolve(cur);
   return loadJSON(filename).then(function(d) {
     var val = transform ? transform(d) : d;
     window[globalName] = val;
@@ -3834,7 +3845,9 @@ function init() {
     // The dashboard renders below with whatever data is available; when this
     // arrives, we rebuild the dashboard so the 4th input bar appears.
     (function preloadRosData() {
-      function buildLookups() {
+      // Hoisted to window so other entry points (Trade Lab, Roster pages)
+      // can ensure the roster lookup is built without depending on boot order.
+      window._buildRosLookups = window._buildRosLookups || function buildLookups() {
         // Build _rosRosterLookup + _rosCurrentStats from S.hitRows/S.pitRows
         // if they don't already exist. Idempotent — safe to call again later
         // when the ROS page renders.
@@ -3879,11 +3892,12 @@ function init() {
             };
           }
         });
-      }
-      buildLookups();
+      };
+      window._buildRosLookups();
 
-      // Skip if data already loaded (e.g., user navigated back)
-      if (_rosHitData && _rosPitData) return;
+      // Skip if FP data already has content (e.g., user navigated back).
+      // Empty array means a previous fetch failed — fall through to retry.
+      if (_rosHitData && _rosHitData.length && _rosPitData && _rosPitData.length) return;
 
       // Load both FP files; refresh dependent UI when both complete.
       // DATA.fpHitters/fpPitchers populate the _rosHitData/_rosPitData globals
@@ -24185,6 +24199,12 @@ function renderROSTradeLab() {
   if (typeof TA === 'undefined' || !TA.players || !TA.players.length) {
     if (typeof renderTradeAnalyzer === 'function') { try { renderTradeAnalyzer(); } catch (e) {} }
   }
+  // Ensure the Fantrax-side roster lookup is built. This is what
+  // _tlV2GetTeamRoster joins FantasyPros names against; if it's empty, every
+  // player gets filtered out and the rosters render empty.
+  if (typeof window._buildRosLookups === 'function') {
+    try { window._buildRosLookups(); } catch(e) { console.warn('Roster lookup build for Trade Lab failed:', e); }
+  }
   // Initialize team A/B defaults if they haven't been set yet.
   var teamIds = Object.keys((S && S.teamInfo) || {});
   if (!window._tlV2.teamA && teamIds.length) {
@@ -24194,12 +24214,15 @@ function renderROSTradeLab() {
     var aIdx = teamIds.indexOf(window._tlV2.teamA);
     window._tlV2.teamB = teamIds[(aIdx + 1) % teamIds.length];
   }
-  // If FP data is already loaded, render immediately. Otherwise wait for both
+  // If FP data has actual content, render immediately. Otherwise wait for both
   // FP files via DATA helpers (the loadJSON cache layer dedupes so this won't
   // re-fetch), then re-render. Without this wait, _tlV2GetTeamRoster reads
   // empty _rosHitData/_rosPitData and the page stays stuck on "Loading roster
-  // data…" with no re-render ever firing.
-  if (window._rosHitData && window._rosHitData.length && window._rosPitData && window._rosPitData.length) {
+  // data…" with no re-render ever firing. Treat empty arrays as not-loaded
+  // (a previous failed fetch may have left _rosHitData = []).
+  var fpReady = window._rosHitData && window._rosHitData.length
+             && window._rosPitData && window._rosPitData.length;
+  if (fpReady) {
     _tlV2RenderBuild();
   } else {
     _tlV2RenderBuild(); // render immediately so the "Loading…" message paints
