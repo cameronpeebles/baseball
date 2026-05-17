@@ -21128,20 +21128,91 @@ function renderLeadersPage() {
   html += '<div style="font-family:var(--font-display);font-size:18px;margin-bottom:12px;color:var(--text)">Player Leaders</div>';
 
   // ── fWAR leaders (hitters + pitchers combined) ────────────────────────────
+  // Colors mirror the Roster page column header colors so the same metric
+  // reads the same way across the site.
+  var COL_FWAR     = ACCENT;     // green
+  var COL_FWAR_PCT = '#9b59b6';  // purple
+  var COL_POS_RATE = '#5b8db8';  // blue
+  var COL_LG_RATE  = '#2d7a5a';  // darker green
+  var COL_CURR_SGP = '#1e6b3a';  // forest
+  var COL_ROS_SGP  = '#b7791f';  // amber — distinguish from curr
+
   html += '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Calculated Stats</div>';
   html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:24px">';
 
   var allFWAR = FWAR.hitResults.concat(FWAR.pitResults).filter(function(p){ return p.ftId; });
 
-  // fWAR
+  // Helper: from allFWAR pick the top player by a lookup-derived metric.
+  // valueFn(player) returns a number or null; null/undefined players are skipped.
+  // Returns { player, value } or null if no qualifiers.
+  function topByMetric(valueFn) {
+    var best = null;
+    allFWAR.forEach(function(p) {
+      var v = valueFn(p);
+      if (v == null || isNaN(v)) return;
+      if (!best || v > best.value) best = { player: p, value: v };
+    });
+    return best;
+  }
+
+  // fWAR (was here before)
   var topFWAR = allFWAR.slice().sort(function(a,b){return (b.fWAR||0)-(a.fWAR||0);})[0];
-  if (topFWAR) html += playerTile('fWAR', ACCENT, topFWAR.name, (topFWAR.fWAR>=0?'+':'')+topFWAR.fWAR.toFixed(2), topFWAR.ftId, topFWAR.hs, topFWAR.assignedSlot||topFWAR.pos||'');
+  if (topFWAR) html += playerTile('fWAR', COL_FWAR, topFWAR.name, (topFWAR.fWAR>=0?'+':'')+topFWAR.fWAR.toFixed(2), topFWAR.ftId, topFWAR.hs, topFWAR.assignedSlot||topFWAR.pos||'');
 
-  // fWAR-Pts tile handled below
+  // fWAR% — percentile within position group (0-100). _fwarPctLookup is populated
+  // by drawPlayers once the Players page (or boot pre-render) has run.
+  var topFwarPct = topByMetric(function(p){ return window._findInLookup(window._fwarPctLookup, p.name); });
+  if (topFwarPct) {
+    var p1 = topFwarPct.player;
+    html += playerTile('fWAR%', COL_FWAR_PCT, p1.name, Math.round(topFwarPct.value) + '%',
+                       p1.ftId, p1.hs, p1.assignedSlot || p1.pos || '');
+  }
 
-  // fWAR-Pts
-  var topFWARP = allFWAR.filter(function(p){return p.fWAR_Pts!=null;}).sort(function(a,b){return b.fWAR_Pts-a.fWAR_Pts;})[0];
-  if (topFWARP) html += playerTile('fWAR-Pts', GOLD, topFWARP.name, (topFWARP.fWAR_Pts>=0?'+':'')+topFWARP.fWAR_Pts.toFixed(1), topFWARP.ftId, topFWARP.hs, topFWARP.assignedSlot||'');
+  // Pos Rating — percentile within fine position, 0-1 internal scale, display ×100
+  var topPos = topByMetric(function(p){ return window._findInLookup(window._posRatingLookup, p.name); });
+  if (topPos) {
+    var p2 = topPos.player;
+    html += playerTile('Pos Rating', COL_POS_RATE, p2.name, Math.round(topPos.value * 100) + '%',
+                       p2.ftId, p2.hs, p2.assignedSlot || p2.pos || '');
+  }
+
+  // League Rating — same 0-1 scale, blended across all hitters or all SP/RP
+  var topLg = topByMetric(function(p){ return window._findInLookup(window._lgRatingLookup, p.name); });
+  if (topLg) {
+    var p3 = topLg.player;
+    html += playerTile('Lg Rating', COL_LG_RATE, p3.name, Math.round(topLg.value * 100) + '%',
+                       p3.ftId, p3.hs, p3.assignedSlot || p3.pos || '');
+  }
+
+  // Current SGP — looks up in the appropriate hit/pit map depending on which
+  // FWAR result the player came from. Hitters are in hitResults; pitchers in
+  // pitResults — encoded in the assignedSlot or by simple position test.
+  // We pick the hit-side map when isHit is determinable from the slot, else
+  // we try both maps and take whichever returns a value.
+  function lookupSgpSplit(p, hitMap, pitMap) {
+    var isHit = FWAR.hitResults.indexOf(p) !== -1;
+    return window._findInLookup(isHit ? hitMap : pitMap, p.name);
+  }
+  var topCurr = topByMetric(function(p){
+    return lookupSgpSplit(p, window._playerCurrSgpHit, window._playerCurrSgpPit);
+  });
+  if (topCurr) {
+    var p4 = topCurr.player;
+    html += playerTile('Curr SGP', COL_CURR_SGP, p4.name,
+                       (topCurr.value>=0?'+':'')+topCurr.value.toFixed(2),
+                       p4.ftId, p4.hs, p4.assignedSlot || p4.pos || '');
+  }
+
+  // ROS SGP — same split logic, against ROS-projection maps
+  var topRos = topByMetric(function(p){
+    return lookupSgpSplit(p, window._playerRosSgpHit, window._playerRosSgpPit);
+  });
+  if (topRos) {
+    var p5 = topRos.player;
+    html += playerTile('ROS SGP', COL_ROS_SGP, p5.name,
+                       (topRos.value>=0?'+':'')+topRos.value.toFixed(2),
+                       p5.ftId, p5.hs, p5.assignedSlot || p5.pos || '');
+  }
 
   html += '</div>';
 
