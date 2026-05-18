@@ -12402,6 +12402,11 @@ function _h2hWeeklyGridHtml(r) {
 // Win % values are filled from current standings projections when possible.
 // ─────────────────────────────────────────────────────────────────────────────
 function _h2hBracketCardHtml(selectedTeam) {
+  // Clear per-render caches so seeding/data changes propagate without a hard
+  // refresh. The blended-means table is also rebuilt below.
+  window._h2hBracketCache = {};
+  window._h2hBracketBlended = null;
+
   // Step 1: identify each team's division and rank within it.
   // Fantrax standings JSON has tables structured per-division in tableList,
   // but the existing code reads it as one combined standings table. We
@@ -12457,39 +12462,58 @@ function _h2hBracketCardHtml(selectedTeam) {
          + _loEsc(shortName(name)) + pctHtml + seedHtml + '</div>';
   }
 
-  // Predictor: pick the projected winner of a 2-team matchup using ROS
-  // projections via _h2hPredictTeam. Returns {winner, winPctA, winPctB}.
-  // Caches results so we don't repeatedly call the predictor with the same
-  // pair during a render.
+  // Predictor: pick the projected winner of a 2-team matchup using the same
+  // cat-by-cat simulation the weekly grid uses. We compute the league's
+  // blended projected weekly means directly via the exported helpers (since
+  // _h2hPredictTeam returns {error} when there are no remaining matchups —
+  // we still want bracket projections in that case). Caches per-pair.
   function projectMatchup(teamA, teamB) {
     if (!teamA || !teamB) return null;
     var cacheKey = teamA + '|' + teamB;
     window._h2hBracketCache = window._h2hBracketCache || {};
     if (window._h2hBracketCache[cacheKey]) return window._h2hBracketCache[cacheKey];
 
-    // Run a single-week prediction: treat teamA and teamB as facing each
-    // other once. Use the existing predictH2H if available; otherwise fall
-    // back to comparing teams' projected weekly means against the league avg.
-    var result = null;
-    try {
-      if (typeof window._h2hPredictHeadToHead === 'function') {
-        var p = window._h2hPredictHeadToHead(teamA, teamB);
-        if (p && p.winPctA != null) {
-          result = { winner: p.winPctA >= 0.5 ? teamA : teamB, winPctA: p.winPctA, winPctB: 1 - p.winPctA };
-        }
+    // Build / cache the league-wide blended-means table once per render.
+    // This sidesteps _h2hPredictTeam's "no remaining schedule" error path so
+    // the bracket renders post-season too.
+    if (!window._h2hBracketBlended) {
+      try {
+        var stats = window._joeStatsCache;
+        var em = (typeof window._h2hBuildEmpiricalMeans === 'function')
+                  ? window._h2hBuildEmpiricalMeans(stats, { recentBias: 'last4' })
+                  : {};
+        var fp = (typeof window._h2hBuildFPMeansPerTeam === 'function')
+                  ? window._h2hBuildFPMeansPerTeam(1)
+                  : {};
+        window._h2hBracketBlended = (typeof window._h2hBlendMeans === 'function')
+                  ? window._h2hBlendMeans(em, fp, { blendEmpirical: 0.5, blendFP: 0.5 })
+                  : em;
+      } catch(e) {
+        if (window._debug) console.warn('[bracket] failed to build blended means:', e);
+        window._h2hBracketBlended = {};
       }
-    } catch(e) {}
+    }
+    var blended = window._h2hBracketBlended;
+
+    var result = null;
+    var meanA = blended && blended[teamA];
+    var meanB = blended && blended[teamB];
+    if (meanA && meanB && typeof predictH2H === 'function') {
+      try {
+        var h2h = predictH2H(meanA, meanB);
+        var pctA = h2h.awayPct;
+        result = {
+          winner: pctA > 0.5 ? teamA : (pctA < 0.5 ? teamB : teamA),
+          winPctA: pctA,
+          winPctB: 1 - pctA
+        };
+      } catch(e) {
+        if (window._debug) console.warn('[bracket] projectMatchup predictH2H failed:', e);
+      }
+    }
+    // Fallback: coinflip if we can't compute.
     if (!result) {
-      // Fallback: use each team's projected forward-looking win rate from
-      // _h2hPredictTeam. The team with the higher cat-win % is favored.
-      var rA = window._h2hPredictTeam && window._h2hPredictTeam(teamA);
-      var rB = window._h2hPredictTeam && window._h2hPredictTeam(teamB);
-      var wA = (rA && rA.catWinPct != null && !isNaN(rA.catWinPct)) ? rA.catWinPct : 0.5;
-      var wB = (rB && rB.catWinPct != null && !isNaN(rB.catWinPct)) ? rB.catWinPct : 0.5;
-      // Normalize to a head-to-head probability: relative strength.
-      var total = wA + wB;
-      var pctA = total > 0 ? wA / total : 0.5;
-      result = { winner: pctA >= 0.5 ? teamA : teamB, winPctA: pctA, winPctB: 1 - pctA };
+      result = { winner: teamA, winPctA: 0.5, winPctB: 0.5 };
     }
     window._h2hBracketCache[cacheKey] = result;
     return result;
