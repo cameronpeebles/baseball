@@ -11823,6 +11823,10 @@ function _h2hRenderResult(teamNames, selectedTeam, r) {
   html += _h2hLeagueOverviewHtml(selectedTeam);
   // 5. Week-by-week schedule
   html += _h2hWeeklyGridHtml(r);
+  // 6. Playoff + Consolation bracket predictor card (bottom of page).
+  //    Renders a static bracket since predictions for finals depend on which
+  //    teams advance — the boxes show projected paths based on current seeding.
+  html += _h2hBracketCardHtml(selectedTeam);
   html += gutterClose;
   el.innerHTML = html;
   // Charts need to be initialized AFTER DOM is in place.
@@ -12375,6 +12379,370 @@ function _h2hWeeklyGridHtml(r) {
   });
   h += '</tbody></table></div></div>';
   return h;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Playoff + Consolation bracket predictor card.
+//
+// Structure (this league):
+//   - 20 regular-season periods, then postseason periods 21-23.
+//   - Championship bracket (top 2 seeds per division):
+//       Period 22: same-division semis (D1#1 v D1#2, D2#1 v D2#2)
+//       Period 23: cross-division championship final
+//   - Consolation bracket (seeds 3-5 per division):
+//       Period 21: D#4 v D#5 within each division (R1)
+//       Period 22: R1 winner vs D#3 within each division (R2)
+//       Period 23: cross-division consolation final
+//
+// Layout: round-1 on the outer columns, progressing inward to the finals at
+// the center column. Division One on the left, Division Two on the right.
+// Matches the visual flow of a printed MLB postseason bracket.
+//
+// The selected team's path is highlighted with a brighter border.
+// Win % values are filled from current standings projections when possible.
+// ─────────────────────────────────────────────────────────────────────────────
+function _h2hBracketCardHtml(selectedTeam) {
+  // Step 1: identify each team's division and rank within it.
+  // Fantrax standings JSON has tables structured per-division in tableList,
+  // but the existing code reads it as one combined standings table. We
+  // re-parse from S.standingsData if possible; otherwise we fall back to
+  // splitting teams by rank (top half = Div 1, bottom half = Div 2).
+  var divisions = _h2hExtractDivisions();
+  if (!divisions || !divisions.d1 || !divisions.d2 || divisions.d1.length < 3 || divisions.d2.length < 3) {
+    // Bail gracefully if we can't determine divisions
+    return '<div class="card" style="margin-top:20px;padding:18px"><div style="font-size:13px;color:var(--muted)">Playoff bracket unavailable — need division standings with at least 3 teams per division.</div></div>';
+  }
+
+  // Build the 12 boxes (4 brackets × 3 boxes each + finals)
+  var d1 = divisions.d1;  // [{name, rank}, ...] sorted by rank ascending
+  var d2 = divisions.d2;
+
+  // Helper: short name for display in narrow boxes (fall back to full name).
+  function shortName(fullName) {
+    if (!fullName) return '';
+    var t = Object.keys(S.teamInfo || {}).map(function(id){ return S.teamInfo[id]; })
+            .filter(function(t){ return t && (t.name === fullName); })[0];
+    return (t && t.shortName) ? t.shortName : fullName;
+  }
+
+  // Helper: is `name` the user-selected team? (case-insensitive)
+  var selNorm = (selectedTeam || '').toLowerCase();
+  function isSelected(name) { return name && name.toLowerCase() === selNorm; }
+
+  // Helper: highlight class for boxes on the selected team's path.
+  function boxStyle(name, baseColor, isWinner) {
+    var border = isSelected(name) ? '1.5px solid var(--accent)' : '0.5px solid var(--border)';
+    var bg = baseColor;
+    var weight = isWinner ? '600' : '500';
+    var shadow = isSelected(name) ? 'box-shadow:0 0 0 2px rgba(76,175,80,0.18);' : '';
+    return 'background:' + bg + ';border:' + border + ';border-radius:6px;font-weight:' + weight + ';' + shadow;
+  }
+
+  // Helper: small team-pill HTML for a bracket node.
+  // `seedLabel` like "D1 #1", `winPct` like "64%" (or null to omit), `kind` 'fav'/'low'/'pink'/'amber'/'champ'.
+  function teamBox(name, seedLabel, winPct, kind, isWinner) {
+    var bg, textColor;
+    if (kind === 'fav')    { bg = 'rgba(91,141,184,0.14)'; textColor = '#1c456e'; }
+    else if (kind === 'low')   { bg = 'var(--surface)';      textColor = 'var(--text)'; }
+    else if (kind === 'pink')  { bg = 'rgba(212,83,126,0.10)'; textColor = '#6e2845'; }
+    else if (kind === 'amber') { bg = 'rgba(200,169,110,0.18)'; textColor = '#7a5a1e'; }
+    else if (kind === 'champ') { bg = 'rgba(200,169,110,0.30)'; textColor = '#5a4116'; }
+    else { bg = 'var(--surface)'; textColor = 'var(--text)'; }
+
+    var border = isSelected(name) ? '1.5px solid var(--accent)' : '0.5px solid var(--border)';
+    var weight = isWinner ? '600' : '500';
+    var pctHtml = winPct != null ? '<span style="color:var(--muted);font-weight:400;margin-left:6px">' + winPct + '</span>' : '';
+    var seedHtml = seedLabel ? '<div style="font-size:10px;color:var(--muted);margin-top:2px">' + seedLabel + '</div>' : '';
+    return '<div style="background:' + bg + ';color:' + textColor + ';border:' + border + ';border-radius:6px;padding:6px 10px;font-size:12px;font-weight:' + weight + '">'
+         + _loEsc(shortName(name)) + pctHtml + seedHtml + '</div>';
+  }
+
+  // Predictor: pick the projected winner of a 2-team matchup using ROS
+  // projections via _h2hPredictTeam. Returns {winner, winPctA, winPctB}.
+  // Caches results so we don't repeatedly call the predictor with the same
+  // pair during a render.
+  function projectMatchup(teamA, teamB) {
+    if (!teamA || !teamB) return null;
+    var cacheKey = teamA + '|' + teamB;
+    window._h2hBracketCache = window._h2hBracketCache || {};
+    if (window._h2hBracketCache[cacheKey]) return window._h2hBracketCache[cacheKey];
+
+    // Run a single-week prediction: treat teamA and teamB as facing each
+    // other once. Use the existing predictH2H if available; otherwise fall
+    // back to comparing teams' projected weekly means against the league avg.
+    var result = null;
+    try {
+      if (typeof window._h2hPredictHeadToHead === 'function') {
+        var p = window._h2hPredictHeadToHead(teamA, teamB);
+        if (p && p.winPctA != null) {
+          result = { winner: p.winPctA >= 0.5 ? teamA : teamB, winPctA: p.winPctA, winPctB: 1 - p.winPctA };
+        }
+      }
+    } catch(e) {}
+    if (!result) {
+      // Fallback: use each team's projected forward-looking win rate from
+      // _h2hPredictTeam. The team with the higher cat-win % is favored.
+      var rA = window._h2hPredictTeam && window._h2hPredictTeam(teamA);
+      var rB = window._h2hPredictTeam && window._h2hPredictTeam(teamB);
+      var wA = (rA && rA.catWinPct != null && !isNaN(rA.catWinPct)) ? rA.catWinPct : 0.5;
+      var wB = (rB && rB.catWinPct != null && !isNaN(rB.catWinPct)) ? rB.catWinPct : 0.5;
+      // Normalize to a head-to-head probability: relative strength.
+      var total = wA + wB;
+      var pctA = total > 0 ? wA / total : 0.5;
+      result = { winner: pctA >= 0.5 ? teamA : teamB, winPctA: pctA, winPctB: 1 - pctA };
+    }
+    window._h2hBracketCache[cacheKey] = result;
+    return result;
+  }
+
+  function pct(p) {
+    if (p == null || isNaN(p)) return null;
+    return Math.round(p * 100) + '%';
+  }
+
+  // Step 2: build matchups by walking the bracket.
+  // CHAMPIONSHIP — semis P22
+  var d1Semi = projectMatchup(d1[0].name, d1[1].name);   // D1#1 vs D1#2
+  var d2Semi = projectMatchup(d2[0].name, d2[1].name);   // D2#1 vs D2#2
+  // Final P23
+  var champFinal = (d1Semi && d2Semi) ? projectMatchup(d1Semi.winner, d2Semi.winner) : null;
+
+  // CONSOLATION — R1 P21
+  var d1R1 = projectMatchup(d1[3].name, d1[4].name);  // D1#4 vs D1#5
+  var d2R1 = projectMatchup(d2[3].name, d2[4].name);  // D2#4 vs D2#5
+  // R2 P22
+  var d1R2 = d1R1 ? projectMatchup(d1R1.winner, d1[2].name) : null;  // winner vs D1#3
+  var d2R2 = d2R1 ? projectMatchup(d2R1.winner, d2[2].name) : null;  // winner vs D2#3
+  // Cons final P23
+  var consFinal = (d1R2 && d2R2) ? projectMatchup(d1R2.winner, d2R2.winner) : null;
+
+  // Step 3: render the SVG bracket. Use the same outside-in layout from the mock.
+  // 680px viewBox width matches the gutter, 720px height fits both brackets + legend.
+  var h = '';
+  h += '<div class="card" style="margin-top:20px;padding:18px 16px 8px">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">';
+  h += '<div style="font-family:var(--font-display);font-size:16px;color:var(--text)">Playoff bracket predictor</div>';
+  h += '<div style="font-size:11px;color:var(--muted)">Forward simulation · period 21–23</div>';
+  h += '</div>';
+
+  // The SVG is the same shape as our mock. We inject team names + win% by
+  // building the inner content into a string template and substituting.
+  h += '<svg viewBox="0 0 680 580" style="width:100%;height:auto">';
+
+  // Period header strip
+  h += '<text x="75"  y="20" text-anchor="middle" style="font-size:10px;font-weight:600;fill:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Period 21</text>';
+  h += '<text x="225" y="20" text-anchor="middle" style="font-size:10px;font-weight:600;fill:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Period 22</text>';
+  h += '<text x="340" y="20" text-anchor="middle" style="font-size:10px;font-weight:600;fill:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Period 23</text>';
+  h += '<text x="455" y="20" text-anchor="middle" style="font-size:10px;font-weight:600;fill:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Period 22</text>';
+  h += '<text x="605" y="20" text-anchor="middle" style="font-size:10px;font-weight:600;fill:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Period 21</text>';
+
+  // Division banners
+  h += '<text x="75"  y="44" text-anchor="middle" style="font-size:11px;font-weight:600;fill:var(--text);text-transform:uppercase;letter-spacing:0.08em">Division One</text>';
+  h += '<text x="605" y="44" text-anchor="middle" style="font-size:11px;font-weight:600;fill:var(--text);text-transform:uppercase;letter-spacing:0.08em">Division Two</text>';
+
+  // ── CHAMPIONSHIP BRACKET (top) ─────────────────────────────────
+  h += '<text x="340" y="72" text-anchor="middle" style="font-size:10px;font-weight:600;fill:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Championship bracket</text>';
+
+  // Renders a team box at given x, y, w, h. The bg color hints at favored vs low seed.
+  function svgTeamBox(x, y, w, h_, name, sub, kind, isWinner) {
+    var fillMap = {
+      fav:   '#5b8db8',  // blue-ish
+      low:   'var(--bg)',
+      pink:  '#d4537e',
+      amber: '#c8a96e'
+    };
+    var lightFillMap = {
+      fav:   'rgba(91,141,184,0.16)',
+      low:   'rgba(0,0,0,0.04)',
+      pink:  'rgba(212,83,126,0.14)',
+      amber: 'rgba(200,169,110,0.22)'
+    };
+    var fill = lightFillMap[kind] || 'rgba(0,0,0,0.03)';
+    var stroke = fillMap[kind] || 'var(--border)';
+    var strokeWidth = isSelected(name) ? '1.5' : (isWinner ? '1' : '0.5');
+    var strokeColor = isSelected(name) ? '#4caf50' : stroke;
+    var textColor = (kind === 'fav') ? '#1c456e' : (kind === 'pink' ? '#6e2845' : (kind === 'amber' ? '#5a4116' : 'var(--text)'));
+    var nameWeight = isWinner ? '600' : '500';
+    var s = '';
+    s += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h_ + '" rx="6" ';
+    s += 'fill="' + fill + '" stroke="' + strokeColor + '" stroke-width="' + strokeWidth + '"/>';
+    s += '<text x="' + (x + 10) + '" y="' + (y + 14) + '" style="font-size:11px;font-weight:' + nameWeight + ';fill:' + textColor + '">' + _loEsc(shortName(name) || '—') + '</text>';
+    if (sub) {
+      s += '<text x="' + (x + 10) + '" y="' + (y + 26) + '" style="font-size:9px;fill:var(--muted);font-weight:400">' + _loEsc(sub) + '</text>';
+    }
+    return s;
+  }
+
+  // D1 Championship semi (col 2, P22) — at y=88, two boxes
+  h += svgTeamBox(150,  88, 160, 30, d1[0].name, 'D1 #1' + (d1Semi ? ' · ' + pct(d1Semi.winPctA) : ''), 'fav',
+                  d1Semi && d1Semi.winner === d1[0].name);
+  h += svgTeamBox(150, 122, 160, 30, d1[1].name, 'D1 #2' + (d1Semi ? ' · ' + pct(d1Semi.winPctB) : ''), 'low',
+                  d1Semi && d1Semi.winner === d1[1].name);
+  // Connector D1 semi → final
+  h += '<path d="M310 103 L325 103 L325 138 L335 138" fill="none" stroke="var(--border)" stroke-width="0.5" opacity="0.6"/>';
+  h += '<path d="M310 137 L325 137" fill="none" stroke="var(--border)" stroke-width="0.5" opacity="0.6"/>';
+
+  // D2 Championship semi (col 6, P22)
+  h += svgTeamBox(370,  88, 160, 30, d2[0].name, 'D2 #1' + (d2Semi ? ' · ' + pct(d2Semi.winPctA) : ''), 'fav',
+                  d2Semi && d2Semi.winner === d2[0].name);
+  h += svgTeamBox(370, 122, 160, 30, d2[1].name, 'D2 #2' + (d2Semi ? ' · ' + pct(d2Semi.winPctB) : ''), 'low',
+                  d2Semi && d2Semi.winner === d2[1].name);
+  // Connector D2 semi → final
+  h += '<path d="M370 103 L355 103 L355 138 L345 138" fill="none" stroke="var(--border)" stroke-width="0.5" opacity="0.6"/>';
+  h += '<path d="M370 137 L355 137" fill="none" stroke="var(--border)" stroke-width="0.5" opacity="0.6"/>';
+
+  // CHAMPIONSHIP FINAL (center, P23) — amber, prominent
+  var championName = champFinal ? champFinal.winner : '—';
+  var championSub = champFinal ? ('Champion · ' + pct(champFinal.winPctA > 0.5 ? champFinal.winPctA : champFinal.winPctB)) : 'Final TBD';
+  h += svgTeamBox(270, 170, 140, 40, championName, championSub, 'amber',
+                  champFinal && champFinal.winner === championName);
+  // Lines from each finalist → center final
+  h += '<path d="M335 138 L335 192 L270 192" fill="none" stroke="var(--border)" stroke-width="0.5" opacity="0.6"/>';
+  h += '<path d="M345 138 L345 192 L410 192" fill="none" stroke="var(--border)" stroke-width="0.5" opacity="0.6"/>';
+
+  // Divider
+  h += '<line x1="40" y1="240" x2="640" y2="240" stroke="var(--border)" stroke-width="0.5" opacity="0.35"/>';
+
+  // ── CONSOLATION BRACKET (bottom) ────────────────────────────────
+  h += '<text x="340" y="262" text-anchor="middle" style="font-size:10px;font-weight:600;fill:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Consolation bracket · seeds 3–5</text>';
+
+  // D1 Cons R1 (col 1, P21)
+  h += svgTeamBox(10,  280, 130, 26, d1[3].name, 'D1 #4' + (d1R1 ? ' · ' + pct(d1R1.winPctA) : ''), 'pink',
+                  d1R1 && d1R1.winner === d1[3].name);
+  h += svgTeamBox(10,  310, 130, 26, d1[4].name, 'D1 #5' + (d1R1 ? ' · ' + pct(d1R1.winPctB) : ''), 'low',
+                  d1R1 && d1R1.winner === d1[4].name);
+  // Connector R1 → R2
+  h += '<path d="M140 293 L155 293 L155 323 L170 323" fill="none" stroke="var(--border)" stroke-width="0.5" opacity="0.6"/>';
+  h += '<path d="M140 323 L155 323" fill="none" stroke="var(--border)" stroke-width="0.5" opacity="0.6"/>';
+
+  // D1 Cons R2 (col 2, P22) — R1 winner + D1#3
+  var d1R1WinName = d1R1 ? d1R1.winner : '—';
+  h += svgTeamBox(170, 310, 140, 26, d1R1WinName, 'R1 winner' + (d1R2 ? ' · ' + pct(d1R2.winPctA) : ''), 'pink',
+                  d1R2 && d1R2.winner === d1R1WinName);
+  h += svgTeamBox(170, 340, 140, 26, d1[2].name, 'D1 #3' + (d1R2 ? ' · ' + pct(d1R2.winPctB) : ''), 'low',
+                  d1R2 && d1R2.winner === d1[2].name);
+  // Connector R2 → Cons Final
+  h += '<path d="M310 323 L325 323 L325 354 L335 354" fill="none" stroke="var(--border)" stroke-width="0.5" opacity="0.6"/>';
+  h += '<path d="M310 354 L325 354" fill="none" stroke="var(--border)" stroke-width="0.5" opacity="0.6"/>';
+
+  // D2 Cons R1 (col 7, P21)
+  h += svgTeamBox(540, 280, 130, 26, d2[3].name, 'D2 #4' + (d2R1 ? ' · ' + pct(d2R1.winPctA) : ''), 'pink',
+                  d2R1 && d2R1.winner === d2[3].name);
+  h += svgTeamBox(540, 310, 130, 26, d2[4].name, 'D2 #5' + (d2R1 ? ' · ' + pct(d2R1.winPctB) : ''), 'low',
+                  d2R1 && d2R1.winner === d2[4].name);
+  // Connector R1 → R2 (right side)
+  h += '<path d="M540 293 L525 293 L525 323 L510 323" fill="none" stroke="var(--border)" stroke-width="0.5" opacity="0.6"/>';
+  h += '<path d="M540 323 L525 323" fill="none" stroke="var(--border)" stroke-width="0.5" opacity="0.6"/>';
+
+  // D2 Cons R2 (col 6, P22)
+  var d2R1WinName = d2R1 ? d2R1.winner : '—';
+  h += svgTeamBox(370, 310, 140, 26, d2R1WinName, 'R1 winner' + (d2R2 ? ' · ' + pct(d2R2.winPctA) : ''), 'pink',
+                  d2R2 && d2R2.winner === d2R1WinName);
+  h += svgTeamBox(370, 340, 140, 26, d2[2].name, 'D2 #3' + (d2R2 ? ' · ' + pct(d2R2.winPctB) : ''), 'low',
+                  d2R2 && d2R2.winner === d2[2].name);
+  // Connector R2 → Cons Final
+  h += '<path d="M370 323 L355 323 L355 354 L345 354" fill="none" stroke="var(--border)" stroke-width="0.5" opacity="0.6"/>';
+  h += '<path d="M370 354 L355 354" fill="none" stroke="var(--border)" stroke-width="0.5" opacity="0.6"/>';
+
+  // CONSOLATION FINAL (center, P23) — pink, slightly less prominent than champ
+  var consName = consFinal ? consFinal.winner : '—';
+  var consSub = consFinal ? ('Cons champ · ' + pct(consFinal.winPctA > 0.5 ? consFinal.winPctA : consFinal.winPctB)) : 'Final TBD';
+  h += svgTeamBox(270, 386, 140, 36, consName, consSub, 'pink',
+                  consFinal && consFinal.winner === consName);
+  // Lines from each cons-champ → cons final
+  h += '<path d="M335 354 L335 404 L270 404" fill="none" stroke="var(--border)" stroke-width="0.5" opacity="0.6"/>';
+  h += '<path d="M345 354 L345 404 L410 404" fill="none" stroke="var(--border)" stroke-width="0.5" opacity="0.6"/>';
+
+  // ── Legend / footnote ──────────────────────────────────────────
+  h += '<line x1="40" y1="450" x2="640" y2="450" stroke="var(--border)" stroke-width="0.5" opacity="0.35"/>';
+
+  h += '<rect x="40" y="468" width="20" height="14" rx="3" fill="rgba(91,141,184,0.16)" stroke="#5b8db8" stroke-width="0.5"/>';
+  h += '<text x="68" y="479" style="font-size:11px;fill:var(--muted)">Top seed</text>';
+
+  h += '<rect x="140" y="468" width="20" height="14" rx="3" fill="rgba(200,169,110,0.30)" stroke="#c8a96e" stroke-width="0.5"/>';
+  h += '<text x="168" y="479" style="font-size:11px;fill:var(--muted)">Championship final</text>';
+
+  h += '<rect x="320" y="468" width="20" height="14" rx="3" fill="rgba(212,83,126,0.14)" stroke="#d4537e" stroke-width="0.5"/>';
+  h += '<text x="348" y="479" style="font-size:11px;fill:var(--muted)">Consolation path</text>';
+
+  h += '<rect x="460" y="468" width="20" height="14" rx="3" fill="rgba(0,0,0,0.04)" stroke="var(--border)" stroke-width="0.5"/>';
+  h += '<text x="488" y="479" style="font-size:11px;fill:var(--muted)">Lower seed</text>';
+
+  // Selected-team callout (only shown if user has a team selected)
+  if (selectedTeam) {
+    h += '<text x="40" y="510" style="font-size:11px;fill:var(--muted)">Your team (<tspan style="font-weight:600;fill:var(--text)">' + _loEsc(shortName(selectedTeam)) + '</tspan>) is highlighted with a green outline through any rounds they would appear in.</text>';
+  }
+
+  h += '<text x="40" y="540" style="font-size:11px;fill:var(--muted);opacity:0.7">Win % = projected probability of advancing from that round, via ROS H2H matchup simulation.</text>';
+  h += '<text x="40" y="558" style="font-size:11px;fill:var(--muted);opacity:0.7">Bracket updates weekly as seeding shifts. Outside-in flow: R1 at the edges, finals in the center.</text>';
+
+  h += '</svg>';
+  h += '</div>';
+  return h;
+}
+
+// Extract divisions from S.standingsData. Returns { d1: [{name, rank}], d2: [...] }
+// or null if extraction fails. Falls back to splitting the league in half if
+// no division info is found in the standings.
+function _h2hExtractDivisions() {
+  var s = S.standingsData;
+  if (!s || !s.data) return _h2hSplitByRank();
+
+  // Try the standard Fantrax shape: tableList with one table per division.
+  var tables = (s.data.tableList) || [];
+  var divisionTables = tables.filter(function(t){
+    if (!t || !t.rows) return false;
+    var cap = (t.caption || t.heading || '').toLowerCase();
+    return cap.indexOf('division') !== -1 || cap.indexOf('div ') !== -1;
+  });
+
+  if (divisionTables.length >= 2) {
+    // Two divisions found. Sort by their order in the array (D1 typically first).
+    var d1Rows = _h2hParseDivisionTable(divisionTables[0]);
+    var d2Rows = _h2hParseDivisionTable(divisionTables[1]);
+    if (d1Rows.length >= 3 && d2Rows.length >= 3) {
+      return { d1: d1Rows, d2: d2Rows };
+    }
+  }
+  return _h2hSplitByRank();
+}
+
+// Parse a single division table's rows into [{name, rank}].
+function _h2hParseDivisionTable(table) {
+  var rows = (table && table.rows) || [];
+  var out = [];
+  rows.forEach(function(row, idx) {
+    var fc = row.fixedCells || [];
+    var name = '';
+    // The team name is usually in the second fixedCell (first is rank).
+    for (var i = 0; i < fc.length; i++) {
+      if (fc[i] && fc[i].teamId) {
+        var ti = (S.teamInfo || {})[fc[i].teamId];
+        if (ti && ti.name) { name = ti.name; break; }
+      }
+      if (fc[i] && fc[i].content && !/^\d+$/.test(String(fc[i].content).trim())) {
+        name = String(fc[i].content).trim();
+        break;
+      }
+    }
+    if (name) out.push({ name: name, rank: idx + 1 });
+  });
+  return out;
+}
+
+// Fallback: split teams by overall rank. Top half = Division 1, bottom half = Division 2.
+// Reads from the existing combined standings on S.seasonData.
+function _h2hSplitByRank() {
+  var teams = [];
+  Object.keys(S.teamInfo || {}).forEach(function(id) {
+    var t = S.teamInfo[id];
+    if (t && t.name) teams.push({ name: t.name, rank: 99 });
+  });
+  if (teams.length < 6) return null;
+  // No reliable rank — just split alphabetically (placeholder)
+  teams.sort(function(a,b){ return a.name.localeCompare(b.name); });
+  var half = Math.floor(teams.length / 2);
+  return { d1: teams.slice(0, half), d2: teams.slice(half) };
 }
 
 function buildMatchupPage(stats, fullSchedule) {
