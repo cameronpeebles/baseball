@@ -16861,7 +16861,7 @@ function assembleDashboard(teamId, el) {
     : (window._fullSchedule || []).map(function(m){ return {period:m.period, away:m.away, home:m.home}; });
   var upcomingMatches = _schedSource.filter(function(m) {
     return (_matchesTeam(m.away) || _matchesTeam(m.home)) && m.period >= _upcomingCurPeriod;
-  }).sort(function(a,b){return a.period - b.period;}).slice(0, 5);
+  }).sort(function(a,b){return a.period - b.period;}).slice(0, 6);
 
   // ── 5. Category breakdown vs league avg ─────────────────────────────────
   var CAT_DISPLAY = [
@@ -17264,30 +17264,140 @@ function assembleDashboard(teamId, el) {
     matchupHtml += '</div></div>';
   }
 
-  // ── Upcoming schedule (Current matchup card removed per spec) ──────────
+  // ── Upcoming schedule (current + next 5 periods, H2H predictions) ──────
   html += '<div class="card" style="flex:1"><div class="card-header"><span class="card-title">Upcoming schedule</span></div>';
-  html += '<div style="padding:0 16px">' + dashInfoBox('Your next several matchups with win probability estimates. Win probability is based on your fWAR and category ratings vs your opponent. Use this to plan roster moves - a tough stretch ahead means prioritise adds now.') + '</div>';
+  html += '<div style="padding:0 16px">' + dashInfoBox('Current and next 5 periods with H2H predictions. Cat split is the projected wins–losses–ties across all 10 categories from the H2H predictor. Use this to plan a stretch — a tough run ahead means prioritize adds now.') + '</div>';
+
   if (!upcomingMatches.length) {
     html += '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No upcoming matches found</div>';
   } else {
+    // Build the league-wide blended-means table once for the entire row set,
+    // using the same helpers the H2H Predictor page uses. Cached on window so
+    // we don't rebuild on subsequent dashboard renders within one session.
+    function _dashBuildBlended() {
+      if (window._dashBracketBlended) return window._dashBracketBlended;
+      try {
+        var stats = window._joeStatsCache;
+        var em = (typeof window._h2hBuildEmpiricalMeans === 'function')
+                  ? window._h2hBuildEmpiricalMeans(stats, { recentBias: 'last4' })
+                  : {};
+        var fp = (typeof window._h2hBuildFPMeansPerTeam === 'function')
+                  ? window._h2hBuildFPMeansPerTeam(1)
+                  : {};
+        window._dashBracketBlended = (typeof window._h2hBlendMeans === 'function')
+                  ? window._h2hBlendMeans(em, fp, { blendEmpirical: 0.5, blendFP: 0.5 })
+                  : em;
+      } catch(e) {
+        if (window._debug) console.warn('[dash schedule] blended build failed:', e);
+        window._dashBracketBlended = {};
+      }
+      return window._dashBracketBlended;
+    }
+    var blended = _dashBuildBlended();
+
+    // Division/seed for opponent context. Defensive — if _h2hExtractDivisions
+    // isn't available or returns nothing, we just omit the seed label.
+    var divisions = null;
+    try {
+      if (typeof _h2hExtractDivisions === 'function') divisions = _h2hExtractDivisions();
+    } catch(e) {}
+    var teamToSeed = {};
+    if (divisions && divisions.d1) divisions.d1.forEach(function(t,i){ teamToSeed[t.name] = { div: 1, seed: i+1 }; });
+    if (divisions && divisions.d2) divisions.d2.forEach(function(t,i){ teamToSeed[t.name] = { div: 2, seed: i+1 }; });
+
+    // For each row, run predictH2H on the blended means.
+    // awayPct = teamA's projected share of cats won (0–1).
+    function projectRow(myTeam, oppName) {
+      if (!blended || !blended[myTeam] || !blended[oppName] || typeof predictH2H !== 'function') {
+        return null;
+      }
+      try {
+        var h2h = predictH2H(blended[myTeam], blended[oppName]);
+        // categories array has 10 entries with .result = 'away'|'home'|'tie'
+        var wins = 0, losses = 0, ties = 0;
+        h2h.categories.forEach(function(c){
+          if (c.result === 'away') wins++;
+          else if (c.result === 'home') losses++;
+          else ties++;
+        });
+        // awayPct is teamA's share when called as predictH2H(a,b). Here a=myTeam.
+        return { winPct: h2h.awayPct, wins: wins, losses: losses, ties: ties };
+      } catch(e) {
+        return null;
+      }
+    }
+
+    // Sentence-case the team's display name for the badge if it's selected.
+    var winCount = 0, lossCount = 0, tossCount = 0;
+    var sumWinPct = 0, projCount = 0;
+    var rowsHtml = '';
+
     upcomingMatches.forEach(function(m) {
-      var isAway   = m.away === teamName;
-      var opp      = isAway ? m.home : m.away;
-      var r        = m.result;
-      var myPts    = r ? (isAway ? r.awayPts : r.homePts) : null;
-      var oppPts   = r ? (isAway ? r.homePts : r.awayPts) : null;
-      var predWin  = myPts != null && oppPts != null && myPts > oppPts;
-      var predLose = myPts != null && oppPts != null && myPts < oppPts;
-      var predCls  = r ? (predWin ? 'win' : predLose ? 'lose' : 'even') : 'even';
-      var predLbl  = r ? (predWin ? 'Predicted W' : predLose ? 'Predicted L' : 'Toss-up') : 'Scheduled';
-      html += '<div class="dash-schedule-row">';
-      html += '<span style="font-size:11px;color:var(--muted);width:28px">P' + m.period + '</span>';
-      html += '<span class="dash-opp">' + (isAway ? '@ ' : 'vs ') + opp + '</span>';
-      var ptsStr = (myPts != null && oppPts != null) ? (myPts.toFixed(1) + '–' + oppPts.toFixed(1)) : '—';
-      html += '<span style="font-size:12px;color:var(--muted)">' + ptsStr + '</span>';
-      html += '<span class="dash-pred ' + predCls + '">' + predLbl + '</span>';
-      html += '</div>';
+      var isAway = _matchesTeam(m.away);
+      var opp    = isAway ? m.home : m.away;
+      var isCurrent = (m.period === _upcomingCurPeriod);
+      // Use H2H projection; fall back to the legacy _mpPredictions result if
+      // the predictor can't form a projection for this pair.
+      var proj = projectRow(teamName, opp);
+      if (!proj && m.result) {
+        // Legacy fallback: convert points to a coarse cat split proxy.
+        var myPts  = isAway ? m.result.awayPts : m.result.homePts;
+        var oppPts = isAway ? m.result.homePts : m.result.awayPts;
+        if (myPts != null && oppPts != null) {
+          var total = myPts + oppPts;
+          proj = { winPct: total > 0 ? myPts/total : 0.5, wins: Math.round(myPts), losses: Math.round(oppPts), ties: 0 };
+        }
+      }
+
+      var winPct  = proj && proj.winPct != null ? proj.winPct : null;
+      var catSplit = proj ? (proj.wins + '–' + proj.losses + '–' + proj.ties) : '—';
+      // Predicted W ≥55%, Predicted L <45%, Toss-up between
+      var predCls, predLbl;
+      if (winPct == null)        { predCls = 'even'; predLbl = 'Scheduled'; }
+      else if (winPct >= 0.55)   { predCls = 'win';  predLbl = 'Predicted W'; winCount++; }
+      else if (winPct < 0.45)    { predCls = 'lose'; predLbl = 'Predicted L'; lossCount++; }
+      else                       { predCls = 'even'; predLbl = 'Toss-up';    tossCount++; }
+      if (winPct != null) { sumWinPct += winPct; projCount++; }
+
+      // Seed label for the opponent (e.g. "D2 · seed 3")
+      var seedInfo = teamToSeed[opp];
+      var seedLbl = seedInfo ? ('D' + seedInfo.div + ' · seed ' + seedInfo.seed) : '';
+
+      // Win prob color matches the badge tier.
+      var winPctColor = winPct == null ? 'var(--muted)'
+                       : winPct >= 0.55 ? 'var(--accent)'
+                       : winPct < 0.45  ? '#c0392b' : 'var(--muted)';
+      var winPctStr = winPct != null ? (Math.round(winPct * 100) + '%') : '—';
+
+      // Current period gets an info-tinted background + Live label.
+      var rowBg = isCurrent ? 'background:rgba(91,141,184,0.08);border-left:3px solid var(--accent);' : '';
+      var periodCol = isCurrent
+        ? '<span style="font-size:12px;font-weight:600;color:var(--accent);width:32px;display:inline-block"><div>P' + m.period + '</div><div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;margin-top:1px">Live</div></span>'
+        : '<span style="font-size:12px;color:var(--muted);width:32px;display:inline-block">P' + m.period + '</span>';
+
+      rowsHtml += '<div class="dash-schedule-row" style="display:grid;grid-template-columns:36px 1fr 70px 96px 60px;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);' + rowBg + '">';
+      rowsHtml += periodCol;
+      rowsHtml += '<div>';
+      rowsHtml += '<div class="dash-opp" style="font-size:13px">' + (isAway ? '@ ' : 'vs ') + _loEsc(opp) + '</div>';
+      if (seedLbl) rowsHtml += '<div style="font-size:11px;color:var(--muted);margin-top:1px">' + seedLbl + '</div>';
+      rowsHtml += '</div>';
+      rowsHtml += '<span style="font-size:12px;color:var(--text);font-variant-numeric:tabular-nums">' + catSplit + '</span>';
+      rowsHtml += '<span class="dash-pred ' + predCls + '">' + predLbl + '</span>';
+      rowsHtml += '<span style="text-align:right;font-size:13px;font-weight:500;color:' + winPctColor + ';font-variant-numeric:tabular-nums">' + winPctStr + '</span>';
+      rowsHtml += '</div>';
     });
+
+    html += rowsHtml;
+
+    // Summary footer: rollup of wins/tossups/losses + avg win prob across the
+    // 6-period window. Helps the user quickly read the stretch as easy/tough.
+    if (projCount > 0) {
+      var avgWinPct = Math.round((sumWinPct / projCount) * 100);
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px 12px;border-top:0.5px solid var(--border);font-size:11px;color:var(--muted)">';
+      html += '<div>' + upcomingMatches.length + '-period outlook: <span style="color:var(--text);font-weight:500">' + winCount + ' wins · ' + tossCount + ' tossups · ' + lossCount + ' losses projected</span></div>';
+      html += '<div>Avg win prob: <span style="color:var(--text);font-weight:500">' + avgWinPct + '%</span></div>';
+      html += '</div>';
+    }
   }
   html += '</div>';
 
