@@ -16894,53 +16894,6 @@ function assembleDashboard(teamId, el) {
     catRanks[c.k] = sorted.findIndex(function(r){return r.id===teamId;}) + 1;
   });
 
-  // ── 6. Trade suggestions (top 3 overall) ────────────────────────────────
-  var myGroupAvg = {};
-  groups.forEach(function(g) {
-    var gp = myPlayers.filter(function(p) { return (p.bestGroup||p.group) === g; });
-    myGroupAvg[g] = gp.length ? gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length : 0.5;
-  });
-  var myWeakGroups = groups.filter(function(g){ return posData[g].avg != null && posData[g].avg < leagueAvg[g]; })
-    .sort(function(a,b){ return (posData[a].avg||0)-(posData[b].avg||0); });
-  var myStrongGroups = groups.filter(function(g){ return posData[g].avg != null && posData[g].avg >= leagueAvg[g]; });
-  var myOffers = myPlayers.filter(function(p){ return myStrongGroups.indexOf(p.bestGroup||p.group)!==-1; })
-    .sort(function(a,b){return b.overallRating-a.overallRating;}).slice(0,8);
-
-  var tradeSuggestions = [];
-  Object.keys(S.teamInfo).forEach(function(oppId) {
-    if (oppId === teamId) return;
-    var oppName = (S.teamInfo[oppId]||{}).name || oppId;
-    var oppPlayers = TA.players.filter(function(p){return p.ftId===oppId;});
-    var oppGroupAvg = {};
-    groups.forEach(function(g){
-      var gp = oppPlayers.filter(function(p){return (p.bestGroup||p.group)===g;});
-      oppGroupAvg[g] = gp.length ? gp.reduce(function(s,p){return s+p.overallRating;},0)/gp.length : 0.5;
-    });
-    var oppWeak = groups.filter(function(g){return oppGroupAvg[g]<leagueAvg[g];});
-    myWeakGroups.forEach(function(wg) {
-      var candidates = oppPlayers.filter(function(p){return (p.bestGroup||p.group)===wg&&p.overallRating>myGroupAvg[wg];})
-        .sort(function(a,b){return b.overallRating-a.overallRating;});
-      if (!candidates.length) return;
-      var receive = candidates[0];
-      var bestSend = null, bestScore = -Infinity;
-      myOffers.forEach(function(off){
-        if (oppWeak.indexOf(off.bestGroup||off.group)===-1) return;
-        var d = off.overallRating-(oppGroupAvg[off.bestGroup||off.group]||0);
-        if (d>bestScore){bestScore=d;bestSend=off;}
-      });
-      if (!bestSend) return;
-      var myNet    = (receive.overallRating-myGroupAvg[wg]) - (bestSend.overallRating-myGroupAvg[bestSend.bestGroup||bestSend.group]);
-      var theirNet = (bestSend.overallRating-oppGroupAvg[bestSend.bestGroup||bestSend.group]) - (receive.overallRating-oppGroupAvg[wg]);
-      tradeSuggestions.push({oppName:oppName,receive:receive,send:bestSend,myNet:myNet,theirNet:theirNet,mutual:myNet>0&&theirNet>0,weakGroup:wg});
-    });
-  });
-  tradeSuggestions.sort(function(a,b){return (b.myNet+b.theirNet)-(a.myNet+a.theirNet);});
-
-  // ── 7. Top waiver targets ────────────────────────────────────────────────
-  var waiverTargets = (TA.faPlayers||[]).filter(function(p){
-    return myWeakGroups.indexOf(p.bestGroup||p.group)!==-1;
-  }).sort(function(a,b){return b.overallRating-a.overallRating;}).slice(0,5);
-
   // ── BUILD HTML ───────────────────────────────────────────────────────────
   var html = '';
 
@@ -17405,16 +17358,6 @@ function assembleDashboard(teamId, el) {
 
 
 
-  // fWAR% vs League Rating full-width scatter card
-  html += '<div class="card" style="margin-bottom:20px">';
-  html += '<div class="card-header"><span class="card-title">fWAR% vs league rating</span></div>';
-  html += '<div class="card-body" style="padding:12px 16px">';
-  html += dashInfoBox('Each dot is a rostered player on your team. X = fWAR% (how they rank among all rostered players at their position). Y = League Rating (overall percentile vs entire league). Stars (top-right) are your best players. Drop/Avoid (bottom-left) are your weakest. Sell High = high league rating but low fWAR% — overrated. Buy Low = high fWAR% but low league rating — undervalued gem.');
-  html += '<div id="dash-player-scatter" style="position:relative;height:320px"></div>';
-  html += '</div></div>';
-
-
-  html += '</div>'; // dash-two-col
 
   // ── 8. Top 5 hitters and pitchers by fWAR ───────────────────────────────
   var hasFWAR = FWAR.hitResults && FWAR.hitResults.length > 0;
@@ -17523,56 +17466,6 @@ function assembleDashboard(teamId, el) {
 
 
 
-  html += '<div class="dash-two-col">';
-
-  // Trade suggestions
-  html += '<div class="card"><div class="card-header"><span class="card-title">Top trade suggestions</span></div>';
-  html += '<div style="padding:0 16px">' + dashInfoBox('Suggested trades that improve your weakest positional groups. The number on the right shows your net rating gain from the trade. Mutual = the other team also benefits. Focus on trades where you get a player in a position where you are below the league average.') + '</div>';
-  if (!tradeSuggestions.length) {
-    html += '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No trade opportunities found</div>';
-  } else {
-    tradeSuggestions.slice(0,4).forEach(function(s) {
-      var signMy = s.myNet>=0?'+':'';
-      html += '<div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap">';
-      html += '<div style="flex:1;min-width:0">';
-      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">';
-      if (s.mutual) html += '<span style="font-size:10px;background:var(--accent-light);color:var(--accent);padding:1px 6px;border-radius:8px;font-weight:500">Mutual</span>';
-      html += '<span style="font-size:12px;color:var(--muted)">w/ ' + s.oppName + '</span></div>';
-      html += '<div style="font-size:13px"><strong>Get:</strong> ' + s.receive.name + ' <span style="color:var(--muted);font-size:11px">(' + (s.weakGroup) + ', ' + Math.round(s.receive.overallRating*100) + 'th pct)</span></div>';
-      html += '<div style="font-size:13px"><strong>Send:</strong> ' + s.send.name + ' <span style="color:var(--muted);font-size:11px">(' + (s.send.bestGroup||s.send.group) + ', ' + Math.round(s.send.overallRating*100) + 'th pct)</span></div>';
-      html += '</div>';
-      html += '<span style="font-size:13px;font-weight:600;color:' + (s.myNet>0?'#2d5a3d':'#c0392b') + '">' + signMy + Math.round(s.myNet*100) + '</span>';
-      html += '</div>';
-    });
-  }
-  html += '</div>';
-
-  // Waiver wire targets
-  html += '<div class="card"><div class="card-header"><span class="card-title">Top waiver targets</span><span style="font-size:12px;color:var(--muted)">For your weak positions</span></div>';
-  html += '<div style="padding:0 16px">' + dashInfoBox('Top free agents for your two weakest positional groups, ranked by overall rating percentile. Adding a high-rated FA at a weak position gives the biggest improvement to your roster. Stats shown are season-to-date averages.') + '</div>';
-  if (!waiverTargets.length) {
-    html += '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No free agents found for your weak positions</div>';
-  } else {
-    waiverTargets.forEach(function(p) {
-      var cats = p.type==='bat' ? BAT_CATS : PIT_CATS;
-      var statStr = cats.slice(0,4).map(function(c){
-        var v=p.stats[c]; if(v==null)return c+':-';
-        if(c==='AVG')return c+':'+v.toFixed(3);
-        if(c==='ERA'||c==='WHIP')return c+':'+v.toFixed(2);
-        return c+':'+Math.round(v);
-      }).join('  ');
-      html += '<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--border)">';
-      html += p.hs ? '<img class="player-hs" src="' + p.hs + '" alt="" onerror="this.style.display=\'none\'">' : '';
-      html += '<div style="flex:1;min-width:0">';
-      html += '<div style="font-size:13px;font-weight:500">' + p.name + '</div>';
-      html += '<div style="font-size:11px;color:var(--muted)"><span class="pos-badge">' + primaryPos(p.pos) + '</span> ' + statStr + '</div>';
-      html += '</div>';
-      html += '<div style="text-align:right;flex-shrink:0"><div style="font-size:14px;font-weight:600;color:' + ratingColor(p.overallRating||0) + '">' + Math.round((p.overallRating||0)*100) + '</div><div style="font-size:10px;color:var(--muted)">pct</div></div>';
-      html += '</div>';
-    });
-  }
-  html += '</div>';
-
   el.innerHTML = html;
 
   // Render Z-scatter chart
@@ -17616,9 +17509,6 @@ function assembleDashboard(teamId, el) {
       }
     });
   }
-
-  // Render fWAR% vs League Rating scatter
-  buildScatterCard(teamId, 'dash-player-scatter');
 
   // Render roster overview charts into the dashboard roster card
   var dashRosterEl = document.getElementById('dash-roster-charts');
