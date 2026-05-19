@@ -15811,17 +15811,50 @@ function renderDashboard() {
     return;
   }
 
-  // Refresh all data card
+  // Recalculate models card — renamed from "Refresh all data" to disambiguate
+  // from the header's "Reload data" button. This one re-runs derived models on
+  // existing in-memory data; the header button re-fetches the JSON from GitHub.
   var html = '<div class="card" style="margin-bottom:14px;padding:14px 16px">';
   // Last-queried-from-GitHub line (sourced from probables.json.fetched, which
   // the same GitHub Action writes alongside the other data files).
-  html += '<div id="dash-last-fetched" style="font-size:11px;color:var(--muted);margin-bottom:8px;font-style:italic">Last data refresh: checking&hellip;</div>';
-  html += '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">';
-  html += '<div><div style="font-size:13px;font-weight:600;margin-bottom:2px">Refresh all data</div>';
-  html += '<div style="font-size:12px;color:var(--muted)">Runs all pipelines so every page populates correctly.</div></div>';
-  html += '<button id="dash-refresh-btn" onclick="refreshAllData()" class="pill active" style="padding:8px 18px;font-size:13px;white-space:nowrap;flex-shrink:0">Refresh all data</button>';
+  html += '<div id="dash-last-fetched" style="font-size:11px;color:var(--muted);margin-bottom:10px;font-style:italic">Last data refresh: checking&hellip;</div>';
+  html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:10px">';
+  html += '<div style="flex:1;min-width:0">';
+  html += '<div style="font-size:13px;font-weight:600;margin-bottom:2px">Recalculate models</div>';
+  html += '<div style="font-size:12px;color:var(--muted);line-height:1.45">Re-runs every derived model on top of the data currently loaded. Use this after changing weights on Models or Correlations.</div>';
+  html += '</div>';
+  html += '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0">';
   html += '<span id="dash-refresh-status" style="font-size:12px;color:var(--muted)"></span>';
-  html += '</div></div>';
+  html += '<button id="dash-refresh-btn" onclick="refreshAllData()" class="pill active" style="padding:8px 18px;font-size:13px;white-space:nowrap;flex-shrink:0">Recalculate models</button>';
+  html += '</div>';
+  html += '</div>';
+  // "What gets recalculated" subsection — list of the 6 derived-model steps
+  // the refreshAllData pipeline actually runs, with a one-line description.
+  // The footnote spells out the distinction from the header's Reload data.
+  html += '<div style="background:var(--bg);border-radius:6px;padding:10px 12px;margin-top:8px">';
+  html += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">What gets recalculated</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 18px;font-size:12px;line-height:1.5">';
+  var _recalcItems = [
+    { t: 'Z-scores',                                  d: 'Per-cat Z across rostered players' },
+    { t: 'Trade analyzer state',                      d: 'SGP tables for Trade Lab + verifier' },
+    { t: 'Hitter-Heavy preset + correlations',        d: 'Auto-weights from correlation strength' },
+    { t: 'fWAR',                                      d: 'All players, hitting + pitching' },
+    { t: 'Player ratings',                            d: 'Positional + league percentile' },
+    { t: 'JOE Factor',                                d: 'Weekly + season JOE per team' }
+  ];
+  _recalcItems.forEach(function(it, i){
+    html += '<div style="display:flex;gap:8px;align-items:baseline;min-width:0">';
+    html += '<span style="font-variant-numeric:tabular-nums;color:#b8b3a8;font-size:10px;min-width:14px">' + (i+1) + '</span>';
+    html += '<div style="min-width:0">';
+    html += '<div style="font-weight:500">' + it.t + '</div>';
+    html += '<div style="color:var(--muted);font-size:11px">' + it.d + '</div>';
+    html += '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '<div style="font-size:10px;color:#b8b3a8;font-style:italic;margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">Runs against the data currently loaded \u2014 does not fetch new JSON. For new data, use Reload data in the header.</div>';
+  html += '</div>';
+  html += '</div>';
 
   // Build team selector
   html += '<div class="dash-team-select">';
@@ -23673,7 +23706,7 @@ window.redrawFwarRatingChart = function() {
       points.push({ name: e.t.name, x: fp, y: lr * 100, isFA: !e.ri, ti: e.ti });
     }
   });
-  if (!points.length) { wrap.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:12px">Run Refresh all data to load fWAR data.</div>'; return; }
+  if (!points.length) { wrap.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:12px">Run Recalculate models on the Dashboard to load fWAR data.</div>'; return; }
 
   var W=700, H=500, PL=62, PR=140, PT=40, PB=52;
   var cW=W-PL-PR, cH=H-PT-PB;
@@ -24115,7 +24148,7 @@ window.redrawPitFwarRatingChart = function() {
       points.push({ name: e.t.name, x: fp, y: lr * 100, isFA: !e.ri, ti: e.ti });
     }
   });
-  if (!points.length) { wrap.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:12px">Run Refresh all data to load fWAR data.</div>'; return; }
+  if (!points.length) { wrap.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:12px">Run Recalculate models on the Dashboard to load fWAR data.</div>'; return; }
 
   var W=700, H=500, PL=62, PR=140, PT=40, PB=52;
   var cW=W-PL-PR, cH=H-PT-PB;
