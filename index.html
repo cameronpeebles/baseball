@@ -26394,6 +26394,81 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
     }
   } catch(e) {}
   var POOL_AB = 4000, POOL_IP = 1300;
+
+  // ── League average opponent: per-cat mean & std-dev across all teams ────
+  // Built once per render. Used to translate the per-week Δ into a change
+  // in probability of winning that cat in any given week.
+  var _leagueAvg = null;
+  try {
+    var _allTeamsEmp = null;
+    if (typeof window._h2hBuildEmpiricalMeans === 'function') {
+      _allTeamsEmp = window._h2hBuildEmpiricalMeans(window._joeStatsCache, { recentBias: 'last4' });
+    }
+    if (_allTeamsEmp) {
+      _leagueAvg = { mean: {}, std: {} };
+      var _CATS = ['R','HR','RBI','SB','AVG','W','K','SVH3','ERA','WHIP'];
+      _CATS.forEach(function(cat){
+        var ms = [], ss = [];
+        Object.keys(_allTeamsEmp).forEach(function(tk){
+          var em = _allTeamsEmp[tk];
+          if (!em) return;
+          if (em[cat] != null && isFinite(em[cat])) ms.push(em[cat]);
+          if (em._std && em._std[cat] != null && isFinite(em._std[cat])) ss.push(em._std[cat]);
+        });
+        if (ms.length) _leagueAvg.mean[cat] = ms.reduce(function(s,v){return s+v;}, 0) / ms.length;
+        if (ss.length) _leagueAvg.std[cat]  = ss.reduce(function(s,v){return s+v;}, 0) / ss.length;
+      });
+    }
+  } catch(e) {}
+
+  // Normal CDF — Abramowitz & Stegun 26.2.17, ≈6-decimal accuracy. Good enough
+  // for translating per-cat output deltas into win-prob deltas.
+  function _normCdf(x) {
+    var a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741;
+    var a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
+    var sign = x < 0 ? -1 : 1;
+    var ax = Math.abs(x) / Math.sqrt(2);
+    var t = 1.0 / (1.0 + p * ax);
+    var y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-ax * ax);
+    return 0.5 * (1.0 + sign * y);
+  }
+
+  // Win-pct delta vs league average opponent. Uses _teamEmp for the team's
+  // mean & std, _leagueAvg for the opponent. winProb = Φ((μ_team−μ_opp)/√(σ_t²+σ_o²)),
+  // with sign flipped for ERA/WHIP. Delta = winProb(after) − winProb(before).
+  function winPctDelta(c) {
+    if (!_teamEmp || !_leagueAvg) return null;
+    var muTeam = _teamEmp[c];
+    var muOpp  = _leagueAvg.mean[c];
+    var sigT   = (_teamEmp._std && _teamEmp._std[c] != null) ? _teamEmp._std[c] : null;
+    var sigO   = (_leagueAvg.std[c] != null) ? _leagueAvg.std[c] : null;
+    if (muTeam == null || muOpp == null || sigT == null || sigO == null) return null;
+    var sigDiff = Math.sqrt(sigT*sigT + sigO*sigO);
+    if (sigDiff < 1e-9) return null;
+    var dv = weeklyDelta(c);
+    if (dv == null) return null;
+    var isLow = (c === 'ERA' || c === 'WHIP');
+    // For high-is-better: P(team>opp). For low-is-better: P(team<opp) = Φ((μ_opp−μ_team)/σ_diff)
+    var zBefore = isLow ? (muOpp - muTeam) / sigDiff : (muTeam - muOpp) / sigDiff;
+    var muTeamAfter = muTeam + dv;
+    var zAfter  = isLow ? (muOpp - muTeamAfter) / sigDiff : (muTeamAfter - muOpp) / sigDiff;
+    return _normCdf(zAfter) - _normCdf(zBefore);
+  }
+  // Format/color win-pct delta. Sign convention matches the Δ column —
+  // positive (more likely to win) = green; negative (less likely) = red.
+  function fmtWinPct(dp) {
+    if (dp == null) return '\u2014';
+    var pct = dp * 100;
+    if (Math.abs(pct) < 0.5) return '0%';
+    var sign = pct >= 0 ? '+' : '\u2212';
+    return sign + Math.abs(pct).toFixed(0) + '%';
+  }
+  function winPctColor(dp) {
+    if (dp == null || Math.abs(dp) < 0.005) return 'var(--muted)';
+    // Already sign-aware (positive always means "more likely to win the cat")
+    return dp > 0 ? '#0F6E56' : '#c0392b';
+  }
+
   function weeklyDelta(c) {
     // Counting stats: simple per-week (add - drop)
     if (['R','HR','RBI','SB','W','K','SVH3'].indexOf(c) !== -1) {
@@ -26456,6 +26531,7 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
   html += '<th style="text-align:right;padding:3px 4px;font-weight:500">Add SGP</th>';
   html += '<th style="text-align:right;padding:3px 4px;font-weight:500">Net SGP</th>';
   html += '<th style="text-align:right;padding:3px 4px;font-weight:500">\u0394 weekly cat</th>';
+  html += '<th style="text-align:right;padding:3px 4px;font-weight:500">\u0394 win %</th>';
   html += '</tr></thead><tbody>';
   rowsToShow.forEach(function(c){
     var dStat = dropStats[c];
@@ -26472,6 +26548,8 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
     html += '<td style="text-align:right;padding:5px 4px;color:'+sgpColor(net)+';font-weight:500">'+fmtSgn(net)+'</td>';
     var _dv = weeklyDelta(c);
     html += '<td style="text-align:right;padding:5px 4px;color:'+deltaColor(c, _dv)+';font-weight:500;font-variant-numeric:tabular-nums">'+fmtDelta(c, _dv)+'</td>';
+    var _dp = winPctDelta(c);
+    html += '<td style="text-align:right;padding:5px 4px;color:'+winPctColor(_dp)+';font-weight:500;font-variant-numeric:tabular-nums">'+fmtWinPct(_dp)+'</td>';
     html += '</tr>';
   });
   html += '</tbody></table>';
