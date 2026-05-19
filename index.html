@@ -26154,7 +26154,7 @@ function _tlV2RenderCatShiftCardHtml() {
   var h = '<div class="card" id="ros-trades-catshift-card" style="padding:14px 16px;margin-bottom:14px;overflow:visible">';
   h += '<div style="margin-bottom:10px">';
   h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Per-category shift</div>';
-  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Projected weekly category outputs for HOME before and after the proposed trade. Counting stats are per-week deltas; rate stats reflect the roster-weighted change.</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Weekly add or drop for HOME if the proposed trade is executed. Green = better, red = worse. Bars centered; magnitude scaled per-category.</div>';
   h += '</div>';
   h += '<div id="ros-trades-catshift-body" style="min-height:280px"></div>';
   h += '</div>';
@@ -26293,61 +26293,92 @@ function _tlV2PopulateCatShiftCard(tA, sendA, sendB, byKeyA, byKeyB) {
     }
   });
 
-  // ── Render bars ───────────────────────────────────────────────────────
-  // Each row: cat label | diverging bar centered at "before" | Δ readout.
-  // Bar width is scaled per-cat: we use max(before, after) to normalize so
-  // both segments fit. The "after" bar overlays the "before" bar to show
-  // the magnitude change.
-  var H_COLOR = '#9b59b6'; // hitting cats
-  var P_COLOR = '#1d9e75'; // pitching cats
-  var hitCats = ['R','HR','RBI','SB','AVG'];
+  // ── Render diverging bars ─────────────────────────────────────────────
+  // Bars push out from a center axis. Green right = beneficial (more R, HR,
+  // K etc., or lower ERA/WHIP). Red left = harmful. Magnitude shared across
+  // all cats so the biggest impact sets the scale and others render in
+  // proportion — this makes the "what hurts most" jump out immediately.
+  var GREEN = '#3B8B47';
+  var RED   = '#C0392B';
 
   function isBeneficial(c, delta) {
+    if (Math.abs(delta) < 1e-6) return null; // neutral
     // Lower-is-better cats: ERA, WHIP
     if (c === 'ERA' || c === 'WHIP') return delta < 0;
     return delta > 0;
   }
 
-  var rowsHtml = '';
+  // Normalize each cat's delta to a comparable "impact" so the bar scale
+  // doesn't collapse when AVG (delta ~0.005) coexists with K (delta ~1.5).
+  // Use the raw delta divided by the team's current weekly mean as the
+  // normalized magnitude. Cats where the team mean is ~0 (rare) fall back
+  // to absolute delta.
+  var normalizedImpact = {};
   CAT_DEFS.forEach(function(cd){
     var c = cd.k;
     var s = shifts[c];
-    var color = hitCats.indexOf(c) !== -1 ? H_COLOR : P_COLOR;
-    var beforeStr = cd.fmt(s.before);
-    var afterStr  = cd.fmt(s.after);
+    var base = Math.abs(s.before);
+    var rel  = (base > 1e-6) ? Math.abs(s.delta) / base : Math.abs(s.delta);
+    normalizedImpact[c] = rel;
+  });
+  var maxImpact = 0;
+  CAT_DEFS.forEach(function(cd){ if (normalizedImpact[cd.k] > maxImpact) maxImpact = normalizedImpact[cd.k]; });
+  if (maxImpact <= 1e-6) maxImpact = 1; // avoid divide-by-zero when no trade impact
+
+  // Header row
+  var rowsHtml = '';
+  rowsHtml += '<div style="display:grid;grid-template-columns:46px 1fr 90px;gap:10px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;padding:0 6px 6px;border-bottom:0.5px solid var(--border);align-items:end">';
+  rowsHtml += '<div>Cat</div>';
+  rowsHtml += '<div style="text-align:center;font-size:9px;letter-spacing:0.06em">Worse &nbsp;\u2190&nbsp;&nbsp;&nbsp;&nbsp;\u2192&nbsp; Better</div>';
+  rowsHtml += '<div style="text-align:right">\u0394 / week</div>';
+  rowsHtml += '</div>';
+
+  CAT_DEFS.forEach(function(cd){
+    var c = cd.k;
+    var s = shifts[c];
+    var benefit = isBeneficial(c, s.delta);
+
+    // Delta string with sign and per-cat precision
     var deltaSign = s.delta >= 0 ? '+' : '\u2212';
-    // Format delta — strip trailing zero noise; preserve precision for rates.
     var deltaAbs = Math.abs(s.delta);
     var deltaStr;
     if (cd.type === 'rate_h')      deltaStr = deltaSign + deltaAbs.toFixed(3);
     else if (cd.type === 'rate_p') deltaStr = deltaSign + deltaAbs.toFixed(2);
     else                            deltaStr = deltaSign + deltaAbs.toFixed(1);
-    var deltaColor = Math.abs(s.delta) < 1e-6 ? 'var(--muted)' : (isBeneficial(c, s.delta) ? '#0F6E56' : '#c0392b');
 
-    // Bar widths: scale before & after to a 100px max, sharing the same scale.
-    var maxVal = Math.max(s.before, s.after, 1e-9);
-    var beforePct = (s.before / maxVal) * 100;
-    var afterPct  = (s.after  / maxVal) * 100;
+    var deltaColor = benefit == null ? 'var(--muted)' : (benefit ? GREEN : RED);
 
-    rowsHtml += '<div style="display:grid;grid-template-columns:48px 1fr 70px;gap:10px;align-items:center;padding:6px 4px;font-size:12px">';
+    // Bar half-width as % of one side (0..50%). Scale so the biggest impact
+    // fills ~46% of the half (leaves 4% breathing room near the edges).
+    var halfPct = (normalizedImpact[c] / maxImpact) * 46;
+
+    var barHtml = '';
+    if (benefit === true) {
+      // Pushes right from center, green
+      barHtml = '<div style="position:absolute;left:50%;top:2px;height:12px;width:' + halfPct.toFixed(1) + '%;background:' + GREEN + ';border-radius:0 2px 2px 0"></div>';
+    } else if (benefit === false) {
+      // Pushes left from center, red
+      barHtml = '<div style="position:absolute;right:50%;top:2px;height:12px;width:' + halfPct.toFixed(1) + '%;background:' + RED + ';border-radius:2px 0 0 2px"></div>';
+    }
+
+    rowsHtml += '<div style="display:grid;grid-template-columns:46px 1fr 90px;gap:10px;align-items:center;padding:7px 6px;font-size:12px">';
     rowsHtml += '<div style="font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;font-size:10px">' + cd.label + '</div>';
-    rowsHtml += '<div style="position:relative;height:18px;background:var(--bg);border-radius:4px;overflow:hidden">';
-    // "Before" lighter bar (drawn first / underneath)
-    rowsHtml += '<div style="position:absolute;left:0;top:3px;height:12px;width:' + beforePct.toFixed(1) + '%;background:' + color + ';opacity:0.40;border-radius:0 3px 3px 0"></div>';
-    // "After" solid bar (drawn on top)
-    rowsHtml += '<div style="position:absolute;left:0;top:3px;height:12px;width:' + afterPct.toFixed(1) + '%;background:' + color + ';border-radius:0 3px 3px 0;mix-blend-mode:multiply"></div>';
-    // Inline "before → after" text labels at the right of the bar area
-    rowsHtml += '<div style="position:absolute;right:6px;top:0;height:18px;display:flex;align-items:center;font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums">' + beforeStr + ' \u2192 ' + afterStr + '</div>';
+    rowsHtml += '<div style="position:relative;height:16px;background:var(--bg);border-radius:3px">';
+    // Center axis gridline
+    rowsHtml += '<div style="position:absolute;left:50%;top:0;width:1px;height:100%;background:var(--border);z-index:2"></div>';
+    rowsHtml += barHtml;
     rowsHtml += '</div>';
     rowsHtml += '<div style="text-align:right;font-variant-numeric:tabular-nums;color:' + deltaColor + ';font-weight:500">' + deltaStr + '</div>';
     rowsHtml += '</div>';
   });
 
   // ── Legend / footer ───────────────────────────────────────────────────
-  var legendHtml = '<div style="display:flex;gap:18px;align-items:center;margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border);font-size:10px;color:var(--muted)">';
-  legendHtml += '<div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;background:' + H_COLOR + ';opacity:0.40;border-radius:2px"></span>Before</div>';
-  legendHtml += '<div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;background:' + H_COLOR + ';border-radius:2px"></span>After</div>';
-  legendHtml += '<div style="flex:1;text-align:right">Counting-stat \u0394 per week. Rate-stat \u0394 reflects roster-weighted blend.</div>';
+  var legendHtml = '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border);font-size:10px;color:var(--muted)">';
+  legendHtml += '<div style="display:flex;gap:14px">';
+  legendHtml += '<div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;background:' + GREEN + ';border-radius:2px"></span>Better</div>';
+  legendHtml += '<div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;background:' + RED + ';border-radius:2px"></span>Worse</div>';
+  legendHtml += '</div>';
+  legendHtml += '<div style="font-style:italic">For ERA/WHIP, lower is better — bars flip accordingly</div>';
   legendHtml += '</div>';
 
   bodyEl.innerHTML = rowsHtml + legendHtml;
@@ -27199,22 +27230,25 @@ function _tlV2RenderBuild() {
     catch(e) { console.warn('[TradeLab] top-targets render failed:', e); }
   }
 
-  // Second row: [Suggested Trades + Top Targets stacked] (~30%) | Trade
-  // Verification (~70%). align-items:stretch makes the left column match the
-  // right column's height so the bottom of the stack aligns with the bottom
-  // of the Verification card. The two cards in the left column flex naturally;
-  // a small spacer absorbs any height mismatch.
+  // Second row: [Suggested Trades + Top Targets stacked] (~30%) |
+  // [Per-cat shift + Trade Verification stacked] (~70%). align-items:stretch
+  // makes the two columns match heights; both inner stacks use flex-direction
+  // column with the lower card flexing to fill so the bottoms line up.
   var leftRow2Stack = '<div style="display:flex;flex-direction:column;gap:14px;height:100%;min-width:0">'
     + suggestedTradesHtml
-    + topTargetsHtml
+    + '<div style="flex:1;display:flex;flex-direction:column">' + topTargetsHtml + '</div>'
+    + '</div>';
+  var rightRow2Stack = '<div style="display:flex;flex-direction:column;gap:14px;height:100%;min-width:0">'
+    + catShiftHtml
+    + '<div style="flex:1;display:flex;flex-direction:column">' + verificationHtml + '</div>'
     + '</div>';
   var secondRowHtml = '<div style="display:grid;grid-template-columns:30% minmax(0,1fr);gap:14px;margin-bottom:14px;align-items:stretch">'
     + leftRow2Stack
-    + '<div style="min-width:0">' + verificationHtml    + '</div>'
+    + rightRow2Stack
     + '</div>';
 
-  // Final assembly: TopRow → CatShift → SecondRow → analyticsHtml → Roster tables → Caveats.
-  html = topRowHtml + catShiftHtml + secondRowHtml + analyticsHtml + rosterTablesHtml;
+  // Final assembly: TopRow → SecondRow → analyticsHtml → Roster tables → Caveats.
+  html = topRowHtml + secondRowHtml + analyticsHtml + rosterTablesHtml;
 
   var caveats = [];
   function teamCountAtGroup(roster, group) { return roster.filter(function(p){ return _tlV2PosGroup(p.pos) === group; }).length; }
