@@ -26143,247 +26143,6 @@ window._tlV2ApplyCounterOffer = function(keysEnc) {
   _tlV2RenderBuild();
 };
 
-// ── Per-category shift card ───────────────────────────────────────────────
-// Sits between Trade Fit and Trade Verification on Trade Lab. Shows the
-// HOME team's projected weekly category outputs before vs after executing
-// the currently-proposed trade. Counting-stat math: per-week delta =
-// (sum of incoming FP totals − sum of outgoing FP totals) / weeksRemaining.
-// Rate stats (AVG/ERA/WHIP) use a roster-weighted blend so adding/removing
-// a player nudges the team mean by their relative volume.
-function _tlV2RenderCatShiftCardHtml() {
-  var h = '<div class="card" id="ros-trades-catshift-card" style="padding:14px 16px;margin-bottom:14px;overflow:visible">';
-  h += '<div style="margin-bottom:10px">';
-  h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Per-category shift</div>';
-  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Weekly add or drop for HOME if the proposed trade is executed. Green = better, red = worse. Bars centered; magnitude scaled per-category.</div>';
-  h += '</div>';
-  h += '<div id="ros-trades-catshift-body" style="min-height:280px"></div>';
-  h += '</div>';
-  return h;
-}
-
-// Populate the per-category shift card. Reuses the same byKey rows the
-// Verification card receives — keeps math consistent between cards.
-function _tlV2PopulateCatShiftCard(tA, sendA, sendB, byKeyA, byKeyB) {
-  var bodyEl = document.getElementById('ros-trades-catshift-body');
-  if (!bodyEl) return;
-  if (!sendA.length || !sendB.length) {
-    bodyEl.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:30px 20px;background:var(--bg);border-radius:8px">Pick a player on each side above to see the per-week category shift.</div>';
-    return;
-  }
-  var dropRows = sendA.map(function(k){ return byKeyA[k]; }).filter(Boolean);
-  var addRows  = sendB.map(function(k){ return byKeyB[k]; }).filter(Boolean);
-  if (!dropRows.length || !addRows.length) {
-    bodyEl.innerHTML = '<div style="font-size:12px;color:#c0392b;text-align:center;padding:30px 20px;background:var(--bg);border-radius:8px">Couldn\u2019t resolve selected players. Try selecting again.</div>';
-    return;
-  }
-
-  // ── Estimate weeks remaining ──────────────────────────────────────────
-  // Bluebonnet regular season runs 20 periods. Use window._currentPeriod
-  // when available (set by the dashboard), else fall back to schedule data.
-  var weeksRemaining = 12;
-  try {
-    var cur = window._currentPeriod;
-    if (!cur && window.S && S.scheduleData && S.scheduleData.data && S.scheduleData.data.tableList) {
-      var ptbls = S.scheduleData.data.tableList.filter(function(t){
-        return t.tableType !== 'SECTION_HEADING' && /scoring period/i.test(t.caption||'');
-      });
-      if (ptbls.length) cur = ptbls.length + 1;
-    }
-    if (cur && cur > 0) weeksRemaining = Math.max(1, 20 - cur + 1);
-  } catch(e) {}
-
-  // ── HOME team's current weekly empirical means ─────────────────────────
-  // The blended-means table on window._h2hBracketBlended is built by the
-  // bracket/dashboard cards and keyed by team name. Fall back to a fresh
-  // empirical build if it isn't cached.
-  var nameA = (S.teamInfo[tA] || {}).name || tA;
-  var empMeans = null;
-  try {
-    if (window._h2hBracketBlended && window._h2hBracketBlended[nameA]) {
-      empMeans = window._h2hBracketBlended[nameA];
-    } else if (typeof window._h2hBuildEmpiricalMeans === 'function') {
-      var emObj = window._h2hBuildEmpiricalMeans(window._joeStatsCache, { recentBias: 'last4' });
-      empMeans = emObj && emObj[nameA];
-    }
-  } catch(e) {}
-  if (!empMeans) {
-    bodyEl.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:30px 20px;background:var(--bg);border-radius:8px">Weekly means unavailable for this team. Open the H2H Predictor or Dashboard first to warm the cache, then return here.</div>';
-    return;
-  }
-
-  // ── Compute per-cat deltas from FP counting stats ─────────────────────
-  var CAT_DEFS = [
-    {k:'R',    label:'R',    type:'count', fmt:function(v){return v.toFixed(1);}},
-    {k:'HR',   label:'HR',   type:'count', fmt:function(v){return v.toFixed(1);}},
-    {k:'RBI',  label:'RBI',  type:'count', fmt:function(v){return v.toFixed(1);}},
-    {k:'SB',   label:'SB',   type:'count', fmt:function(v){return v.toFixed(1);}},
-    {k:'AVG',  label:'AVG',  type:'rate_h',fmt:function(v){return v.toFixed(3);}},
-    {k:'W',    label:'W',    type:'count', fmt:function(v){return v.toFixed(1);}},
-    {k:'K',    label:'K',    type:'count', fmt:function(v){return v.toFixed(1);}},
-    {k:'SVH3', label:'SVH3', type:'count', fmt:function(v){return v.toFixed(1);}},
-    {k:'ERA',  label:'ERA',  type:'rate_p',fmt:function(v){return v.toFixed(2);}},
-    {k:'WHIP', label:'WHIP', type:'rate_p',fmt:function(v){return v.toFixed(2);}}
-  ];
-
-  // Sum FP counting stats over a player list (per-week = total / weeksRemaining)
-  function fpSum(rows, key) {
-    return rows.reduce(function(s,p){
-      if (!p || !p.fp) return s;
-      var v = parseFloat(p.fp[key]);
-      return s + (isFinite(v) ? v : 0);
-    }, 0);
-  }
-  // Sum FP rate-stat denominator (AB for hitters, IP for pitchers)
-  function fpAB(rows){ return rows.reduce(function(s,p){ if(!p||!p.fp||!p.isHit)return s; var v=parseFloat(p.fp.AB||0); return s+(isFinite(v)?v:0); },0); }
-  function fpIP(rows){ return rows.reduce(function(s,p){ if(!p||!p.fp||p.isHit)return s; var v=parseFloat(p.fp.IP||0); return s+(isFinite(v)?v:0); },0); }
-  // For rate stats: compute weighted-average rate based on volume.
-  function fpRateWeighted(rows, rateKey, volKey, isHit) {
-    var num = 0, denom = 0;
-    rows.forEach(function(p){
-      if (!p || !p.fp) return;
-      if (isHit !== !!p.isHit) return;
-      var rate = parseFloat(p.fp[rateKey]);
-      var vol  = parseFloat(p.fp[volKey] || 0);
-      if (!isFinite(rate) || !isFinite(vol) || vol <= 0) return;
-      num += rate * vol; denom += vol;
-    });
-    return denom > 0 ? num / denom : null;
-  }
-
-  // Computed per-week deltas for each cat. For rate stats we estimate the
-  // shift via a roster-weighted blend: a rough proxy for how the team's
-  // composite rate changes when a player is swapped. Uses a fixed roster
-  // volume baseline (POOL_AB / POOL_IP) so a single hitter doesn't swing
-  // the team AVG wildly.
-  var POOL_AB = 4000, POOL_IP = 1300;
-  var shifts = {};
-  CAT_DEFS.forEach(function(cd){
-    var c = cd.k;
-    if (cd.type === 'count') {
-      var addTot  = fpSum(addRows, c);
-      var dropTot = fpSum(dropRows, c);
-      // SVH3 may live under SV in some projections — fall back if all zeros.
-      if (c === 'SVH3' && addTot === 0 && dropTot === 0) {
-        addTot  = fpSum(addRows, 'SV');
-        dropTot = fpSum(dropRows, 'SV');
-      }
-      shifts[c] = { before: (empMeans[c] || 0), delta: (addTot - dropTot) / weeksRemaining };
-      shifts[c].after = shifts[c].before + shifts[c].delta;
-    } else if (cd.type === 'rate_h') {
-      var teamRate = (empMeans.AVG != null) ? empMeans.AVG : 0.260;
-      var addAB    = fpAB(addRows);
-      var dropAB   = fpAB(dropRows);
-      var addRate  = fpRateWeighted(addRows, 'AVG', 'AB', true);
-      var dropRate = fpRateWeighted(dropRows, 'AVG', 'AB', true);
-      // Blend: new pool rate ≈ (POOL_AB·teamRate + addAB·addRate − dropAB·dropRate) / (POOL_AB + addAB − dropAB)
-      var num = POOL_AB * teamRate + (addRate != null ? addAB * addRate : 0) - (dropRate != null ? dropAB * dropRate : 0);
-      var den = POOL_AB + addAB - dropAB;
-      var newRate = (den > 0) ? num / den : teamRate;
-      shifts[c] = { before: teamRate, after: newRate, delta: newRate - teamRate };
-    } else if (cd.type === 'rate_p') {
-      var teamRate2 = (empMeans[c] != null) ? empMeans[c] : (c === 'ERA' ? 3.90 : 1.20);
-      var addIP    = fpIP(addRows);
-      var dropIP   = fpIP(dropRows);
-      var addRate2  = fpRateWeighted(addRows, c, 'IP', false);
-      var dropRate2 = fpRateWeighted(dropRows, c, 'IP', false);
-      var num2 = POOL_IP * teamRate2 + (addRate2 != null ? addIP * addRate2 : 0) - (dropRate2 != null ? dropIP * dropRate2 : 0);
-      var den2 = POOL_IP + addIP - dropIP;
-      var newRate2 = (den2 > 0) ? num2 / den2 : teamRate2;
-      shifts[c] = { before: teamRate2, after: newRate2, delta: newRate2 - teamRate2 };
-    }
-  });
-
-  // ── Render diverging bars ─────────────────────────────────────────────
-  // Bars push out from a center axis. Green right = beneficial (more R, HR,
-  // K etc., or lower ERA/WHIP). Red left = harmful. Magnitude shared across
-  // all cats so the biggest impact sets the scale and others render in
-  // proportion — this makes the "what hurts most" jump out immediately.
-  var GREEN = '#3B8B47';
-  var RED   = '#C0392B';
-
-  function isBeneficial(c, delta) {
-    if (Math.abs(delta) < 1e-6) return null; // neutral
-    // Lower-is-better cats: ERA, WHIP
-    if (c === 'ERA' || c === 'WHIP') return delta < 0;
-    return delta > 0;
-  }
-
-  // Normalize each cat's delta to a comparable "impact" so the bar scale
-  // doesn't collapse when AVG (delta ~0.005) coexists with K (delta ~1.5).
-  // Use the raw delta divided by the team's current weekly mean as the
-  // normalized magnitude. Cats where the team mean is ~0 (rare) fall back
-  // to absolute delta.
-  var normalizedImpact = {};
-  CAT_DEFS.forEach(function(cd){
-    var c = cd.k;
-    var s = shifts[c];
-    var base = Math.abs(s.before);
-    var rel  = (base > 1e-6) ? Math.abs(s.delta) / base : Math.abs(s.delta);
-    normalizedImpact[c] = rel;
-  });
-  var maxImpact = 0;
-  CAT_DEFS.forEach(function(cd){ if (normalizedImpact[cd.k] > maxImpact) maxImpact = normalizedImpact[cd.k]; });
-  if (maxImpact <= 1e-6) maxImpact = 1; // avoid divide-by-zero when no trade impact
-
-  // Header row
-  var rowsHtml = '';
-  rowsHtml += '<div style="display:grid;grid-template-columns:46px 1fr 90px;gap:10px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;padding:0 6px 6px;border-bottom:0.5px solid var(--border);align-items:end">';
-  rowsHtml += '<div>Cat</div>';
-  rowsHtml += '<div style="text-align:center;font-size:9px;letter-spacing:0.06em">Worse &nbsp;\u2190&nbsp;&nbsp;&nbsp;&nbsp;\u2192&nbsp; Better</div>';
-  rowsHtml += '<div style="text-align:right">\u0394 / week</div>';
-  rowsHtml += '</div>';
-
-  CAT_DEFS.forEach(function(cd){
-    var c = cd.k;
-    var s = shifts[c];
-    var benefit = isBeneficial(c, s.delta);
-
-    // Delta string with sign and per-cat precision
-    var deltaSign = s.delta >= 0 ? '+' : '\u2212';
-    var deltaAbs = Math.abs(s.delta);
-    var deltaStr;
-    if (cd.type === 'rate_h')      deltaStr = deltaSign + deltaAbs.toFixed(3);
-    else if (cd.type === 'rate_p') deltaStr = deltaSign + deltaAbs.toFixed(2);
-    else                            deltaStr = deltaSign + deltaAbs.toFixed(1);
-
-    var deltaColor = benefit == null ? 'var(--muted)' : (benefit ? GREEN : RED);
-
-    // Bar half-width as % of one side (0..50%). Scale so the biggest impact
-    // fills ~46% of the half (leaves 4% breathing room near the edges).
-    var halfPct = (normalizedImpact[c] / maxImpact) * 46;
-
-    var barHtml = '';
-    if (benefit === true) {
-      // Pushes right from center, green
-      barHtml = '<div style="position:absolute;left:50%;top:2px;height:12px;width:' + halfPct.toFixed(1) + '%;background:' + GREEN + ';border-radius:0 2px 2px 0"></div>';
-    } else if (benefit === false) {
-      // Pushes left from center, red
-      barHtml = '<div style="position:absolute;right:50%;top:2px;height:12px;width:' + halfPct.toFixed(1) + '%;background:' + RED + ';border-radius:2px 0 0 2px"></div>';
-    }
-
-    rowsHtml += '<div style="display:grid;grid-template-columns:46px 1fr 90px;gap:10px;align-items:center;padding:7px 6px;font-size:12px">';
-    rowsHtml += '<div style="font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;font-size:10px">' + cd.label + '</div>';
-    rowsHtml += '<div style="position:relative;height:16px;background:var(--bg);border-radius:3px">';
-    // Center axis gridline
-    rowsHtml += '<div style="position:absolute;left:50%;top:0;width:1px;height:100%;background:var(--border);z-index:2"></div>';
-    rowsHtml += barHtml;
-    rowsHtml += '</div>';
-    rowsHtml += '<div style="text-align:right;font-variant-numeric:tabular-nums;color:' + deltaColor + ';font-weight:500">' + deltaStr + '</div>';
-    rowsHtml += '</div>';
-  });
-
-  // ── Legend / footer ───────────────────────────────────────────────────
-  var legendHtml = '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border);font-size:10px;color:var(--muted)">';
-  legendHtml += '<div style="display:flex;gap:14px">';
-  legendHtml += '<div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;background:' + GREEN + ';border-radius:2px"></span>Better</div>';
-  legendHtml += '<div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;background:' + RED + ';border-radius:2px"></span>Worse</div>';
-  legendHtml += '</div>';
-  legendHtml += '<div style="font-style:italic">For ERA/WHIP, lower is better — bars flip accordingly</div>';
-  legendHtml += '</div>';
-
-  bodyEl.innerHTML = rowsHtml + legendHtml;
-}
-
 // Dedicated Trade Lab renderer (replaces the previous Workshop-renderer
 // hijack). Supports arbitrary N-for-M trades with mixed hitter+pitcher on
 // either side. The skeleton just defines a header + body container; the
@@ -26572,6 +26331,82 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
   var dropStats = aggregateRosStats(dropRows);
   var addStats  = aggregateRosStats(addRows);
 
+  // ── Δ weekly cat (per-week shift in HOME team's category outputs) ──────
+  // Counting stats: per-week delta = (sum added FP - sum dropped FP) / weeks remaining.
+  // Rate stats (AVG/ERA/WHIP): roster-weighted blend versus team's current
+  // empirical weekly mean. The blend treats the team's current rate as
+  // coming from a baseline pool (POOL_AB=4000, POOL_IP=1300) and adjusts
+  // for the AB/IP of incoming and outgoing players.
+  // Weeks remaining: 20-period regular season - current period + 1.
+  var weeksRemaining = 12;
+  try {
+    var cur = window._currentPeriod;
+    if (!cur && window.S && S.scheduleData && S.scheduleData.data && S.scheduleData.data.tableList) {
+      var ptbls = S.scheduleData.data.tableList.filter(function(t){
+        return t.tableType !== 'SECTION_HEADING' && /scoring period/i.test(t.caption||'');
+      });
+      if (ptbls.length) cur = ptbls.length + 1;
+    }
+    if (cur && cur > 0) weeksRemaining = Math.max(1, 20 - cur + 1);
+  } catch(e) {}
+  // Pull HOME team's empirical weekly means (for rate-stat baselines).
+  var _nameA_local = (S.teamInfo[tA] || {}).name || tA;
+  var _teamEmp = null;
+  try {
+    if (window._h2hBracketBlended && window._h2hBracketBlended[_nameA_local]) {
+      _teamEmp = window._h2hBracketBlended[_nameA_local];
+    } else if (typeof window._h2hBuildEmpiricalMeans === 'function') {
+      var _emObj = window._h2hBuildEmpiricalMeans(window._joeStatsCache, { recentBias: 'last4' });
+      _teamEmp = _emObj && _emObj[_nameA_local];
+    }
+  } catch(e) {}
+  var POOL_AB = 4000, POOL_IP = 1300;
+  function weeklyDelta(c) {
+    // Counting stats: simple per-week (add - drop)
+    if (['R','HR','RBI','SB','W','K','SVH3'].indexOf(c) !== -1) {
+      var add = addStats[c]  || 0;
+      var drp = dropStats[c] || 0;
+      return (add - drp) / weeksRemaining;
+    }
+    // Rate stats: roster-weighted blend against team's current weekly mean
+    if (c === 'AVG') {
+      if (!_teamEmp || _teamEmp.AVG == null) return null;
+      var teamRate = _teamEmp.AVG;
+      var addAB = addStats.AB || 0, dropAB = dropStats.AB || 0;
+      var addRate  = (addStats.AVG  != null && addAB  > 0) ? addStats.AVG  : null;
+      var dropRate = (dropStats.AVG != null && dropAB > 0) ? dropStats.AVG : null;
+      var num = POOL_AB * teamRate + (addRate != null ? addAB * addRate : 0) - (dropRate != null ? dropAB * dropRate : 0);
+      var den = POOL_AB + addAB - dropAB;
+      return (den > 0) ? (num / den) - teamRate : null;
+    }
+    if (c === 'ERA' || c === 'WHIP') {
+      if (!_teamEmp || _teamEmp[c] == null) return null;
+      var teamR = _teamEmp[c];
+      var addIP = addStats.IP || 0, dropIP = dropStats.IP || 0;
+      var addR  = (addStats[c]  != null && addIP  > 0) ? addStats[c]  : null;
+      var dropR = (dropStats[c] != null && dropIP > 0) ? dropStats[c] : null;
+      var n = POOL_IP * teamR + (addR != null ? addIP * addR : 0) - (dropR != null ? dropIP * dropR : 0);
+      var d = POOL_IP + addIP - dropIP;
+      return (d > 0) ? (n / d) - teamR : null;
+    }
+    return null;
+  }
+  // Color: green when beneficial, red when harmful. ERA/WHIP flip (lower=better).
+  function deltaColor(c, dv) {
+    if (dv == null || Math.abs(dv) < 1e-9) return 'var(--muted)';
+    var beneficial = (c === 'ERA' || c === 'WHIP') ? (dv < 0) : (dv > 0);
+    return beneficial ? '#0F6E56' : '#c0392b';
+  }
+  function fmtDelta(c, dv) {
+    if (dv == null) return '\u2014';
+    if (Math.abs(dv) < 1e-9) return '0';
+    var sign = dv >= 0 ? '+' : '\u2212';
+    var abs = Math.abs(dv);
+    if (c === 'AVG')  return sign + abs.toFixed(3).replace(/^0\./, '.');
+    if (c === 'ERA' || c === 'WHIP') return sign + abs.toFixed(2);
+    return sign + abs.toFixed(1);
+  }
+
   var uid = 'tlv2Radar_'+Date.now();
   html += '<div style="margin-top:14px;padding-top:14px;border-top:0.5px solid var(--border)">';
   html += '<div style="display:grid;grid-template-columns:3fr 2fr;gap:16px;align-items:start">';
@@ -26587,6 +26422,7 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
   html += '<th style="text-align:right;padding:3px 4px;font-weight:500">Add stat</th>';
   html += '<th style="text-align:right;padding:3px 4px;font-weight:500">Add SGP</th>';
   html += '<th style="text-align:right;padding:3px 4px;font-weight:500">Net SGP</th>';
+  html += '<th style="text-align:right;padding:3px 4px;font-weight:500">\u0394 weekly cat</th>';
   html += '</tr></thead><tbody>';
   rowsToShow.forEach(function(c){
     var dStat = dropStats[c];
@@ -26601,6 +26437,8 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
     html += '<td style="text-align:right;padding:5px 4px;color:var(--muted)">'+fmtStat(c, aStat)+'</td>';
     html += '<td style="text-align:right;padding:5px 4px;color:'+sgpColor(aSgp)+'">'+(aSgp ? '+'+aSgp.toFixed(2) : '\u2014')+'</td>';
     html += '<td style="text-align:right;padding:5px 4px;color:'+sgpColor(net)+';font-weight:500">'+fmtSgn(net)+'</td>';
+    var _dv = weeklyDelta(c);
+    html += '<td style="text-align:right;padding:5px 4px;color:'+deltaColor(c, _dv)+';font-weight:500;font-variant-numeric:tabular-nums">'+fmtDelta(c, _dv)+'</td>';
     html += '</tr>';
   });
   html += '</tbody></table>';
@@ -26961,14 +26799,6 @@ function _tlV2RenderBuild() {
   // the renderers need the DOM IDs to exist).
   var verificationHtml = _tlV2RenderVerificationCardHtml();
 
-  // Per-category shift card — sits between Trade Fit and Trade Verification.
-  // Same populate-after-innerHTML pattern.
-  var catShiftHtml = '';
-  if (typeof _tlV2RenderCatShiftCardHtml === 'function') {
-    try { catShiftHtml = _tlV2RenderCatShiftCardHtml(); }
-    catch(e) { console.warn('[TradeLab] cat-shift skeleton failed:', e); }
-  }
-
   function deltaCardHtml(name, dW, sentSGP, recvSGP, sideLabel, sideCol, sideBg) {
     var col = dW >= 0.5 ? '#0F6E56' : dW <= -0.5 ? '#c0392b' : (dW >= 0 ? '#4a9a68' : '#c08070');
     var sign = dW >= 0 ? '+' : '\u2212';
@@ -27230,21 +27060,18 @@ function _tlV2RenderBuild() {
     catch(e) { console.warn('[TradeLab] top-targets render failed:', e); }
   }
 
-  // Second row: [Suggested Trades + Top Targets stacked] (~30%) |
-  // [Per-cat shift + Trade Verification stacked] (~70%). align-items:stretch
-  // makes the two columns match heights; both inner stacks use flex-direction
-  // column with the lower card flexing to fill so the bottoms line up.
+  // Second row: [Suggested Trades + Top Targets stacked] (~30%) | Trade
+  // Verification (~70%). align-items:stretch makes the left column match the
+  // right column's height so the bottom of the stack aligns with the bottom
+  // of the Verification card. The two cards in the left column flex naturally;
+  // a small spacer absorbs any height mismatch.
   var leftRow2Stack = '<div style="display:flex;flex-direction:column;gap:14px;height:100%;min-width:0">'
     + suggestedTradesHtml
-    + '<div style="flex:1;display:flex;flex-direction:column">' + topTargetsHtml + '</div>'
-    + '</div>';
-  var rightRow2Stack = '<div style="display:flex;flex-direction:column;gap:14px;height:100%;min-width:0">'
-    + catShiftHtml
-    + '<div style="flex:1;display:flex;flex-direction:column">' + verificationHtml + '</div>'
+    + topTargetsHtml
     + '</div>';
   var secondRowHtml = '<div style="display:grid;grid-template-columns:30% minmax(0,1fr);gap:14px;margin-bottom:14px;align-items:stretch">'
     + leftRow2Stack
-    + rightRow2Stack
+    + '<div style="min-width:0">' + verificationHtml    + '</div>'
     + '</div>';
 
   // Final assembly: TopRow → SecondRow → analyticsHtml → Roster tables → Caveats.
@@ -27311,12 +27138,6 @@ function _tlV2RenderBuild() {
   if (typeof _tlV2PopulateVerificationCard === 'function') {
     try { _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB); }
     catch(e) { console.warn('[TradeLab] verification populate failed:', e); }
-  }
-
-  // Populate the per-category shift card (same DOM-ready hook).
-  if (typeof _tlV2PopulateCatShiftCard === 'function') {
-    try { _tlV2PopulateCatShiftCard(tA, sendA, sendB, byKeyA, byKeyB); }
-    catch(e) { console.warn('[TradeLab] cat-shift populate failed:', e); }
   }
 }
 
