@@ -26283,6 +26283,20 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
 
   // ── Build HTML ───────────────────────────────────────────────────────────
   var html = '';
+  // "How to read this" expandable info box — describes every column and panel
+  // in the Verification card so a first-time reader doesn't have to reverse-
+  // engineer the columns.
+  html += infoBox(
+    '<strong>Top row:</strong> the players HOME sends and receives. The center card is HOME\u2019s net SGP from the trade, weighted by current category needs &mdash; positive = the trade helps standings, negative = hurts. ' +
+    '<strong>Projected ROS stats &amp; SGP table:</strong> per category. ' +
+    '<em>Drop stat / Add stat</em> are the season totals of what HOME gives and gets. ' +
+    '<em>Drop SGP / Add SGP</em> translate those totals into standings-points using current league pool spreads. ' +
+    '<em>Net SGP</em> is Add minus Drop. ' +
+    '<em>\u0394 weekly cat</em> is the per-week change in HOME\u2019s output if the trade is executed &mdash; counting stats divided across remaining weeks, rate stats blended against current roster volume. ' +
+    '<em>\u0394 win %</em> translates that per-week shift into a change in probability of winning that category any given week, modeled vs a league-average opponent using each team\u2019s observed weekly mean and variance. ' +
+    '<strong>Net per-cat impact radar:</strong> the Net SGP column visualized. Larger green wedges = bigger gains; red = losses.'
+  );
+
   // Top row: drop side | Net card | add side
   html += '<div style="display:grid;grid-template-columns:minmax(0,1fr) 200px minmax(0,1fr);gap:10px;align-items:start;margin-bottom:14px">';
   // Drop column
