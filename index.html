@@ -26143,7 +26143,216 @@ window._tlV2ApplyCounterOffer = function(keysEnc) {
   _tlV2RenderBuild();
 };
 
-// ── Trade Verification card ───────────────────────────────────────────────
+// ── Per-category shift card ───────────────────────────────────────────────
+// Sits between Trade Fit and Trade Verification on Trade Lab. Shows the
+// HOME team's projected weekly category outputs before vs after executing
+// the currently-proposed trade. Counting-stat math: per-week delta =
+// (sum of incoming FP totals − sum of outgoing FP totals) / weeksRemaining.
+// Rate stats (AVG/ERA/WHIP) use a roster-weighted blend so adding/removing
+// a player nudges the team mean by their relative volume.
+function _tlV2RenderCatShiftCardHtml() {
+  var h = '<div class="card" id="ros-trades-catshift-card" style="padding:14px 16px;margin-bottom:14px;overflow:visible">';
+  h += '<div style="margin-bottom:10px">';
+  h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Per-category shift</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Projected weekly category outputs for HOME before and after the proposed trade. Counting stats are per-week deltas; rate stats reflect the roster-weighted change.</div>';
+  h += '</div>';
+  h += '<div id="ros-trades-catshift-body" style="min-height:280px"></div>';
+  h += '</div>';
+  return h;
+}
+
+// Populate the per-category shift card. Reuses the same byKey rows the
+// Verification card receives — keeps math consistent between cards.
+function _tlV2PopulateCatShiftCard(tA, sendA, sendB, byKeyA, byKeyB) {
+  var bodyEl = document.getElementById('ros-trades-catshift-body');
+  if (!bodyEl) return;
+  if (!sendA.length || !sendB.length) {
+    bodyEl.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:30px 20px;background:var(--bg);border-radius:8px">Pick a player on each side above to see the per-week category shift.</div>';
+    return;
+  }
+  var dropRows = sendA.map(function(k){ return byKeyA[k]; }).filter(Boolean);
+  var addRows  = sendB.map(function(k){ return byKeyB[k]; }).filter(Boolean);
+  if (!dropRows.length || !addRows.length) {
+    bodyEl.innerHTML = '<div style="font-size:12px;color:#c0392b;text-align:center;padding:30px 20px;background:var(--bg);border-radius:8px">Couldn\u2019t resolve selected players. Try selecting again.</div>';
+    return;
+  }
+
+  // ── Estimate weeks remaining ──────────────────────────────────────────
+  // Bluebonnet regular season runs 20 periods. Use window._currentPeriod
+  // when available (set by the dashboard), else fall back to schedule data.
+  var weeksRemaining = 12;
+  try {
+    var cur = window._currentPeriod;
+    if (!cur && window.S && S.scheduleData && S.scheduleData.data && S.scheduleData.data.tableList) {
+      var ptbls = S.scheduleData.data.tableList.filter(function(t){
+        return t.tableType !== 'SECTION_HEADING' && /scoring period/i.test(t.caption||'');
+      });
+      if (ptbls.length) cur = ptbls.length + 1;
+    }
+    if (cur && cur > 0) weeksRemaining = Math.max(1, 20 - cur + 1);
+  } catch(e) {}
+
+  // ── HOME team's current weekly empirical means ─────────────────────────
+  // The blended-means table on window._h2hBracketBlended is built by the
+  // bracket/dashboard cards and keyed by team name. Fall back to a fresh
+  // empirical build if it isn't cached.
+  var nameA = (S.teamInfo[tA] || {}).name || tA;
+  var empMeans = null;
+  try {
+    if (window._h2hBracketBlended && window._h2hBracketBlended[nameA]) {
+      empMeans = window._h2hBracketBlended[nameA];
+    } else if (typeof window._h2hBuildEmpiricalMeans === 'function') {
+      var emObj = window._h2hBuildEmpiricalMeans(window._joeStatsCache, { recentBias: 'last4' });
+      empMeans = emObj && emObj[nameA];
+    }
+  } catch(e) {}
+  if (!empMeans) {
+    bodyEl.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:30px 20px;background:var(--bg);border-radius:8px">Weekly means unavailable for this team. Open the H2H Predictor or Dashboard first to warm the cache, then return here.</div>';
+    return;
+  }
+
+  // ── Compute per-cat deltas from FP counting stats ─────────────────────
+  var CAT_DEFS = [
+    {k:'R',    label:'R',    type:'count', fmt:function(v){return v.toFixed(1);}},
+    {k:'HR',   label:'HR',   type:'count', fmt:function(v){return v.toFixed(1);}},
+    {k:'RBI',  label:'RBI',  type:'count', fmt:function(v){return v.toFixed(1);}},
+    {k:'SB',   label:'SB',   type:'count', fmt:function(v){return v.toFixed(1);}},
+    {k:'AVG',  label:'AVG',  type:'rate_h',fmt:function(v){return v.toFixed(3);}},
+    {k:'W',    label:'W',    type:'count', fmt:function(v){return v.toFixed(1);}},
+    {k:'K',    label:'K',    type:'count', fmt:function(v){return v.toFixed(1);}},
+    {k:'SVH3', label:'SVH3', type:'count', fmt:function(v){return v.toFixed(1);}},
+    {k:'ERA',  label:'ERA',  type:'rate_p',fmt:function(v){return v.toFixed(2);}},
+    {k:'WHIP', label:'WHIP', type:'rate_p',fmt:function(v){return v.toFixed(2);}}
+  ];
+
+  // Sum FP counting stats over a player list (per-week = total / weeksRemaining)
+  function fpSum(rows, key) {
+    return rows.reduce(function(s,p){
+      if (!p || !p.fp) return s;
+      var v = parseFloat(p.fp[key]);
+      return s + (isFinite(v) ? v : 0);
+    }, 0);
+  }
+  // Sum FP rate-stat denominator (AB for hitters, IP for pitchers)
+  function fpAB(rows){ return rows.reduce(function(s,p){ if(!p||!p.fp||!p.isHit)return s; var v=parseFloat(p.fp.AB||0); return s+(isFinite(v)?v:0); },0); }
+  function fpIP(rows){ return rows.reduce(function(s,p){ if(!p||!p.fp||p.isHit)return s; var v=parseFloat(p.fp.IP||0); return s+(isFinite(v)?v:0); },0); }
+  // For rate stats: compute weighted-average rate based on volume.
+  function fpRateWeighted(rows, rateKey, volKey, isHit) {
+    var num = 0, denom = 0;
+    rows.forEach(function(p){
+      if (!p || !p.fp) return;
+      if (isHit !== !!p.isHit) return;
+      var rate = parseFloat(p.fp[rateKey]);
+      var vol  = parseFloat(p.fp[volKey] || 0);
+      if (!isFinite(rate) || !isFinite(vol) || vol <= 0) return;
+      num += rate * vol; denom += vol;
+    });
+    return denom > 0 ? num / denom : null;
+  }
+
+  // Computed per-week deltas for each cat. For rate stats we estimate the
+  // shift via a roster-weighted blend: a rough proxy for how the team's
+  // composite rate changes when a player is swapped. Uses a fixed roster
+  // volume baseline (POOL_AB / POOL_IP) so a single hitter doesn't swing
+  // the team AVG wildly.
+  var POOL_AB = 4000, POOL_IP = 1300;
+  var shifts = {};
+  CAT_DEFS.forEach(function(cd){
+    var c = cd.k;
+    if (cd.type === 'count') {
+      var addTot  = fpSum(addRows, c);
+      var dropTot = fpSum(dropRows, c);
+      // SVH3 may live under SV in some projections — fall back if all zeros.
+      if (c === 'SVH3' && addTot === 0 && dropTot === 0) {
+        addTot  = fpSum(addRows, 'SV');
+        dropTot = fpSum(dropRows, 'SV');
+      }
+      shifts[c] = { before: (empMeans[c] || 0), delta: (addTot - dropTot) / weeksRemaining };
+      shifts[c].after = shifts[c].before + shifts[c].delta;
+    } else if (cd.type === 'rate_h') {
+      var teamRate = (empMeans.AVG != null) ? empMeans.AVG : 0.260;
+      var addAB    = fpAB(addRows);
+      var dropAB   = fpAB(dropRows);
+      var addRate  = fpRateWeighted(addRows, 'AVG', 'AB', true);
+      var dropRate = fpRateWeighted(dropRows, 'AVG', 'AB', true);
+      // Blend: new pool rate ≈ (POOL_AB·teamRate + addAB·addRate − dropAB·dropRate) / (POOL_AB + addAB − dropAB)
+      var num = POOL_AB * teamRate + (addRate != null ? addAB * addRate : 0) - (dropRate != null ? dropAB * dropRate : 0);
+      var den = POOL_AB + addAB - dropAB;
+      var newRate = (den > 0) ? num / den : teamRate;
+      shifts[c] = { before: teamRate, after: newRate, delta: newRate - teamRate };
+    } else if (cd.type === 'rate_p') {
+      var teamRate2 = (empMeans[c] != null) ? empMeans[c] : (c === 'ERA' ? 3.90 : 1.20);
+      var addIP    = fpIP(addRows);
+      var dropIP   = fpIP(dropRows);
+      var addRate2  = fpRateWeighted(addRows, c, 'IP', false);
+      var dropRate2 = fpRateWeighted(dropRows, c, 'IP', false);
+      var num2 = POOL_IP * teamRate2 + (addRate2 != null ? addIP * addRate2 : 0) - (dropRate2 != null ? dropIP * dropRate2 : 0);
+      var den2 = POOL_IP + addIP - dropIP;
+      var newRate2 = (den2 > 0) ? num2 / den2 : teamRate2;
+      shifts[c] = { before: teamRate2, after: newRate2, delta: newRate2 - teamRate2 };
+    }
+  });
+
+  // ── Render bars ───────────────────────────────────────────────────────
+  // Each row: cat label | diverging bar centered at "before" | Δ readout.
+  // Bar width is scaled per-cat: we use max(before, after) to normalize so
+  // both segments fit. The "after" bar overlays the "before" bar to show
+  // the magnitude change.
+  var H_COLOR = '#9b59b6'; // hitting cats
+  var P_COLOR = '#1d9e75'; // pitching cats
+  var hitCats = ['R','HR','RBI','SB','AVG'];
+
+  function isBeneficial(c, delta) {
+    // Lower-is-better cats: ERA, WHIP
+    if (c === 'ERA' || c === 'WHIP') return delta < 0;
+    return delta > 0;
+  }
+
+  var rowsHtml = '';
+  CAT_DEFS.forEach(function(cd){
+    var c = cd.k;
+    var s = shifts[c];
+    var color = hitCats.indexOf(c) !== -1 ? H_COLOR : P_COLOR;
+    var beforeStr = cd.fmt(s.before);
+    var afterStr  = cd.fmt(s.after);
+    var deltaSign = s.delta >= 0 ? '+' : '\u2212';
+    // Format delta — strip trailing zero noise; preserve precision for rates.
+    var deltaAbs = Math.abs(s.delta);
+    var deltaStr;
+    if (cd.type === 'rate_h')      deltaStr = deltaSign + deltaAbs.toFixed(3);
+    else if (cd.type === 'rate_p') deltaStr = deltaSign + deltaAbs.toFixed(2);
+    else                            deltaStr = deltaSign + deltaAbs.toFixed(1);
+    var deltaColor = Math.abs(s.delta) < 1e-6 ? 'var(--muted)' : (isBeneficial(c, s.delta) ? '#0F6E56' : '#c0392b');
+
+    // Bar widths: scale before & after to a 100px max, sharing the same scale.
+    var maxVal = Math.max(s.before, s.after, 1e-9);
+    var beforePct = (s.before / maxVal) * 100;
+    var afterPct  = (s.after  / maxVal) * 100;
+
+    rowsHtml += '<div style="display:grid;grid-template-columns:48px 1fr 70px;gap:10px;align-items:center;padding:6px 4px;font-size:12px">';
+    rowsHtml += '<div style="font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;font-size:10px">' + cd.label + '</div>';
+    rowsHtml += '<div style="position:relative;height:18px;background:var(--bg);border-radius:4px;overflow:hidden">';
+    // "Before" lighter bar (drawn first / underneath)
+    rowsHtml += '<div style="position:absolute;left:0;top:3px;height:12px;width:' + beforePct.toFixed(1) + '%;background:' + color + ';opacity:0.40;border-radius:0 3px 3px 0"></div>';
+    // "After" solid bar (drawn on top)
+    rowsHtml += '<div style="position:absolute;left:0;top:3px;height:12px;width:' + afterPct.toFixed(1) + '%;background:' + color + ';border-radius:0 3px 3px 0;mix-blend-mode:multiply"></div>';
+    // Inline "before → after" text labels at the right of the bar area
+    rowsHtml += '<div style="position:absolute;right:6px;top:0;height:18px;display:flex;align-items:center;font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums">' + beforeStr + ' \u2192 ' + afterStr + '</div>';
+    rowsHtml += '</div>';
+    rowsHtml += '<div style="text-align:right;font-variant-numeric:tabular-nums;color:' + deltaColor + ';font-weight:500">' + deltaStr + '</div>';
+    rowsHtml += '</div>';
+  });
+
+  // ── Legend / footer ───────────────────────────────────────────────────
+  var legendHtml = '<div style="display:flex;gap:18px;align-items:center;margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border);font-size:10px;color:var(--muted)">';
+  legendHtml += '<div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;background:' + H_COLOR + ';opacity:0.40;border-radius:2px"></span>Before</div>';
+  legendHtml += '<div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;background:' + H_COLOR + ';border-radius:2px"></span>After</div>';
+  legendHtml += '<div style="flex:1;text-align:right">Counting-stat \u0394 per week. Rate-stat \u0394 reflects roster-weighted blend.</div>';
+  legendHtml += '</div>';
+
+  bodyEl.innerHTML = rowsHtml + legendHtml;
+}
+
 // Dedicated Trade Lab renderer (replaces the previous Workshop-renderer
 // hijack). Supports arbitrary N-for-M trades with mixed hitter+pitcher on
 // either side. The skeleton just defines a header + body container; the
@@ -26721,6 +26930,14 @@ function _tlV2RenderBuild() {
   // the renderers need the DOM IDs to exist).
   var verificationHtml = _tlV2RenderVerificationCardHtml();
 
+  // Per-category shift card — sits between Trade Fit and Trade Verification.
+  // Same populate-after-innerHTML pattern.
+  var catShiftHtml = '';
+  if (typeof _tlV2RenderCatShiftCardHtml === 'function') {
+    try { catShiftHtml = _tlV2RenderCatShiftCardHtml(); }
+    catch(e) { console.warn('[TradeLab] cat-shift skeleton failed:', e); }
+  }
+
   function deltaCardHtml(name, dW, sentSGP, recvSGP, sideLabel, sideCol, sideBg) {
     var col = dW >= 0.5 ? '#0F6E56' : dW <= -0.5 ? '#c0392b' : (dW >= 0 ? '#4a9a68' : '#c08070');
     var sign = dW >= 0 ? '+' : '\u2212';
@@ -26996,8 +27213,8 @@ function _tlV2RenderBuild() {
     + '<div style="min-width:0">' + verificationHtml    + '</div>'
     + '</div>';
 
-  // Final assembly: TopRow → SecondRow → analyticsHtml → Roster tables → Caveats.
-  html = topRowHtml + secondRowHtml + analyticsHtml + rosterTablesHtml;
+  // Final assembly: TopRow → CatShift → SecondRow → analyticsHtml → Roster tables → Caveats.
+  html = topRowHtml + catShiftHtml + secondRowHtml + analyticsHtml + rosterTablesHtml;
 
   var caveats = [];
   function teamCountAtGroup(roster, group) { return roster.filter(function(p){ return _tlV2PosGroup(p.pos) === group; }).length; }
@@ -27060,6 +27277,12 @@ function _tlV2RenderBuild() {
   if (typeof _tlV2PopulateVerificationCard === 'function') {
     try { _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB); }
     catch(e) { console.warn('[TradeLab] verification populate failed:', e); }
+  }
+
+  // Populate the per-category shift card (same DOM-ready hook).
+  if (typeof _tlV2PopulateCatShiftCard === 'function') {
+    try { _tlV2PopulateCatShiftCard(tA, sendA, sendB, byKeyA, byKeyB); }
+    catch(e) { console.warn('[TradeLab] cat-shift populate failed:', e); }
   }
 }
 
