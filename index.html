@@ -26285,6 +26285,26 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
     return;
   }
 
+  // Δ win % needs the per-team weekly stats (standings_schedule.json) to be
+  // loaded into _joeStatsCache. On Trade Lab this may not have happened yet
+  // (the cache is populated lazily by the H2H Predictor / Dashboard). If it's
+  // missing, kick off the same preload the predictor uses, then re-run this
+  // populate once. The _tlV2VerifyStatsPreloading guard prevents re-entry.
+  if ((!window._joeStatsCache || !window._joeStatsCache._hasRealStats)
+      && typeof window._h2hPredictTeam === 'function'
+      && window._h2hPredictTeam.preload
+      && !window._tlV2VerifyStatsPreloading) {
+    window._tlV2VerifyStatsPreloading = true;
+    window._h2hPredictTeam.preload().then(function(){
+      window._tlV2VerifyStatsPreloading = false;
+      // Re-render with the same args now that stats are available.
+      _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB);
+    }).catch(function(){
+      window._tlV2VerifyStatsPreloading = false;
+      // Leave the card rendered without Δ win % rather than blocking.
+    });
+  }
+
   // ── Compute per-cat SGP impact (signed, +receive / -give) ───────────────
   var ALL_CATS = ['R','HR','RBI','SB','AVG','W','K','SVH3','ERA','WHIP'];
   function aggregateCatSGP(rows) {
@@ -26469,22 +26489,13 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
     }
     if (cur && cur > 0) weeksRemaining = Math.max(1, 20 - cur + 1);
   } catch(e) {}
-  // Pull HOME team's empirical weekly means (for rate-stat baselines).
+  // Pull HOME team's empirical weekly means (for rate-stat baselines) and the
+  // league-average opponent. Build the per-team empirical means ONCE, then
+  // resolve HOME from it (exact name first, normalized-name fallback so
+  // cosmetic name drift between teamInfo and standings_schedule doesn't break
+  // the lookup). _leagueAvg averages mean & std across all teams.
   var _nameA_local = (S.teamInfo[tA] || {}).name || tA;
   var _teamEmp = null;
-  try {
-    if (window._h2hBracketBlended && window._h2hBracketBlended[_nameA_local]) {
-      _teamEmp = window._h2hBracketBlended[_nameA_local];
-    } else if (typeof window._h2hBuildEmpiricalMeans === 'function') {
-      var _emObj = window._h2hBuildEmpiricalMeans(window._joeStatsCache, { recentBias: 'last4' });
-      _teamEmp = _emObj && _emObj[_nameA_local];
-    }
-  } catch(e) {}
-  var POOL_AB = 4000, POOL_IP = 1300;
-
-  // ── League average opponent: per-cat mean & std-dev across all teams ────
-  // Built once per render. Used to translate the per-week Δ into a change
-  // in probability of winning that cat in any given week.
   var _leagueAvg = null;
   try {
     var _allTeamsEmp = null;
@@ -26492,6 +26503,22 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
       _allTeamsEmp = window._h2hBuildEmpiricalMeans(window._joeStatsCache, { recentBias: 'last4' });
     }
     if (_allTeamsEmp) {
+      // Prefer the blended table if present (matches bracket/dashboard), else
+      // use the freshly built empirical table.
+      if (window._h2hBracketBlended && window._h2hBracketBlended[_nameA_local]) {
+        _teamEmp = window._h2hBracketBlended[_nameA_local];
+      } else if (_allTeamsEmp[_nameA_local]) {
+        _teamEmp = _allTeamsEmp[_nameA_local];
+      } else {
+        // Normalized-name fallback.
+        var _normTarget = (typeof _normPlayerKey === 'function') ? _normPlayerKey(_nameA_local) : (_nameA_local||'').toLowerCase();
+        Object.keys(_allTeamsEmp).forEach(function(tk){
+          if (_teamEmp) return;
+          var nk = (typeof _normPlayerKey === 'function') ? _normPlayerKey(tk) : (tk||'').toLowerCase();
+          if (nk === _normTarget) _teamEmp = _allTeamsEmp[tk];
+        });
+      }
+      // League average: mean & std per cat across all teams.
       _leagueAvg = { mean: {}, std: {} };
       var _CATS = ['R','HR','RBI','SB','AVG','W','K','SVH3','ERA','WHIP'];
       _CATS.forEach(function(cat){
@@ -26507,6 +26534,7 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
       });
     }
   } catch(e) {}
+  var POOL_AB = 4000, POOL_IP = 1300;
 
   // Normal CDF — Abramowitz & Stegun 26.2.17, ≈6-decimal accuracy. Good enough
   // for translating per-cat output deltas into win-prob deltas.
