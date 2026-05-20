@@ -247,6 +247,74 @@ td.neg { color: #c0392b; font-weight: 500; }
 .fwar-pos.assigned { background:var(--accent-light);color:var(--accent);border-color:var(--accent); }
 #ros-addrop-panel, #ros-addrop-panel .card { overflow: visible !important; }
 #ros-addrop-panel .ros-stat-scroll { overflow-x: auto !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MOBILE PASS (phone-first, ≤640px). All rules are scoped to this media
+   query, so desktop (and the existing 700/900px breakpoints) render exactly
+   as before. Goals: stop whole-page horizontal scroll, reclaim width, stack
+   multi-column grids, and make wide data tables scroll cleanly inside their
+   own container instead of blowing out the viewport.
+   ───────────────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* Reclaim horizontal space — desktop uses 32px/24px. */
+  main { padding: 16px 10px; }
+  #page-ros { margin: 0 -10px; padding: 0 10px; width: calc(100% + 20px); }
+
+  /* Smaller page titles so they don't wrap awkwardly. */
+  .page-title { font-size: 21px; }
+  .page-subtitle { font-size: 12px; margin-bottom: 16px; }
+
+  /* Header: tighten padding, shrink logo. */
+  header { padding: 0 14px; }
+  .logo { font-size: 18px; }
+  .updated { display: none; }
+
+  /* Card chrome: less padding so content gets the width. */
+  .card-header { padding: 12px 14px; }
+  .card { margin-bottom: 16px; }
+
+  /* Kill fixed min-widths that force the WHOLE PAGE to scroll sideways.
+     These elements instead scroll within their own container (or shrink). */
+  #fwar-profile-inner { min-width: 0 !important; }
+  [style*="min-width:900px"], [style*="min-width: 900px"] { min-width: 0 !important; }
+
+  /* Any flex row that was holding a fixed-width pair should wrap on phone. */
+  .two-col, .dash-two-col { grid-template-columns: 1fr !important; }
+  .dash-metric-grid { grid-template-columns: repeat(2,1fr) !important; }
+  .dash-pos-grid { grid-template-columns: repeat(2,1fr) !important; }
+
+  /* Tables: smooth momentum scroll on iOS, and a touch smaller so more fits
+     before the user has to swipe. The .table-wrap already has overflow-x:auto. */
+  .table-wrap { -webkit-overflow-scrolling: touch; }
+  .table-wrap table { font-size: 11px; }
+  .table-wrap th, .table-wrap td { padding: 5px 7px; }
+
+  /* Bare guide/standings tables not inside a .table-wrap: let them scroll
+     rather than overflow. Wrapping the table element itself in an auto-scroll
+     box via display:block keeps them contained. */
+  .page table:not(.no-mobile-scroll) {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  /* The dashboard headline KPI strip (4-up) → 2-up on phone. */
+  .dash-headline-kpis { grid-template-columns: repeat(2,1fr) !important; gap: 10px 14px !important; }
+
+  /* Generic safety net: inline 4-column grids that are too tight on phone.
+     Scoped to dashboard cards so we don't disturb data tables elsewhere. */
+  #page-dashboard [style*="grid-template-columns:repeat(4"] {
+    grid-template-columns: repeat(2,1fr) !important;
+  }
+
+  /* Nav: a touch more tappable. */
+  nav button { padding: 9px 12px; font-size: 13px; }
+
+  /* Charts/canvas never exceed the card. */
+  canvas { max-width: 100% !important; }
+}
 </style>
 </head>
 <body>
@@ -16989,7 +17057,7 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
     // Sentence
     _hb += '<div style="font-size:14px;line-height:1.6">' + sentence + '</div>';
     // KPI strip
-    _hb += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;padding-top:12px;border-top:0.5px solid var(--border)">';
+    _hb += '<div class="dash-headline-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;padding-top:12px;border-top:0.5px solid var(--border)">';
     _hb += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">Standing</div><div style="font-size:18px;font-weight:600;margin-top:2px">' + ordN(cur) + '</div></div>';
     _hb += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">Projected</div><div style="font-size:18px;font-weight:600;margin-top:2px;color:' + projCol + '">' + projTxt + '<span style="font-size:11px;font-weight:500">' + projDelta + '</span></div></div>';
     _hb += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">Strength</div><div style="font-size:18px;font-weight:600;margin-top:2px;color:#3B6D11">' + (bestG ? bestG.g : '\u2014') + '</div></div>';
