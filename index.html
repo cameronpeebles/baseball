@@ -848,6 +848,7 @@ td.neg { color: #c0392b; font-weight: 500; }
       <button class="trade-tab" onclick="showGuideTab('changelog',this)">Changelog</button>
       <button class="trade-tab" onclick="showGuideTab('archetype',this)">Team Archetype</button>
       <button class="trade-tab" onclick="showGuideTab('ros',this)">ROS</button>
+      <button class="trade-tab" onclick="showGuideTab('tradelab',this)">Trade Lab</button>
       <button class="trade-tab" onclick="showGuideTab('lineup',this)">Lineup</button>
       <button class="trade-tab" onclick="showGuideTab('h2hpred',this)">H2H Pred</button>
       <button class="trade-tab" onclick="showGuideTab('milb',this)">MiLB Data</button>
@@ -3315,11 +3316,83 @@ td.neg { color: #c0392b; font-weight: 500; }
       </div>
     </div>
 
+    <!-- Trade Lab -->
+    <div id="guide-tab-tradelab" class="trade-tab-content">
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Trade Lab &mdash; what it does</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <p>Trade Lab evaluates trades between two teams &mdash; <strong>HOME</strong> (the team whose perspective you&rsquo;re analyzing from) and <strong>AWAY</strong> (the trade partner). Pick the two teams at the top, then build a proposed deal by selecting players from each side. The page has four sections, each answering a different question.</p>
+          <ul style="margin:10px 0;padding-left:20px;line-height:1.9">
+            <li><strong>Trade Fit</strong> &mdash; should these two teams even be talking? Where do their needs line up?</li>
+            <li><strong>Suggested Trades</strong> &mdash; concrete deals the engine thinks make sense.</li>
+            <li><strong>Top Targets across the League</strong> &mdash; best players to pursue for HOME&rsquo;s weak spots, league-wide.</li>
+            <li><strong>Trade Verification</strong> &mdash; the detailed breakdown of whatever deal you&rsquo;ve built.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Trade Fit card</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <p>Two panels show where each team sits relative to the league.</p>
+          <div style="font-weight:600;font-size:13px;margin:14px 0 6px">Positional strength &middot; vs league average</div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:12px">
+            One tile per position group (C, 1B, 2B, 3B, SS, OF, SP, RP). The number is that group&rsquo;s rating relative to the league average &mdash; positive (green) = a strength, negative (red) = a hole. The <strong>H&rarr;A</strong> / <strong>A&rarr;H</strong> tags below a column flag the natural flow: <strong>H&rarr;A</strong> means HOME has a surplus there to send AWAY; <strong>A&rarr;H</strong> means AWAY&rsquo;s surplus could come to HOME. A clean fit is one team&rsquo;s green lining up with the other&rsquo;s red.
+          </div>
+          <div style="font-weight:600;font-size:13px;margin:14px 0 6px">Category needs &middot; current standings rank</div>
+          <div style="padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.8">
+            One tile per scoring category, showing each team&rsquo;s current standings rank (1 = best) and a <strong>multiplier</strong> (&times;0.5 to &times;1.8). The multiplier scales how much the trade engine values gains in that category for that team: a category where you rank near the bottom carries a high multiplier (you have the most to gain), while a category you&rsquo;re already winning carries a low one (little room to climb). These multipliers feed directly into the need-weighted SGP used everywhere else on the page.
+          </div>
+          <div style="font-size:12px;padding:10px 12px;background:var(--accent-light);border-radius:6px;border:1px solid var(--accent);margin-top:12px"><strong>How to read it:</strong> high multiplier + low rank = a category screaming for help. If HOME&rsquo;s &times;1.8 categories are pitching ratios and AWAY has surplus arms, that&rsquo;s the trade thesis in one glance.</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Suggested Trades &amp; Top Targets</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <p><strong>Suggested Trades</strong> proposes deals between HOME and AWAY that improve HOME&rsquo;s need-weighted SGP while remaining plausible for AWAY. Each suggestion shows the players involved and the net SGP swing.</p>
+          <p style="margin-top:10px"><strong>Top Targets across the League</strong> ignores AWAY and scans every team for the players who would most help HOME&rsquo;s weakest categories &mdash; useful for deciding who to pursue before you&rsquo;ve settled on a partner.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;max-width:900px">
+        <div class="card-header"><span class="card-title">Trade Verification &mdash; column by column</span></div>
+        <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
+          <p>Once you build a deal, this card breaks it down from HOME&rsquo;s perspective. The center <strong>Net SGP</strong> badge is the headline: HOME&rsquo;s total need-weighted standings-point gain (green) or loss (red), with a verdict label (Strong Win, Win, Marginal, Loss).</p>
+
+          <div style="font-weight:600;font-size:13px;margin:16px 0 8px">Projected ROS stats &amp; SGP table</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+
+            <div style="padding:10px 12px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.7">
+              <strong>Drop stat / Add stat</strong> &mdash; the rest-of-season projected totals for what HOME sends (drop) and receives (add), per category.
+            </div>
+            <div style="padding:10px 12px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.7">
+              <strong>Drop SGP / Add SGP</strong> &mdash; those totals converted to standings-gain points using current league pool spreads. Drop is shown negative (value leaving), Add positive (value arriving).
+            </div>
+            <div style="padding:10px 12px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.7">
+              <strong>Net SGP</strong> &mdash; Add minus Drop for that category. Positive means the trade improves HOME there. The radar on the right visualizes this column &mdash; green wedges are gains, red are losses.
+            </div>
+            <div style="padding:10px 12px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.7">
+              <strong>&Delta; weekly cat</strong> &mdash; the change in HOME&rsquo;s <em>per-week</em> output if the trade goes through. Counting stats (R, HR, RBI, SB, W, K, SVH3) are the rest-of-season total change spread across remaining weeks. Rate stats (AVG, ERA, WHIP) are a roster-weighted blend &mdash; the incoming/outgoing player&rsquo;s rate folded into the team&rsquo;s composite by volume (AB or IP). Green = better, red = worse; ERA/WHIP flip since lower is better.
+            </div>
+            <div style="padding:10px 12px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.7">
+              <strong>&Delta; win %</strong> &mdash; what that per-week shift does to HOME&rsquo;s rest-of-season rate of winning that <em>single category</em>, modeled against a league-average opponent. Each team&rsquo;s weekly output is treated as a normal distribution (observed mean &amp; variance); the win probability is the chance HOME&rsquo;s output beats the opponent&rsquo;s. Variance is scaled to a season-expectation basis (&sigma; &divide; &radic;weeks-remaining) so a steady per-week edge in a noisy counting stat like K shows its true cumulative value instead of being drowned out by single-week swings. It is <strong>per category, not the whole matchup</strong> &mdash; the numbers don&rsquo;t sum to a matchup win probability, because winning a week depends on the joint outcome across all 10 categories.
+            </div>
+          </div>
+
+          <div style="font-size:12px;padding:10px 12px;background:var(--accent-light);border-radius:6px;border:1px solid var(--accent);margin-top:14px"><strong>How to read it together:</strong> Net SGP tells you the standings value. &Delta; weekly cat tells you the raw production change. &Delta; win % tells you whether that change is big enough to matter against typical competition. Cross-reference with the Category needs tiles in Trade Fit &mdash; a green &Delta; win % in a category where HOME carries a &times;1.4&ndash;1.8 multiplier is the most valuable kind of gain.</div>
+
+          <p style="font-size:12px;color:var(--muted);margin-top:12px;font-style:italic">Note: &Delta; win % needs HOME&rsquo;s weekly history to be loaded. If it shows &mdash;, open the Dashboard or H2H Predictor once to warm the cache, then return.</p>
+        </div>
+      </div>
+
+    </div>
+
   </div>
 
+
 </main>
-
-
 <script>
 // Safe fallbacks in case joe-factor.js hasn't defined these yet
 if (typeof mergeManualPeriodsIntoJOE === 'undefined') {
@@ -26293,7 +26366,7 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
     '<em>Drop SGP / Add SGP</em> translate those totals into standings-points using current league pool spreads. ' +
     '<em>Net SGP</em> is Add minus Drop. ' +
     '<em>\u0394 weekly cat</em> is the per-week change in HOME\u2019s output if the trade is executed &mdash; counting stats divided across remaining weeks, rate stats blended against current roster volume. ' +
-    '<em>\u0394 win %</em> translates that per-week shift into a change in probability of winning that category any given week, modeled vs a league-average opponent using each team\u2019s observed weekly mean and variance. ' +
+    '<em>\u0394 win %</em> translates that per-week shift into a change in your rest-of-season rate of winning that category, modeled vs a league-average opponent. It uses each team\u2019s observed weekly mean and variance, scaled to a season-expectation basis so a sustained per-week edge in a noisy counting stat (W, K) shows its true cumulative value rather than getting buried by single-week swings. ' +
     '<strong>Net per-cat impact radar:</strong> the Net SGP column visualized. Larger green wedges = bigger gains; red = losses.'
   );
 
@@ -26448,8 +26521,18 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
   }
 
   // Win-pct delta vs league average opponent. Uses _teamEmp for the team's
-  // mean & std, _leagueAvg for the opponent. winProb = Φ((μ_team−μ_opp)/√(σ_t²+σ_o²)),
-  // with sign flipped for ERA/WHIP. Delta = winProb(after) − winProb(before).
+  // mean & std, _leagueAvg for the opponent.
+  //
+  // We model the change in HOME's LONG-RUN rate of winning each category, not
+  // a single noisy week. A team's weekly counting-stat totals (esp. W, K) swing
+  // wildly week to week based on how many starts land — that variance is so
+  // large that a real per-week edge (e.g. +5.9 K) barely moves a single week's
+  // coin-flip, which buried the signal as "0%". To express the season-long
+  // effect, we scale each weekly σ down by √(weeksRemaining): the standard
+  // error of a mean over N independent weeks is σ/√N. Comparing expected
+  // averages over the rest of the season lets a sustained per-week edge show
+  // its true cumulative impact while still being a probability of winning the
+  // category in a representative week.
   function winPctDelta(c) {
     if (!_teamEmp || !_leagueAvg) return null;
     var muTeam = _teamEmp[c];
@@ -26457,7 +26540,13 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
     var sigT   = (_teamEmp._std && _teamEmp._std[c] != null) ? _teamEmp._std[c] : null;
     var sigO   = (_leagueAvg.std[c] != null) ? _leagueAvg.std[c] : null;
     if (muTeam == null || muOpp == null || sigT == null || sigO == null) return null;
-    var sigDiff = Math.sqrt(sigT*sigT + sigO*sigO);
+    // Scale variance to a season-expectation basis. weeksRemaining is computed
+    // above; guard against <1. The √N shrink converts week-to-week noise into
+    // the uncertainty of the rest-of-season average.
+    var nW = Math.max(1, weeksRemaining || 1);
+    var seT = sigT / Math.sqrt(nW);
+    var seO = sigO / Math.sqrt(nW);
+    var sigDiff = Math.sqrt(seT*seT + seO*seO);
     if (sigDiff < 1e-9) return null;
     var dv = weeklyDelta(c);
     if (dv == null) return null;
