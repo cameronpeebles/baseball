@@ -3377,11 +3377,13 @@ td.neg { color: #c0392b; font-weight: 500; }
               <strong>&Delta; weekly cat</strong> &mdash; the change in HOME&rsquo;s <em>per-week</em> output if the trade goes through. Counting stats (R, HR, RBI, SB, W, K, SVH3) are the rest-of-season total change spread across remaining weeks. Rate stats (AVG, ERA, WHIP) are a roster-weighted blend &mdash; the incoming/outgoing player&rsquo;s rate folded into the team&rsquo;s composite by volume (AB or IP). Green = better, red = worse; ERA/WHIP flip since lower is better.
             </div>
             <div style="padding:10px 12px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.7">
-              <strong>&Delta; win %</strong> &mdash; what that per-week shift does to HOME&rsquo;s probability of winning that <em>single category</em> in a representative week, modeled against a league-average opponent. Each team&rsquo;s weekly output is treated as a normal distribution (observed mean &amp; variance); the win probability is the chance HOME&rsquo;s output beats the opponent&rsquo;s, and the column shows the before&rarr;after change. High-variance counting stats (W, K) move only a few points even on a real edge &mdash; that&rsquo;s honest, since any single week is noisy; the trade&rsquo;s cumulative value lives in the Net SGP and &Delta; weekly cat columns. It is <strong>per category, not the whole matchup</strong> &mdash; the numbers don&rsquo;t sum to a matchup win probability, because winning a week depends on the joint outcome across all 10 categories.
+              <strong>&Delta; win %</strong> &mdash; what that per-week shift does to HOME&rsquo;s probability of winning that <em>single category</em> in a representative week, modeled against a league-average opponent. Each team&rsquo;s weekly output is treated as a normal distribution (observed mean &amp; variance); the win probability is the chance HOME&rsquo;s output beats the opponent&rsquo;s, and the column shows the before&rarr;after change. With only a few played weeks, each team&rsquo;s variance estimate is shrunk toward the league-average variance for that category (empirical Bayes) so an early-season fluke doesn&rsquo;t produce a wild number &mdash; the weighting trusts the team&rsquo;s own variance more as the season accumulates. High-variance counting stats (W, K) move only a few points even on a real edge &mdash; that&rsquo;s honest, since any single week is noisy; the trade&rsquo;s cumulative value lives in the Net SGP and &Delta; weekly cat columns. It is <strong>per category, not the whole matchup</strong> &mdash; the numbers don&rsquo;t sum to a matchup win probability, because winning a week depends on the joint outcome across all 10 categories.
             </div>
           </div>
 
           <div style="font-size:12px;padding:10px 12px;background:var(--accent-light);border-radius:6px;border:1px solid var(--accent);margin-top:14px"><strong>How to read it together:</strong> Net SGP tells you the standings value. &Delta; weekly cat tells you the raw production change. &Delta; win % tells you whether that change is big enough to matter against typical competition. Cross-reference with the Category needs tiles in Trade Fit &mdash; a green &Delta; win % in a category where HOME carries a &times;1.4&ndash;1.8 multiplier is the most valuable kind of gain.</div>
+
+          <div style="font-size:12px;padding:10px 12px;background:var(--bg);border-radius:6px;border:0.5px solid var(--border);margin-top:10px"><strong>Where variance fits in:</strong> Week-to-week volatility is used in <em>only</em> the &Delta; win % column, and only from HOME&rsquo;s own weekly history (the opponent is a synthetic league-average team). The Net SGP verdict, Drop/Add SGP, and &Delta; weekly cat are all variance-blind &mdash; they value projected totals regardless of how steady or swingy a category is. That&rsquo;s why a huge edge in a noisy cat like K can read +0% in &Delta; win % while still showing a strong Net SGP. To see each category&rsquo;s volatility for a team directly, use the <strong>Week-to-week category variance</strong> card on the H2H Predictor page &mdash; wide scatter there is exactly what flattens the &Delta; win % move here.</div>
 
           <p style="font-size:12px;color:var(--muted);margin-top:12px;font-style:italic">Note: &Delta; win % needs HOME&rsquo;s weekly history to be loaded. If it shows &mdash;, open the Dashboard or H2H Predictor once to warm the cache, then return.</p>
         </div>
@@ -26519,7 +26521,7 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
     '<em>Drop SGP / Add SGP</em> translate those totals into standings-points using current league pool spreads. ' +
     '<em>Net SGP</em> is Add minus Drop. ' +
     '<em>\u0394 weekly cat</em> is the per-week change in HOME\u2019s output if the trade is executed &mdash; counting stats divided across remaining weeks, rate stats blended against current roster volume. ' +
-    '<em>\u0394 win %</em> translates that per-week shift into a change in your probability of winning that category in a representative week, modeled vs a league-average opponent using each team\u2019s observed weekly mean and variance. High-variance counting stats (W, K) move only a few points even on a real edge \u2014 any single week is noisy, so the trade\u2019s cumulative value shows up in Net SGP and \u0394 weekly cat instead. It is per category, not the whole matchup. ' +
+    '<em>\u0394 win %</em> translates that per-week shift into a change in your probability of winning that category in a representative week, modeled vs a league-average opponent using each team\u2019s observed weekly mean and variance. With few played weeks the variance estimate is shrunk toward the league average for that category, so an early-season fluke doesn\u2019t distort the number. High-variance counting stats (W, K) move only a few points even on a real edge \u2014 any single week is noisy, so the trade\u2019s cumulative value shows up in Net SGP and \u0394 weekly cat instead. It is per category, not the whole matchup. ' +
     '<strong>Net per-cat impact radar:</strong> the Net SGP column visualized. Larger green wedges = bigger gains; red = losses.'
   );
 
@@ -26686,25 +26688,35 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
   //
   // Models the change in HOME's probability of winning each category in a
   // single representative week. Each team's weekly output is treated as
-  // Normal(μ, σ²) using its OBSERVED weekly mean and variance — no √N
-  // variance shrink. Win prob = Φ((μ_team − μ_opp) / √(σ_t² + σ_o²)), flipped
-  // for ERA/WHIP. Δ = winProb(after) − winProb(before).
+  // Normal(μ, σ²) using its observed weekly mean and variance. Win prob =
+  // Φ((μ_team − μ_opp) / √(σ_t² + σ_o²)), flipped for ERA/WHIP. Δ = after − before.
   //
-  // Why single-week (not the season-mean shrink we tried before): dividing σ
-  // by √(weeksRemaining) compressed low-variance cats (SB) so hard that the
-  // CDF became near-vertical, turning a modest +1.7 SB/week edge into a +34%
-  // swing. Using honest single-week variance keeps every delta bounded and
-  // interpretable: a real per-week edge in a noisy cat (K) still registers a
-  // few points, and a small edge in a tight cat (SB) shows a sensible single-
-  // digit move. The "rest-of-season" value of the trade lives in the SGP and
-  // Δ weekly cat columns; this column answers "any given week."
+  // σ SHRINKAGE (empirical Bayes): with only a handful of played weeks, a
+  // team's own per-cat σ is a noisy estimate — two big K weeks can make a team
+  // look far more volatile than it is, distorting Δ win %. We shrink HOME's σ
+  // toward the league-average σ for that cat:
+  //   σ_used = w·σ_team + (1−w)·σ_league,   w = n / (n + K0)
+  // where n = HOME's played weeks and K0 is the prior strength (pseudo-weeks).
+  // Early season leans on the stable league σ; as weeks accumulate, w → 1 and
+  // the team's own σ dominates. K0 = 4 → at 7 weeks w ≈ 0.64, at 12 w ≈ 0.75.
+  var SHRINK_K0 = 4;
+  var _homeWeeks = (_teamEmp && _teamEmp.weeksPlayed) ? _teamEmp.weeksPlayed : 0;
+  var _shrinkW = _homeWeeks > 0 ? _homeWeeks / (_homeWeeks + SHRINK_K0) : 0;
   function winPctDelta(c) {
     if (!_teamEmp || !_leagueAvg) return null;
     var muTeam = _teamEmp[c];
     var muOpp  = _leagueAvg.mean[c];
-    var sigT   = (_teamEmp._std && _teamEmp._std[c] != null) ? _teamEmp._std[c] : null;
-    var sigO   = (_leagueAvg.std[c] != null) ? _leagueAvg.std[c] : null;
-    if (muTeam == null || muOpp == null || sigT == null || sigO == null) return null;
+    var sigTraw = (_teamEmp._std && _teamEmp._std[c] != null) ? _teamEmp._std[c] : null;
+    var sigO    = (_leagueAvg.std[c] != null) ? _leagueAvg.std[c] : null;
+    if (muTeam == null || muOpp == null || sigO == null) return null;
+    // Shrink the team σ toward the league σ. If the team σ is missing entirely
+    // (e.g. cache edge case), fall back fully to the league σ.
+    var sigT;
+    if (sigTraw == null) {
+      sigT = sigO;
+    } else {
+      sigT = _shrinkW * sigTraw + (1 - _shrinkW) * sigO;
+    }
     var sigDiff = Math.sqrt(sigT*sigT + sigO*sigO);
     if (sigDiff < 1e-9) return null;
     var dv = weeklyDelta(c);
