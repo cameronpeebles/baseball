@@ -4240,7 +4240,22 @@ function drawPlayers(type) {
       var isLow  = LOW_CATS.indexOf(cat) !== -1;
       var vals   = pool.map(function(q){ return q.stats[cat]; }).filter(function(v){ return v != null; });
       if (!vals.length) return;
-      var factor = sampleFactor(cat, stats, pos || '');
+      // Auto down-weight categories the pool barely accrues. A category where
+      // nearly every pool member has ~0 (e.g. SVH3 for starters, who don't get
+      // saves/holds; W for relievers) carries no discriminating information —
+      // its percentile is degenerate (everyone ties at ~0) and would otherwise
+      // drag every member's weighted average down. We scale that category's
+      // weight by the fraction of the pool with a non-trivial value, so an
+      // all-zero category contributes ~nothing and a fully-populated one
+      // contributes fully. relevance ∈ [0,1].
+      var nonZero = vals.filter(function(v){ return Math.abs(v) > 1e-9; }).length;
+      var relevance = vals.length ? (nonZero / vals.length) : 0;
+      // Only treat a category as "irrelevant" when the pool is overwhelmingly
+      // zero (relevance below ~25%); above that, keep full weight so we don't
+      // over-shrink legitimately low-but-real categories.
+      var relWeight = relevance >= 0.25 ? 1 : (relevance / 0.25);
+      var factor = sampleFactor(cat, stats, pos || '') * relWeight;
+      if (factor <= 0) return;
       score += percentile(stats[cat], vals, isLow) * factor;
       count += factor;
     });
@@ -4502,7 +4517,7 @@ function drawPlayers(type) {
       var pool = isHit ? allHitterFWAR : (primaryPos(pos3) === 'SP' ? allSpFWAR : allRpFWAR);
       var val  = e.fw.fWAR;
       var below = pool.filter(function(v){ return v < val; }).length;
-      fwarPctLookup[e.name.toLowerCase()] = pool.length > 1 ? Math.round(below / (pool.length) * 100) : 50;
+      fwarPctLookup[e.name.toLowerCase()] = pool.length > 1 ? Math.round(below / (pool.length - 1) * 100) : 50;
     });
     window._fwarPctLookup = fwarPctLookup;
     if (isHit) window._fwarPctLookupHit = fwarPctLookup;
@@ -13718,8 +13733,15 @@ function getArchetype(fwarPct, posRating, lgRating, rosPct, opts) {
 
 function percentile(val, vals, lowIsBetter) {
   if (val == null || vals.length === 0) return 0.5;
+  if (vals.length === 1) return 0.5; // only the player himself — no spread to rank against
+  // Rank-based percentile with denominator (n-1): the category leader scores
+  // exactly 1.0 and the worst 0.0, regardless of pool size. The previous
+  // below/n form was biased low by 1/n (never counted the player as ahead of
+  // himself while keeping him in the denominator), which capped a small pool's
+  // best player well under 100 (e.g. an 11-player pool maxed at 91) and made
+  // ratings non-comparable across positions of different pool sizes.
   var below = vals.filter(function(v) { return lowIsBetter ? v > val : v < val; }).length;
-  return below / vals.length;
+  return below / (vals.length - 1);
 }
 
 function renderTradeAnalyzer() {
