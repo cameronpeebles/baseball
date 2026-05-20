@@ -11894,6 +11894,8 @@ function _h2hRenderResult(teamNames, selectedTeam, r) {
   html += _h2hPerCatTableHtml(r);
   // 4. League overview (range bars + schedule-luck chart)
   html += _h2hLeagueOverviewHtml(selectedTeam);
+  // 4b. Week-to-week category variance (slim strip plot) — above the schedule.
+  html += _h2hVarianceCardHtml(selectedTeam);
   // 5. Week-by-week schedule
   html += _h2hWeeklyGridHtml(r);
   // 6. Playoff + Consolation bracket predictor card (bottom of page).
@@ -11904,6 +11906,11 @@ function _h2hRenderResult(teamNames, selectedTeam, r) {
   el.innerHTML = html;
   // Charts need to be initialized AFTER DOM is in place.
   _h2hRenderLeagueCharts(selectedTeam);
+  // Populate the variance strip-plot (reads _joeStatsCache; self-heals if cold).
+  if (typeof _h2hPopulateVarianceCard === 'function') {
+    try { _h2hPopulateVarianceCard(selectedTeam); }
+    catch(e) { if (window._debug) console.warn('[H2H variance] populate failed:', e); }
+  }
 }
 
 // Build a league-wide overview for the range chart + scatter. For each team:
@@ -12407,6 +12414,132 @@ function _h2hPerCatTableHtml(r) {
   });
   h += '</tbody></table></div></div>';
   return h;
+}
+
+// ── Week-to-week category variance card ───────────────────────────────────
+// Shows, for the selected team, how much each category swings week to week.
+// One row per cat: CV (coefficient of variation = weekly σ / weekly mean) +
+// a normalized strip plot (each dot = one played week ÷ that cat's season
+// mean, so 1.0 is an average week). Sorted most-volatile to least. This makes
+// the Δ win % behavior on Trade Lab intuitive — wide scatter = a category that
+// is hard to win reliably in any single week even with a real edge.
+function _h2hVarianceCardHtml(selectedTeam) {
+  // Skeleton only; populated after DOM exists by _h2hPopulateVarianceCard.
+  var h = '<div class="card" id="h2h-variance-card" style="margin-bottom:14px;padding:16px 18px;overflow:visible">';
+  h += '<div style="margin-bottom:14px">';
+  h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Week-to-week category variance</div>';
+  h += '<div style="font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5">How much each category swings week to week for ' + _loEsc(selectedTeam) + '. Each dot is one played week, normalized to that category\u2019s season mean (1.0 = average week). Wide scatter = volatile and hard to win reliably in a single week; tight = predictable.</div>';
+  h += '</div>';
+  h += '<div id="h2h-variance-body" style="min-height:60px"></div>';
+  h += '</div>';
+  return h;
+}
+
+// Compute per-cat CV + normalized weekly series for the selected team and
+// render the slim strip-plot rows. Reads weekly rows from _joeStatsCache.
+function _h2hPopulateVarianceCard(selectedTeam) {
+  var bodyEl = document.getElementById('h2h-variance-body');
+  if (!bodyEl) return;
+
+  var CATS = ['R','HR','RBI','SB','AVG','W','K','SVH3','ERA','WHIP'];
+  var LOW  = ['ERA','WHIP']; // lower-is-better (doesn't affect variance, noted for clarity)
+
+  // A week counts as "played" only if a pure counting stat is non-zero — same
+  // rule the predictor uses, so ERA/WHIP carryover defaults don't inflate the
+  // sample with unplayed weeks.
+  function hasAnyStats(row) {
+    return (row.R||0)>0 || (row.HR||0)>0 || (row.RBI||0)>0 || (row.SB||0)>0
+        || (row.K||0)>0 || (row.W||0)>0 || (row.SV||0)>0 || (row.SVH3||0)>0;
+  }
+  function readStat(row, cat) {
+    if (cat === 'SVH3') { var v = row.SVH3; if (v == null) v = row.SV; return v || 0; }
+    return row[cat] || 0;
+  }
+
+  var stats = window._joeStatsCache;
+  if (!stats || !stats.length) {
+    // Self-heal: load the weekly stats then re-populate, mirroring Trade Lab.
+    if (typeof window._h2hPredictTeam === 'function' && window._h2hPredictTeam.preload
+        && !window._h2hVarPreloading) {
+      window._h2hVarPreloading = true;
+      window._h2hPredictTeam.preload().then(function(){
+        window._h2hVarPreloading = false;
+        _h2hPopulateVarianceCard(selectedTeam);
+      }).catch(function(){ window._h2hVarPreloading = false; });
+    }
+    bodyEl.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px">Loading weekly data\u2026</div>';
+    return;
+  }
+
+  // Resolve the selected team's played weekly rows. Exact name first, then
+  // _normPlayerKey fallback for cosmetic drift.
+  var normTarget = (typeof _normPlayerKey === 'function') ? _normPlayerKey(selectedTeam || '') : (selectedTeam||'').toLowerCase();
+  var rows = stats.filter(function(rw){
+    if (!hasAnyStats(rw)) return false;
+    if (rw.team === selectedTeam) return true;
+    var nk = (typeof _normPlayerKey === 'function') ? _normPlayerKey(rw.team || '') : (rw.team||'').toLowerCase();
+    return nk === normTarget;
+  });
+
+  if (rows.length < 2) {
+    bodyEl.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px;background:var(--bg);border-radius:8px">Not enough played weeks yet to measure variance for ' + _loEsc(selectedTeam) + '.</div>';
+    return;
+  }
+
+  // Per-cat mean, std, CV, and normalized weekly series.
+  var perCat = {};
+  CATS.forEach(function(c){
+    var vals = rows.map(function(rw){ return readStat(rw, c); });
+    var n = vals.length;
+    var mean = vals.reduce(function(s,v){ return s+v; }, 0) / n;
+    var variance = vals.reduce(function(s,v){ var d=v-mean; return s+d*d; }, 0) / (n - 1);
+    var std = Math.sqrt(variance);
+    var cv = (mean !== 0) ? std / Math.abs(mean) : 0;
+    var norm = vals.map(function(v){ return mean !== 0 ? v / mean : 1; });
+    perCat[c] = { mean: mean, std: std, cv: cv, norm: norm };
+  });
+
+  // Sort cats by CV descending (most volatile first).
+  var sorted = CATS.slice().sort(function(a,b){ return perCat[b].cv - perCat[a].cv; });
+
+  // Strip-plot scale. Clamp normalized values into [minV, maxV] for display.
+  var minV = 0.3, maxV = 1.7;
+  function pct(v){ return ((Math.max(minV, Math.min(maxV, v)) - minV) / (maxV - minV)) * 100; }
+  function tierColor(cv){ return cv >= 0.35 ? '#D85A30' : (cv >= 0.22 ? '#EF9F27' : '#1D9E75'); }
+
+  var html = '';
+  // Header row
+  html += '<div style="display:grid;grid-template-columns:46px 46px 1fr;gap:10px;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;padding:0 0 6px;border-bottom:0.5px solid var(--border);margin-bottom:6px">';
+  html += '<div>Cat</div>';
+  html += '<div style="text-align:right">CV</div>';
+  html += '<div style="text-align:center">Weekly spread &middot; 0.3&times; &mdash; mean &mdash; 1.7&times;</div>';
+  html += '</div>';
+
+  sorted.forEach(function(c){
+    var pc = perCat[c];
+    var col = tierColor(pc.cv);
+    html += '<div style="display:grid;grid-template-columns:46px 46px 1fr;gap:10px;align-items:center;padding:5px 0">';
+    html += '<div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em">' + c + '</div>';
+    html += '<div style="text-align:right;font-size:11px;font-variant-numeric:tabular-nums;color:' + col + ';font-weight:500">' + Math.round(pc.cv * 100) + '%</div>';
+    html += '<div style="position:relative;height:18px;background:var(--bg);border-radius:4px">';
+    // Center gridline at mean (1.0)
+    html += '<div style="position:absolute;left:' + pct(1.0).toFixed(1) + '%;top:0;width:1px;height:100%;background:var(--border);z-index:1"></div>';
+    pc.norm.forEach(function(v){
+      html += '<div style="position:absolute;left:' + pct(v).toFixed(1) + '%;top:50%;transform:translate(-50%,-50%);width:7px;height:7px;border-radius:50%;background:' + col + ';opacity:0.5"></div>';
+    });
+    html += '</div>';
+    html += '</div>';
+  });
+
+  // Legend
+  html += '<div style="display:flex;gap:16px;align-items:center;margin-top:12px;padding-top:10px;border-top:0.5px solid var(--border);font-size:10px;color:var(--muted)">';
+  html += '<div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#D85A30"></span>Volatile</div>';
+  html += '<div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#EF9F27"></span>Moderate</div>';
+  html += '<div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#1D9E75"></span>Steady</div>';
+  html += '<div style="flex:1;text-align:right;font-style:italic">CV = weekly std dev \u00f7 mean &middot; ' + rows.length + ' weeks</div>';
+  html += '</div>';
+
+  bodyEl.innerHTML = html;
 }
 
 function _h2hWeeklyGridHtml(r) {
