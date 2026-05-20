@@ -12430,7 +12430,7 @@ function _h2hVarianceCardHtml(selectedTeam) {
   var h = '<div class="card" id="h2h-variance-card" style="margin-bottom:14px;padding:16px 18px;overflow:visible">';
   h += '<div style="margin-bottom:14px">';
   h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Week-to-week category variance</div>';
-  h += '<div style="font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5">How much each category swings week to week for ' + _loEsc(selectedTeam) + '. Each dot is one played week, normalized to that category\u2019s season mean (1.0 = average week). Wide scatter = volatile and hard to win reliably in a single week; tight = predictable.</div>';
+  h += '<div style="font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5">How much each category swings week to week for ' + _loEsc(selectedTeam) + '. Each dot is one played week, normalized to that category\u2019s season mean (1.0 = average week). The black bracket is the league\u2019s typical week-to-week range (\u00b11\u03c3). Dots spilling past the bracket = you swing more than the league in that category; tucked inside = steadier than league.</div>';
   h += '</div>';
   h += '<div id="h2h-variance-body" style="min-height:60px"></div>';
   h += '</div>';
@@ -12501,6 +12501,37 @@ function _h2hPopulateVarianceCard(selectedTeam) {
     perCat[c] = { mean: mean, std: std, cv: cv, norm: norm };
   });
 
+  // ── League-average CV per cat ─────────────────────────────────────────
+  // For each team, compute its own per-cat CV from its played weeks, then
+  // average those CVs across all teams. This is the league's TYPICAL week-to-
+  // week volatility (raw/descriptive — not the shrunk σ used in Δ win %),
+  // rendered as a ±1σ baseline whisker so the user can see whether they swing
+  // more or less than league in each category.
+  var leagueCV = {};
+  (function(){
+    // Group all played rows by team.
+    var byTeam = {};
+    stats.forEach(function(rw){
+      if (!hasAnyStats(rw)) return;
+      var t = rw.team || '_';
+      (byTeam[t] = byTeam[t] || []).push(rw);
+    });
+    var teamKeys = Object.keys(byTeam).filter(function(t){ return byTeam[t].length >= 2; });
+    CATS.forEach(function(c){
+      var cvs = [];
+      teamKeys.forEach(function(t){
+        var trows = byTeam[t];
+        var vals = trows.map(function(rw){ return readStat(rw, c); });
+        var nn = vals.length;
+        var mn = vals.reduce(function(s,v){ return s+v; }, 0) / nn;
+        if (mn === 0) return;
+        var vr = vals.reduce(function(s,v){ var d=v-mn; return s+d*d; }, 0) / (nn - 1);
+        cvs.push(Math.sqrt(vr) / Math.abs(mn));
+      });
+      leagueCV[c] = cvs.length ? cvs.reduce(function(s,v){ return s+v; }, 0) / cvs.length : null;
+    });
+  })();
+
   // Sort cats by CV descending (most volatile first).
   var sorted = CATS.slice().sort(function(a,b){ return perCat[b].cv - perCat[a].cv; });
 
@@ -12511,34 +12542,54 @@ function _h2hPopulateVarianceCard(selectedTeam) {
 
   var html = '';
   // Header row
-  html += '<div style="display:grid;grid-template-columns:46px 46px 1fr;gap:10px;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;padding:0 0 6px;border-bottom:0.5px solid var(--border);margin-bottom:6px">';
+  html += '<div style="display:grid;grid-template-columns:42px 46px 52px 1fr;gap:10px;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;padding:0 0 6px;border-bottom:0.5px solid var(--border);margin-bottom:6px">';
   html += '<div>Cat</div>';
   html += '<div style="text-align:right">CV</div>';
+  html += '<div style="text-align:right">vs Lg</div>';
   html += '<div style="text-align:center">Weekly spread &middot; 0.3&times; &mdash; mean &mdash; 1.7&times;</div>';
   html += '</div>';
 
   sorted.forEach(function(c){
     var pc = perCat[c];
     var col = tierColor(pc.cv);
-    html += '<div style="display:grid;grid-template-columns:46px 46px 1fr;gap:10px;align-items:center;padding:5px 0">';
+    var lv = leagueCV[c];
+    // vs Lg: ratio of team CV to league CV, as signed %. Coral = noisier than
+    // league, teal = steadier, gray = ~even.
+    var ratioTxt = '\u2014', ratioColor = 'var(--muted)';
+    if (lv != null && lv > 1e-9) {
+      var ratio = pc.cv / lv;
+      ratioTxt = (ratio >= 1 ? '+' : '\u2212') + Math.round(Math.abs(ratio - 1) * 100) + '%';
+      ratioColor = ratio >= 1.08 ? '#D85A30' : (ratio <= 0.92 ? '#1D9E75' : 'var(--muted)');
+    }
+    html += '<div style="display:grid;grid-template-columns:42px 46px 52px 1fr;gap:10px;align-items:center;padding:5px 0">';
     html += '<div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em">' + c + '</div>';
     html += '<div style="text-align:right;font-size:11px;font-variant-numeric:tabular-nums;color:' + col + ';font-weight:500">' + Math.round(pc.cv * 100) + '%</div>';
-    html += '<div style="position:relative;height:18px;background:var(--bg);border-radius:4px">';
+    html += '<div style="text-align:right;font-size:11px;font-variant-numeric:tabular-nums;color:' + ratioColor + ';font-weight:500">' + ratioTxt + '</div>';
+    html += '<div style="position:relative;height:20px;background:var(--bg);border-radius:4px">';
     // Center gridline at mean (1.0)
     html += '<div style="position:absolute;left:' + pct(1.0).toFixed(1) + '%;top:0;width:1px;height:100%;background:var(--border);z-index:1"></div>';
+    // Team weekly dots
     pc.norm.forEach(function(v){
-      html += '<div style="position:absolute;left:' + pct(v).toFixed(1) + '%;top:50%;transform:translate(-50%,-50%);width:7px;height:7px;border-radius:50%;background:' + col + ';opacity:0.5"></div>';
+      html += '<div style="position:absolute;left:' + pct(v).toFixed(1) + '%;top:50%;transform:translate(-50%,-50%);width:7px;height:7px;border-radius:50%;background:' + col + ';opacity:0.5;z-index:2"></div>';
     });
+    // League ±1σ baseline whisker (black, drawn on top). Normalized band = 1.0 ± leagueCV.
+    if (lv != null && lv > 1e-9) {
+      var lgLo = pct(1.0 - lv), lgHi = pct(1.0 + lv);
+      html += '<div style="position:absolute;left:' + lgLo.toFixed(1) + '%;right:' + (100 - lgHi).toFixed(1) + '%;top:50%;transform:translateY(-50%);height:0;border-top:1.5px solid #2c2c2a;z-index:3"></div>';
+      html += '<div style="position:absolute;left:' + lgLo.toFixed(1) + '%;top:50%;transform:translate(-50%,-50%);width:1.5px;height:11px;background:#2c2c2a;z-index:3"></div>';
+      html += '<div style="position:absolute;left:' + lgHi.toFixed(1) + '%;top:50%;transform:translate(-50%,-50%);width:1.5px;height:11px;background:#2c2c2a;z-index:3"></div>';
+    }
     html += '</div>';
     html += '</div>';
   });
 
   // Legend
-  html += '<div style="display:flex;gap:16px;align-items:center;margin-top:12px;padding-top:10px;border-top:0.5px solid var(--border);font-size:10px;color:var(--muted)">';
+  html += '<div style="display:flex;gap:16px;align-items:center;margin-top:12px;padding-top:10px;border-top:0.5px solid var(--border);font-size:10px;color:var(--muted);flex-wrap:wrap">';
   html += '<div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#D85A30"></span>Volatile</div>';
   html += '<div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#EF9F27"></span>Moderate</div>';
   html += '<div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#1D9E75"></span>Steady</div>';
-  html += '<div style="flex:1;text-align:right;font-style:italic">CV = weekly std dev \u00f7 mean &middot; ' + rows.length + ' weeks</div>';
+  html += '<div style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:14px;height:0;border-top:1.5px solid #2c2c2a;position:relative;top:-1px"></span>League &plusmn;1&sigma;</div>';
+  html += '<div style="flex:1;text-align:right;font-style:italic">CV = weekly std dev \u00f7 mean &middot; ' + rows.length + ' weeks &middot; vs Lg = your CV vs league CV</div>';
   html += '</div>';
 
   bodyEl.innerHTML = html;
