@@ -12481,7 +12481,7 @@ function _h2hVarianceCardHtml(selectedTeam) {
   var h = '<div class="card" id="h2h-variance-card" style="margin-bottom:14px;padding:16px 18px;overflow:visible">';
   h += '<div style="margin-bottom:14px">';
   h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Week-to-week category variance</div>';
-  h += '<div style="font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5">How much each category swings week to week for ' + _loEsc(selectedTeam) + '. Each dot is one played week, normalized to that category\u2019s season mean (1.0 = average week). The black bracket is the league\u2019s typical week-to-week range (\u00b11\u03c3). Dots spilling past the bracket = you swing more than the league in that category; tucked inside = steadier than league.</div>';
+  h += '<div style="font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5">How much each category swings week to week for ' + _loEsc(selectedTeam) + '. Each dot is one played week, normalized to that category\u2019s season mean (1.0 = average week). The black bracket is the league\u2019s typical range (\u00b11\u03c3). The <strong>Read</strong> crosses your standings rank with your steadiness \u2014 consistency locks in strengths and locks in weaknesses, so a weak-and-steady cat (Stuck) is a higher fix priority than a weak-and-volatile one.</div>';
   h += '</div>';
   h += '<div id="h2h-variance-body" style="min-height:60px"></div>';
   h += '</div>';
@@ -12583,6 +12583,63 @@ function _h2hPopulateVarianceCard(selectedTeam) {
     });
   })();
 
+  // ── Per-category standings rank for the selected team ─────────────────
+  // Rank each team by its season total (sum of weekly values) in each cat,
+  // 1 = best. For ERA/WHIP lower is better. Used by the Read classifier to
+  // cross level with variance. Reuses the same played-week filter.
+  var teamRank = {};
+  (function(){
+    var byTeam = {};
+    stats.forEach(function(rw){
+      if (!hasAnyStats(rw)) return;
+      var t = rw.team || '_';
+      (byTeam[t] = byTeam[t] || []).push(rw);
+    });
+    var teamKeys = Object.keys(byTeam);
+    CATS.forEach(function(c){
+      var low = (c === 'ERA' || c === 'WHIP');
+      // For rate stats, use the mean across weeks; for counting stats, the sum.
+      var totals = teamKeys.map(function(t){
+        var trows = byTeam[t];
+        var vals = trows.map(function(rw){ return readStat(rw, c); });
+        if (low) {
+          var mn = vals.reduce(function(s,v){ return s+v; }, 0) / (vals.length || 1);
+          return { t:t, v:mn };
+        }
+        return { t:t, v: vals.reduce(function(s,v){ return s+v; }, 0) };
+      });
+      // Sort best-first: counting desc, rate (low) asc.
+      totals.sort(function(a,b){ return low ? a.v - b.v : b.v - a.v; });
+      // Find the selected team's 1-based rank.
+      var idx = -1;
+      for (var i = 0; i < totals.length; i++) {
+        if (totals[i].t === rows[0].team || (typeof _normPlayerKey==='function' && _normPlayerKey(totals[i].t)===normTarget)) { idx = i; break; }
+      }
+      teamRank[c] = idx >= 0 ? { rank: idx + 1, of: totals.length } : null;
+    });
+  })();
+
+  // Read classifier: cross rank (level) with variance (steadiness).
+  // strong = top 40% of the league; weak = bottom 40%; steady/volatile by
+  // team CV vs league CV with a ±5% deadband.
+  function classifyRead(c) {
+    var tr = teamRank[c];
+    var lv = leagueCV[c];
+    var tv = perCat[c] ? perCat[c].cv : null;
+    if (!tr || lv == null || tv == null) return null;
+    var n = tr.of || 10;
+    var strong = tr.rank <= Math.ceil(n * 0.4);
+    var weak   = tr.rank >  Math.ceil(n * 0.6);
+    var steady   = tv < lv * 0.95;
+    var volatile = tv > lv * 1.05;
+    if (strong && !volatile) return { k:'Locked',   bg:'#EAF3DE', tx:'#3B6D11' };
+    if (weak && steady)      return { k:'Stuck',    bg:'#FCEBEB', tx:'#A32D2D' };
+    if (strong && volatile)  return { k:'Fragile',  bg:'#FBEFD9', tx:'#9A6A1A' };
+    if (weak && volatile)    return { k:'Live dog', bg:'var(--color-background-secondary)', tx:'var(--muted)' };
+    return null; // middle ranks → neutral
+  }
+  function ordRank(n){ return n + (n===1?'st':n===2?'nd':n===3?'rd':'th'); }
+
   // Sort cats by CV descending (most volatile first).
   var sorted = CATS.slice().sort(function(a,b){ return perCat[b].cv - perCat[a].cv; });
 
@@ -12593,11 +12650,13 @@ function _h2hPopulateVarianceCard(selectedTeam) {
 
   var html = '';
   // Header row
-  html += '<div style="display:grid;grid-template-columns:42px 46px 52px 1fr;gap:10px;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;padding:0 0 6px;border-bottom:0.5px solid var(--border);margin-bottom:6px">';
+  html += '<div style="display:grid;grid-template-columns:38px 40px 44px 1fr 38px 96px;gap:9px;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;padding:0 0 6px;border-bottom:0.5px solid var(--border);margin-bottom:6px">';
   html += '<div>Cat</div>';
   html += '<div style="text-align:right">CV</div>';
   html += '<div style="text-align:right">vs Lg</div>';
-  html += '<div style="text-align:center">Weekly spread &middot; 0.3&times; &mdash; mean &mdash; 1.7&times;</div>';
+  html += '<div style="text-align:center">Weekly spread</div>';
+  html += '<div style="text-align:right">Rank</div>';
+  html += '<div style="text-align:right">Read</div>';
   html += '</div>';
 
   sorted.forEach(function(c){
@@ -12612,7 +12671,7 @@ function _h2hPopulateVarianceCard(selectedTeam) {
       ratioTxt = (ratio >= 1 ? '+' : '\u2212') + Math.round(Math.abs(ratio - 1) * 100) + '%';
       ratioColor = ratio >= 1.08 ? '#D85A30' : (ratio <= 0.92 ? '#1D9E75' : 'var(--muted)');
     }
-    html += '<div style="display:grid;grid-template-columns:42px 46px 52px 1fr;gap:10px;align-items:center;padding:5px 0">';
+    html += '<div style="display:grid;grid-template-columns:38px 40px 44px 1fr 38px 96px;gap:9px;align-items:center;padding:5px 0">';
     html += '<div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em">' + c + '</div>';
     html += '<div style="text-align:right;font-size:11px;font-variant-numeric:tabular-nums;color:' + col + ';font-weight:500">' + Math.round(pc.cv * 100) + '%</div>';
     html += '<div style="text-align:right;font-size:11px;font-variant-numeric:tabular-nums;color:' + ratioColor + ';font-weight:500">' + ratioTxt + '</div>';
@@ -12631,6 +12690,22 @@ function _h2hPopulateVarianceCard(selectedTeam) {
       html += '<div style="position:absolute;left:' + lgHi.toFixed(1) + '%;top:50%;transform:translate(-50%,-50%);width:1.5px;height:11px;background:#2c2c2a;z-index:3"></div>';
     }
     html += '</div>';
+    // Rank (1 = best in cat; green top-40%, red bottom-40%)
+    var tr = teamRank[c];
+    if (tr) {
+      var nLg = tr.of || 10;
+      var rankCol = tr.rank <= Math.ceil(nLg*0.4) ? '#3B6D11' : (tr.rank > Math.ceil(nLg*0.6) ? '#A32D2D' : 'var(--muted)');
+      html += '<div style="text-align:right;font-size:11px;font-variant-numeric:tabular-nums;color:' + rankCol + ';font-weight:500">' + ordRank(tr.rank) + '</div>';
+    } else {
+      html += '<div style="text-align:right;font-size:11px;color:var(--muted)">\u2014</div>';
+    }
+    // Read (quadrant label, or neutral dash for middle-rank cats)
+    var rd = classifyRead(c);
+    if (rd) {
+      html += '<div style="text-align:right"><span style="background:' + rd.bg + ';color:' + rd.tx + ';font-size:10px;font-weight:600;padding:3px 9px;border-radius:10px;white-space:nowrap">' + rd.k + '</span></div>';
+    } else {
+      html += '<div style="text-align:right;font-size:11px;color:var(--color-text-tertiary)">\u2014</div>';
+    }
     html += '</div>';
   });
 
@@ -12642,6 +12717,16 @@ function _h2hPopulateVarianceCard(selectedTeam) {
   html += '<div style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:14px;height:0;border-top:1.5px solid #2c2c2a;position:relative;top:-1px"></span>League &plusmn;1&sigma;</div>';
   html += '<div style="flex:1;text-align:right;font-style:italic">CV = weekly std dev \u00f7 mean &middot; ' + rows.length + ' weeks &middot; vs Lg = your CV vs league CV</div>';
   html += '</div>';
+
+  // Quadrant Read legend — explains how rank × variance maps to each label.
+  html += '<div style="margin-top:12px;padding-top:12px;border-top:0.5px solid var(--border)">';
+  html += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-tertiary);margin-bottom:8px">What the reads mean</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;font-size:11px;line-height:1.4">';
+  html += '<div style="display:flex;gap:7px;align-items:flex-start"><span style="flex-shrink:0;margin-top:1px;background:#EAF3DE;color:#3B6D11;font-size:9px;font-weight:600;padding:2px 7px;border-radius:10px">Locked</span><span style="color:var(--muted)">Strong &amp; steady \u2014 bank it, don\u2019t over-invest</span></div>';
+  html += '<div style="display:flex;gap:7px;align-items:flex-start"><span style="flex-shrink:0;margin-top:1px;background:#FCEBEB;color:#A32D2D;font-size:9px;font-weight:600;padding:2px 7px;border-radius:10px">Stuck</span><span style="color:var(--muted)">Weak &amp; steady \u2014 can\u2019t win on a fluke; top fix priority</span></div>';
+  html += '<div style="display:flex;gap:7px;align-items:flex-start"><span style="flex-shrink:0;margin-top:1px;background:#FBEFD9;color:#9A6A1A;font-size:9px;font-weight:600;padding:2px 7px;border-radius:10px">Fragile</span><span style="color:var(--muted)">Strong but volatile \u2014 a down week can cost it; protect</span></div>';
+  html += '<div style="display:flex;gap:7px;align-items:flex-start"><span style="flex-shrink:0;margin-top:1px;background:var(--color-background-secondary);color:var(--muted);font-size:9px;font-weight:600;padding:2px 7px;border-radius:10px">Live dog</span><span style="color:var(--muted)">Weak but volatile \u2014 you steal it on spike weeks; salvageable</span></div>';
+  html += '</div></div>';
 
   bodyEl.innerHTML = html;
 }
