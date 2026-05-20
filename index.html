@@ -16132,6 +16132,103 @@ function renderArchetypePage() {
 
 }
 
+// ── Dashboard Category trends populate ────────────────────────────────────
+// Renders per-category weekly sparklines for the given team with a recent-vs-
+// baseline trend arrow. Reads weekly rows from _joeStatsCache (same source as
+// the H2H variance card). Self-heals if the cache is cold.
+function _dashPopulateCatTrends(teamName) {
+  var bodyEl = document.getElementById('dash-cat-trends');
+  if (!bodyEl) return;
+  var CATS = ['R','HR','RBI','SB','AVG','W','K','SVH3','ERA','WHIP'];
+  var LOW  = ['ERA','WHIP'];
+
+  function hasAnyStats(row){
+    return (row.R||0)>0||(row.HR||0)>0||(row.RBI||0)>0||(row.SB||0)>0
+        ||(row.K||0)>0||(row.W||0)>0||(row.SV||0)>0||(row.SVH3||0)>0;
+  }
+  function readStat(row,cat){
+    if(cat==='SVH3'){ var v=row.SVH3; if(v==null) v=row.SV; return v||0; }
+    return row[cat]||0;
+  }
+
+  var stats = window._joeStatsCache;
+  if (!stats || !stats.length) {
+    if (typeof window._h2hPredictTeam === 'function' && window._h2hPredictTeam.preload
+        && !window._dashTrendsPreloading) {
+      window._dashTrendsPreloading = true;
+      window._h2hPredictTeam.preload().then(function(){
+        window._dashTrendsPreloading = false;
+        _dashPopulateCatTrends(teamName);
+      }).catch(function(){ window._dashTrendsPreloading = false; });
+    }
+    bodyEl.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px">Loading weekly data\u2026</div>';
+    return;
+  }
+
+  var normTarget = (typeof _normPlayerKey === 'function') ? _normPlayerKey(teamName||'') : (teamName||'').toLowerCase();
+  var rows = stats.filter(function(rw){
+    if (!hasAnyStats(rw)) return false;
+    if (rw.team === teamName) return true;
+    var nk = (typeof _normPlayerKey === 'function') ? _normPlayerKey(rw.team||'') : (rw.team||'').toLowerCase();
+    return nk === normTarget;
+  }).sort(function(a,b){ return (a.week||0) - (b.week||0); });
+
+  if (rows.length < 3) {
+    bodyEl.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px;background:var(--bg);border-radius:8px">Not enough played weeks yet to show category trends.</div>';
+    return;
+  }
+
+  function spark(series, lo, hi, color){
+    var W=120, H=26, pad=3;
+    if (hi - lo < 1e-9) hi = lo + 1;
+    var pts = series.map(function(v,i){
+      var x = pad + (i/(series.length-1||1))*(W-2*pad);
+      var y = H-pad - ((v-lo)/(hi-lo))*(H-2*pad);
+      return x.toFixed(1)+','+y.toFixed(1);
+    }).join(' ');
+    var lastV = series[series.length-1];
+    var lastX = pad + (W-2*pad);
+    var lastY = H-pad - ((lastV-lo)/(hi-lo))*(H-2*pad);
+    return '<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="display:block">'
+      + '<polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>'
+      + '<circle cx="'+lastX.toFixed(1)+'" cy="'+lastY.toFixed(1)+'" r="2.2" fill="'+color+'"/></svg>';
+  }
+  function trendOf(series, low){
+    var n=series.length, recentN=Math.min(4,Math.max(1,Math.floor(n/2)));
+    var recent=series.slice(-recentN).reduce(function(s,v){return s+v;},0)/recentN;
+    var earlyArr=series.slice(0,n-recentN);
+    var early=earlyArr.length ? earlyArr.reduce(function(s,v){return s+v;},0)/earlyArr.length : recent;
+    var rel=(recent-early)/Math.abs(early||1);
+    var flat=Math.abs(rel)<0.04;
+    var better = low ? rel<0 : rel>0;
+    return { rel:rel, better:better, flat:flat };
+  }
+
+  var html='';
+  html+='<div style="display:grid;grid-template-columns:46px 1fr 130px 70px;gap:12px;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;padding:0 0 6px;border-bottom:0.5px solid var(--border);margin-bottom:4px">'
+    +'<div>Cat</div><div>Last wk</div><div style="text-align:center">Season trend</div><div style="text-align:right">Trend</div></div>';
+
+  CATS.forEach(function(c){
+    var series = rows.map(function(rw){ return readStat(rw,c); });
+    var lo = Math.min.apply(null, series), hi = Math.max.apply(null, series);
+    var low = LOW.indexOf(c)!==-1;
+    var t = trendOf(series, low);
+    var color = t.flat ? '#8a8a82' : (t.better ? '#3B8B47' : '#C0392B');
+    var arrow = t.flat ? '\u2192' : (t.rel>0 ? '\u2197' : '\u2198');
+    var pctTxt = (t.flat?'':(t.rel>0?'+':'\u2212')) + Math.round(Math.abs(t.rel)*100) + '%';
+    var lastV = series[series.length-1];
+    var lastStr = c==='AVG' ? lastV.toFixed(3).replace(/^0/,'') : ((c==='ERA'||c==='WHIP') ? lastV.toFixed(2) : Math.round(lastV));
+    html+='<div style="display:grid;grid-template-columns:46px 1fr 130px 70px;gap:12px;align-items:center;padding:6px 0">';
+    html+='<div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase">'+c+'</div>';
+    html+='<div style="font-size:12px;font-variant-numeric:tabular-nums;color:var(--text)">'+lastStr+'</div>';
+    html+='<div>'+spark(series, lo, hi, color)+'</div>';
+    html+='<div style="text-align:right;font-size:12px;font-weight:600;color:'+color+';font-variant-numeric:tabular-nums">'+arrow+' '+pctTxt+'</div>';
+    html+='</div>';
+  });
+  html+='<div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border);font-size:10px;color:var(--muted);font-style:italic">Trend = recent 4-week avg vs earlier baseline. Green = improving (for ERA/WHIP, falling is green); red = declining; gray = flat. \u00b7 '+rows.length+' weeks</div>';
+  bodyEl.innerHTML = html;
+}
+
 function renderDashboard() {
   var el = document.getElementById('dashboard-body');
   if (!el) return;
@@ -16742,7 +16839,82 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   // ── Build HTML ──────────────────────────────────────────────────────
   // ── Build HTML ────────────────────────────────────────────────────────
   var _arcC = pctColor(fwarPct);
-  var h = '<div class="card" style="margin-bottom:20px">';
+
+  // ── State-of-the-team headline banner (sits ABOVE the diagnostic card) ──
+  // Synthesizes the diagnostic outputs into one plain-English line + a KPI
+  // strip, so the dashboard opens with "where am I / what should I do" instead
+  // of forcing the reader to assemble it from the cards below. Reuses values
+  // already computed here: curRank, expRank, archetype/direction/action, and
+  // position-group strengths from posData.
+  var _hb = '';
+  (function(){
+    function ordN(n){ if(n==null) return '—'; return n+(n===1?'st':n===2?'nd':n===3?'rd':'th'); }
+    // Strongest / weakest position group by avg rating vs league.
+    var groupsForHb = ['Infield','Outfield','SP','RP'];
+    var gLabel = { Infield:'infield', Outfield:'outfield', SP:'starting pitching', RP:'relief pitching' };
+    var ranked = groupsForHb
+      .filter(function(g){ return posData[g] && posData[g].avg != null; })
+      .map(function(g){ return { g:g, avg:posData[g].avg }; })
+      .sort(function(a,b){ return b.avg - a.avg; });
+    var bestG = ranked.length ? ranked[0] : null;
+    var worstG = ranked.length ? ranked[ranked.length-1] : null;
+
+    var cur = curRank;
+    var exp = arcRowInTable ? arcRowInTable.expRank : null;
+    var diff = (cur && exp) ? (exp - cur) : null; // negative = projected to climb (lower rank #)
+
+    // Verdict pill from archetype direction.
+    var dir = (arcEntry.dir || '').toLowerCase();
+    var verdict, vbg, vtxt;
+    if (/buy|contend|rise|climb/.test(dir))      { verdict='Contender'; vbg='#EAF3DE'; vtxt='#3B6D11'; }
+    else if (/sell|fade|fall|regress/.test(dir)) { verdict='Sell window'; vbg='#FCEBEB'; vtxt='#A32D2D'; }
+    else                                          { verdict='Holding';    vbg='var(--bg)'; vtxt='var(--muted)'; }
+
+    // Projected-finish phrase + color.
+    var projTxt = exp != null ? ordN(exp) : '—';
+    var projDelta = '';
+    var projCol = 'var(--text)';
+    if (diff != null && diff < 0) { projDelta = ' \u2191'+Math.abs(diff); projCol = '#3B6D11'; }
+    else if (diff != null && diff > 0) { projDelta = ' \u2193'+Math.abs(diff); projCol = '#A32D2D'; }
+
+    // Sentence.
+    var sentence = 'You\u2019re <strong>' + ordN(cur) + '</strong> in the standings';
+    if (exp != null) {
+      if (diff != null && diff < 0) sentence += ' and projected to climb to <strong>' + ordN(exp) + '</strong>';
+      else if (diff != null && diff > 0) sentence += ' but projected to slip to <strong>' + ordN(exp) + '</strong>';
+      else sentence += ' and projected to hold at <strong>' + ordN(exp) + '</strong>';
+    }
+    sentence += '. ';
+    if (bestG && worstG && bestG.g !== worstG.g) {
+      sentence += 'Your strength is <strong>' + gLabel[bestG.g] + '</strong>; your weakness is <strong>' + gLabel[worstG.g] + '</strong>. ';
+    }
+    if (arcEntry.action && arcEntry.action !== '—') {
+      sentence += 'Best move: <strong>' + arcEntry.action + '</strong>.';
+    }
+
+    var accent = (vtxt === '#3B6D11') ? '#2d7a5a' : (vtxt === '#A32D2D' ? '#b04a3a' : 'var(--border)');
+    _hb += '<div class="card" style="margin-bottom:20px;border-left:3px solid ' + accent + '">';
+    _hb += '<div class="card-body" style="padding:16px 18px">';
+    // Top line
+    _hb += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:10px">';
+    _hb += '<div><div style="font-size:18px;font-weight:600;line-height:1.2">' + _loEsc(teamName) + '</div>';
+    _hb += '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + _loEsc(arcEntry.arch||'\u2014') + ' &middot; ' + _loEsc(arcEntry.dir||'\u2014') + ' posture</div></div>';
+    _hb += '<div style="background:' + vbg + ';color:' + vtxt + ';font-size:12px;font-weight:600;padding:5px 12px;border-radius:8px;white-space:nowrap">' + verdict + '</div>';
+    _hb += '</div>';
+    // Sentence
+    _hb += '<div style="font-size:14px;line-height:1.6">' + sentence + '</div>';
+    // KPI strip
+    _hb += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;padding-top:12px;border-top:0.5px solid var(--border)">';
+    _hb += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">Standing</div><div style="font-size:18px;font-weight:600;margin-top:2px">' + ordN(cur) + '</div></div>';
+    _hb += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">Projected</div><div style="font-size:18px;font-weight:600;margin-top:2px;color:' + projCol + '">' + projTxt + '<span style="font-size:11px;font-weight:500">' + projDelta + '</span></div></div>';
+    _hb += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">Strength</div><div style="font-size:18px;font-weight:600;margin-top:2px;color:#3B6D11">' + (bestG ? bestG.g : '\u2014') + '</div></div>';
+    _hb += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">Top need</div><div style="font-size:18px;font-weight:600;margin-top:2px;color:#A32D2D">' + (worstG ? worstG.g : '\u2014') + '</div></div>';
+    _hb += '</div>';
+    _hb += '</div></div>';
+  })();
+
+  var h = _hb;
+  h += '<div class="card" style="margin-bottom:20px">';
   h += '<div class="card-header"><span class="card-title">Team diagnostic</span>';
   h += pill(arcEntry.arch||'—', _arcC.bg, _arcC.text);
   h += '</div><div class="card-body" style="padding:14px 16px;display:flex;flex-direction:column;gap:14px">';
@@ -17453,6 +17625,18 @@ function assembleDashboard(teamId, el) {
     _rosSelectedTeam = _savedRosTeam;
   }
 
+  // ── Category trends card (sits ABOVE Roster overview) ─────────────────────
+  // Per-category weekly sparklines with a recent-vs-baseline trend arrow.
+  // Adds the time dimension the dashboard otherwise lacks. Populated after
+  // innerHTML by _dashPopulateCatTrends (reads _joeStatsCache).
+  html += '<div class="card" style="margin-bottom:20px"><div class="card-body" style="padding:16px 18px">';
+  html += '<div style="margin-bottom:14px">';
+  html += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Category trends</div>';
+  html += '<div style="font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5">Your weekly output per category over the season. The arrow compares your recent 4-week average to your earlier baseline \u2014 are you heating up or fading in each cat?</div>';
+  html += '</div>';
+  html += '<div id="dash-cat-trends" style="min-height:60px"></div>';
+  html += '</div></div>';
+
   // ── Roster Overview card ──────────────────────────────────────────────────
   html += '<div class="card" style="margin-bottom:20px" id="dash-roster-charts-card">';
   html += '<div class="card-header"><span class="card-title">Roster overview</span></div>';
@@ -17831,6 +18015,12 @@ function assembleDashboard(teamId, el) {
 
 
   el.innerHTML = html;
+
+  // Populate Category trends sparklines (reads _joeStatsCache for this team).
+  if (typeof _dashPopulateCatTrends === 'function') {
+    try { _dashPopulateCatTrends(teamName); }
+    catch(e) { if (window._debug) console.warn('[dash cat-trends] populate failed:', e); }
+  }
 
   // Render Z-scatter chart
   var zScatterEl = document.getElementById('dash-zscatter');
