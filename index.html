@@ -4218,9 +4218,19 @@ function drawPlayers(type) {
       if (!finePools[fp]) finePools[fp] = [];
       finePools[fp].push(e);
     });
-    var pp = primaryPos(e.pos);
-    if (pp === 'SP') lgSpPool.push(e);
-    else             lgRpPool.push(e);
+    // League pools use the SAME token-based eligibility as finePools (Option A):
+    // a player eligible at SP counts in the SP league pool, eligible at RP
+    // counts in the RP league pool, and a swingman (SP,RP) counts in BOTH.
+    // Previously these used primaryPos (first listed slot only), which made the
+    // SP league pool a different set than finePools['SP'] — that membership
+    // mismatch was causing pure SPs to score very differently between Pos
+    // Rating (vs finePools) and League Rating (vs lgSpPool).
+    if (fps.indexOf('SP') !== -1) lgSpPool.push(e);
+    if (fps.indexOf('RP') !== -1) lgRpPool.push(e);
+    // Pitchers with neither token (rare, e.g. a bare 'P' that maps to RP via
+    // FINE_POS_MAP, already handled above) fall through; ensure 'P'-only arms
+    // still land somewhere by defaulting to RP if no SP/RP token resolved.
+    if (fps.indexOf('SP') === -1 && fps.indexOf('RP') === -1) lgRpPool.push(e);
   });
 
   function calcRating(stats, cats, pool, pos) {
@@ -4253,11 +4263,28 @@ function drawPlayers(type) {
       if (r != null && (bestPos == null || r > bestPos)) bestPos = r;
     });
 
-    // League Rating
-    var lgPool;
-    if (type === 'hit') lgPool = lgHitPool;
-    else { var pp = primaryPos(pos); lgPool = pp === 'SP' ? lgSpPool : lgRpPool; }
-    var lgR = calcRating(stats, cats, lgPool, pos);
+    // League Rating. Hitters: one pool. Pitchers: score against each eligible
+    // league pool (SP and/or RP) and keep the BEST — parallel to how Pos Rating
+    // takes the best across eligible fine positions. A swingman thus gets the
+    // more favorable of his SP-pool and RP-pool standing, and a pure SP/RP is
+    // simply scored against its one pool.
+    var lgR;
+    if (type === 'hit') {
+      lgR = calcRating(stats, cats, lgHitPool, pos);
+    } else {
+      var bestLg = null;
+      if (fps.indexOf('SP') !== -1) {
+        var rSp = calcRating(stats, cats, lgSpPool, pos);
+        if (rSp != null && (bestLg == null || rSp > bestLg)) bestLg = rSp;
+      }
+      if (fps.indexOf('RP') !== -1) {
+        var rRp = calcRating(stats, cats, lgRpPool, pos);
+        if (rRp != null && (bestLg == null || rRp > bestLg)) bestLg = rRp;
+      }
+      // Fallback for arms with no resolved SP/RP token: use RP pool.
+      if (bestLg == null) bestLg = calcRating(stats, cats, lgRpPool, pos);
+      lgR = bestLg;
+    }
 
     var result = { posRating: bestPos, lgRating: lgR };
     ratingCache[key] = result;
@@ -4795,8 +4822,17 @@ function showRoster(teamId) {
         fps2.forEach(function(fp){ var r2=window._calcRating(rowStats2,pCats2,pools2.finePools[fp]||[],pos||''); if(r2!=null&&(best2==null||r2>best2)) best2=r2; });
         if (posR == null) posR = best2;
         if (lgR  == null) {
-          var lgPool2 = isHitSection ? pools2.lgHitPool : (primaryPos(pos||'')==='SP' ? pools2.lgSpPool : pools2.lgRpPool);
-          lgR = window._calcRating(rowStats2, pCats2, lgPool2, pos||'');
+          if (isHitSection) {
+            lgR = window._calcRating(rowStats2, pCats2, pools2.lgHitPool, pos||'');
+          } else {
+            // Best across eligible league pools (SP and/or RP), matching the
+            // main rating path's Option-A token-based eligibility.
+            var bestLg2 = null;
+            if (fps2.indexOf('SP') !== -1) { var s2=window._calcRating(rowStats2,pCats2,pools2.lgSpPool||[],pos||''); if(s2!=null&&(bestLg2==null||s2>bestLg2)) bestLg2=s2; }
+            if (fps2.indexOf('RP') !== -1) { var r2b=window._calcRating(rowStats2,pCats2,pools2.lgRpPool||[],pos||''); if(r2b!=null&&(bestLg2==null||r2b>bestLg2)) bestLg2=r2b; }
+            if (bestLg2 == null) bestLg2 = window._calcRating(rowStats2,pCats2,pools2.lgRpPool||[],pos||'');
+            lgR = bestLg2;
+          }
         }
         // Cache for next render so we don't recompute on every row paint.
         if (posR != null) (window._posRatingLookup||{})[normN3] = posR;
@@ -14131,8 +14167,15 @@ function drawFARatings() {
       var best  = null;
       fps.forEach(function(fp){ var r=window._calcRating(p.stats||{},pCats,pools.finePools[fp]||[],p.pos||''); if(r!=null&&(best==null||r>best)) best=r; });
       posRat = best;
-      var lgPool = isBat ? pools.lgHitPool : (primaryPos(p.pos||'')==='SP' ? pools.lgSpPool : pools.lgRpPool);
-      lgRat = window._calcRating(p.stats||{}, pCats, lgPool, p.pos||'');
+      if (isBat) {
+        lgRat = window._calcRating(p.stats||{}, pCats, pools.lgHitPool, p.pos||'');
+      } else {
+        var bestLgF = null;
+        if (fps.indexOf('SP') !== -1) { var sF=window._calcRating(p.stats||{},pCats,pools.lgSpPool||[],p.pos||''); if(sF!=null&&(bestLgF==null||sF>bestLgF)) bestLgF=sF; }
+        if (fps.indexOf('RP') !== -1) { var rF=window._calcRating(p.stats||{},pCats,pools.lgRpPool||[],p.pos||''); if(rF!=null&&(bestLgF==null||rF>bestLgF)) bestLgF=rF; }
+        if (bestLgF == null) bestLgF = window._calcRating(p.stats||{},pCats,pools.lgRpPool||[],p.pos||'');
+        lgRat = bestLgF;
+      }
     }
     return { fwarVal:fwarVal, fwarPct:fwarPct, posRat:posRat, lgRat:lgRat,
       rosPct: (isBat ? (window._playerRosPctHit||{})[k] : (window._playerRosPctPit||{})[k]),
@@ -14601,8 +14644,15 @@ window.showFAFixer = function(teamId) {
           if(r!=null&&(best==null||r>best)) best=r;
         });
         posRat = best;
-        var lgPool = isBat ? pools.lgHitPool : (primaryPos(p.pos||'')==='SP' ? pools.lgSpPool : pools.lgRpPool);
-        lgRat  = window._calcRating(p.stats||{}, pCats, lgPool, p.pos||'');
+        if (isBat) {
+          lgRat = window._calcRating(p.stats||{}, pCats, pools.lgHitPool, p.pos||'');
+        } else {
+          var bestLg3 = null;
+          if (fps.indexOf('SP') !== -1) { var s3=window._calcRating(p.stats||{},pCats,pools.lgSpPool||[],p.pos||''); if(s3!=null&&(bestLg3==null||s3>bestLg3)) bestLg3=s3; }
+          if (fps.indexOf('RP') !== -1) { var r3=window._calcRating(p.stats||{},pCats,pools.lgRpPool||[],p.pos||''); if(r3!=null&&(bestLg3==null||r3>bestLg3)) bestLg3=r3; }
+          if (bestLg3 == null) bestLg3 = window._calcRating(p.stats||{},pCats,pools.lgRpPool||[],p.pos||'');
+          lgRat = bestLg3;
+        }
       }
       function rCol(v){
         if(v==null) return 'var(--muted)';
