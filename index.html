@@ -778,12 +778,16 @@ td.neg { color: #c0392b; font-weight: 500; }
     <div class="trade-tabs" id="corr-tabs">
       <button class="trade-tab active" onclick="showCorrTab('current',this)">2026 Season</button>
       <button class="trade-tab" onclick="showCorrTab('historical',this)">Historical (2021–2025)</button>
+      <button class="trade-tab" onclick="showCorrTab('matters',this)">Matters vs. Noise</button>
     </div>
     <div id="corr-tab-current" class="trade-tab-content active">
       <div id="correlations-body"><div class="loading">Loading...</div></div>
     </div>
     <div id="corr-tab-historical" class="trade-tab-content">
       <div id="correlations-hist-body"><div class="loading">Loading...</div></div>
+    </div>
+    <div id="corr-tab-matters" class="trade-tab-content">
+      <div id="correlations-matters-body"><div class="loading">Loading...</div></div>
     </div>
   </div>
   <div class="page" id="page-historic" style="display:none"></div>
@@ -12017,6 +12021,8 @@ function _h2hRenderResult(teamNames, selectedTeam, r) {
   html += _h2hLeagueOverviewHtml(selectedTeam);
   // 4b. Week-to-week category variance (slim strip plot) — above the schedule.
   html += _h2hVarianceCardHtml(selectedTeam);
+  // 4c. Matters vs. noise — team CV crossed with standings correlation.
+  html += _h2hCorrCvCardHtml(selectedTeam);
   // 5. Week-by-week schedule
   html += _h2hWeeklyGridHtml(r);
   // 6. Playoff + Consolation bracket predictor card (bottom of page).
@@ -12031,6 +12037,11 @@ function _h2hRenderResult(teamNames, selectedTeam, r) {
   if (typeof _h2hPopulateVarianceCard === 'function') {
     try { _h2hPopulateVarianceCard(selectedTeam); }
     catch(e) { if (window._debug) console.warn('[H2H variance] populate failed:', e); }
+  }
+  // Populate the team-specific Matters-vs-noise scatter.
+  if (typeof _h2hPopulateCorrCvCard === 'function') {
+    try { _h2hPopulateCorrCvCard(selectedTeam); }
+    catch(e) { if (window._debug) console.warn('[H2H corr-cv] populate failed:', e); }
   }
 }
 
@@ -12797,6 +12808,85 @@ function _h2hPopulateVarianceCard(selectedTeam) {
   html += '</div></div>';
 
   bodyEl.innerHTML = html;
+}
+
+// ── H2H team-specific Matters-vs-noise scatter ────────────────────────────
+// Sits below the variance card. Crosses the selected team's per-cat CV with
+// each cat's league standings correlation, so the user sees where THEIR noisy
+// cats line up against what actually matters. Skeleton + populate, mirroring
+// the variance card pattern.
+function _h2hCorrCvCardHtml(selectedTeam) {
+  var h = '<div class="card" id="h2h-corrcv-card" style="margin-bottom:14px;padding:16px 18px;overflow:visible">';
+  h += '<div style="margin-bottom:8px">';
+  h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Matters vs. noise</div>';
+  h += '<div style="font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5">Each category placed by how much it correlates with standings points (x \u2014 matters) against ' + _loEsc(selectedTeam) + '\u2019s own week-to-week CV (y \u2014 noisier). Bottom-right = focus here (high-leverage and controllable). Top-left = noise that barely moves the standings.</div>';
+  h += '</div>';
+  h += '<div id="h2h-corrcv-body" style="min-height:60px"></div>';
+  h += '</div>';
+  return h;
+}
+
+function _h2hPopulateCorrCvCard(selectedTeam) {
+  var bodyEl = document.getElementById('h2h-corrcv-body');
+  if (!bodyEl) return;
+
+  // Need standings correlations. Populated by the Correlations page render; if
+  // absent, render it into a throwaway node to populate window._catStandingsCorr.
+  if (!window._catStandingsCorr && typeof buildCorrelations === 'function') {
+    try { var tmp = document.createElement('div'); buildCorrelations(tmp); } catch(e) {}
+  }
+  if (!window._catStandingsCorr) {
+    bodyEl.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px;background:var(--bg);border-radius:8px">Season correlation data not available yet.</div>';
+    return;
+  }
+
+  // Team per-cat CV from _joeStatsCache (same computation as the variance card).
+  var CATS = ['R','HR','RBI','SB','AVG','W','K','SVH3','ERA','WHIP'];
+  function hasAnyStats(row){
+    return (row.R||0)>0||(row.HR||0)>0||(row.RBI||0)>0||(row.SB||0)>0
+        ||(row.K||0)>0||(row.W||0)>0||(row.SV||0)>0||(row.SVH3||0)>0;
+  }
+  function readStat(row,cat){
+    if(cat==='SVH3'){ var v=row.SVH3; if(v==null) v=row.SV; return v||0; }
+    return row[cat]||0;
+  }
+  var stats = window._joeStatsCache;
+  if (!stats || !stats.length) {
+    if (typeof window._h2hPredictTeam === 'function' && window._h2hPredictTeam.preload && !window._h2hCorrCvPreloading) {
+      window._h2hCorrCvPreloading = true;
+      window._h2hPredictTeam.preload().then(function(){
+        window._h2hCorrCvPreloading = false;
+        _h2hPopulateCorrCvCard(selectedTeam);
+      }).catch(function(){ window._h2hCorrCvPreloading = false; });
+    }
+    bodyEl.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px">Loading weekly data\u2026</div>';
+    return;
+  }
+  var normTarget = (typeof _normPlayerKey === 'function') ? _normPlayerKey(selectedTeam||'') : (selectedTeam||'').toLowerCase();
+  var rows = stats.filter(function(rw){
+    if (!hasAnyStats(rw)) return false;
+    if (rw.team === selectedTeam) return true;
+    var nk = (typeof _normPlayerKey === 'function') ? _normPlayerKey(rw.team||'') : (rw.team||'').toLowerCase();
+    return nk === normTarget;
+  });
+  if (rows.length < 2) {
+    bodyEl.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px;background:var(--bg);border-radius:8px">Not enough played weeks yet for ' + _loEsc(selectedTeam) + '.</div>';
+    return;
+  }
+  var cvMap = {};
+  CATS.forEach(function(c){
+    var vals = rows.map(function(rw){ return readStat(rw,c); });
+    var n = vals.length;
+    var mn = vals.reduce(function(s,v){return s+v;},0)/n;
+    if (mn === 0) { cvMap[c] = null; return; }
+    var vr = vals.reduce(function(s,v){var d=v-mn;return s+d*d;},0)/(n-1);
+    cvMap[c] = Math.sqrt(vr)/Math.abs(mn);
+  });
+
+  var h = window._corrCvLegendHtml();
+  h += '<div style="position:relative;width:100%;height:360px"><canvas id="h2h-corrcv-canvas" role="img" aria-label="Scatter of category standings correlation versus this team\u2019s week-to-week CV."></canvas></div>';
+  bodyEl.innerHTML = h;
+  window._renderCorrCvScatter({ canvasId:'h2h-corrcv-canvas', corrMap: window._catStandingsCorr, cvMap: cvMap, xMid:0.70, yMid:30 });
 }
 
 function _h2hWeeklyGridHtml(r) {
@@ -18599,7 +18689,54 @@ window.showCorrTab = function(tab, btn) {
   btn.classList.add('active');
   document.getElementById('corr-tab-' + tab).classList.add('active');
   if (tab === 'historical') buildHistoricalCorrelations();
+  if (tab === 'matters') buildMattersVsNoise();
 };
+
+// Build the "Matters vs. Noise" tab: correlation × league-CV quadrant scatter.
+// Needs per-cat standings correlation (from the current-season render) and
+// league-average CV (from _joeStatsCache). Ensures both are available, then
+// renders via the shared _renderCorrCvScatter helper.
+function buildMattersVsNoise() {
+  var el = document.getElementById('correlations-matters-body');
+  if (!el) return;
+
+  // Make sure correlations are computed — they're populated as a side effect
+  // of buildCorrelations. If the current tab hasn't rendered yet, do it into a
+  // throwaway element so window._catStandingsCorr gets set.
+  if (!window._catStandingsCorr) {
+    try {
+      var tmp = document.createElement('div');
+      buildCorrelations(tmp);
+    } catch(e) {}
+  }
+  // League CV; self-heal the weekly cache if cold.
+  var cvMap = window._leagueCvByCat ? window._leagueCvByCat() : {};
+  if ((!cvMap || !Object.keys(cvMap).length)) {
+    if (typeof window._h2hPredictTeam === 'function' && window._h2hPredictTeam.preload && !window._mattersPreloading) {
+      window._mattersPreloading = true;
+      window._h2hPredictTeam.preload().then(function(){
+        window._mattersPreloading = false;
+        buildMattersVsNoise();
+      }).catch(function(){ window._mattersPreloading = false; });
+    }
+    el.innerHTML = '<div class="card"><div class="card-body" style="padding:20px;color:var(--muted);font-size:12px;text-align:center">Loading weekly data\u2026</div></div>';
+    return;
+  }
+  if (!window._catStandingsCorr) {
+    el.innerHTML = '<div class="card"><div class="card-body" style="padding:20px;color:var(--muted);font-size:12px;text-align:center">Season correlation data not available yet.</div></div>';
+    return;
+  }
+
+  var h = '<div class="card"><div class="card-body" style="padding:16px 18px">';
+  h += '<div style="margin-bottom:8px"><div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Matters vs. noise</div>';
+  h += '<div style="font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5">Each category placed by how much it correlates with standings points (x \u2014 matters) against the league\u2019s typical week-to-week CV (y \u2014 noisier). Bottom-right is where to focus: high-leverage and controllable. Top-left is noise that barely moves the standings.</div></div>';
+  h += window._corrCvLegendHtml();
+  h += '<div style="position:relative;width:100%;height:380px"><canvas id="corr-cv-league" role="img" aria-label="Scatter of category standings correlation versus league week-to-week CV."></canvas></div>';
+  h += '</div></div>';
+  el.innerHTML = h;
+
+  window._renderCorrCvScatter({ canvasId:'corr-cv-league', corrMap: window._catStandingsCorr, cvMap: cvMap, xMid:0.70, yMid:30 });
+}
 
 // Module-scope outlier filter shared by the current-season and historical
 // correlations renderers. Drops pairs whose studentized residual from the OLS
@@ -18632,6 +18769,125 @@ window._stdResidDropOutliers = function(pairs, threshold) {
     if (stud > threshold) dropped++; else kept.push(p);
   });
   return { kept: kept, droppedCount: dropped };
+};
+
+// ── Shared: league-average CV per category, from _joeStatsCache ───────────
+// For each team compute its per-cat CV (std/|mean|) across played weeks, then
+// average across teams. Returns { cat: cv }. Same definition the H2H variance
+// card uses for its black league baseline, centralized here so the quadrant
+// scatters and the variance card agree.
+window._leagueCvByCat = function() {
+  var CATS = ['R','HR','RBI','SB','AVG','W','K','SVH3','ERA','WHIP'];
+  var stats = window._joeStatsCache;
+  var out = {};
+  if (!stats || !stats.length) return out;
+  function hasAnyStats(row){
+    return (row.R||0)>0||(row.HR||0)>0||(row.RBI||0)>0||(row.SB||0)>0
+        ||(row.K||0)>0||(row.W||0)>0||(row.SV||0)>0||(row.SVH3||0)>0;
+  }
+  function readStat(row,cat){
+    if(cat==='SVH3'){ var v=row.SVH3; if(v==null) v=row.SV; return v||0; }
+    return row[cat]||0;
+  }
+  var byTeam = {};
+  stats.forEach(function(rw){
+    if (!hasAnyStats(rw)) return;
+    (byTeam[rw.team||'_'] = byTeam[rw.team||'_'] || []).push(rw);
+  });
+  var teamKeys = Object.keys(byTeam).filter(function(t){ return byTeam[t].length >= 2; });
+  CATS.forEach(function(c){
+    var cvs = [];
+    teamKeys.forEach(function(t){
+      var vals = byTeam[t].map(function(rw){ return readStat(rw,c); });
+      var n = vals.length;
+      var mn = vals.reduce(function(s,v){return s+v;},0)/n;
+      if (mn === 0) return;
+      var vr = vals.reduce(function(s,v){var d=v-mn;return s+d*d;},0)/(n-1);
+      cvs.push(Math.sqrt(vr)/Math.abs(mn));
+    });
+    out[c] = cvs.length ? cvs.reduce(function(s,v){return s+v;},0)/cvs.length : null;
+  });
+  return out;
+};
+
+// ── Shared: render the correlation × CV quadrant scatter ──────────────────
+// opts: { canvasId, corrMap:{cat:{r}}, cvMap:{cat:cv(0-1)}, xMid, yMid }
+// Plots one point per cat: x = standings correlation, y = CV%. Colors by CV
+// tier (coral/amber/teal). Draws quadrant split lines + labels.
+window._renderCorrCvScatter = function(opts) {
+  var canvas = document.getElementById(opts.canvasId);
+  if (!canvas || typeof Chart === 'undefined') return;
+  var CATS = ['R','HR','RBI','SB','AVG','W','K','SVH3','ERA','WHIP'];
+  var pts = [];
+  CATS.forEach(function(c){
+    var cc = opts.corrMap && opts.corrMap[c];
+    var cv = opts.cvMap && opts.cvMap[c];
+    if (!cc || cv == null) return;
+    pts.push({ x: Math.abs(cc.r), y: cv * 100, c: c });
+  });
+  if (!pts.length) return;
+  function col(cvPct){ return cvPct>=35?'#D85A30':(cvPct>=22?'#EF9F27':'#1D9E75'); }
+  var xMid = opts.xMid != null ? opts.xMid : 0.70;
+  var yMid = opts.yMid != null ? opts.yMid : 30;
+  // Axis bounds padded around the data.
+  var xs = pts.map(function(p){return p.x;}), ys = pts.map(function(p){return p.y;});
+  var xMin = Math.min.apply(null,xs), xMax = Math.max.apply(null,xs);
+  var yMax = Math.max.apply(null,ys);
+  var existing = Chart.getChart && Chart.getChart(canvas);
+  if (existing) existing.destroy();
+  new Chart(canvas, {
+    type:'scatter',
+    data:{ datasets:[{
+      data: pts.map(function(p){return {x:p.x,y:p.y,c:p.c};}),
+      pointRadius:7, pointHoverRadius:9,
+      backgroundColor: pts.map(function(p){return col(p.y);}),
+      borderColor:'#ffffff', borderWidth:1.5
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:false, layout:{padding:18},
+      plugins:{ legend:{display:false},
+        tooltip:{callbacks:{label:function(ctx){var d=ctx.raw;return d.c+': corr '+d.x.toFixed(2)+', CV '+Math.round(d.y)+'%';}}}
+      },
+      scales:{
+        x:{ min: Math.max(0, xMin-0.06), max: Math.min(1, xMax+0.06), title:{display:true,text:'Correlation with standings points  (matters \u2192)',font:{size:11},color:'#888780'}, ticks:{font:{size:10},color:'#888780',callback:function(v){return v.toFixed(2);}}, grid:{color:'rgba(128,128,128,0.10)'} },
+        y:{ min:0, max: yMax+8, title:{display:true,text:'Week-to-week CV %  (noisier \u2192)',font:{size:11},color:'#888780'}, ticks:{font:{size:10},color:'#888780',callback:function(v){return v+'%';}}, grid:{color:'rgba(128,128,128,0.10)'} }
+      }
+    },
+    plugins:[{
+      id:'quad'+opts.canvasId,
+      beforeDraw:function(chart){
+        var ctx=chart.ctx, xa=chart.scales.x, ya=chart.scales.y;
+        var xm=xa.getPixelForValue(xMid), ym=ya.getPixelForValue(yMid);
+        ctx.save(); ctx.strokeStyle='rgba(128,128,128,0.35)'; ctx.setLineDash([4,4]); ctx.lineWidth=1;
+        if (xm>=xa.left && xm<=xa.right){ ctx.beginPath(); ctx.moveTo(xm,ya.top); ctx.lineTo(xm,ya.bottom); ctx.stroke(); }
+        if (ym>=ya.top && ym<=ya.bottom){ ctx.beginPath(); ctx.moveTo(xa.left,ym); ctx.lineTo(xa.right,ym); ctx.stroke(); }
+        ctx.restore();
+      },
+      afterDatasetsDraw:function(chart){
+        var ctx=chart.ctx, meta=chart.getDatasetMeta(0);
+        ctx.save(); ctx.font='500 11px sans-serif'; ctx.fillStyle='#444441';
+        ctx.textAlign='left'; ctx.textBaseline='middle';
+        meta.data.forEach(function(pt,i){ ctx.fillText(chart.data.datasets[0].data[i].c, pt.x+9, pt.y); });
+        ctx.restore();
+      }
+    }]
+  });
+};
+
+// Shared quadrant legend HTML for the corr×CV scatters.
+window._corrCvLegendHtml = function() {
+  var h = '<div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px;font-size:12px;color:var(--muted)">';
+  h += '<span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#D85A30"></span>Volatile</span>';
+  h += '<span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#EF9F27"></span>Moderate</span>';
+  h += '<span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#1D9E75"></span>Steady</span>';
+  h += '</div>';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;margin-top:12px;font-size:11px;line-height:1.45;color:var(--muted)">';
+  h += '<div><span style="background:#FCEBEB;color:#A32D2D;font-size:10px;font-weight:500;padding:2px 7px;border-radius:10px">Priority</span> &nbsp;Matters &amp; controllable \u2014 high corr, low CV.</div>';
+  h += '<div><span style="background:#FBEFD9;color:#854F0B;font-size:10px;font-weight:500;padding:2px 7px;border-radius:10px">Volatile lever</span> &nbsp;Matters but swingy \u2014 high corr, high CV.</div>';
+  h += '<div><span style="background:var(--bg);color:var(--muted);font-size:10px;font-weight:500;padding:2px 7px;border-radius:10px">Low stakes</span> &nbsp;Steady but low-leverage \u2014 low corr, low CV.</div>';
+  h += '<div><span style="background:var(--bg);color:var(--muted);font-size:10px;font-weight:500;padding:2px 7px;border-radius:10px">Ignore</span> &nbsp;Noisy &amp; low-leverage \u2014 low corr, high CV.</div>';
+  h += '</div>';
+  return h;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -18910,6 +19166,17 @@ function buildCorrelations(el) {
 
   var catCorrs = _corrBuildList(false);   // used for the scatter plots below
   var catCorrsNoOut = _corrBuildList(true);
+
+  // Expose per-cat correlations so the correlation×CV quadrant scatters (the
+  // new Correlations tab + the H2H team-specific card) can read them without
+  // recomputing. Keyed by cat → { r, isLow }.
+  (function(){
+    var map = {}, mapNo = {};
+    catCorrs.forEach(function(o){ map[o.cat] = { r: o.r, isLow: o.isLow }; });
+    catCorrsNoOut.forEach(function(o){ mapNo[o.cat] = { r: o.r, isLow: o.isLow }; });
+    window._catStandingsCorr = map;
+    window._catStandingsCorrNoOut = mapNo;
+  })();
 
   // Dual bar chart — rendered by the shared module-scope helper so the
   // current-season and historical cards stay visually consistent.
