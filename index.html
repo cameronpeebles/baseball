@@ -25754,6 +25754,19 @@ window._tlV2TeamChange = function(side, val) {
   _tlV2RenderBuild();
 };
 
+// Swap HOME and AWAY. Exchanges both the teams AND the players each side is
+// sending, so the SAME proposed trade is preserved — you just view it from the
+// partner's perspective. The Net SGP then recomputes through the new HOME
+// team's need lens, which answers "would they accept this?". Sort state swaps
+// too so each side keeps its column ordering.
+window._tlV2SwapSides = function() {
+  var t = window._tlV2;
+  var ta = t.teamA; t.teamA = t.teamB; t.teamB = ta;
+  var sa = t.sendA; t.sendA = t.sendB; t.sendB = sa;
+  var so = t.sortA; t.sortA = t.sortB; t.sortB = so;
+  _tlV2RenderBuild();
+};
+
 function _tlV2GetTeamName(tid) {
   var ti = (S.teamInfo || {})[tid] || {};
   return ti.shortName || ti.name || tid;
@@ -27843,6 +27856,10 @@ function _tlV2RenderBuild() {
   // the LEFT rail of a 30/70 split alongside the fit card on the right.
   var pickersHtml = '<div style="display:flex;flex-direction:column;gap:14px">'
     + pickerHtml('A', nameA, sendA, byKeyA, rosterA)
+    + '<div style="display:flex;justify-content:center;margin:-4px 0">'
+    + '<button onclick="window._tlV2SwapSides()" title="Swap HOME and AWAY to see the trade from the other side" style="display:inline-flex;align-items:center;gap:6px;padding:5px 14px;font-size:11px;font-weight:500;border:0.5px solid var(--border);background:var(--surface);color:var(--muted);border-radius:16px;cursor:pointer;font-family:inherit">'
+    + '<span style="font-size:13px;line-height:1">\u21C5</span> Swap sides</button>'
+    + '</div>'
     + pickerHtml('B', nameB, sendB, byKeyB, rosterB)
     + '</div>';
 
