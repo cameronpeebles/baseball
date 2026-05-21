@@ -27527,12 +27527,18 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
   function fmtWinPct(dp) {
     if (dp == null) return '\u2014';
     var pct = dp * 100;
-    if (Math.abs(pct) < 0.5) return '0%';
+    // Only show a literal 0% when the shift is genuinely negligible.
+    if (Math.abs(pct) < 0.05) return '0%';
     var sign = pct >= 0 ? '+' : '\u2212';
-    return sign + Math.abs(pct).toFixed(0) + '%';
+    var mag = Math.abs(pct);
+    // Use one decimal for small shifts (<10%) so real-but-modest moves in
+    // high-variance cats (K, W, SB) read as e.g. "+2.6%" instead of being
+    // rounded down to a misleading "0%". Larger shifts stay whole-number.
+    var txt = mag < 10 ? mag.toFixed(1) : mag.toFixed(0);
+    return sign + txt + '%';
   }
   function winPctColor(dp) {
-    if (dp == null || Math.abs(dp) < 0.005) return 'var(--muted)';
+    if (dp == null || Math.abs(dp) < 0.0005) return 'var(--muted)';
     // Already sign-aware (positive always means "more likely to win the cat")
     return dp > 0 ? '#0F6E56' : '#c0392b';
   }
