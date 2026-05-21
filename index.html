@@ -27496,6 +27496,10 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
   var SHRINK_K0 = 4;
   var _homeWeeks = (_teamEmp && _teamEmp.weeksPlayed) ? _teamEmp.weeksPlayed : 0;
   var _shrinkW = _homeWeeks > 0 ? _homeWeeks / (_homeWeeks + SHRINK_K0) : 0;
+  // Debug: collect per-cat internals so we can see exactly why a Δ win % lands
+  // where it does (e.g. why a big SB shift reads 0%). Logged once at the end of
+  // the render when window._debug is true.
+  var _winPctDebug = [];
   function winPctDelta(c) {
     if (!_teamEmp || !_leagueAvg) return null;
     var muTeam = _teamEmp[c];
@@ -27520,7 +27524,25 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
     var zBefore = isLow ? (muOpp - muTeam) / sigDiff : (muTeam - muOpp) / sigDiff;
     var muTeamAfter = muTeam + dv;
     var zAfter  = isLow ? (muOpp - muTeamAfter) / sigDiff : (muTeamAfter - muOpp) / sigDiff;
-    return _normCdf(zAfter) - _normCdf(zBefore);
+    var result = _normCdf(zAfter) - _normCdf(zBefore);
+    if (window._debug) {
+      _winPctDebug.push({
+        cat: c,
+        muTeam: +muTeam.toFixed(2),
+        muOpp: +muOpp.toFixed(2),
+        sigTeamRaw: sigTraw != null ? +sigTraw.toFixed(2) : null,
+        sigTeamShrunk: +sigT.toFixed(2),
+        sigLeague: +sigO.toFixed(2),
+        sigDiff: +sigDiff.toFixed(2),
+        weeklyDelta: +dv.toFixed(2),
+        shrinkW: +_shrinkW.toFixed(2),
+        zBefore: +zBefore.toFixed(3),
+        zAfter: +zAfter.toFixed(3),
+        deltaZ: +(zAfter - zBefore).toFixed(3),
+        winPctDelta: +(result * 100).toFixed(2) + '%'
+      });
+    }
+    return result;
   }
   // Format/color win-pct delta. Sign convention matches the Δ column —
   // positive (more likely to win) = green; negative (less likely) = red.
@@ -27628,6 +27650,13 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
   });
   html += '</tbody></table>';
   html += '</div>';
+
+  // Debug: dump the per-cat Δ win % internals so the math is inspectable.
+  if (window._debug && _winPctDebug.length && typeof console !== 'undefined') {
+    console.log('[Δ win % internals] HOME=' + (_nameA_local||'?') + ' · weeks=' + _homeWeeks + ' · shrinkW=' + _shrinkW.toFixed(2));
+    if (console.table) console.table(_winPctDebug);
+    else console.log(_winPctDebug);
+  }
 
   // Radar (right, 2fr)
   html += '<div>';
