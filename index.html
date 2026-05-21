@@ -27432,21 +27432,34 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
       _allTeamsEmp = window._h2hBuildEmpiricalMeans(window._joeStatsCache, { recentBias: 'last4' });
     }
     if (_allTeamsEmp) {
-      // Prefer the blended table if present (matches bracket/dashboard), else
-      // use the freshly built empirical table.
+      // Resolve HOME's weekly means. A VALID entry has weeksPlayed > 0 and
+      // per-cat values on a weekly scale. The blended table is preferred (it
+      // matches the bracket/dashboard), but for some teams it can carry a
+      // malformed entry — season cumulative totals with weeksPlayed = 0 — which
+      // would make counting-stat z-scores explode (μ in the hundreds vs a
+      // weekly league mean) and peg every Δ win % at 0%. So we validate each
+      // candidate and fall through to the next source if it looks wrong.
+      function _validEmp(e){ return e && e.weeksPlayed && e.weeksPlayed > 0; }
+      var _cand = null;
       if (window._h2hBracketBlended && window._h2hBracketBlended[_nameA_local]) {
-        _teamEmp = window._h2hBracketBlended[_nameA_local];
-      } else if (_allTeamsEmp[_nameA_local]) {
-        _teamEmp = _allTeamsEmp[_nameA_local];
-      } else {
-        // Normalized-name fallback.
+        _cand = window._h2hBracketBlended[_nameA_local];
+      }
+      if (!_validEmp(_cand) && _allTeamsEmp[_nameA_local]) {
+        _cand = _allTeamsEmp[_nameA_local];
+      }
+      if (!_validEmp(_cand)) {
+        // Normalized-name fallback against the freshly-built empirical table.
         var _normTarget = (typeof _normPlayerKey === 'function') ? _normPlayerKey(_nameA_local) : (_nameA_local||'').toLowerCase();
         Object.keys(_allTeamsEmp).forEach(function(tk){
-          if (_teamEmp) return;
+          if (_validEmp(_cand)) return;
           var nk = (typeof _normPlayerKey === 'function') ? _normPlayerKey(tk) : (tk||'').toLowerCase();
-          if (nk === _normTarget) _teamEmp = _allTeamsEmp[tk];
+          if (nk === _normTarget && _validEmp(_allTeamsEmp[tk])) _cand = _allTeamsEmp[tk];
         });
       }
+      // Last resort: if a candidate exists but is invalid, keep it only if
+      // nothing better was found (rate stats still work; counting stats will
+      // be suppressed below by the scale guard).
+      _teamEmp = _cand;
       // League average: mean & std per cat across all teams.
       _leagueAvg = { mean: {}, std: {} };
       var _CATS = ['R','HR','RBI','SB','AVG','W','K','SVH3','ERA','WHIP'];
@@ -27455,6 +27468,9 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
         Object.keys(_allTeamsEmp).forEach(function(tk){
           var em = _allTeamsEmp[tk];
           if (!em) return;
+          // Skip malformed entries (season totals / no weeks) so they can't
+          // corrupt the league weekly mean & std.
+          if (!em.weeksPlayed || em.weeksPlayed <= 0) return;
           if (em[cat] != null && isFinite(em[cat])) ms.push(em[cat]);
           if (em._std && em._std[cat] != null && isFinite(em._std[cat])) ss.push(em._std[cat]);
         });
