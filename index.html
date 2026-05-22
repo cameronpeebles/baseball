@@ -25987,6 +25987,23 @@ function _tlV2RenderSuggest() {
     .sort(function(a,b){ return b.score - a.score; })
     .slice(0, 5);
 
+  // Debug: dump the near-miss distribution so the mutual-swap floors (0.3/0.3)
+  // can be calibrated — these are swaps where HOME gains ≥0.3 but the deal
+  // didn't qualify. Shows how close the rejects were. Set window._debug=true.
+  if (window._debug && typeof console !== 'undefined') {
+    var _nm = (window._rosTradeSugNearMiss || []).slice().sort(function(a,b){ return (b.myD+b.theirD)-(a.myD+a.theirD); }).slice(0, 30);
+    if (_nm.length) {
+      console.log('[Suggested trades] '+partners.length+' qualifying partners · '
+        + (window._rosTradeSugNearMiss||[]).length+' near-misses (HOME gain \u22650.3 but failed mutual/sneaky)');
+      var _nmRows = _nm.map(function(nm){
+        var giveName = (window._rosCurrentStats && window._rosCurrentStats[nm.give]) ? window._rosCurrentStats[nm.give].name : nm.give;
+        var getName  = (window._rosCurrentStats && window._rosCurrentStats[nm.get])  ? window._rosCurrentStats[nm.get].name  : nm.get;
+        return { vs: nm.vs||'', send: giveName, get: getName, youGain: +(+nm.myD).toFixed(2), theyGain: +(+nm.theirD).toFixed(2) };
+      });
+      if (console.table) console.table(_nmRows); else console.log(_nmRows);
+    }
+  }
+
   // ── Partner section ─────────────────────────────────────────────────────
   html += '<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden">';
   html += '<div style="padding:12px 16px;background:var(--bg);border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between">';
@@ -25998,7 +26015,7 @@ function _tlV2RenderSuggest() {
     var nearMiss = (window._rosTradeSugNearMiss || []).slice(0, 5);
     if (nearMiss.length) {
       html += '<div style="padding:14px 16px;font-size:12px;color:var(--muted);line-height:1.6">';
-      html += '<div style="margin-bottom:8px"><strong style="color:var(--text)">No trades clearly clear the bar.</strong> The strictest filters (mutual gain &ge; 0.5 on both sides for &quot;even&quot;, your gain &ge; 1.0 + perception bump for &quot;sneaky&quot;) didn&rsquo;t catch anything.</div>';
+      html += '<div style="margin-bottom:8px"><strong style="color:var(--text)">No trades clearly clear the bar.</strong> The mutual filter (both sides gain &ge; 0.3 SGP) and the &quot;sneaky&quot; filter (your gain &ge; 1.0 plus a perception bump) didn&rsquo;t catch anything between these rosters.</div>';
       html += '<div style="margin-bottom:8px;color:var(--text)">Closest near-misses (your gain &ge; 0.3 SGP but not enough on the other side to qualify):</div>';
       html += '<div style="display:flex;flex-direction:column;gap:4px">';
       nearMiss.forEach(function(nm) {
@@ -27207,6 +27224,32 @@ function _tlV2RenderTopTargetsHtml(tA, nameA) {
   });
   var topN = candidates.slice(0, 5);
 
+  // Debug: dump the full feasibility distribution across every scanned league
+  // player so the thresholds (Likely≥0.65 / Possible≥0.40) can be calibrated
+  // against where scores actually land. Set window._debug=true.
+  if (window._debug && candidates.length && typeof console !== 'undefined') {
+    var _feasRows = candidates.map(function(c){
+      return {
+        player: c.name,
+        owner: c.oppName,
+        feas: +(c.feas != null ? c.feas : 0).toFixed(3),
+        tag: (c.feas >= 0.65 ? 'Likely available' : c.feas >= 0.40 ? 'Possible' : 'Tough get'),
+        rosSGP: +(c.rosSGP || 0).toFixed(2),
+        fitScore: +(c.score || 0).toFixed(2)
+      };
+    }).sort(function(a,b){ return b.feas - a.feas; });
+    var _likely = _feasRows.filter(function(r){ return r.feas >= 0.65; }).length;
+    var _poss   = _feasRows.filter(function(r){ return r.feas >= 0.40 && r.feas < 0.65; }).length;
+    var _tough  = _feasRows.length - _likely - _poss;
+    var _vals = _feasRows.map(function(r){ return r.feas; });
+    var _med  = _vals.length ? _vals[Math.floor(_vals.length/2)] : 0;
+    console.log('[Top Targets feasibility] '+_feasRows.length+' players scanned · '
+      + 'range '+(_vals.length?Math.min.apply(null,_vals):0)+'\u2013'+(_vals.length?Math.max.apply(null,_vals):0)
+      + ' · median '+_med
+      + ' · Likely '+_likely+' / Possible '+_poss+' / Tough '+_tough);
+    if (console.table) console.table(_feasRows); else console.log(_feasRows);
+  }
+
   if (topN.length === 0) {
     var emptyMsg = (catFilter === 'ALL')
       ? 'No candidates found. Make sure roster data has loaded.'
@@ -28356,6 +28399,27 @@ function _tlV2RenderBuild() {
       }
     }
     combos.sort(function(a,b){ return b.score - a.score; });
+
+    // Debug: dump the combo distribution so the gate (awayDelta≥−0.3,
+    // homeGain>0.05) can be calibrated — how many combos existed, how many
+    // passed, and the near-misses. Set window._debug=true.
+    if (window._debug && combos.length && typeof console !== 'undefined') {
+      var _passed = combos.filter(function(c){ return c.accepts && c.helpsHome; });
+      console.log('[Counter-offers] '+combos.length+' combos enumerated · '
+        + _passed.length+' passed gate (awayDelta\u2265\u22120.3 & homeGain>0.05) · '
+        + 'showing top 25 by score');
+      var _coRows = combos.slice(0, 25).map(function(c){
+        return {
+          send: c.players.map(function(p){ return p.name; }).join(' + '),
+          size: c.size,
+          homeGain: +c.homeGain.toFixed(2),
+          awayDelta: +c.awayDelta.toFixed(2),
+          gate: (c.accepts && c.helpsHome) ? 'PASS' : (!c.helpsHome ? 'no HOME gain' : 'AWAY rejects'),
+          score: +c.score.toFixed(2)
+        };
+      });
+      if (console.table) console.table(_coRows); else console.log(_coRows);
+    }
 
     // Take the top 3 by score (HOME gain, gated by acceptance). No longer
     // forcing one-of-each-size — a great 2-for-1 should outrank a mediocre
