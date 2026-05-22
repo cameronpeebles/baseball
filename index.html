@@ -16398,6 +16398,126 @@ function renderArchetypePage() {
 
 }
 
+// ── Dashboard Recommended moves ───────────────────────────────────────────
+// Crosses the team's weak-but-winnable categories (low rank + the cat matters)
+// with the most gettable players league-wide who'd address them. Reuses the
+// movability ranks, the standings correlations, and the feasibility model.
+function _dashPopulateRecMoves(teamId, teamName) {
+  var bodyEl = document.getElementById('dash-rec-moves');
+  if (!bodyEl) return;
+  var CATS = ['R','HR','RBI','SB','AVG','W','K','SVH3','ERA','WHIP'];
+
+  if (typeof _rosTradeSugMovability !== 'function' || typeof _tlV2GetTeamRoster !== 'function'
+      || typeof _tlV2PlayerCatSGP !== 'function' || typeof _tlV2PlayerFeasibility !== 'function') {
+    bodyEl.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:16px">Trade tools not ready.</div>';
+    return;
+  }
+
+  var mov, myW;
+  try { mov = _rosTradeSugMovability(teamId); } catch(e) { mov = null; }
+  try { myW = _tlV2CatWeights(teamId); } catch(e) { myW = null; }
+  if (!mov) { bodyEl.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:16px">Standings data not ready.</div>'; return; }
+
+  var corr = window._catStandingsCorr || {};
+  var n = 10;
+
+  // Score each cat for "worth fixing": weak rank AND it matters (leverage).
+  var catScored = CATS.map(function(c){
+    var m = mov[c] || {};
+    var rank = m.rank || null;
+    var lev = (corr[c] && corr[c].r != null) ? Math.abs(corr[c].r) : 0.6;
+    var weakness = rank ? (rank - 1) / (n - 1) : 0.5;
+    return { c:c, rank:rank, lev:lev, weakness:weakness, score: weakness * lev };
+  }).filter(function(o){ return o.rank && o.rank >= 6; })
+    .sort(function(a,b){ return b.score - a.score; });
+
+  if (!catScored.length) {
+    bodyEl.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:16px;background:var(--bg);border-radius:8px">No clear upgrade targets \u2014 you\u2019re not weak in any high-leverage category right now.</div>';
+    return;
+  }
+  var targetCats = catScored.slice(0, 3);
+
+  // League-wide acquirable pool with per-cat SGP (through MY weights) + owner + feasibility.
+  var pool = [];
+  Object.keys(S.teamInfo).forEach(function(tid){
+    if (tid === teamId) return;
+    var roster;
+    try { roster = _tlV2GetTeamRoster(tid, teamId) || []; } catch(e) { roster = []; }
+    roster.forEach(function(p){
+      var per; try { per = _tlV2PlayerCatSGP(p, myW && myW.catWeights) || {}; } catch(e) { per = {}; }
+      var feas; try { feas = _tlV2PlayerFeasibility(p, tid); } catch(e) { feas = 0.5; }
+      pool.push({ p:p, name:p.name, pos:p.pos, isHit:p.isHit, owner:tid,
+        ownerName: ((S.teamInfo[tid]||{}).shortName || (S.teamInfo[tid]||{}).name || tid),
+        per:per, feas:feas, rosSGP:p.rosSGP||0 });
+    });
+  });
+  if (typeof _tlV2AssignFeasPercentiles === 'function') _tlV2AssignFeasPercentiles(pool);
+
+  function fmtFeasTag(x){
+    var pct = x._feasPct != null ? x._feasPct : 0.5;
+    return (typeof _tlV2FeasibilityTag === 'function') ? _tlV2FeasibilityTag(pct, x.feas)
+      : { t:'', bg:'var(--bg)', tx:'var(--muted)' };
+  }
+  function reasonFor(o){
+    if (o.lev >= 0.72) return 'Priority cat \u2014 high standings leverage, and you can still climb it';
+    if (o.lev < 0.62)  return 'Lower priority \u2014 less correlated with standings; only if the price is right';
+    return 'Worth addressing \u2014 you\u2019re weak here and it moves the standings';
+  }
+  function ordSuf(x){ return x + (x===1?'st':x===2?'nd':x===3?'rd':'th'); }
+
+  var html = '';
+  targetCats.forEach(function(o, i){
+    var helpers = pool.filter(function(x){ return (x.per[o.c] || 0) > 0.05; })
+      .map(function(x){
+        var feasW = 0.4 + 0.6 * (x._feasPct != null ? x._feasPct : 0.5);
+        return { x:x, rankScore: (x.per[o.c] || 0) * feasW };
+      })
+      .sort(function(a,b){ return b.rankScore - a.rankScore; })
+      .slice(0, 2);
+    if (!helpers.length) return;
+
+    html += '<div style="'+(i>0?'border-top:0.5px solid var(--border);margin-top:12px;padding-top:12px;':'')+'">';
+    html += '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px">';
+    html += '<span style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.03em">'+o.c+'</span>';
+    html += '<span style="font-size:11px;color:var(--muted)">'+(o.rank?ordSuf(o.rank)+' in league':'')+'</span>';
+    html += '</div>';
+    html += '<div style="font-size:11px;color:var(--muted);margin-bottom:9px;line-height:1.4">'+reasonFor(o)+'</div>';
+    helpers.forEach(function(h){
+      var x = h.x, ft = fmtFeasTag(x);
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--bg);border-radius:8px;margin-bottom:5px">';
+      html += '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">'+_loEsc(x.name)+'</div>';
+      html += '<div style="font-size:10px;color:var(--muted);margin-top:1px">'+_loEsc(x.pos||'')+' \u00b7 '+_loEsc(x.ownerName)+' \u00b7 '+(x.rosSGP>=0?'+':'\u2212')+Math.abs(x.rosSGP).toFixed(2)+' ROS</div></div>';
+      html += '<span style="font-size:9px;font-weight:600;padding:2px 8px;border-radius:10px;background:'+ft.bg+';color:'+ft.tx+';white-space:nowrap">'+ft.t+'</span>';
+      html += '<button onclick="window._dashRecMovesBuild(\''+teamId+'\',\''+x.owner+'\',\''+encodeURIComponent(x.p.key)+'\')" style="padding:3px 10px;font-size:11px;border:0.5px solid var(--accent);background:rgba(45,90,61,0.06);color:var(--accent);border-radius:6px;cursor:pointer;font-family:inherit">Build</button>';
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+
+  if (!html) {
+    bodyEl.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:16px;background:var(--bg);border-radius:8px">No gettable upgrades found for your weak categories right now.</div>';
+    return;
+  }
+  html += '<div style="margin-top:12px;padding-top:11px;border-top:0.5px solid var(--border);font-size:10px;color:var(--muted);line-height:1.5">Targets a weakness only when it matters to the standings and is still winnable. Skips your locked strengths and lost causes. Feasibility = how likely the owner is to deal that player.</div>';
+  bodyEl.innerHTML = html;
+}
+
+// Build button: jump to Trade Lab with this owner as AWAY + player as the
+// target to acquire, triggering the counter-offer engine to propose what to send.
+window._dashRecMovesBuild = function(homeTid, ownerTid, encKey) {
+  try {
+    var key = decodeURIComponent(encKey);
+    window._tlV2 = window._tlV2 || {};
+    window._tlV2.teamA = homeTid || window._tlV2.teamA;
+    window._tlV2.teamB = ownerTid;
+    window._tlV2.sendA = [];
+    window._tlV2.sendB = [key];
+    window._tlV2.activeTab = 'build';
+    if (typeof showPage === 'function') showPage('tradelab');
+    if (typeof _tlV2RenderBuild === 'function') _tlV2RenderBuild();
+  } catch(e) { if (window._debug) console.warn('[rec-moves build]', e); }
+};
+
 // ── Dashboard Category trends populate ────────────────────────────────────
 // Renders per-category weekly sparklines for the given team with a recent-vs-
 // baseline trend arrow. Reads weekly rows from _joeStatsCache (same source as
@@ -16408,9 +16528,17 @@ function _dashPopulateCatTrends(teamName) {
   var CATS = ['R','HR','RBI','SB','AVG','W','K','SVH3','ERA','WHIP'];
   var LOW  = ['ERA','WHIP'];
 
+  // A genuinely played week has multiple non-zero counting stats (you score
+  // runs AND record strikeouts, etc.). Placeholder / future / unplayed weeks
+  // are all-zero or have a single stray value. Requiring ≥2 non-zero core
+  // stats rejects the empty rows that were slipping through (and producing the
+  // "20 weeks, all 0" readout) while keeping real low-output weeks.
   function hasAnyStats(row){
-    return (row.R||0)>0||(row.HR||0)>0||(row.RBI||0)>0||(row.SB||0)>0
-        ||(row.K||0)>0||(row.W||0)>0||(row.SV||0)>0||(row.SVH3||0)>0;
+    var core = [row.R, row.HR, row.RBI, row.SB, row.K, row.W,
+                (row.SVH3 != null ? row.SVH3 : row.SV)];
+    var nz = 0;
+    for (var i=0;i<core.length;i++){ if ((core[i]||0) > 0) nz++; }
+    return nz >= 2;
   }
   function readStat(row,cat){
     if(cat==='SVH3'){ var v=row.SVH3; if(v==null) v=row.SV; return v||0; }
@@ -16444,21 +16572,6 @@ function _dashPopulateCatTrends(teamName) {
     return;
   }
 
-  function spark(series, lo, hi, color){
-    var W=120, H=26, pad=3;
-    if (hi - lo < 1e-9) hi = lo + 1;
-    var pts = series.map(function(v,i){
-      var x = pad + (i/(series.length-1||1))*(W-2*pad);
-      var y = H-pad - ((v-lo)/(hi-lo))*(H-2*pad);
-      return x.toFixed(1)+','+y.toFixed(1);
-    }).join(' ');
-    var lastV = series[series.length-1];
-    var lastX = pad + (W-2*pad);
-    var lastY = H-pad - ((lastV-lo)/(hi-lo))*(H-2*pad);
-    return '<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="display:block">'
-      + '<polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>'
-      + '<circle cx="'+lastX.toFixed(1)+'" cy="'+lastY.toFixed(1)+'" r="2.2" fill="'+color+'"/></svg>';
-  }
   function trendOf(series, low){
     var n=series.length, recentN=Math.min(4,Math.max(1,Math.floor(n/2)));
     var recent=series.slice(-recentN).reduce(function(s,v){return s+v;},0)/recentN;
@@ -16470,28 +16583,43 @@ function _dashPopulateCatTrends(teamName) {
     return { rel:rel, better:better, flat:flat };
   }
 
-  var html='';
-  html+='<div style="display:grid;grid-template-columns:46px 1fr 130px 70px;gap:12px;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;padding:0 0 6px;border-bottom:0.5px solid var(--border);margin-bottom:4px">'
-    +'<div>Cat</div><div>Last wk</div><div style="text-align:center">Season trend</div><div style="text-align:right">Trend</div></div>';
-
-  CATS.forEach(function(c){
+  // Compact heat-strip: one cell per category, colored by trend direction, with
+  // a plain-English "heating up / cooling" headline. Far less real estate than
+  // 10 sparkline rows, and it surfaces only what's actually moving.
+  var cells = CATS.map(function(c){
     var series = rows.map(function(rw){ return readStat(rw,c); });
-    var lo = Math.min.apply(null, series), hi = Math.max.apply(null, series);
     var low = LOW.indexOf(c)!==-1;
     var t = trendOf(series, low);
-    var color = t.flat ? '#8a8a82' : (t.better ? '#3B8B47' : '#C0392B');
-    var arrow = t.flat ? '\u2192' : (t.rel>0 ? '\u2197' : '\u2198');
-    var pctTxt = (t.flat?'':(t.rel>0?'+':'\u2212')) + Math.round(Math.abs(t.rel)*100) + '%';
-    var lastV = series[series.length-1];
-    var lastStr = c==='AVG' ? lastV.toFixed(3).replace(/^0/,'') : ((c==='ERA'||c==='WHIP') ? lastV.toFixed(2) : Math.round(lastV));
-    html+='<div style="display:grid;grid-template-columns:46px 1fr 130px 70px;gap:12px;align-items:center;padding:6px 0">';
-    html+='<div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase">'+c+'</div>';
-    html+='<div style="font-size:12px;font-variant-numeric:tabular-nums;color:var(--text)">'+lastStr+'</div>';
-    html+='<div>'+spark(series, lo, hi, color)+'</div>';
-    html+='<div style="text-align:right;font-size:12px;font-weight:600;color:'+color+';font-variant-numeric:tabular-nums">'+arrow+' '+pctTxt+'</div>';
-    html+='</div>';
+    return { c:c, t:t, low:low };
   });
-  html+='<div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border);font-size:10px;color:var(--muted);font-style:italic">Trend = recent 4-week avg vs earlier baseline. Green = improving (for ERA/WHIP, falling is green); red = declining; gray = flat. \u00b7 '+rows.length+' weeks</div>';
+  var heating = cells.filter(function(x){ return !x.t.flat && x.t.better; }).map(function(x){ return x.c; });
+  var cooling = cells.filter(function(x){ return !x.t.flat && !x.t.better; }).map(function(x){ return x.c; });
+
+  var html = '';
+  // Headline
+  html += '<div style="font-size:12px;line-height:1.5;margin-bottom:10px">';
+  if (heating.length) html += '<span style="color:#3B8B47;font-weight:600">\u2191 Heating up:</span> <span style="color:var(--text)">'+heating.join(', ')+'</span>';
+  if (heating.length && cooling.length) html += ' <span style="color:var(--muted)">\u00b7</span> ';
+  if (cooling.length) html += '<span style="color:#C0392B;font-weight:600">\u2193 Cooling:</span> <span style="color:var(--text)">'+cooling.join(', ')+'</span>';
+  if (!heating.length && !cooling.length) html += '<span style="color:var(--muted)">Steady across the board \u2014 no category trending up or down lately.</span>';
+  html += '</div>';
+
+  // Heat-strip: one cell per cat
+  html += '<div style="display:flex;gap:3px">';
+  cells.forEach(function(x){
+    var t = x.t;
+    var bg = t.flat ? 'var(--bg)' : (t.better ? 'rgba(59,139,71,0.16)' : 'rgba(192,57,43,0.14)');
+    var fg = t.flat ? 'var(--muted)' : (t.better ? '#2d6e38' : '#a3322a');
+    var arrow = t.flat ? '' : (t.better ? ' \u2191' : ' \u2193');
+    var mag = Math.round(Math.abs(t.rel)*100);
+    var title = x.c + ': ' + (t.flat ? 'flat' : (t.better ? 'improving' : 'declining') + ' ' + mag + '%' + (x.low ? ' (lower is better)' : ''));
+    html += '<div title="'+title+'" style="flex:1;text-align:center;padding:7px 2px;background:'+bg+';border-radius:4px;cursor:default">';
+    html += '<div style="font-size:10px;font-weight:600;color:'+fg+';text-transform:uppercase;letter-spacing:0.02em">'+x.c+'</div>';
+    html += '<div style="font-size:10px;color:'+fg+';font-weight:500;margin-top:1px">'+(t.flat ? '\u2014' : mag+'%'+arrow)+'</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '<div style="margin-top:8px;font-size:10px;color:var(--muted);font-style:italic">Recent 4-week avg vs earlier baseline. Green = improving (ERA/WHIP: falling is green), red = declining. Hover a cell for detail. \u00b7 '+rows.length+' played weeks</div>';
   bodyEl.innerHTML = html;
 }
 
@@ -17891,6 +18019,18 @@ function assembleDashboard(teamId, el) {
     _rosSelectedTeam = _savedRosTeam;
   }
 
+  // ── Recommended moves card (sits BELOW Team Need) ─────────────────────────
+  // Diagnosis→action: crosses your weak-but-winnable categories (rank + how
+  // much the cat matters) with the most gettable players who'd fix them
+  // (feasibility-weighted). Populated after innerHTML by _dashPopulateRecMoves.
+  html += '<div class="card" style="margin-bottom:20px"><div class="card-body" style="padding:16px 18px">';
+  html += '<div style="margin-bottom:8px">';
+  html += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Recommended moves</div>';
+  html += '<div style="font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5">Your highest-leverage upgrades \u2014 the categories you can still win (weak but it matters) crossed with the players most likely to be available to fix them.</div>';
+  html += '</div>';
+  html += '<div id="dash-rec-moves" style="min-height:60px"></div>';
+  html += '</div></div>';
+
   // ── Category trends card (sits ABOVE Roster overview) ─────────────────────
   // Per-category weekly sparklines with a recent-vs-baseline trend arrow.
   // Adds the time dimension the dashboard otherwise lacks. Populated after
@@ -17898,7 +18038,7 @@ function assembleDashboard(teamId, el) {
   html += '<div class="card" style="margin-bottom:20px"><div class="card-body" style="padding:16px 18px">';
   html += '<div style="margin-bottom:14px">';
   html += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Category trends</div>';
-  html += '<div style="font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5">Your weekly output per category over the season. The arrow compares your recent 4-week average to your earlier baseline \u2014 are you heating up or fading in each cat?</div>';
+  html += '<div style="font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5">Which categories you\u2019re heating up or cooling in lately \u2014 recent 4-week average vs your earlier season baseline.</div>';
   html += '</div>';
   html += '<div id="dash-cat-trends" style="min-height:60px"></div>';
   html += '</div></div>';
@@ -18286,6 +18426,12 @@ function assembleDashboard(teamId, el) {
   if (typeof _dashPopulateCatTrends === 'function') {
     try { _dashPopulateCatTrends(teamName); }
     catch(e) { if (window._debug) console.warn('[dash cat-trends] populate failed:', e); }
+  }
+
+  // Populate Recommended moves (crosses weak-winnable cats with gettable targets).
+  if (typeof _dashPopulateRecMoves === 'function') {
+    try { _dashPopulateRecMoves(teamId, teamName); }
+    catch(e) { if (window._debug) console.warn('[dash rec-moves] populate failed:', e); }
   }
 
   // Render Z-scatter chart
