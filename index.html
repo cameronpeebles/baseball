@@ -27091,10 +27091,34 @@ function _tlV2PlayerFeasibility(p, oppTid) {
     return Math.max(0, Math.min(1, fSum / wSum));
   } catch(e) { return 0.5; }
 }
-function _tlV2FeasibilityTag(f) {
-  if (f >= 0.65) return { t:'Likely available', bg:'#EAF3DE', tx:'#3B6D11' };
-  if (f >= 0.40) return { t:'Possible',         bg:'#FAEEDA', tx:'#854F0B' };
-  return                 { t:'Tough get',        bg:'#FCEBEB', tx:'#A32D2D' };
+// Feasibility tag is now POOL-RELATIVE: a player is classified against the
+// distribution of others of his TYPE (hitter vs pitcher), because hitting
+// categories are more tightly bunched in this league than pitching, so raw
+// feasibility scores sit systematically lower for hitters. Percentile cuts
+// auto-calibrate to each pool. A raw floor prevents a fully locked-down pool
+// from falsely promoting its best player to "Likely".
+//   pct = this player's percentile within his pool (0..1, 1 = most gettable)
+//   raw = his raw feasibility score (for the floor)
+function _tlV2FeasibilityTag(pct, raw) {
+  var LIKELY_FLOOR = 0.35; // never call something "Likely" below this raw score
+  if (pct >= 0.75 && (raw == null || raw >= LIKELY_FLOOR)) return { t:'Likely available', bg:'#EAF3DE', tx:'#3B6D11' };
+  if (pct >= 0.40) return { t:'Possible',  bg:'#FAEEDA', tx:'#854F0B' };
+  return                 { t:'Tough get', bg:'#FCEBEB', tx:'#A32D2D' };
+}
+// Compute each candidate's pool-relative percentile, mutating c._feasPct.
+// Pool = isHit ? 'hit' : 'pit'. Percentile = fraction of same-pool players
+// with feasibility <= this one (so the top scorer ≈ 1.0).
+function _tlV2AssignFeasPercentiles(cands) {
+  ['hit','pit'].forEach(function(pool){
+    var grp = cands.filter(function(c){ return (pool === 'hit') === !!c.isHit; });
+    var n = grp.length;
+    if (!n) return;
+    var sorted = grp.slice().sort(function(a,b){ return (a.feas||0) - (b.feas||0); });
+    sorted.forEach(function(c, i){
+      // below/(n-1) so the top of the pool reaches 1.0; single-member pool = 1.
+      c._feasPct = (n === 1) ? 1 : (i / (n - 1));
+    });
+  });
 }
 function _tlV2RenderTopTargetsHtml(tA, nameA) {
   var catFilter = window._tlV2TargetsCatFilter || 'ALL';
@@ -27211,6 +27235,10 @@ function _tlV2RenderTopTargetsHtml(tA, nameA) {
     });
   });
 
+  // Assign each candidate's pool-relative feasibility percentile (hitters vs
+  // pitchers ranked separately) so tags reflect "gettable for his type".
+  _tlV2AssignFeasPercentiles(candidates);
+
   // Sort: Best fit = raw score; Most realistic = score blended with feasibility
   // (feasibility scales a positive fit between 40% and 100%, so a gettable
   // good-fit outranks an untouchable great-fit without fully burying it).
@@ -27230,24 +27258,28 @@ function _tlV2RenderTopTargetsHtml(tA, nameA) {
   // against where scores actually land. Set window._debug=true.
   if (window._debug && candidates.length && typeof console !== 'undefined') {
     var _feasRows = candidates.map(function(c){
+      var tg = _tlV2FeasibilityTag(c._feasPct, c.feas);
       return {
         player: c.name,
         owner: c.oppName,
+        pool: c.isHit ? 'HIT' : 'PIT',
         feas: +(c.feas != null ? c.feas : 0).toFixed(3),
-        tag: (c.feas >= 0.65 ? 'Likely available' : c.feas >= 0.40 ? 'Possible' : 'Tough get'),
+        pct: +((c._feasPct != null ? c._feasPct : 0)).toFixed(2),
+        tag: tg.t,
         rosSGP: +(c.rosSGP || 0).toFixed(2),
         fitScore: +(c.score || 0).toFixed(2)
       };
     }).sort(function(a,b){ return b.feas - a.feas; });
-    var _likely = _feasRows.filter(function(r){ return r.feas >= 0.65; }).length;
-    var _poss   = _feasRows.filter(function(r){ return r.feas >= 0.40 && r.feas < 0.65; }).length;
-    var _tough  = _feasRows.length - _likely - _poss;
-    var _vals = _feasRows.map(function(r){ return r.feas; });
-    var _med  = _vals.length ? _vals[Math.floor(_vals.length/2)] : 0;
-    console.log('[Top Targets feasibility] '+_feasRows.length+' players scanned · '
-      + 'range '+(_vals.length?Math.min.apply(null,_vals):0)+'\u2013'+(_vals.length?Math.max.apply(null,_vals):0)
-      + ' · median '+_med
-      + ' · Likely '+_likely+' / Possible '+_poss+' / Tough '+_tough);
+    function _poolStats(pool){
+      var g = _feasRows.filter(function(r){ return r.pool === pool; });
+      if (!g.length) return pool+': none';
+      var vs = g.map(function(r){ return r.feas; });
+      var L = g.filter(function(r){ return r.tag === 'Likely available'; }).length;
+      var P = g.filter(function(r){ return r.tag === 'Possible'; }).length;
+      var T = g.length - L - P;
+      return pool+': '+g.length+' players, feas '+Math.min.apply(null,vs)+'\u2013'+Math.max.apply(null,vs)+', Likely '+L+'/Poss '+P+'/Tough '+T;
+    }
+    console.log('[Top Targets feasibility] pool-relative tags · ' + _poolStats('HIT') + ' · ' + _poolStats('PIT'));
     if (console.table) console.table(_feasRows); else console.log(_feasRows);
   }
 
@@ -27291,7 +27323,7 @@ function _tlV2RenderTopTargetsHtml(tA, nameA) {
     }
     h += '</div>';
     // Feasibility tag
-    var _ft = _tlV2FeasibilityTag(c.feas);
+    var _ft = _tlV2FeasibilityTag(c._feasPct, c.feas);
     h += '<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:10px;background:'+_ft.bg+';color:'+_ft.tx+';white-space:nowrap;letter-spacing:0.02em">'+_ft.t+'</span>';
     // Need-wtd value
     h += '<div style="text-align:right;min-width:60px">';
