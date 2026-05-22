@@ -3394,11 +3394,12 @@ td.neg { color: #c0392b; font-weight: 500; }
       <div class="card" style="margin-top:16px;max-width:900px">
         <div class="card-header"><span class="card-title">Trade Lab &mdash; what it does</span></div>
         <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
-          <p>Trade Lab evaluates trades between two teams &mdash; <strong>HOME</strong> (the team whose perspective you&rsquo;re analyzing from) and <strong>AWAY</strong> (the trade partner). Pick the two teams at the top, then build a proposed deal by selecting players from each side. The page has four sections, each answering a different question.</p>
+          <p>Trade Lab evaluates trades between two teams &mdash; <strong>HOME</strong> (the team whose perspective you&rsquo;re analyzing from) and <strong>AWAY</strong> (the trade partner). Pick the two teams at the top, then build a proposed deal by selecting players from each side. A <strong>&#8645; Swap sides</strong> button between the two pickers flips HOME and AWAY while keeping the same players in the deal &mdash; so you can instantly re-view any trade from the partner&rsquo;s perspective and see whether they&rsquo;d actually accept it (the Net SGP recomputes through their needs). The page has several sections, each answering a different question.</p>
           <ul style="margin:10px 0;padding-left:20px;line-height:1.9">
             <li><strong>Trade Fit</strong> &mdash; should these two teams even be talking? Where do their needs line up?</li>
-            <li><strong>Suggested Trades</strong> &mdash; concrete deals the engine thinks make sense.</li>
-            <li><strong>Top Targets across the League</strong> &mdash; best players to pursue for HOME&rsquo;s weak spots, league-wide.</li>
+            <li><strong>Suggested Trades</strong> &mdash; concrete 1-for-1 deals between HOME and AWAY where both teams gain.</li>
+            <li><strong>Top Targets across the League</strong> &mdash; best players to pursue for HOME&rsquo;s weak spots, league-wide, now weighted by how likely each owner is to deal.</li>
+            <li><strong>Counter-offers</strong> &mdash; when you&rsquo;ve picked an AWAY player to acquire but no HOME players yet, the engine proposes the best packages to send.</li>
             <li><strong>Trade Verification</strong> &mdash; the detailed breakdown of whatever deal you&rsquo;ve built.</li>
           </ul>
         </div>
@@ -3421,10 +3422,20 @@ td.neg { color: #c0392b; font-weight: 500; }
       </div>
 
       <div class="card" style="margin-top:16px;max-width:900px">
-        <div class="card-header"><span class="card-title">Suggested Trades &amp; Top Targets</span></div>
+        <div class="card-header"><span class="card-title">Suggested Trades, Top Targets &amp; Counter-offers</span></div>
         <div class="card-body" style="padding:20px;font-size:13px;line-height:1.7">
-          <p><strong>Suggested Trades</strong> proposes deals between HOME and AWAY that improve HOME&rsquo;s need-weighted SGP while remaining plausible for AWAY. Each suggestion shows the players involved and the net SGP swing.</p>
-          <p style="margin-top:10px"><strong>Top Targets across the League</strong> ignores AWAY and scans every team for the players who would most help HOME&rsquo;s weakest categories &mdash; useful for deciding who to pursue before you&rsquo;ve settled on a partner.</p>
+          <div style="font-weight:600;font-size:13px;margin-bottom:6px">Suggested Trades with AWAY</div>
+          <p>Scans for clean 1-for-1 swaps between HOME and AWAY where <strong>both teams gain</strong> &mdash; each side must improve its need-weighted SGP by at least a small margin (about +0.3). It no longer requires the two gains to be symmetric, so a deal that&rsquo;s great for you and merely fine for them now surfaces (it used to be hidden). If you see &ldquo;no clean 1-for-1 swaps,&rdquo; these two rosters genuinely don&rsquo;t have a mutually-beneficial straight swap &mdash; try a 2-for-1 by hand or open the Suggest tab for other partners.</p>
+
+          <div style="font-weight:600;font-size:13px;margin:16px 0 6px">Top Targets across the League</div>
+          <p>Ignores AWAY and scans every team for the players who would most help HOME&rsquo;s weak categories. Two controls shape the list:</p>
+          <ul style="margin:8px 0;padding-left:20px;line-height:1.9">
+            <li><strong>Best fit vs Most realistic</strong> toggle &mdash; <em>Best fit</em> ranks purely by need-weighted value to HOME; <em>Most realistic</em> blends in feasibility, so a slightly-lower-fit player whose owner would actually trade him outranks an untouchable star.</li>
+            <li><strong>Feasibility tag</strong> on every row (<span style="color:#3B6D11;font-weight:600">Likely available</span> / <span style="color:#854F0B;font-weight:600">Possible</span> / <span style="color:#A32D2D;font-weight:600">Tough get</span>) &mdash; based on how much standings cushion the owning team has in that player&rsquo;s strong categories. Lots of cushion means they can deal him without losing points; if he&rsquo;s their razor-thin edge in a tight category, they won&rsquo;t move him.</li>
+          </ul>
+
+          <div style="font-weight:600;font-size:13px;margin:16px 0 6px">Counter-offers</div>
+          <p>When you&rsquo;ve selected an AWAY player to acquire but haven&rsquo;t picked anyone from HOME, the engine proposes packages to send back. It&rsquo;s ranked by <strong>your net SGP gain</strong> &mdash; the best deal <em>for you</em> &mdash; with fairness applied as an acceptance gate: only packages AWAY would roughly break even on (or better) are surfaced, and each shows an <strong>AWAY verdict</strong> pill so you can see they&rsquo;d say yes. Multi-player packages compete on equal footing, so a strong 2-for-1 ranks above a mediocre 1-for-1 rather than being forced into separate slots. Packages prefer sending players from categories where HOME has surplus, so you&rsquo;re not shipping away your only edge in a tight cat. Tags: <strong>BEST FOR YOU</strong> (highest gain), <strong>THEY LIKE IT</strong> (AWAY also gains, easiest to close), <strong>CLEANEST</strong> (fewest players).</p>
         </div>
       </div>
 
@@ -3449,11 +3460,14 @@ td.neg { color: #c0392b; font-weight: 500; }
               <strong>&Delta; weekly cat</strong> &mdash; the change in HOME&rsquo;s <em>per-week</em> output if the trade goes through. Counting stats (R, HR, RBI, SB, W, K, SVH3) are the rest-of-season total change spread across remaining weeks. Rate stats (AVG, ERA, WHIP) are a roster-weighted blend &mdash; the incoming/outgoing player&rsquo;s rate folded into the team&rsquo;s composite by volume (AB or IP). Green = better, red = worse; ERA/WHIP flip since lower is better.
             </div>
             <div style="padding:10px 12px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.7">
-              <strong>&Delta; win %</strong> &mdash; what that per-week shift does to HOME&rsquo;s probability of winning that <em>single category</em> in a representative week, modeled against a league-average opponent. Each team&rsquo;s weekly output is treated as a normal distribution (observed mean &amp; variance); the win probability is the chance HOME&rsquo;s output beats the opponent&rsquo;s, and the column shows the before&rarr;after change. With only a few played weeks, each team&rsquo;s variance estimate is shrunk toward the league-average variance for that category (empirical Bayes) so an early-season fluke doesn&rsquo;t produce a wild number &mdash; the weighting trusts the team&rsquo;s own variance more as the season accumulates. High-variance counting stats (W, K) move only a few points even on a real edge &mdash; that&rsquo;s honest, since any single week is noisy; the trade&rsquo;s cumulative value lives in the Net SGP and &Delta; weekly cat columns. It is <strong>per category, not the whole matchup</strong> &mdash; the numbers don&rsquo;t sum to a matchup win probability, because winning a week depends on the joint outcome across all 10 categories.
+              <strong>&Delta; win %</strong> &mdash; what that per-week shift does to HOME&rsquo;s probability of winning that <em>single category</em> in a representative week, modeled against a league-average opponent. Each team&rsquo;s weekly output is treated as a normal distribution (observed mean &amp; variance); the win probability is the chance HOME&rsquo;s output beats the opponent&rsquo;s, and the column shows the before&rarr;after change. With only a few played weeks, each team&rsquo;s variance estimate is shrunk toward the league-average variance for that category (empirical Bayes) so an early-season fluke doesn&rsquo;t produce a wild number &mdash; the weighting trusts the team&rsquo;s own variance more as the season accumulates. Small shifts are shown to one decimal (e.g. +2.6%) rather than rounded to 0%, so a real-but-modest move in a noisy category isn&rsquo;t hidden. High-variance counting stats (W, K) still move only a little even on a real edge &mdash; that&rsquo;s honest, since any single week is noisy; the trade&rsquo;s cumulative value lives in the Net SGP and &Delta; weekly cat columns. It is <strong>per category, not the whole matchup</strong> &mdash; the numbers don&rsquo;t sum to a matchup win probability, because winning a week depends on the joint outcome across all 10 categories.
+            </div>
+            <div style="padding:10px 12px;background:var(--bg);border-radius:8px;font-size:12px;line-height:1.7">
+              <strong>Outlook</strong> &mdash; your category <em>tier</em> versus the league spread, shown before&rarr;after the trade, using the same bands as the H2H Per-category outlook: <span style="color:#0F6E56;font-weight:600">Dominant</span>, <span style="color:#1e6b3a;font-weight:600">Favored</span>, <span style="color:#5a594f;font-weight:600">Coinflip</span>, <span style="color:#a05a1f;font-weight:600">Underdog</span>, <span style="color:#c0392b;font-weight:600">Dominated</span>. Only categories that <em>cross a tier</em> are highlighted; unchanged ones are dimmed. The prized shift is <strong>Coinflip &rarr; Favored</strong> &mdash; a week you turn from a likely loss into a likely win. This is the categorical companion to &Delta; win %: where &Delta; win % gives the continuous probability move, Outlook tells you whether that move was enough to cross a line that matters. A <strong>~</strong> marks a fragile flip in a tightly-bunched category, where weekly variance can undo it.
             </div>
           </div>
 
-          <div style="font-size:12px;padding:10px 12px;background:var(--accent-light);border-radius:6px;border:1px solid var(--accent);margin-top:14px"><strong>How to read it together:</strong> Net SGP tells you the standings value. &Delta; weekly cat tells you the raw production change. &Delta; win % tells you whether that change is big enough to matter against typical competition. Cross-reference with the Category needs tiles in Trade Fit &mdash; a green &Delta; win % in a category where HOME carries a &times;1.4&ndash;1.8 multiplier is the most valuable kind of gain.</div>
+          <div style="font-size:12px;padding:10px 12px;background:var(--accent-light);border-radius:6px;border:1px solid var(--accent);margin-top:14px"><strong>How to read it together:</strong> Net SGP tells you the standings value. &Delta; weekly cat tells you the raw production change. &Delta; win % tells you whether that change is big enough to matter against typical competition. <strong>Outlook</strong> tells you whether it&rsquo;s enough to cross a tier &mdash; the categories flipping Coinflip&rarr;Favored are the weeks you actually turn from losing to winning. Cross-reference with the Category needs tiles in Trade Fit &mdash; a tier flip in a category where HOME carries a &times;1.4&ndash;1.8 multiplier is the most valuable kind of gain.</div>
 
           <div style="font-size:12px;padding:10px 12px;background:var(--bg);border-radius:6px;border:0.5px solid var(--border);margin-top:10px"><strong>Where variance fits in:</strong> Week-to-week volatility is used in <em>only</em> the &Delta; win % column, and only from HOME&rsquo;s own weekly history (the opponent is a synthetic league-average team). The Net SGP verdict, Drop/Add SGP, and &Delta; weekly cat are all variance-blind &mdash; they value projected totals regardless of how steady or swingy a category is. That&rsquo;s why a huge edge in a noisy cat like K can read +0% in &Delta; win % while still showing a strong Net SGP. To see each category&rsquo;s volatility for a team directly, use the <strong>Week-to-week category variance</strong> card on the H2H Predictor page &mdash; wide scatter there is exactly what flattens the &Delta; win % move here.</div>
 
@@ -27415,6 +27429,7 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
     '<em>Net SGP</em> is Add minus Drop. ' +
     '<em>\u0394 weekly cat</em> is the per-week change in HOME\u2019s output if the trade is executed &mdash; counting stats divided across remaining weeks, rate stats blended against current roster volume. ' +
     '<em>\u0394 win %</em> translates that per-week shift into a change in your probability of winning that category in a representative week, modeled vs a league-average opponent using each team\u2019s observed weekly mean and variance. With few played weeks the variance estimate is shrunk toward the league average for that category, so an early-season fluke doesn\u2019t distort the number. High-variance counting stats (W, K) move only a few points even on a real edge \u2014 any single week is noisy, so the trade\u2019s cumulative value shows up in Net SGP and \u0394 weekly cat instead. It is per category, not the whole matchup. ' +
+    '<em>Outlook</em> shows your category tier (vs the league spread) before \u2192 after the trade, using the same Dominant / Favored / Coinflip / Underdog / Dominated bands as the H2H Per-category outlook. Only categories that cross a tier are highlighted; the prized flips are Coinflip \u2192 Favored (a week you turn from a loss into a win). A <span style="font-style:normal">~</span> marks a fragile flip in a tightly-bunched category, where weekly variance can undo it. ' +
     '<strong>Net per-cat impact radar:</strong> the Net SGP column visualized. Larger green wedges = bigger gains; red = losses.'
   );
 
@@ -27560,7 +27575,7 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
       // be suppressed below by the scale guard).
       _teamEmp = _cand;
       // League average: mean & std per cat across all teams.
-      _leagueAvg = { mean: {}, std: {} };
+      _leagueAvg = { mean: {}, std: {}, min: {}, max: {} };
       var _CATS = ['R','HR','RBI','SB','AVG','W','K','SVH3','ERA','WHIP'];
       _CATS.forEach(function(cat){
         var ms = [], ss = [];
@@ -27573,7 +27588,11 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
           if (em[cat] != null && isFinite(em[cat])) ms.push(em[cat]);
           if (em._std && em._std[cat] != null && isFinite(em._std[cat])) ss.push(em._std[cat]);
         });
-        if (ms.length) _leagueAvg.mean[cat] = ms.reduce(function(s,v){return s+v;}, 0) / ms.length;
+        if (ms.length) {
+          _leagueAvg.mean[cat] = ms.reduce(function(s,v){return s+v;}, 0) / ms.length;
+          _leagueAvg.min[cat]  = Math.min.apply(null, ms);
+          _leagueAvg.max[cat]  = Math.max.apply(null, ms);
+        }
         if (ss.length) _leagueAvg.std[cat]  = ss.reduce(function(s,v){return s+v;}, 0) / ss.length;
       });
     }
@@ -27743,7 +27762,39 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
   html += '<th style="text-align:right;padding:3px 4px;font-weight:500">Net SGP</th>';
   html += '<th style="text-align:right;padding:3px 4px;font-weight:500">\u0394 weekly cat</th>';
   html += '<th style="text-align:right;padding:3px 4px;font-weight:500">\u0394 win %</th>';
+  html += '<th style="text-align:left;padding:3px 4px 3px 8px;font-weight:500;border-left:0.5px solid var(--border)">Outlook</th>';
   html += '</tr></thead><tbody>';
+  // ── Outlook tier shift (matches the H2H Per-category outlook) ─────────────
+  // Same margin-based tier the H2H page uses: marginPct = (selfMean − lgAvg) /
+  // (lgMax − lgMin) × 100, sign-flipped for ERA/WHIP. Computed for the CURRENT
+  // mean and the POST-TRADE mean (current + weeklyDelta) so the table can show
+  // whether the trade flips a category's tier (e.g. Coinflip→Favored).
+  function _outlookTierOf(marginPct) {
+    if (marginPct >=  25) return { k:'Dominant',  bg:'rgba(29,158,117,0.20)', tx:'#0F6E56', rank:5 };
+    if (marginPct >=  10) return { k:'Favored',   bg:'rgba(29,158,117,0.10)', tx:'#1e6b3a', rank:4 };
+    if (marginPct >= -10) return { k:'Coinflip',  bg:'rgba(150,150,150,0.18)', tx:'#5a594f', rank:3 };
+    if (marginPct >= -25) return { k:'Underdog',  bg:'rgba(186,117,23,0.16)', tx:'#a05a1f', rank:2 };
+    return                       { k:'Dominated', bg:'rgba(192,57,43,0.16)', tx:'#c0392b', rank:1 };
+  }
+  function outlookShift(c) {
+    if (!_teamEmp || !_leagueAvg || !_leagueAvg.mean) return null;
+    var selfVal = _teamEmp[c];
+    var avgVal  = _leagueAvg.mean[c];
+    var mn = _leagueAvg.min ? _leagueAvg.min[c] : null;
+    var mx = _leagueAvg.max ? _leagueAvg.max[c] : null;
+    if (selfVal == null || avgVal == null || mn == null || mx == null) return null;
+    var range = (mx - mn) || 1;
+    var isLow = (c === 'ERA' || c === 'WHIP');
+    var dv = weeklyDelta(c) || 0;
+    function marginOf(v){ var raw = v - avgVal; if (isLow) raw = -raw; return (raw / range) * 100; }
+    var before = _outlookTierOf(marginOf(selfVal));
+    var after  = _outlookTierOf(marginOf(selfVal + dv));
+    // Fragile: league tightly bunched in this cat → a flip rests on a thin
+    // margin that weekly variance can undo.
+    var fragile = (Math.abs(avgVal) > 1e-9) && (range / Math.abs(avgVal) < 0.25);
+    return { before: before, after: after, changed: before.rank !== after.rank, fragile: fragile };
+  }
+
   rowsToShow.forEach(function(c){
     var dStat = dropStats[c];
     var aStat = addStats[c];
@@ -27761,6 +27812,23 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
     html += '<td style="text-align:right;padding:5px 4px;color:'+deltaColor(c, _dv)+';font-weight:500;font-variant-numeric:tabular-nums">'+fmtDelta(c, _dv)+'</td>';
     var _dp = winPctDelta(c);
     html += '<td style="text-align:right;padding:5px 4px;color:'+winPctColor(_dp)+';font-weight:500;font-variant-numeric:tabular-nums">'+fmtWinPct(_dp)+'</td>';
+    // Outlook tier shift — show before→after only when the tier changes; else
+    // dim the current tier. Reuses the H2H margin-based classification.
+    var _os = outlookShift(c);
+    html += '<td style="text-align:left;padding:5px 4px 5px 8px;border-left:0.5px solid var(--border);white-space:nowrap">';
+    if (!_os) {
+      html += '<span style="color:var(--muted);font-size:10px">\u2014</span>';
+    } else if (_os.changed) {
+      var _ac = (_os.after.rank > _os.before.rank) ? '#1e6b3a' : '#c0392b';
+      var _ar = (_os.after.rank > _os.before.rank) ? '\u2191' : '\u2193';
+      html += '<span style="font-size:9px;font-weight:600;padding:1px 6px;border-radius:8px;background:'+_os.before.bg+';color:'+_os.before.tx+'">'+_os.before.k+'</span>';
+      html += ' <span style="color:'+_ac+';font-weight:600">'+_ar+'</span> ';
+      html += '<span style="font-size:9px;font-weight:600;padding:1px 6px;border-radius:8px;background:'+_os.after.bg+';color:'+_os.after.tx+'">'+_os.after.k+'</span>';
+      if (_os.fragile) html += ' <span title="League is tightly bunched here \u2014 this flip rests on a thin margin" style="color:var(--muted);font-size:10px;cursor:help">~</span>';
+    } else {
+      html += '<span style="font-size:9px;font-weight:500;padding:1px 6px;border-radius:8px;color:'+_os.before.tx+';opacity:0.55">'+_os.before.k+'</span>';
+    }
+    html += '</td>';
     html += '</tr>';
   });
   html += '</tbody></table>';
