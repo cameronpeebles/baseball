@@ -11745,8 +11745,10 @@ function predictH2H(a, b) {
       (t.rows || []).forEach(function(row){
         var fc = row.fixedCells || [];
         var teamName = '';
+        var teamId = null;
         for (var i = 0; i < fc.length; i++) {
           if (fc[i] && fc[i].teamId) {
+            teamId = fc[i].teamId;
             var ti = teamInfo[fc[i].teamId] || {};
             teamName = ti.name || fc[i].content || '';
             if (teamName) break;
@@ -11774,6 +11776,7 @@ function predictH2H(a, b) {
         // different layout, this will need adjusting.
         rows.push({
           team: teamName,
+          teamId: teamId,
           week: period,
           R:    readCell(cells, 'R'),
           HR:   readCell(cells, 'HR'),
@@ -16522,7 +16525,7 @@ window._dashRecMovesBuild = function(homeTid, ownerTid, encKey) {
 // Renders per-category weekly sparklines for the given team with a recent-vs-
 // baseline trend arrow. Reads weekly rows from _joeStatsCache (same source as
 // the H2H variance card). Self-heals if the cache is cold.
-function _dashPopulateCatTrends(teamName) {
+function _dashPopulateCatTrends(teamName, teamId) {
   var bodyEl = document.getElementById('dash-cat-trends');
   if (!bodyEl) return;
   var CATS = ['R','HR','RBI','SB','AVG','W','K','SVH3','ERA','WHIP'];
@@ -16552,7 +16555,7 @@ function _dashPopulateCatTrends(teamName) {
       window._dashTrendsPreloading = true;
       window._h2hPredictTeam.preload().then(function(){
         window._dashTrendsPreloading = false;
-        _dashPopulateCatTrends(teamName);
+        _dashPopulateCatTrends(teamName, teamId);
       }).catch(function(){ window._dashTrendsPreloading = false; });
     }
     bodyEl.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px">Loading weekly data\u2026</div>';
@@ -16560,12 +16563,28 @@ function _dashPopulateCatTrends(teamName) {
   }
 
   var normTarget = (typeof _normPlayerKey === 'function') ? _normPlayerKey(teamName||'') : (teamName||'').toLowerCase();
-  var rows = stats.filter(function(rw){
-    if (!hasAnyStats(rw)) return false;
+  // Match this team's weekly rows. Try exact name, then normalized name, then
+  // (if the cache rows carry a teamId) match on that. Collect both the matched
+  // set and the played subset so we can diagnose mismatches.
+  var matchedAll = stats.filter(function(rw){
+    if (teamId && rw.teamId && rw.teamId === teamId) return true;
     if (rw.team === teamName) return true;
     var nk = (typeof _normPlayerKey === 'function') ? _normPlayerKey(rw.team||'') : (rw.team||'').toLowerCase();
-    return nk === normTarget;
-  }).sort(function(a,b){ return (a.week||0) - (b.week||0); });
+    if (nk === normTarget) return true;
+    return false;
+  });
+  var rows = matchedAll.filter(hasAnyStats).sort(function(a,b){ return (a.week||0) - (b.week||0); });
+
+  if (window._debug && typeof console !== 'undefined') {
+    var sampleTeams = {};
+    stats.forEach(function(rw){ sampleTeams[rw.team] = (sampleTeams[rw.team]||0)+1; });
+    console.log('[cat-trends] teamName="'+teamName+'" normTarget="'+normTarget+'" · '
+      + 'cache rows='+stats.length+' · matched(name)='+matchedAll.length+' · played(>=2 stats)='+rows.length);
+    console.log('[cat-trends] team keys in cache:', sampleTeams);
+    if (matchedAll.length && !rows.length) {
+      console.log('[cat-trends] matched rows but none passed hasAnyStats — sample:', matchedAll.slice(0,3));
+    }
+  }
 
   if (rows.length < 3) {
     bodyEl.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px;background:var(--bg);border-radius:8px">Not enough played weeks yet to show category trends.</div>';
@@ -17562,14 +17581,6 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   h += '<div style="font-size:12px;color:var(--muted);line-height:1.6">'+trendDesc+'</div></div>';
   h += '</div></div>';
 
-  // Row 4: Recommended Action
-  h += '<div><div style="'+lb+';margin-bottom:10px">Recommended action</div>';
-  h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">';
-  h += '<div style="'+mc+'"><div style="'+lb+';color:#1e6b3a">Primary move</div><div style="font-size:15px;font-weight:500;margin:5px 0 4px">'+primaryMove+'</div><div style="font-size:11px;color:var(--muted)">'+primaryReason+'</div></div>';
-  h += '<div style="'+mc+'"><div style="'+lb+';color:#c0392b">Do not do</div><div style="font-size:15px;font-weight:500;margin:5px 0 4px">'+doNotDo+'</div><div style="font-size:11px;color:var(--muted)">'+doNotReason+'</div></div>';
-  h += '<div style="'+mc+'"><div style="'+lb+';color:#185fa5">Best upgrade type</div><div style="font-size:15px;font-weight:500;margin:5px 0 4px">'+upgradeType+'</div><div style="font-size:11px;color:var(--muted)">'+upgradeReason+'</div></div>';
-  h += '</div></div>';
-
   requestAnimationFrame(function(){
     var el=document.getElementById(scatterCid);
     if(!el||!S.zData||!S.zData.length)return;
@@ -18406,7 +18417,7 @@ function assembleDashboard(teamId, el) {
 
   // Populate Category trends sparklines (reads _joeStatsCache for this team).
   if (typeof _dashPopulateCatTrends === 'function') {
-    try { _dashPopulateCatTrends(teamName); }
+    try { _dashPopulateCatTrends(teamName, teamId); }
     catch(e) { if (window._debug) console.warn('[dash cat-trends] populate failed:', e); }
   }
 
