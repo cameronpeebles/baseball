@@ -17504,25 +17504,7 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   // Row 3: Why + right column
   h += '<div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:12px">';
   // Why section
-  h += '<div><div style="'+lb+';margin-bottom:10px">Why this team is labeled this way</div>';
-  // When ROS data is available, the upper "Pairwise gaps" section already shows fwar-rating,
-  // fwar-ros, and rating-ros tiles. Skip the redundant Performance gap / Combined key tiles
-  // here and rely on the single-line explanation paragraph instead.
-  if (rosPct == null) {
-    h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px">';
-    var gapStr = (gap>=0?'+':'')+Math.round(gap);
-    var gapCol = gap>0?'#1e6b3a':gap<0?'#c0392b':'#5f5e5a';
-    h += '<div style="'+mc+';text-align:center"><div style="'+lb+'">Performance gap</div><div style="font-size:20px;font-weight:500;color:'+gapCol+';margin:5px 0 2px">'+gapStr+'</div><div style="font-size:10px;color:var(--muted)">fWAR% minus Rating%</div></div>';
-    h += '<div style="'+mc+';text-align:center"><div style="'+lb+'">Combined key</div><div style="font-size:12px;font-weight:500;color:'+jc+';margin:5px 0 2px">'+arcKey+'</div><div style="font-size:10px;color:var(--muted)">Production / Talent / Luck</div></div>';
-    h += '<div style="'+mc+';text-align:center"><div style="'+lb+'">Luck tier</div><div style="font-size:14px;font-weight:500;color:'+jc+';margin:5px 0 2px">'+jBucket+'</div><div style="font-size:10px;color:var(--muted)">'+(jBucket==='Unlucky'?'Schedule hurting results':jBucket==='Lucky'?'Results may be inflated':'Schedule is neutral')+'</div></div>';
-    h += '</div>';
-  }
-  // Explanation paragraph — use the cascade's arcReason when ROS is available
-  // (already context-aware), fall back to the legacy buildDiagExplanation otherwise.
-  var expText = (rosPct != null && arcReason)
-    ? arcReason
-    : buildDiagExplanation(fBucket, lBucket, jBucket, gap, dir);
-  h += '<div style="background:'+trendBg+';border-radius:var(--radius);padding:10px 12px;font-size:12px;color:'+trendCol+';line-height:1.6;margin-bottom:12px">'+expText+'</div>';
+  h += '<div>';
 
   // Positional group breakdown
   h += '<div style="'+lb+';margin-bottom:8px">Positional group breakdown</div>';
