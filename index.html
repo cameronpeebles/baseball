@@ -7470,8 +7470,13 @@ function _rosTradeSugScanPairs(myTeamId) {
           );
           if (theirPerceptDelta === -999) theirPerceptDelta = null;
 
-          // Classify
-          var isMutual = (myDelta >= 0.5) && (theirDelta >= 0.5) && (Math.abs(myDelta - theirDelta) < 1.0);
+          // Classify. Mutual = both teams gain. Floors lowered to 0.3 (still
+          // requires HOME to actually gain) and the old symmetry constraint
+          // (|myDelta − theirDelta| < 1.0) dropped — it was rejecting perfectly
+          // good deals just because one side gained more than the other, which
+          // is why most pairings showed no swaps. A great-for-you, fine-for-them
+          // 1-for-1 now correctly surfaces.
+          var isMutual = (myDelta >= 0.3) && (theirDelta >= 0.3);
           var isSneaky = (myDelta >= 1.0) && (theirDelta >= -0.3 && theirDelta <= 0.5) &&
                          (theirPerceptDelta != null && theirPerceptDelta >= 3);
           // Debug: capture top "near miss" gains so we can see what's happening
@@ -28189,34 +28194,76 @@ function _tlV2RenderBuild() {
     });
     if (!pool.length) return [];
 
-    // Pre-compute each pool player's value through both lenses.
+    // Pre-compute each pool player's value through both lenses + a "keep cost":
+    // how much it would HURT HOME to send this player (high if he's HOME's
+    // thin edge in a tight cat). Reuses the movability cushion logic.
+    var homeMov = (typeof _rosTradeSugMovability === 'function') ? _rosTradeSugMovability(tA) : null;
+    function sendFeasibility(p){
+      // 1 = easy to part with (HOME has cushion in his strong cats), 0 = his
+      // departure costs HOME standings points (thin edge).
+      if (!homeMov) return 0.7;
+      try {
+        var per = (typeof _tlV2PlayerCatSGP === 'function') ? (_tlV2PlayerCatSGP(p) || {}) : {};
+        var wSum = 0, fSum = 0;
+        Object.keys(per).forEach(function(c){
+          var contrib = per[c]; if (!contrib || contrib <= 0) return;
+          var mov = homeMov[c]; if (!mov) return;
+          var div = (typeof _rosTradeSugCatDivisor === 'function') ? _rosTradeSugCatDivisor(c) : 1;
+          var cushionSGP = (mov.downBuffer != null && div) ? (mov.downBuffer / div) : 0;
+          var f = 0.15 + 0.85 * (1 - Math.exp(-Math.max(0, cushionSGP) / 1.2));
+          fSum += f * contrib; wSum += contrib;
+        });
+        return wSum > 0 ? Math.max(0, Math.min(1, fSum / wSum)) : 0.7;
+      } catch(e) { return 0.7; }
+    }
     pool.forEach(function(p){
       p._awayVal = valueThroughWeights(p, awayWeights);
-      p._homeVal = p.rosSGP || 0; // already HOME-weighted
+      p._homeVal = valueThroughWeights(p, nwA.catWeights || {}); // HOME's view of what it gives up
+      p._sendFeas = sendFeasibility(p);
     });
-    // Cap pool to top 30 candidates by awayValue (AWAY would care more about
-    // their high-value pieces) to keep combinatorial cost low.
+    // HOME's view of the target it RECEIVES (value through HOME needs).
+    var targetHomeValue = 0;
+    sendB.forEach(function(k){
+      var p = byKeyB[k]; if (!p) return;
+      targetHomeValue += valueThroughWeights(p, nwA.catWeights || {});
+    });
+    // Cap pool to top 30 by awayValue (AWAY cares about their high-value
+    // pieces) to keep combinatorial cost low.
     pool = pool.slice().sort(function(a,b){ return b._awayVal - a._awayVal; }).slice(0, 30);
 
     var combos = [];
     function scoreCombo(players, tag) {
-      var offerAwayVal = 0, sacrificeHomeVal = 0;
-      players.forEach(function(p){ offerAwayVal += p._awayVal; sacrificeHomeVal += p._homeVal; });
-      var imbalance = Math.abs(offerAwayVal - targetAwayValue);
-      var fairness = 1 / (imbalance + 0.5);
-      // Efficiency: how much value AWAY perceives per unit HOME sacrifices.
-      // Higher = HOME giving up less for what AWAY perceives as equivalent.
-      var efficiency = (sacrificeHomeVal > 0.01) ? (offerAwayVal / sacrificeHomeVal) : 1;
-      var score = fairness * 0.6 + Math.min(efficiency, 3) * 0.4;
-      // Penalize wildly under-value offers (AWAY would reject)
-      if (offerAwayVal < targetAwayValue * 0.6) score *= 0.4;
-      // Penalize over-value offers (HOME overpays)
-      if (offerAwayVal > targetAwayValue * 1.6) score *= 0.6;
+      var offerAwayVal = 0, sacrificeHomeVal = 0, feasProd = 1;
+      players.forEach(function(p){
+        offerAwayVal += p._awayVal;
+        sacrificeHomeVal += p._homeVal;
+        feasProd *= (0.4 + 0.6 * (p._sendFeas != null ? p._sendFeas : 0.7));
+      });
+      // PRIMARY objective: HOME's net SGP gain = what HOME receives (target,
+      // through HOME needs) minus what HOME sends (through HOME needs).
+      var homeGain = targetHomeValue - sacrificeHomeVal;
+      // ACCEPTANCE: how AWAY sees it — value received minus value given up.
+      // ≥ ~0 means they break even or better → they'd accept.
+      var awayDelta = offerAwayVal - targetAwayValue;
+      // GATE: only surface deals HOME actually gains on AND AWAY would accept.
+      var accepts = (awayDelta >= -0.3);
+      var helpsHome = (homeGain > 0.05);
+      // Score: maximize HOME gain, lightly favor higher feasibility (easier to
+      // part with) and deals AWAY likes more (more likely to close). Gated
+      // combos get a near-zero score so they sink but aren't fully dropped (so
+      // we can still show *something* if nothing passes the gate).
+      var base = homeGain * (0.7 + 0.3 * feasProd);
+      var closeBonus = awayDelta > 0 ? Math.min(awayDelta, 1) * 0.15 : 0;
+      var score = (accepts && helpsHome) ? (base + closeBonus) : (base * 0.05 - 0.5);
       combos.push({
         players: players.slice(),
         offerAwayVal: offerAwayVal,
         sacrificeHomeVal: sacrificeHomeVal,
-        imbalance: imbalance,
+        homeGain: homeGain,
+        awayDelta: awayDelta,
+        accepts: accepts,
+        helpsHome: helpsHome,
+        feasProd: feasProd,
         score: score,
         size: players.length,
         tag: tag
@@ -28242,33 +28289,25 @@ function _tlV2RenderBuild() {
     }
     combos.sort(function(a,b){ return b.score - a.score; });
 
-    // Pick the top one of each size + one extra to fill the top 3.
-    var picks = [];
-    var seenSizes = {};
-    combos.forEach(function(c){
-      if (picks.length >= 3) return;
-      if (seenSizes[c.size]) return;
-      seenSizes[c.size] = true;
-      picks.push(c);
-    });
-    // Fill remaining slots with next-best regardless of size, avoiding dupes.
-    combos.forEach(function(c){
-      if (picks.length >= 3) return;
-      if (picks.indexOf(c) !== -1) return;
-      picks.push(c);
-    });
-    // Tag the picks for display: fairest = lowest imbalance, efficient = best
-    // value-per-sacrifice ratio.
-    var fairest = picks.slice().sort(function(a,b){ return a.imbalance - b.imbalance; })[0];
-    var efficient = picks.slice().sort(function(a,b){
-      return (b.offerAwayVal/Math.max(0.01,b.sacrificeHomeVal)) - (a.offerAwayVal/Math.max(0.01,a.sacrificeHomeVal));
-    })[0];
-    picks.forEach(function(c){
-      if (c === fairest) c.displayTag = 'FAIREST';
-      else if (c === efficient && efficient !== fairest) c.displayTag = 'EFFICIENT';
-      else c.displayTag = c.size === 1 ? 'SIMPLE 1-FOR-1' : (c.size + '-PLAYER');
-    });
-    return { picks: picks, targetAwayValue: targetAwayValue };
+    // Take the top 3 by score (HOME gain, gated by acceptance). No longer
+    // forcing one-of-each-size — a great 2-for-1 should outrank a mediocre
+    // 1-for-1. We do lightly de-duplicate near-identical combos.
+    var picks = combos.slice(0, 3);
+
+    // Tags: BEST FOR YOU = highest HOME gain; THEY LIKE IT = AWAY gains most
+    // (easiest to close); CLEANEST = fewest players among the picks.
+    if (picks.length) {
+      var bestForYou = picks.slice().sort(function(a,b){ return b.homeGain - a.homeGain; })[0];
+      var theyLike   = picks.slice().sort(function(a,b){ return b.awayDelta - a.awayDelta; })[0];
+      var cleanest   = picks.slice().sort(function(a,b){ return a.size - b.size; })[0];
+      picks.forEach(function(c){
+        if (c === bestForYou) c.displayTag = 'BEST FOR YOU';
+        else if (c === theyLike && theyLike !== bestForYou) c.displayTag = 'THEY LIKE IT';
+        else if (c === cleanest && cleanest !== bestForYou && cleanest !== theyLike) c.displayTag = (c.size === 1 ? 'SIMPLE 1-FOR-1' : 'CLEANEST');
+        else c.displayTag = (c.size === 1 ? '1-FOR-' + sendB.length : c.size + '-FOR-' + sendB.length);
+      });
+    }
+    return { picks: picks, targetAwayValue: targetAwayValue, targetHomeValue: targetHomeValue };
   }
 
   var verdictHtml = '';
@@ -28287,28 +28326,34 @@ function _tlV2RenderBuild() {
     verdictHtml += '</div>';
     verdictHtml += '</div>';
     if (co && co.picks && co.picks.length) {
-      verdictHtml += '<div style="font-size:10px;color:var(--muted);margin-bottom:8px;line-height:1.3">Combinations of HOME players that approximate '+_loEsc(nameB)+'\u2019s value of the target (+'+co.targetAwayValue.toFixed(2)+' AWAY-weighted), ranked by fairness &times; HOME efficiency.</div>';
+      verdictHtml += '<div style="font-size:10px;color:var(--muted);margin-bottom:8px;line-height:1.3">Best HOME packages to land '+_loEsc(targetNames)+', ranked by your net SGP gain. Only deals '+_loEsc(nameB)+' would accept are surfaced.</div>';
       verdictHtml += '<div style="display:flex;flex-direction:column;gap:6px">';
       co.picks.forEach(function(c){
-        var tagBg = c.displayTag === 'FAIREST' ? 'rgba(29,158,117,0.12)' : c.displayTag === 'EFFICIENT' ? 'rgba(186,117,23,0.10)' : 'rgba(150,150,150,0.18)';
-        var tagFg = c.displayTag === 'FAIREST' ? '#0F6E56'              : c.displayTag === 'EFFICIENT' ? '#854f0b'             : '#5a594f';
-        var balDelta = c.offerAwayVal - co.targetAwayValue;
-        var balCol  = Math.abs(balDelta) < 0.5 ? '#0F6E56' : balDelta < 0 ? '#c0392b' : '#4a9a68';
-        var balSign = balDelta >= 0 ? '+' : '\u2212';
-        // Encode keys for Apply button (URI-safe).
+        var tagBg = c.displayTag === 'BEST FOR YOU' ? 'rgba(24,95,165,0.10)' : c.displayTag === 'THEY LIKE IT' ? 'rgba(29,158,117,0.12)' : 'rgba(150,150,150,0.18)';
+        var tagFg = c.displayTag === 'BEST FOR YOU' ? '#0C447C'              : c.displayTag === 'THEY LIKE IT' ? '#0F6E56'             : '#5a594f';
+        // AWAY verdict from their delta.
+        var av;
+        if (c.awayDelta >= 0.3)        av = { t:'AWAY gains',       bg:'rgba(29,158,117,0.12)', tx:'#3B6D11' };
+        else if (c.awayDelta >= -0.3)  av = { t:'Fair for AWAY',    bg:'rgba(150,150,150,0.16)', tx:'#5F5E5A' };
+        else                            av = { t:'AWAY slight loss', bg:'rgba(186,117,23,0.12)', tx:'#854F0B' };
+        var gainCol = c.homeGain > 0 ? '#0F6E56' : '#c0392b';
         var keysEnc = c.players.map(function(p){ return encodeURIComponent(p.key); }).join(',');
         verdictHtml += '<div style="background:rgba(255,255,255,0.5);border-radius:6px;padding:8px 10px">';
         verdictHtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">';
         verdictHtml += '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:'+tagBg+';color:'+tagFg+';font-weight:600;letter-spacing:0.04em">'+c.displayTag+'</span>';
-        verdictHtml += '<span style="font-size:10px;color:var(--muted)">Bal: <strong style="color:'+balCol+'">'+balSign+Math.abs(balDelta).toFixed(2)+'</strong></span>';
+        verdictHtml += '<span style="font-size:9px;padding:1px 6px;border-radius:10px;background:'+av.bg+';color:'+av.tx+';font-weight:500">'+av.t+'</span>';
         verdictHtml += '<button onclick="window._tlV2ApplyCounterOffer(\''+keysEnc+'\')" style="margin-left:auto;padding:2px 8px;font-size:10px;border:0.5px solid var(--accent);background:rgba(45,90,61,0.06);color:var(--accent);border-radius:4px;cursor:pointer;font-family:inherit">Apply</button>';
         verdictHtml += '</div>';
-        verdictHtml += '<div style="font-size:11px;line-height:1.5">';
+        verdictHtml += '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:8px">';
+        verdictHtml += '<div style="font-size:11px;line-height:1.5;flex:1;min-width:0">';
         c.players.forEach(function(p, idx){
           if (idx > 0) verdictHtml += ' <span style="color:var(--muted)">+</span> ';
-          verdictHtml += '<span style="font-weight:500">'+_loEsc(p.name)+'</span> <span style="color:var(--muted);font-size:9px">'+_loEsc(p.pos||'')+(p._homeVal != null ? ' '+(p._homeVal>=0?'+':'') + p._homeVal.toFixed(2) : '')+'</span>';
+          verdictHtml += '<span style="font-weight:500">'+_loEsc(p.name)+'</span> <span style="color:var(--muted);font-size:9px">'+_loEsc(p.pos||'')+'</span>';
         });
-        verdictHtml += '</div></div>';
+        verdictHtml += '</div>';
+        verdictHtml += '<div style="text-align:right;white-space:nowrap"><div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">Your gain</div><div style="font-size:15px;font-weight:500;color:'+gainCol+'">'+(c.homeGain>=0?'+':'')+c.homeGain.toFixed(2)+'</div></div>';
+        verdictHtml += '</div>';
+        verdictHtml += '</div>';
       });
       verdictHtml += '</div>';
     } else {
