@@ -16582,7 +16582,11 @@ function _dashPopulateCatTrends(teamName, teamId) {
       + 'cache rows='+stats.length+' · matched(name)='+matchedAll.length+' · played(>=2 stats)='+rows.length);
     console.log('[cat-trends] team keys in cache:', sampleTeams);
     if (matchedAll.length && !rows.length) {
-      console.log('[cat-trends] matched rows but none passed hasAnyStats — sample:', matchedAll.slice(0,3));
+      var s0 = matchedAll[0] || {};
+      console.log('[cat-trends] matched rows but none passed hasAnyStats.');
+      console.log('[cat-trends] first matched row KEYS:', Object.keys(s0));
+      console.log('[cat-trends] first matched row VALUES:', JSON.stringify(s0));
+      console.log('[cat-trends] core reads → R='+s0.R+' HR='+s0.HR+' RBI='+s0.RBI+' SB='+s0.SB+' K='+s0.K+' W='+s0.W+' SVH3='+s0.SVH3+' SV='+s0.SV);
     }
   }
 
