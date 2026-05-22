@@ -27006,6 +27006,59 @@ window._tlV2SetTargetsCat = function(v) {
   window._tlV2TargetsCatFilter = v || 'ALL';
   _tlV2RenderBuild();
 };
+// Sort mode for Top Targets: 'fit' (need-weighted SGP only) or 'real'
+// (fit blended with feasibility = how likely the owner is to deal).
+window._tlV2TargetsSort = window._tlV2TargetsSort || 'fit';
+window._tlV2SetTargetsSort = function(m) {
+  window._tlV2TargetsSort = (m === 'real') ? 'real' : 'fit';
+  _tlV2RenderBuild();
+};
+
+// Feasibility of acquiring a player: how much standings CUSHION his owning team
+// has in the categories where he's strong. If the owner is far ahead of the
+// team chasing them in those cats (big downBuffer), losing the player costs no
+// standings points → they'll deal. If he's their razor-thin edge → they won't.
+// Reuses _rosTradeSugMovability(ownerTid). Returns 0..1 (1 = very gettable).
+window._tlV2FeasibilityCache = {};
+function _tlV2PlayerFeasibility(p, oppTid) {
+  if (!oppTid) return 0.5;
+  try {
+    var ownerMov = (typeof _rosTradeSugMovability === 'function') ? _rosTradeSugMovability(oppTid) : null;
+    if (!ownerMov) return 0.5;
+    var perCat = (typeof _tlV2PlayerCatSGP === 'function') ? (_tlV2PlayerCatSGP(p) || {}) : {};
+    // Weight each cat the player helps by his contribution there; for each,
+    // cushion = downBuffer normalized by a typical gap. A locked-in lead
+    // (downBuffer effectively 0 → they're tied with the chaser) = low feas.
+    var wSum = 0, fSum = 0;
+    Object.keys(perCat).forEach(function(c){
+      var contrib = perCat[c];
+      if (!contrib || contrib <= 0) return;
+      var mov = ownerMov[c];
+      if (!mov) return;
+      // downBuffer is in raw stat units; normalize by the cat's SGP divisor so
+      // "one SGP point of cushion" ≈ 1. More cushion → more willing to deal.
+      var div = (typeof _rosTradeSugCatDivisor === 'function') ? _rosTradeSugCatDivisor(c) : 1;
+      var cushionSGP = (mov.downBuffer != null && div) ? (mov.downBuffer / div) : 0;
+      // Map cushion (in SGP) to 0..1 via a soft curve: 0 SGP → ~0.15,
+      // 1 SGP → ~0.6, 2+ → ~0.85. Owner near bottom of cat (rank high) is also
+      // more willing regardless of buffer.
+      var f = 1 - Math.exp(-Math.max(0, cushionSGP) / 1.2);
+      f = 0.15 + 0.85 * f;
+      // If the owner is themselves weak in this cat (bottom 3), they're a bit
+      // more willing to move a player whose strength they can't fully use.
+      if (mov.rank && mov.n && mov.rank >= mov.n - 2) f = Math.min(1, f + 0.1);
+      fSum += f * contrib;
+      wSum += contrib;
+    });
+    if (wSum <= 0) return 0.5;
+    return Math.max(0, Math.min(1, fSum / wSum));
+  } catch(e) { return 0.5; }
+}
+function _tlV2FeasibilityTag(f) {
+  if (f >= 0.65) return { t:'Likely available', bg:'#EAF3DE', tx:'#3B6D11' };
+  if (f >= 0.40) return { t:'Possible',         bg:'#FAEEDA', tx:'#854F0B' };
+  return                 { t:'Tough get',        bg:'#FCEBEB', tx:'#A32D2D' };
+}
 function _tlV2RenderTopTargetsHtml(tA, nameA) {
   var catFilter = window._tlV2TargetsCatFilter || 'ALL';
   var HIT_CATS = ['R','HR','RBI','SB','AVG'];
@@ -27018,10 +27071,22 @@ function _tlV2RenderTopTargetsHtml(tA, nameA) {
 
   var h = '<div class="card" style="padding:14px 16px;margin-bottom:14px;overflow:visible">';
   // Header
-  h += '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px;flex-wrap:wrap">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;flex-wrap:wrap">';
   h += '<div>';
   h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Top targets across the league</div>';
-  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Best acquisition fits for HOME, ranked by need-weighted ROS + winnable-cat bonus.</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">Best acquisition fits for HOME, with how likely each owner is to deal.</div>';
+  h += '</div>';
+  // Sort toggle: Best fit vs Most realistic
+  var sortMode = window._tlV2TargetsSort || 'fit';
+  function sortBtn(mode, label){
+    var on = (sortMode === mode);
+    var st = on
+      ? 'padding:4px 11px;font-size:11px;border:none;background:#5a594f;color:#fff;cursor:pointer;font-family:inherit'
+      : 'padding:4px 11px;font-size:11px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit';
+    return '<button onclick="window._tlV2SetTargetsSort(\''+mode+'\')" style="'+st+'">'+label+'</button>';
+  }
+  h += '<div style="display:flex;border:0.5px solid var(--border);border-radius:14px;overflow:hidden">';
+  h += sortBtn('fit', 'Best fit') + sortBtn('real', 'Most realistic');
   h += '</div>';
   h += '</div>';
 
@@ -27094,11 +27159,13 @@ function _tlV2RenderTopTargetsHtml(tA, nameA) {
       // When a specific cat is selected, sort by that cat's contribution
       // directly so the list answers "who helps this cat most?".
       var sortScore = (catFilter === 'ALL') ? rosScore : perCatScore;
+      var feas = _tlV2PlayerFeasibility(p, oppTid);
       candidates.push({
         key: p.key, name: p.name, pos: p.pos, isHit: p.isHit, status: p.status || '1',
         mlb: (p.cs && p.cs.mlb) || '',
         rosSGP: p.rosSGP || 0,
         score: sortScore,
+        feas: feas,
         oppTid: oppTid,
         oppName: ((S.teamInfo[oppTid]||{}).shortName || (S.teamInfo[oppTid]||{}).name || oppTid),
         winnableCats: winnableCats.slice(0, 2),
@@ -27107,7 +27174,18 @@ function _tlV2RenderTopTargetsHtml(tA, nameA) {
     });
   });
 
-  candidates.sort(function(a,b){ return b.score - a.score; });
+  // Sort: Best fit = raw score; Most realistic = score blended with feasibility
+  // (feasibility scales a positive fit between 40% and 100%, so a gettable
+  // good-fit outranks an untouchable great-fit without fully burying it).
+  var _sortMode = window._tlV2TargetsSort || 'fit';
+  candidates.sort(function(a,b){
+    if (_sortMode === 'real') {
+      var av = a.score > 0 ? a.score * (0.4 + 0.6 * a.feas) : a.score;
+      var bv = b.score > 0 ? b.score * (0.4 + 0.6 * b.feas) : b.score;
+      return bv - av;
+    }
+    return b.score - a.score;
+  });
   var topN = candidates.slice(0, 5);
 
   if (topN.length === 0) {
@@ -27149,6 +27227,9 @@ function _tlV2RenderTopTargetsHtml(tA, nameA) {
       h += '</div>';
     }
     h += '</div>';
+    // Feasibility tag
+    var _ft = _tlV2FeasibilityTag(c.feas);
+    h += '<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:10px;background:'+_ft.bg+';color:'+_ft.tx+';white-space:nowrap;letter-spacing:0.02em">'+_ft.t+'</span>';
     // Need-wtd value
     h += '<div style="text-align:right;min-width:60px">';
     h += '<div style="font-size:9px;color:var(--muted)">Need-wtd</div>';
