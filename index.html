@@ -381,9 +381,9 @@ td.neg { color: #c0392b; font-weight: 500; }
       <button onclick="showPage('teamroster',this)">Team Roster</button>
       <button onclick="showPage('archetype',this)">Team Archetype</button>
       <button onclick="showPage('lineuporg',this)">Lineup Organizer</button>
+      <button onclick="showPage('h2hpred',this)">H2H Predictor</button>
       <button onclick="showPage('ros',this)">Waiver Wire</button>
       <button onclick="showPage('tradelab',this)">Trade Lab</button>
-      <button onclick="showPage('h2hpred',this)">H2H Predictor</button>
     </div>
   </div>
   <div class="nav-group">
@@ -12554,7 +12554,7 @@ function _h2hMatchupSummaryHtml(r) {
   var h = '';
   h += '<div class="card" style="margin:0 0 14px;padding:16px 18px;border-left:3px solid '+accent+';width:100%">';
   h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:12px">';
-  h += '<div><div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Your matchup, summarized</div>';
+  h += '<div><div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Matchup Summary</div>';
   h += '<div style="font-size:18px;font-weight:500;margin-top:2px">Projected ' + recTxt + '</div></div>';
   h += '<div style="background:'+vbg+';color:'+vtx+';font-size:12px;font-weight:500;padding:5px 12px;border-radius:8px;white-space:nowrap">'+verdict+'</div>';
   h += '</div>';
@@ -12564,6 +12564,37 @@ function _h2hMatchupSummaryHtml(r) {
   h += bucketCell('On the bubble', bubble, '#854F0B');
   h += bucketCell('Out of reach', reach, '#A32D2D');
   h += '</div>';
+
+  // What to do — concrete directives derived from the buckets. Only show a
+  // line when it applies, so a steady team doesn't get told to punt nothing.
+  var todo = [];
+  var bubbleTargets = bubbleLosing.length ? bubbleLosing : bubble;
+  if (bubbleTargets.length) {
+    var lev = (highLevBubble && highLevBubble.length) ? highLevBubble : null;
+    var tgt = lev ? lev : bubbleTargets;
+    todo.push({ icon:'ti-target', col:'#185FA5',
+      txt:'<strong>Target the bubble, not the safe wins.</strong> Trade for '+tgt.join(', ')+' help \u2014 the coinflips you\u2019re closest to flipping'+(lev?' and that move the standings most':'')+'.' });
+  }
+  if (safe.length >= 2) {
+    todo.push({ icon:'ti-lock', col:'#0F6E56',
+      txt:'<strong>Don\u2019t over-invest where you\u2019re safe.</strong> You already win '+safe.join(', ')+' \u2014 spend any surplus there to buy what you need.' });
+  }
+  if (reach.length) {
+    todo.push({ icon:'ti-circle-minus', col:'#A32D2D',
+      txt:'<strong>Punt '+reach.join(', ')+'.</strong> You\u2019re too far back to flip '+(reach.length===1?'it':'them')+' cheaply \u2014 don\u2019t spend assets chasing '+(reach.length===1?'it':'them')+'.' });
+  }
+  if (!todo.length) {
+    todo.push({ icon:'ti-check', col:'#0F6E56',
+      txt:'<strong>Stay the course.</strong> No category needs urgent attention \u2014 hold and watch for value.' });
+  }
+
+  h += '<div style="border-top:0.5px solid var(--border);margin-top:14px;padding-top:11px">';
+  h += '<div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-bottom:7px">What to do</div>';
+  h += '<div style="display:flex;flex-direction:column;gap:6px;font-size:13px;line-height:1.5">';
+  todo.forEach(function(t){
+    h += '<div style="display:flex;gap:8px"><i class="ti '+t.icon+'" style="font-size:15px;color:'+t.col+';margin-top:1px" aria-hidden="true"></i><span>'+t.txt+'</span></div>';
+  });
+  h += '</div></div>';
   h += '</div>';
   return h;
 }
