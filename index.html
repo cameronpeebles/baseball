@@ -17355,6 +17355,14 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   h += '<div style="font-size:15px;font-weight:500;color:#185fa5;margin:5px 0 3px">'+primaryMove+'</div>';
   h += '<div style="font-size:11px;color:var(--muted)">'+primaryReason+'</div></div>';
   // Trust Score
+  // Canonical three-signal trust (fWAR/Rating/ROS pairwise gaps + luck). The
+  // top KPI strip's local formula predates ROS% and ignores it, so it can show
+  // a higher number; we stash the correct value here and patch the KPI cell
+  // after render so the two "Trust Score" displays agree.
+  try {
+    window._diagTrustByTeam = window._diagTrustByTeam || {};
+    window._diagTrustByTeam[teamId] = { trust: trust, tier: trustTier(trust) };
+  } catch(e) {}
   var tc = trust>=65?'#1e6b3a':trust>=50?'#b7791f':'#c0392b';
   h += '<div style="'+mc+'"><div style="'+lb+'">Trust score</div>';
   h += '<div style="display:flex;align-items:center;gap:8px;margin:5px 0 3px">';
@@ -17998,7 +18006,7 @@ function assembleDashboard(teamId, el) {
   html += '<div style="'+mc+'"><div style="'+lb+'">JOE Factor</div><div style="display:flex;align-items:center;gap:5px;margin:5px 0 2px"><span style="font-size:17px;font-weight:500;color:'+_joeCol7+'">'+(_joe7>=0?'+':'')+_joe7.toFixed(2)+'</span>'+_pill7(_jBkt7,_joeBg7,_joeCol7)+'</div><div style="font-size:12px;color:var(--muted)">Luck Z-Score</div></div>';
   html += '<div style="'+mc+'"><div style="'+lb+'">fWAR %</div><div style="display:flex;align-items:center;gap:5px;margin:5px 0 2px"><span style="font-size:17px;font-weight:500">'+_fwarPct7+'%</span>'+_pill7(_fBkt7,_bktBg7(_fBkt7),_bktCol7(_fBkt7))+'</div><div style="font-size:12px;color:var(--muted)">vs League</div></div>';
   html += '<div style="'+mc+'"><div style="'+lb+'">Rating %</div><div style="display:flex;align-items:center;gap:5px;margin:5px 0 2px"><span style="font-size:17px;font-weight:500">'+_lgPct7+'%</span>'+_pill7(_lBkt7,_bktBg7(_lBkt7),_bktCol7(_lBkt7))+'</div><div style="font-size:12px;color:var(--muted)">vs League</div></div>';
-  html += '<div style="'+mc+'"><div style="'+lb+'">Trust Score</div><div style="display:flex;align-items:center;gap:5px;margin:5px 0 2px"><span style="font-size:17px;font-weight:500">'+_trust7+'</span>'+_pill7(_tTier7,_tbg7,_tc7)+'</div><div style="font-size:12px;color:var(--muted)">Model Confidence</div></div>';
+  html += '<div style="'+mc+'"><div style="'+lb+'">Trust Score</div><div id="dash-kpi-trust" style="display:flex;align-items:center;gap:5px;margin:5px 0 2px"><span style="font-size:17px;font-weight:500">'+_trust7+'</span>'+_pill7(_tTier7,_tbg7,_tc7)+'</div><div style="font-size:12px;color:var(--muted)">Model Confidence</div></div>';
   html += '</div>';
   html += '</div>';
 
@@ -18418,6 +18426,21 @@ function assembleDashboard(teamId, el) {
 
 
   el.innerHTML = html;
+
+  // Sync the top KPI strip's Trust Score to the canonical three-signal value
+  // computed in the diagnostic card (which includes ROS%). The KPI strip's own
+  // local formula predates ROS% and can read high; this keeps the two displays
+  // consistent.
+  try {
+    var _dt = window._diagTrustByTeam && window._diagTrustByTeam[teamId];
+    var _kpiTrustEl = document.getElementById('dash-kpi-trust');
+    if (_dt && _kpiTrustEl) {
+      var _tcol = _dt.trust>=65?'#1e6b3a':_dt.trust>=50?'#b7791f':'#c0392b';
+      var _tbg  = _dt.trust>=65?'#e8f0eb':_dt.trust>=50?'#fef3e2':'#fce8e8';
+      _kpiTrustEl.innerHTML = '<span style="font-size:17px;font-weight:500">'+_dt.trust+'</span>'
+        + '<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;background:'+_tbg+';color:'+_tcol+';margin-left:5px">'+_dt.tier+'</span>';
+    }
+  } catch(e) {}
 
   // Populate Category trends sparklines (reads _joeStatsCache for this team).
   if (typeof _dashPopulateCatTrends === 'function') {
