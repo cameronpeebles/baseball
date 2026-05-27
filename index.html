@@ -11766,6 +11766,21 @@ function predictH2H(a, b) {
         }
         if (!teamName) return;
         var cells = row.cells || [];
+
+        // Debug: for a flagged team, dump the raw header index and this row's
+        // cells so we can see exactly why readCell returns 0 (column offset,
+        // empty content, or different keys). Set window._debugParseTeam to a
+        // substring of the team name, e.g. window._debugParseTeam='Wendy'.
+        if (window._debugParseTeam && typeof console !== 'undefined'
+            && teamName.toLowerCase().indexOf(String(window._debugParseTeam).toLowerCase()) !== -1
+            && !window._debugParseShown) {
+          window._debugParseShown = true;
+          console.log('[parse] team="'+teamName+'" period='+period);
+          console.log('[parse] header idx map:', JSON.stringify(idx));
+          console.log('[parse] vh headers:', vh.map(function(h,i){ return i+':'+(h.key||h.shortName||h.name||'?'); }).join(' | '));
+          console.log('[parse] row.cells ('+cells.length+'):', cells.map(function(c,i){ return i+':'+(c.content==null?'\u2205':c.content); }).join(' | '));
+          console.log('[parse] readCell R='+readCell(cells,'R')+' HR='+readCell(cells,'HR')+' RBI='+readCell(cells,'RBI')+' K='+readCell(cells,'K')+' W='+readCell(cells,'W'));
+        }
         // Fantrax exposes pitching W under different keys depending on layout —
         // try the most-specific first. Same for saves+holds.
         var pitchW = readCell(cells, 'W');
@@ -11808,9 +11823,10 @@ function predictH2H(a, b) {
   // _hasRealStats won't be set and we'll re-fetch+re-parse here, OVERWRITING
   // the cache with the predictor's expected shape.
   function _h2hLoadStats() {
-    if (window._joeStatsCache && window._joeStatsCache._hasRealStats) {
+    if (window._joeStatsCache && window._joeStatsCache._hasRealStats && !window._debugForceReparse) {
       return Promise.resolve(window._joeStatsCache);
     }
+    window._debugParseShown = false; // allow the parser debug dump to fire again
     return loadJSON('standings_schedule.json').then(function(data){
       var rows = _h2hParseScheduleData(data);
       rows._hasRealStats = true;
@@ -12037,6 +12053,9 @@ function _h2hRenderResult(teamNames, selectedTeam, r) {
   html += _h2hHeaderHtml(teamNames, selectedTeam);
   // 2. Identity / summary banner (team name + KPIs)
   html += _h2hSummaryHtml(r);
+  // 2b. Matchup strategy summary — synthesizes the per-cat projection into a
+  //     single "here's the shape and what to do" read, above the outlook table.
+  html += _h2hMatchupSummaryHtml(r);
   // 3. Per-category outlook table (the densest, most useful block)
   html += _h2hPerCatTableHtml(r);
   // 4. League overview (range bars + schedule-luck chart)
@@ -12453,6 +12472,99 @@ function _h2hSummaryHtml(r) {
   h += '</div>';
   h += '</div>';
   h += '</div></div>';
+  return h;
+}
+
+// ── Matchup strategy summary (sits ABOVE the Per-category outlook) ────────
+// Synthesizes the per-category projection into a single strategic read: which
+// cats are safe wins, which are on the bubble (coinflips), which are out of
+// reach — and what the PATTERN implies the team should do. Reuses the same
+// margin-based tier classification as the per-cat table.
+function _h2hMatchupSummaryHtml(r) {
+  if (!r || !r.blended || !r.perCat) return '';
+  var lgAvg = {}, lgMin = {}, lgMax = {}, teamCount = 0;
+  ALL_CATS.forEach(function(c){ lgMin[c] = Infinity; lgMax[c] = -Infinity; });
+  Object.keys(r.blended).forEach(function(t){
+    var m = r.blended[t]; if (!m) return; teamCount++;
+    ALL_CATS.forEach(function(c){
+      var v = m[c] || 0;
+      lgAvg[c] = (lgAvg[c] || 0) + v;
+      if (v < lgMin[c]) lgMin[c] = v;
+      if (v > lgMax[c]) lgMax[c] = v;
+    });
+  });
+  ALL_CATS.forEach(function(c){ if (teamCount > 0) lgAvg[c] /= teamCount; });
+  var self = r.blended[r.team] || {};
+  var LOW_GOOD = { ERA:1, WHIP:1 };
+  var corr = window._catStandingsCorr || {};
+
+  var safe = [], bubble = [], reach = [];          // category-name buckets
+  var bubbleLosing = [], bubbleWinning = [];
+  var pw = 0, pl = 0, projTie = 0;
+
+  ALL_CATS.forEach(function(cat){
+    var selfVal = self[cat] || 0, avgVal = lgAvg[cat] || 0;
+    var range = (lgMax[cat] - lgMin[cat]) || 1;
+    var raw = selfVal - avgVal; if (LOW_GOOD[cat]) raw = -raw;
+    var marginPct = (raw / range) * 100;
+    var fut = r.perCat[cat] || { winPct:0 };
+    var winning = fut.winPct >= 0.5;
+    if (winning) pw++; else pl++;
+    if (marginPct >= 10)       safe.push(cat);
+    else if (marginPct >= -10) { bubble.push(cat); (winning ? bubbleWinning : bubbleLosing).push(cat); }
+    else                       reach.push(cat);
+  });
+
+  // Strategy verdict from the PATTERN.
+  var verdict, vbg, vtx, sentence;
+  var winsSafe = safe.length, losingBubble = bubbleLosing.length, lost = reach.length;
+  // Leverage of the losing-bubble cats (are the flippable ones worth flipping?).
+  function leverageList(arr){
+    return arr.filter(function(c){ var cc=corr[c]; return cc && Math.abs(cc.r) >= 0.70; });
+  }
+  var highLevBubble = leverageList(bubbleLosing);
+
+  if (pw >= 7 && losingBubble <= 2) {
+    verdict = 'Protect the lead'; vbg = 'var(--color-background-success, #EAF3DE)'; vtx = '#3B6D11';
+    sentence = 'You\u2019re projected to win most weeks and have few exposed categories. Don\u2019t make risky moves \u2014 hold, and only trade a surplus strength for a clear need.';
+  } else if (losingBubble >= 3) {
+    verdict = 'Push to win now'; vbg = 'var(--color-background-info, #E6F1FB)'; vtx = '#0C447C';
+    sentence = 'Most of your losses are <strong>coinflips you\u2019re barely losing</strong>' + (bubbleLosing.length ? ' (' + bubbleLosing.join(', ') + ')' : '') + '. You don\u2019t need a rebuild \u2014 one or two targeted upgrades could flip several of these and turn close weeks into comfortable ones.';
+  } else if (winsSafe <= 3 && lost >= 4) {
+    verdict = 'Punt and stack'; vbg = 'var(--color-background-warning, #FAEEDA)'; vtx = '#854F0B';
+    sentence = 'Your wins and losses are both lopsided. Lean into it \u2014 concede the categories you can\u2019t win and concentrate resources on the ones you already dominate plus the nearest bubble cats.';
+  } else if (highLevBubble.length >= 1 && safe.length >= 1 && leverageList(safe).length < safe.length) {
+    verdict = 'Reallocate to what matters'; vbg = 'var(--color-background-info, #E6F1FB)'; vtx = '#0C447C';
+    sentence = 'You\u2019re competitive, but some of your losses are in higher-leverage categories' + (highLevBubble.length ? ' (' + highLevBubble.join(', ') + ')' : '') + '. Shift focus there \u2014 winning them moves the standings more than padding categories you already win.';
+  } else {
+    verdict = 'Make a targeted move'; vbg = 'var(--bg)'; vtx = 'var(--muted)';
+    sentence = 'You\u2019re in the mix. Your safe wins are set; the bubble categories' + (bubbleLosing.length ? ' (' + bubbleLosing.join(', ') + ')' : '') + ' are where a single upgrade does the most good.';
+  }
+
+  var recTxt = pw + '\u2013' + pl + (projTie ? '\u2013' + projTie : '') + ' most weeks';
+
+  function bucketCell(label, cats, color){
+    var v = cats.length ? cats.join(', ') : '\u2014';
+    return '<div style="background:var(--bg);border-radius:8px;padding:10px 12px">'
+      + '<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted)">'+label+'</div>'
+      + '<div style="font-size:13px;font-weight:500;margin-top:3px;color:'+color+'">'+v+'</div></div>';
+  }
+
+  var accent = (vtx === '#3B6D11') ? '#2d7a5a' : (vtx === '#0C447C' ? '#185FA5' : (vtx === '#854F0B' ? '#b07d1f' : 'var(--border)'));
+  var h = '';
+  h += '<div class="card" style="margin:0 0 14px;padding:16px 18px;border-left:3px solid '+accent+';width:100%">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:12px">';
+  h += '<div><div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Your matchup, summarized</div>';
+  h += '<div style="font-size:18px;font-weight:500;margin-top:2px">Projected ' + recTxt + '</div></div>';
+  h += '<div style="background:'+vbg+';color:'+vtx+';font-size:12px;font-weight:500;padding:5px 12px;border-radius:8px;white-space:nowrap">'+verdict+'</div>';
+  h += '</div>';
+  h += '<div style="font-size:14px;line-height:1.6;margin-bottom:14px">'+sentence+'</div>';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">';
+  h += bucketCell('Safe wins', safe, '#0F6E56');
+  h += bucketCell('On the bubble', bubble, '#854F0B');
+  h += bucketCell('Out of reach', reach, '#A32D2D');
+  h += '</div>';
+  h += '</div>';
   return h;
 }
 
