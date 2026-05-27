@@ -11344,9 +11344,10 @@ function predictH2H(a, b) {
 //   _h2hBlendMeans(empirical, fp, opts)
 //   _h2hRemainingSchedule(teamName, fullSchedule, currentPeriod)
 //
-// Tunables (defaults: 50/50 empirical/FP blend):
-//   blendEmpirical = 0.50
-//   blendFP        = 0.50
+// Tunables (default blend: per-team confidence-scaled empirical-Bayes shrinkage):
+//   blendEmpirical / blendFP — explicit weights (override the scaling)
+//   shrinkK        = 10       — n / (n + k) gives 50/50 at 10 played weeks,
+//                               more projection weight early, more empirical late
 //   recentBias     = 'last4' | 'all'  — when 'last4', recent weeks count 2× in empirical mean
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -11495,10 +11496,18 @@ function predictH2H(a, b) {
   // Blend two per-cat mean maps: result = wE*empirical + wF*fp.
   // For rate stats (AVG/ERA/WHIP), blend the rates directly. For counting
   // stats, blend the per-week numbers.
+  //
+  // WEIGHTING: by default the empirical weight scales with each team's number
+  // of played weeks (empirical-Bayes shrinkage), wE = n / (n + k). With k=10
+  // this gives 50/50 around mid-season (10 played weeks), more projection
+  // weight early when the empirical sample is small, more empirical weight
+  // late when the projection is stale. Callers can still pass an explicit
+  // fixed weight via opts.blendEmpirical to override.
   window._h2hBlendMeans = function(empirical, fp, opts) {
     opts = opts || {};
-    var wE = (opts.blendEmpirical != null) ? opts.blendEmpirical : 0.50;
-    var wF = (opts.blendFP        != null) ? opts.blendFP        : 0.50;
+    var explicitWE = (opts.blendEmpirical != null) ? opts.blendEmpirical : null;
+    var explicitWF = (opts.blendFP        != null) ? opts.blendFP        : null;
+    var SHRINK_K = (opts.shrinkK != null) ? opts.shrinkK : 10;
     var out = {};
     var teams = {};
     Object.keys(empirical || {}).forEach(function(t){ teams[t] = 1; });
@@ -11510,7 +11519,19 @@ function predictH2H(a, b) {
       if (!e && !f) { out[t] = null; return; }
       if (!e) { out[t] = Object.assign({}, f, { team: t, _source: 'fp_only' }); return; }
       if (!f) { out[t] = Object.assign({}, e, { team: t, _source: 'empirical_only' }); return; }
-      var blended = { team: t, _source: 'blend' };
+      // Per-team weights. Explicit overrides win; otherwise scale by n played
+      // weeks. n=0 or missing → wE=0 (pure projection), which is the safe
+      // result for malformed/empty empirical entries.
+      var wE, wF;
+      if (explicitWE != null || explicitWF != null) {
+        wE = (explicitWE != null) ? explicitWE : (1 - (explicitWF || 0));
+        wF = (explicitWF != null) ? explicitWF : (1 - wE);
+      } else {
+        var n = (e && e.weeksPlayed) ? e.weeksPlayed : 0;
+        wE = n / (n + SHRINK_K);
+        wF = 1 - wE;
+      }
+      var blended = { team: t, _source: 'blend', _wE: wE, _wF: wF };
       ALL_CATS.forEach(function(cat){
         var ev = e[cat] || 0;
         var fv = f[cat] || 0;
@@ -11636,10 +11657,14 @@ function predictH2H(a, b) {
 
     var empirical = _h2hBuildEmpiricalMeans(stats, { recentBias: opts.recentBias || 'last4' });
     var fp        = _h2hBuildFPMeansPerTeam(weeksRemaining);
-    var blended   = _h2hBlendMeans(empirical, fp, {
-      blendEmpirical: (opts.blendEmpirical != null) ? opts.blendEmpirical : 0.50,
-      blendFP:        (opts.blendFP        != null) ? opts.blendFP        : 0.50
-    });
+    // Only pass an explicit weight through if the caller actually supplied one;
+    // otherwise leave it undefined so _h2hBlendMeans applies the per-team
+    // confidence-scaled weights (wE = n / (n + 10)).
+    var blendOpts = {};
+    if (opts.blendEmpirical != null) blendOpts.blendEmpirical = opts.blendEmpirical;
+    if (opts.blendFP        != null) blendOpts.blendFP        = opts.blendFP;
+    if (opts.shrinkK        != null) blendOpts.shrinkK        = opts.shrinkK;
+    var blended   = _h2hBlendMeans(empirical, fp, blendOpts);
 
     var selfMean = blended[teamName];
     if (!selfMean) {
@@ -13208,7 +13233,7 @@ function _h2hBracketCardHtml(selectedTeam) {
                   ? window._h2hBuildFPMeansPerTeam(1)
                   : {};
         window._h2hBracketBlended = (typeof window._h2hBlendMeans === 'function')
-                  ? window._h2hBlendMeans(em, fp, { blendEmpirical: 0.5, blendFP: 0.5 })
+                  ? window._h2hBlendMeans(em, fp, {})
                   : em;
       } catch(e) {
         if (window._debug) console.warn('[bracket] failed to build blended means:', e);
@@ -18340,7 +18365,7 @@ function assembleDashboard(teamId, el) {
                   ? window._h2hBuildFPMeansPerTeam(1)
                   : {};
         window._dashBracketBlended = (typeof window._h2hBlendMeans === 'function')
-                  ? window._h2hBlendMeans(em, fp, { blendEmpirical: 0.5, blendFP: 0.5 })
+                  ? window._h2hBlendMeans(em, fp, {})
                   : em;
       } catch(e) {
         if (window._debug) console.warn('[dash schedule] blended build failed:', e);
