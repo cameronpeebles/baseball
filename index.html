@@ -11800,9 +11800,9 @@ function predictH2H(a, b) {
             && teamName.toLowerCase().indexOf(String(window._debugParseTeam).toLowerCase()) !== -1
             && !window._debugParseShown) {
           window._debugParseShown = true;
-          console.log('[parse] team="'+teamName+'" period='+period);
+          console.log('[parse] table caption="'+caption+'" team="'+teamName+'" period='+period);
           console.log('[parse] header idx map:', JSON.stringify(idx));
-          console.log('[parse] vh headers:', vh.map(function(h,i){ return i+':'+(h.key||h.shortName||h.name||'?'); }).join(' | '));
+          console.log('[parse] vh headers FULL:', JSON.stringify(vh));
           console.log('[parse] row.cells ('+cells.length+'):', cells.map(function(c,i){ return i+':'+(c.content==null?'\u2205':c.content); }).join(' | '));
           console.log('[parse] readCell R='+readCell(cells,'R')+' HR='+readCell(cells,'HR')+' RBI='+readCell(cells,'RBI')+' K='+readCell(cells,'K')+' W='+readCell(cells,'W'));
         }
