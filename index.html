@@ -17729,68 +17729,6 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   h+='<div style="font-size:11px;color:var(--muted);line-height:1.5;padding:7px 9px;background:var(--bg);border-radius:var(--radius);border:0.5px solid var(--border)">'+insight+'</div>';
   h+='</div>';
   h+='</div>'; /* row 1 */
-  h += '<hr style="border:none;border-top:0.5px solid var(--border);margin:16px 0">';
-  // ── Section 4: Trend Outlook + Recommended Action ──────────────────
-  // Row 3: Why + right column
-  h += '<div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:12px">';
-  // Why section
-  h += '<div>';
-
-  // Positional group breakdown
-  h += '<div style="'+lb+';margin-bottom:8px">Positional group breakdown</div>';
-  h += '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">';
-  var DIAG_GROUPS = ['Infield','Outfield','SP','RP'];
-  var DIAG_LABELS = ['Infield','Outfield','Starting P','Relief P'];
-  DIAG_GROUPS.forEach(function(g,gi) {
-    var ps = posData[g] ? Math.round((posData[g].avg||0)*100) : 0;
-    var fw = fwarByGroup[g] != null ? fwarByGroup[g] : null;
-    var psCol = ps>=65?'#1e6b3a':ps>=50?'#4a9a68':ps>=35?'#b7791f':'#c0392b';
-    var fwCol = fw==null?'var(--muted)':fw>=5?'#1e6b3a':fw>=2?'#4a9a68':fw>=-1?'#b7791f':'#c0392b';
-    var barW = Math.min(100,Math.max(0,ps));
-    h += '<div style="'+mc+'">';
-    h += '<div style="'+lb+';margin-bottom:5px">'+DIAG_LABELS[gi]+'</div>';
-    h += '<div style="display:flex;align-items:baseline;gap:4px;margin-bottom:1px">';
-    h += '<span style="font-size:17px;font-weight:500;color:'+psCol+'">'+ps+'</span>';
-    h += '<span style="font-size:10px;color:var(--muted)">pos str</span></div>';
-    h += '<div style="display:flex;align-items:baseline;gap:4px;margin-bottom:6px">';
-    h += '<span style="font-size:13px;font-weight:500;color:'+fwCol+'">'+(fw!=null?(fw>=0?'+':'')+fw.toFixed(1):'—')+'</span>';
-    h += '<span style="font-size:10px;color:var(--muted)">fWAR</span></div>';
-    h += '<div style="height:5px;border-radius:2px;background:var(--border);position:relative">';
-    h += '<div style="width:'+barW+'%;height:100%;border-radius:2px;background:'+psCol+'"></div>';
-    h += '<div style="position:absolute;top:-3px;left:50%;width:1.5px;height:11px;background:var(--muted);opacity:0.35;border-radius:1px"></div></div>';
-    h += '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:2px"><span>0</span><span>avg</span><span>100</span></div>';
-    h += '</div>';
-  });
-  h += '</div>';
-  h += '</div>';
-
-  // Right column: Should-Be Score, Current vs Expected, Trend
-  h += '<div style="display:flex;flex-direction:column;gap:10px">';
-  // Should-Be Score
-  var ic=interpColor(expScore), ibg=interpBg(expScore);
-  h += '<div style="'+mc+'"><div style="'+lb+';margin-bottom:6px">Should-be score</div>';
-  h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span style="font-size:26px;font-weight:500;color:'+ic+'">'+expScore+'</span>'+pill(interpLabel(expScore),ibg,ic)+'</div>';
-  h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Calculated score (higher is better)</div>';
-  h += '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:2px"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>';
-  h += '<div style="height:6px;border-radius:3px;background:var(--border);position:relative"><div style="height:100%;width:'+Math.min(100,Math.max(0,expScore))+'%;background:'+ic+';border-radius:3px"></div></div></div>';
-  // Current vs Expected
-  if (arcRowInTable && curRank) {
-    h += '<div style="'+mc+'"><div style="'+lb+';margin-bottom:8px">Current vs expected</div>';
-    h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;text-align:center">';
-    function ord2(n){return n+(n===1?'st':n===2?'nd':n===3?'rd':'th');}
-    h += '<div><div style="'+lb+'">Current rank</div><div style="font-size:20px;font-weight:500;margin-top:4px">'+ord2(curRank)+'</div></div>';
-    h += '<div><div style="'+lb+'">Expected band</div><div style="font-size:13px;font-weight:500;color:'+ic+';margin-top:6px">'+arcRowInTable.bandStr+'</div></div>';
-    var rdiff = arcRowInTable.expRank - curRank;
-    var dcol = rdiff>0?'#1e6b3a':rdiff<0?'#c0392b':'#5f5e5a';
-    h += '<div><div style="'+lb+'">Difference</div><div style="font-size:20px;font-weight:500;color:'+dcol+';margin-top:4px">'+(rdiff>0?'+':'')+rdiff+'</div></div>';
-    h += '</div></div>';
-  }
-  // Trend Outlook
-  h += '<div style="'+mc+'"><div style="'+lb+';margin-bottom:6px">Trend outlook</div>';
-  h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'+pill(trendLabel,trendBg,trendCol);
-  h += '<span style="font-size:11px;color:var(--muted)">'+strength+' strength</span></div>';
-  h += '<div style="font-size:12px;color:var(--muted);line-height:1.6">'+trendDesc+'</div></div>';
-  h += '</div></div>';
 
   requestAnimationFrame(function(){
     var el=document.getElementById(scatterCid);
