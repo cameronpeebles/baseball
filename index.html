@@ -300,8 +300,12 @@ td.neg { color: #c0392b; font-weight: 500; }
     max-width: 100%;
   }
 
-  /* The dashboard headline KPI strip (4-up) → 2-up on phone. */
+  /* The dashboard headline KPI strip (6-up: 4 season + 2 weekly) → 2-up on
+     phone. The week + action cells lose their left divider on mobile and just
+     stack with the rest. */
   .dash-headline-kpis { grid-template-columns: repeat(2,1fr) !important; gap: 10px 14px !important; }
+  .dash-headline-kpis > div { border-left: none !important; padding-left: 0 !important; }
+  .dash-headline-kpis > div[style*="background:rgba(24,95,165"] { padding: 8px 11px !important; margin: 0 !important; }
 
   /* Generic safety net: inline 4-column grids that are too tight on phone.
      Scoped to dashboard cards so we don't disturb data tables elsewhere. */
@@ -17508,23 +17512,61 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
       sentence += 'Best move: <strong>' + arcEntry.action + '</strong>.';
     }
 
+    // Derive "This week" matchup data from the H2H predictor. Each weekly
+    // entry carries per-cat results ('win'/'loss'/'tie') from which we count
+    // the projected W-L-T for the upcoming week. Falls back to dashes if the
+    // predictor cache isn't warm yet (preloads in background, repopulates on
+    // next render).
+    var _hbWeek = { rec: '\u2014', opp: '' };
+    try {
+      var _pr = (window._h2hPredictTeam && typeof window._h2hPredictTeam === 'function') ? window._h2hPredictTeam(teamName) : null;
+      if (_pr && _pr.weekly && _pr.weekly.length) {
+        var _w0 = _pr.weekly[0];
+        _hbWeek.opp = _w0.opponent || '';
+        if (_w0.perCat) {
+          var _wW = 0, _wL = 0, _wT = 0;
+          Object.keys(_w0.perCat).forEach(function(c){
+            var r = _w0.perCat[c];
+            if (r === 'win') _wW++; else if (r === 'loss') _wL++; else _wT++;
+          });
+          _hbWeek.rec = _wW + '\u2013' + _wL + (_wT ? '\u2013' + _wT : '');
+        }
+      }
+    } catch(e) {}
+
+    // Derive "Top action" — combine Best Move (action verb) with worst
+    // position group (the thing to act on). E.g. "Add an RP", "Trade for SP".
+    // Pick destination page: anything mentioning trade → Trade Lab,
+    // otherwise Waiver Wire.
+    var _hbAct = { label: '\u2014', page: 'ros', pageLabel: 'Open Waivers' };
+    if (worstG && worstG.g && arcEntry && arcEntry.action) {
+      var _verb = String(arcEntry.action).toLowerCase();
+      var _isTrade = /trade|sell|buy|swap|deal/.test(_verb);
+      var _isHold  = /hold|optimize|maintain|stay/.test(_verb);
+      var _isBuild = /rebuild|reset/.test(_verb);
+      if (_isHold)       _hbAct.label = 'Add a ' + worstG.g;
+      else if (_isTrade) _hbAct.label = 'Trade for ' + worstG.g;
+      else if (_isBuild) _hbAct.label = 'Stash a ' + worstG.g;
+      else               _hbAct.label = 'Add a ' + worstG.g;
+      if (_isTrade) { _hbAct.page = 'tradelab'; _hbAct.pageLabel = 'Open Trade Lab'; }
+    }
+
     var accent = (vtxt === '#3B6D11') ? '#2d7a5a' : (vtxt === '#A32D2D' ? '#b04a3a' : 'var(--border)');
     _hb += '<div class="card" style="margin-bottom:20px;border-left:3px solid ' + accent + '">';
     _hb += '<div class="card-body" style="padding:16px 18px">';
-    // Top line
     _hb += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:10px">';
     _hb += '<div><div style="font-size:18px;font-weight:600;line-height:1.2">' + _loEsc(teamName) + '</div>';
     _hb += '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + _loEsc(arcEntry.arch||'\u2014') + ' &middot; ' + _loEsc(arcEntry.dir||'\u2014') + ' posture</div></div>';
     _hb += '<div style="background:' + vbg + ';color:' + vtxt + ';font-size:12px;font-weight:600;padding:5px 12px;border-radius:8px;white-space:nowrap">' + verdict + '</div>';
     _hb += '</div>';
-    // Sentence
     _hb += '<div style="font-size:14px;line-height:1.6">' + sentence + '</div>';
-    // KPI strip
-    _hb += '<div class="dash-headline-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;padding-top:12px;border-top:0.5px solid var(--border)">';
+    _hb += '<div class="dash-headline-kpis" style="display:grid;grid-template-columns:0.85fr 0.85fr 0.95fr 0.85fr 0.95fr 1.5fr;gap:14px;align-items:start;margin-top:14px;padding-top:12px;border-top:0.5px solid var(--border)">';
     _hb += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">Standing</div><div style="font-size:18px;font-weight:600;margin-top:2px">' + ordN(cur) + '</div></div>';
     _hb += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">Projected</div><div style="font-size:18px;font-weight:600;margin-top:2px;color:' + projCol + '">' + projTxt + '<span style="font-size:11px;font-weight:500">' + projDelta + '</span></div></div>';
     _hb += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">Strength</div><div style="font-size:18px;font-weight:600;margin-top:2px;color:#3B6D11">' + (bestG ? bestG.g : '\u2014') + '</div></div>';
     _hb += '<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">Top need</div><div style="font-size:18px;font-weight:600;margin-top:2px;color:#A32D2D">' + (worstG ? worstG.g : '\u2014') + '</div></div>';
+    _hb += '<div style="border-left:0.5px solid var(--border);padding-left:14px"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">This week</div><div style="font-size:16px;font-weight:600;margin-top:2px;line-height:1.1">' + _hbWeek.rec + '</div>' + (_hbWeek.opp ? '<div style="font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">vs ' + _loEsc(_hbWeek.opp) + '</div>' : '') + '</div>';
+    _hb += '<div style="background:rgba(24,95,165,0.05);border-left:2px solid #185FA5;border-radius:0 6px 6px 0;padding:7px 11px;margin:-7px 0"><div style="display:flex;align-items:center;gap:4px;margin-bottom:3px"><span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#0C447C">Top action</span></div><div style="font-size:13px;font-weight:500;line-height:1.2;margin-bottom:6px">' + _loEsc(_hbAct.label) + '</div><button onclick="window.showPage(\'' + _hbAct.page + '\')" style="padding:3px 9px;font-size:10px;border:0.5px solid #185FA5;background:rgba(24,95,165,0.10);color:#185FA5;border-radius:6px;cursor:pointer;font-family:inherit;width:100%">' + _hbAct.pageLabel + '</button></div>';
     _hb += '</div>';
     _hb += '</div></div>';
   })();
