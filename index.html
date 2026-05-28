@@ -16220,6 +16220,12 @@ function renderArchetypePage() {
       t.rosRaw = tot;
     });
     rosAvailable = true;
+    if (window._debug && typeof console !== 'undefined') {
+      console.log('[ROS% overview] per-team totals (used by league overview table):');
+      var _dbg = teamScores.map(function(t){ return { team: t.teamName, rosRaw: +t.rosRaw.toFixed(2) }; })
+        .sort(function(a,b){ return b.rosRaw - a.rosRaw; });
+      if (console.table) console.table(_dbg); else console.log(_dbg);
+    }
   })();
 
   // ── Rank fWAR% and LgRating% 0-100 across teams ──────────────────────────
@@ -16268,14 +16274,19 @@ function renderArchetypePage() {
   function _classifyArcRule(fw, ro, rt, j) {
     var aH = fw >= 65, aM = fw >= 45 && fw < 65, aL = fw < 45;
     var bH = ro >= 65, bM = ro >= 45 && ro < 65, bL = ro < 45;
-    var cH = rt >= 65, cL = rt < 45;
+    var cH = rt >= 65, cM = rt >= 45 && rt < 65, cL = rt < 45;
     var lk = j >= 0.12, ul = j <= -0.12;
     if (aH && bH && lk) return { arch:'Lucky Contender',   dir:'Slight Down', action:'Sell High'         };
     if (aH && bH)        return { arch:'True Contender',    dir:'Flat',         action:'Hold / Optimize'   };
     if (aH && bL)        return { arch:'Selling Window',    dir:'Down',         action:'Sell High'         };
     if (aH && bM && lk)  return { arch:'Hot Streak',        dir:'Slight Down',  action:'Sell High'         };
     if (aH && bM)        return { arch:'Solid Performer',   dir:'Slight Down',  action:'Optimize'          };
-    if (aL && bH)        return { arch:'Sleeping Giant',    dir:'Up',           action:'Hold / Buy'        };
+    // Sleeping Giant requires SOME roster talent (rating ≥ 45) backing the
+    // projection. Without it, a high ROS% can come from one or two stash
+    // players with hot forecasts and isn't a real "buy-low" signal — see
+    // Long-Shot Rebuild below.
+    if (aL && bH && !cL) return { arch:'Sleeping Giant',    dir:'Up',           action:'Hold / Buy'        };
+    if (aL && bH && cL)  return { arch:'Long-Shot Rebuild', dir:'Slight Up',    action:'Hold / Reassess'   };
     if (aL && bM && ul)  return { arch:'Unlucky Mid',       dir:'Slight Up',    action:'Hold'              };
     if (aL && cH)        return { arch:'Talent Trap',       dir:'Slight Up',    action:'Hold / Reassess'   };
     if (aL && bL && rt < 45) return { arch:'Rebuild',       dir:'Flat',         action:'Rebuild'           };
@@ -17051,6 +17062,14 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
 
     rosTotals = teamIds.map(function(tid){return {tid:tid, v:teamRosTotal(tid)};}).sort(function(a,b){return a.v-b.v;});
     rosPct = rankPct(rosTotals, teamId);
+    if (window._debug && typeof console !== 'undefined') {
+      console.log('[ROS% diagnostic] per-team totals (used by team diagnostic card for team='+teamId+', rosPct='+rosPct+'):');
+      var _dbg = rosTotals.slice().reverse().map(function(o){
+        var ti = S.teamInfo[o.tid] || {};
+        return { team: ti.name || ti.shortName || o.tid, rosRaw: +o.v.toFixed(2) };
+      });
+      if (console.table) console.table(_dbg); else console.log(_dbg);
+    }
   })();
 
   // fWAR by group for positional breakdown
@@ -17095,7 +17114,8 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
     else if (fwH && roL)                  setArc('Selling Window',    'Down',         'Sell High',          'High results but ROS projects regression. Trade overperformers while value is up.');
     else if (fwH && roM && lucky)         setArc('Hot Streak',        'Slight Down',  'Sell High',          'Results above projection AND lucky. Some give-back coming.');
     else if (fwH && roM)                  setArc('Solid Performer',   'Slight Down',  'Optimize',           'Outperforming projection slightly. Watch for regression.');
-    else if (fwL && roH)                  setArc('Sleeping Giant',    'Up',           'Hold / Buy',         'Low results despite high ROS projection — buy-low setup.');
+    else if (fwL && roH && !rtL)          setArc('Sleeping Giant',    'Up',           'Hold / Buy',         'Low results despite high ROS projection — buy-low setup, and the roster talent is there to back it up.');
+    else if (fwL && roH && rtL)           setArc('Long-Shot Rebuild', 'Slight Up',    'Hold / Reassess',    'High ROS projection but rock-bottom production AND talent — the projection rests on a thin roster, ceiling is fragile.');
     else if (fwL && roM && unlucky)       setArc('Unlucky Mid',       'Slight Up',    'Hold',               'Low results with neutral projection but unlucky. Some bounce-back due.');
     else if (fwL && rtH)                  setArc('Talent Trap',       'Slight Up',    'Hold / Reassess',    'Market values the talent but neither current results nor ROS confirm it.');
     else if (fwL && roL && rtL)           setArc('Rebuild',           'Flat',         'Rebuild',            'Across-the-board low. Acquire upside, accept this season.');
@@ -17120,7 +17140,8 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
       if (aH && bL)        return 'Selling Window';
       if (aH && bM && lk)  return 'Hot Streak';
       if (aH && bM)        return 'Solid Performer';
-      if (aL && bH)        return 'Sleeping Giant';
+      if (aL && bH && !cL) return 'Sleeping Giant';
+      if (aL && bH && cL)  return 'Long-Shot Rebuild';
       if (aL && bM && ul)  return 'Unlucky Mid';
       if (aL && cH)        return 'Talent Trap';
       if (aL && bL && rt < 45) return 'Rebuild';
