@@ -11895,7 +11895,17 @@ function renderMatchPredictions() {
   ]).then(function(results) {
     var stats = results[0];
     var fullSchedule = results[1]; // [{period, away, home}, ...]
-    window._joeStatsCache = stats;  // also cache for H2H predictor
+    // NOTE: joe_stats.json has a DIFFERENT shape than the parsed weekly-stat
+    // rows produced by _h2hParseScheduleData(standings_schedule.json). Earlier
+    // versions wrote this raw blob into window._joeStatsCache, which then got
+    // read as if it were weekly rows by trends / variance / Δ win % — producing
+    // false zeros (team's full-season W landing in the W slot, hitting cats
+    // all 0). Keep this data in its own cache and load the real weekly stats
+    // through the predictor path so downstream consumers see consistent shape.
+    window._joeMatchupRaw = stats;
+    if (typeof _h2hLoadStats === 'function') {
+      _h2hLoadStats().catch(function(){}); // warms _joeStatsCache with parsed rows
+    }
     buildMatchupPage(stats, fullSchedule);
   }).catch(function(e) {
     document.getElementById('matchup-body').innerHTML =
