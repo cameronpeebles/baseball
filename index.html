@@ -5571,7 +5571,7 @@ function computeZScores() {
     var teamName = (S.teamInfo[teamId] && S.teamInfo[teamId].shortName) || (fc[1] && fc[1].content) || '?';
     var obj = {teamId: teamId, teamName: teamName};
     allStats.forEach(function(stat) {
-      var val = parseFloat(cells[stat.resolvedIdx] && cells[stat.resolvedIdx].content);
+      var val = _parseStatCell(cells[stat.resolvedIdx]);
       obj[stat.key] = isNaN(val) ? null : val;
     });
     return obj;
@@ -5784,15 +5784,15 @@ function renderAnalytics() {
     var fc = row.fixedCells || [], cells = row.cells || [];
     var teamId = (fc[1] && fc[1].teamId) || '';
     var teamName = (teamInfo[teamId] && teamInfo[teamId].shortName) || (fc[1] && fc[1].content) || ('Team ' + (i+1));
-    var pts = parseFloat(cells[ptsIdx] && cells[ptsIdx].content) || 0;
+    var pts = _parseStatCell(cells[ptsIdx]) || 0;
     var hP = 0, pP = 0;
     batKeys.forEach(function(k) {
       var idx = hIdx[k]; if (idx == null) return;
-      var v = parseFloat(cells[idx] && cells[idx].content); if (!isNaN(v)) hP += v;
+      var v = _parseStatCell(cells[idx]); if (!isNaN(v)) hP += v;
     });
     pitKeys.forEach(function(k) {
       var idx = hIdx[k]; if (idx == null) return;
-      var v = parseFloat(cells[idx] && cells[idx].content); if (!isNaN(v)) pP += v;
+      var v = _parseStatCell(cells[idx]); if (!isNaN(v)) pP += v;
     });
     teams.push(teamName); totalPts.push(pts); hitPts.push(parseFloat(hP.toFixed(1))); pitPts.push(parseFloat(pP.toFixed(1))); colors.push(palette[i % palette.length]);
   });
@@ -9541,6 +9541,18 @@ function _loCardHtml(p, isPick, tossUp, isHit, slot, subId) {
 }
 
 function _loEsc(s) { return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Parse a Fantrax cell's numeric content, robust to thousands separators.
+// Raw parseFloat("1,047") returns 1 — silently truncating any value over 1k.
+// This bit the Correlations page on team K totals (G.O.A.T. read as 1k after
+// crossing 1,000 strikeouts). Strip commas + whitespace before parsing.
+// Returns NaN on unparseable input so callers can distinguish missing vs zero.
+function _parseStatCell(cell) {
+  if (!cell || cell.content == null) return NaN;
+  var s = String(cell.content).replace(/[,\s]/g, '');
+  if (!s) return NaN;
+  return parseFloat(s);
+}
 
 // Build the home/away game label like "vs CHC" or "@ STL" using the
 // opponent map in the build context. Falls back to '' if unknown.
@@ -17874,7 +17886,7 @@ function assembleDashboard(teamId, el) {
     (ptTable.rows || []).forEach(function(row, rank) {
       var fc = row.fixedCells || [], cells = row.cells || [];
       var id = (fc[1] && fc[1].teamId) || '';
-      var pts = parseFloat(cells[ptsIdx] && cells[ptsIdx].content) || 0;
+      var pts = _parseStatCell(cells[ptsIdx]) || 0;
       ptsById[id] = { pts: pts, rank: rank + 1 };
     });
   }
@@ -17895,7 +17907,7 @@ function assembleDashboard(teamId, el) {
     var isRealStats = true;
     if (avgIdx != null) {
       var firstCells = ((sourceTable.rows||[])[0] || {}).cells || [];
-      var testAvg = parseFloat((firstCells[avgIdx]||{}).content);
+      var testAvg = _parseStatCell(firstCells[avgIdx]);
       if (!isNaN(testAvg) && testAvg > 2) isRealStats = false; // fantasy pts, not real avg
     }
 
@@ -17913,7 +17925,7 @@ function assembleDashboard(teamId, el) {
       var catVals = {};
       BAT_CATS_D.concat(PIT_CATS_D).forEach(function(k) {
         var ci = hIdx[k]; if (ci == null) return;
-        var v = parseFloat(cells[ci] && cells[ci].content);
+        var v = _parseStatCell(cells[ci]);
         if (!isNaN(v)) catVals[k] = v;
       });
       var rowObj = { id: id, name: name, pts: ptsInfo.pts, rank: ptsInfo.rank, catVals: catVals };
@@ -19455,7 +19467,7 @@ function buildCorrelations(el) {
       var fc = row.fixedCells || [], cells = row.cells || [];
       var id = (fc[1] && fc[1].teamId) || '';
       if (!id) return;
-      teamPts[id] = parseFloat(cells[ptsColIdx] && cells[ptsColIdx].content) || 0;
+      teamPts[id] = _parseStatCell(cells[ptsColIdx]) || 0;
     });
   }
 
@@ -19485,17 +19497,17 @@ function buildCorrelations(el) {
     var sv = {};
     CATS.forEach(function(c) {
       var ci = srcIdx[c]; if (ci == null) return;
-      var v = parseFloat(cells[ci] && cells[ci].content);
+      var v = _parseStatCell(cells[ci]);
       if (!isNaN(v)) sv[c] = v;
     });
     // Try SVH3 if SV missing
     if (sv['SV'] == null && srcIdx['SVH3'] != null) {
-      var v = parseFloat(cells[srcIdx['SVH3']] && cells[srcIdx['SVH3']].content);
+      var v = _parseStatCell(cells[srcIdx['SVH3']]);
       if (!isNaN(v)) sv['SVH3'] = v;
     }
     teamStats[id] = sv;
     if (!teamPts[id] && ptIdx['PTS'] == null) {
-      teamPts[id] = parseFloat(cells[ptsColIdx] && cells[ptsColIdx].content) || 0;
+      teamPts[id] = _parseStatCell(cells[ptsColIdx]) || 0;
     }
   });
 
@@ -19848,7 +19860,7 @@ function buildCorrelations(el) {
       var fc = row.fixedCells || [], cells = row.cells || [];
       var id = (fc[1] && fc[1].teamId) || '';
       if (!id) return;
-      var v = parseFloat(cells[winPctColIdx] && cells[winPctColIdx].content);
+      var v = _parseStatCell(cells[winPctColIdx]);
       if (!isNaN(v)) teamWinPct[id] = v > 1 ? v / 100 : v;
     });
   }
@@ -21191,7 +21203,7 @@ window.recalculateFWAR = function() {
       var fc = row.fixedCells || [], cells = row.cells || [];
       var id = (fc[1] && fc[1].teamId) || '';
       if (!id) return;
-      teamFantasyPts[id] = parseFloat(cells[ptsCol2] && cells[ptsCol2].content) || 0;
+      teamFantasyPts[id] = _parseStatCell(cells[ptsCol2]) || 0;
     });
   }
 
@@ -21290,7 +21302,7 @@ window.recalculateFWAR = function() {
       var fc = row.fixedCells || [], cells = row.cells || [];
       var id = (fc[1] && fc[1].teamId) || '';
       if (!id) return;
-      var v = parseFloat(cells[winPctColIdx2] && cells[winPctColIdx2].content);
+      var v = _parseStatCell(cells[winPctColIdx2]);
       if (!isNaN(v)) winPctByTeamId[id] = v > 1 ? v / 100 : v;
     });
   }
@@ -21650,7 +21662,7 @@ window.autoWeightFromCorrelations = function() {
       (ptTable.rows||[]).forEach(function(row){
         var fc=row.fixedCells||[],cells=row.cells||[];
         var id=(fc[1]&&fc[1].teamId)||'';
-        if (id) teamPts[id]=parseFloat(cells[ptsCol]&&cells[ptsCol].content)||0;
+        if (id) teamPts[id]=_parseStatCell(cells[ptsCol])||0;
       });
     }
 
@@ -21664,15 +21676,15 @@ window.autoWeightFromCorrelations = function() {
       var sv={};
       CATS_ALL.forEach(function(c){
         var ci=hIdx[c]; if (ci==null) return;
-        var v=parseFloat(cells[ci]&&cells[ci].content);
+        var v=_parseStatCell(cells[ci]);
         if (!isNaN(v)) sv[c]=v;
       });
       if (sv['SVH3']==null&&hIdx['SVH3']!=null) {
-        var v=parseFloat(cells[hIdx['SVH3']]&&cells[hIdx['SVH3']].content);
+        var v=_parseStatCell(cells[hIdx['SVH3']]);
         if (!isNaN(v)) sv['SVH3']=v;
       }
       teamStats[id]=sv;
-      if (!teamPts[id]) teamPts[id]=parseFloat(cells[hIdx['PTS']!=null?hIdx['PTS']:0]&&cells[hIdx['PTS']!=null?hIdx['PTS']:0].content)||0;
+      if (!teamPts[id]) teamPts[id]=_parseStatCell(cells[hIdx['PTS']!=null?hIdx['PTS']:0])||0;
     });
 
     // Build dataset
