@@ -10,7 +10,7 @@
         "country": "United States",
         "showAdFreePurchase": true,
         "timezone": "-0600",
-        "appAdPreloadViewports": 2.0,
+        "appAdPreloadViewports": 5.0,
         "webAdRefreshInterval": 30,
         "chatEnabled": true,
         "locationDisplay": "<span title=\"California\">CA</span><span title=\"United States\">, US</span> &nbsp;",
@@ -46,6 +46,14 @@
         "receiveEmail": true,
         "verificationRequired": true,
         "userId": "xvxwu418k69yvpe7",
+        "badAdConfig": {
+          "collapseFill": false,
+          "blockRedirect": false,
+          "blockPopup": false,
+          "blockTakeover": false,
+          "forceSafeframe": false,
+          "enabled": false
+        },
         "killOldUi": true,
         "uba": false,
         "adPoolExpirySec": 120,
@@ -58,8 +66,9 @@
             "adUnitId": "23342640731"
           },
           "Others_android_top:ANDROID": {
-            "sizeType": "ANCHORED",
+            "sizeType": "MAX",
             "refreshInterval": 30,
+            "sizeHeight": 100,
             "adFormat": "BANNER",
             "adUnitId": "ca-app-pub-1265055087905438/3273297762"
           },
@@ -67,8 +76,9 @@
             "disabled": true
           },
           "Players_iOS_top:IOS": {
-            "sizeType": "ANCHORED",
+            "sizeType": "MAX",
             "refreshInterval": 30,
+            "sizeHeight": 100,
             "adFormat": "BANNER",
             "adUnitId": "ca-app-pub-1265055087905438/2899694998"
           },
@@ -101,8 +111,9 @@
             "adUnitId": "ca-app-pub-1265055087905438/6615836859"
           },
           "Others_iOS_top:IOS": {
-            "sizeType": "ANCHORED",
+            "sizeType": "MAX",
             "refreshInterval": 30,
+            "sizeHeight": 100,
             "adFormat": "BANNER",
             "adUnitId": "ca-app-pub-1265055087905438/5505677035"
           },
@@ -124,14 +135,16 @@
             "disabled": true
           },
           "Matchups_iOS_top:IOS": {
-            "sizeType": "ANCHORED",
+            "sizeType": "MAX",
             "refreshInterval": 30,
+            "sizeHeight": 100,
             "adFormat": "BANNER",
             "adUnitId": "ca-app-pub-1265055087905438/8131840372"
           },
           "League_home_iOS_top:IOS": {
-            "sizeType": "ANCHORED",
+            "sizeType": "MAX",
             "refreshInterval": 30,
+            "sizeHeight": 100,
             "adFormat": "BANNER",
             "adUnitId": "ca-app-pub-1265055087905438/1263179690"
           },
@@ -150,8 +163,9 @@
             "adUnitId": "23346741279"
           },
           "League_home_android_top:ANDROID": {
-            "sizeType": "ANCHORED",
+            "sizeType": "MAX",
             "refreshInterval": 30,
+            "sizeHeight": 100,
             "adFormat": "BANNER",
             "adUnitId": "ca-app-pub-1265055087905438/4021204977"
           },
@@ -194,8 +208,9 @@
             "disabled": true
           },
           "Team_roster_android_top_max:ANDROID": {
-            "sizeType": "ANCHORED",
+            "sizeType": "MAX",
             "refreshInterval": 30,
+            "sizeHeight": 100,
             "adFormat": "BANNER",
             "adUnitId": "ca-app-pub-1265055087905438/1741825291"
           },
@@ -231,8 +246,9 @@
             "adUnitId": "ca-app-pub-1265055087905438/5298682498"
           },
           "Team_roster_iOS_top_max:IOS": {
-            "sizeType": "ANCHORED",
+            "sizeType": "MAX",
             "refreshInterval": 30,
+            "sizeHeight": 100,
             "adFormat": "BANNER",
             "adUnitId": "ca-app-pub-1265055087905438/3382210025"
           },
@@ -258,8 +274,9 @@
             "adUnitId": "ca-app-pub-1265055087905438/5681070305"
           },
           "Matchups_android_top:ANDROID": {
-            "sizeType": "ANCHORED",
+            "sizeType": "MAX",
             "refreshInterval": 30,
+            "sizeHeight": 100,
             "adFormat": "BANNER",
             "adUnitId": "ca-app-pub-1265055087905438/3677723497"
           },
@@ -285,8 +302,9 @@
             "adUnitId": "ca-app-pub-1265055087905438/4384167050"
           },
           "Players_android_top:ANDROID": {
-            "sizeType": "ANCHORED",
+            "sizeType": "MAX",
             "refreshInterval": 30,
+            "sizeHeight": 100,
             "adFormat": "BANNER",
             "adUnitId": "ca-app-pub-1265055087905438/8119531383"
           }
