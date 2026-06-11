@@ -55,6 +55,7 @@
           "forceSafeframe": false,
           "enabled": false
         },
+        "bypassGeolocation": false,
         "killOldUi": true,
         "uba": false,
         "adPoolExpirySec": 120,
@@ -242,7 +243,7 @@
           "Player_profile_iOS_top:IOS": {
             "sizeType": "MAX",
             "refreshInterval": 30,
-            "sizeHeight": 100,
+            "sizeHeight": 50,
             "adFormat": "BANNER",
             "adUnitId": "ca-app-pub-1265055087905438/5298682498"
           },
@@ -305,7 +306,7 @@
           "Players_android_top:ANDROID": {
             "sizeType": "MAX",
             "refreshInterval": 30,
-            "sizeHeight": 100,
+            "sizeHeight": 50,
             "adFormat": "BANNER",
             "adUnitId": "ca-app-pub-1265055087905438/8119531383"
           }
