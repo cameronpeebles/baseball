@@ -12609,12 +12609,28 @@ function _h2hMatchupSummaryHtml(r) {
   h += '<div style="font-size:18px;font-weight:500;margin-top:2px">Projected ' + recTxt + '</div></div>';
   h += '<div style="background:'+vbg+';color:'+vtx+';font-size:12px;font-weight:500;padding:5px 12px;border-radius:8px;white-space:nowrap">'+verdict+'</div>';
   h += '</div>';
-  h += '<div style="font-size:14px;line-height:1.6;margin-bottom:14px">'+sentence+'</div>';
-  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">';
+  h += '<div style="font-size:14px;line-height:1.6;margin-bottom:10px">'+sentence+'</div>';
+
+  // How to read this — collapsible explanation of the two lenses (margin and
+  // reliability) and the verdict pill.
+  h += infoBox(
+    '<strong>Two lenses on the same week.</strong> '
+    + '<strong>By margin</strong> groups your categories by how decisively you\u2019re winning or losing them right now: <em>Safe wins</em> (you\u2019re well ahead), <em>On the bubble</em> (coinflips, the most actionable), <em>Out of reach</em> (too far back to flip cheaply). '
+    + '<strong>By reliability</strong> crosses your standings rank with your week-to-week consistency: <em>Locked in</em> = strong AND steady (count on them), <em>Stuck</em> = weak AND consistent (the top fix priority \u2014 they won\u2019t fix themselves), <em>Live dog</em> = weak but volatile (might steal a week, don\u2019t over-invest), <em>Fragile</em> = strong but volatile (don\u2019t assume the win). '
+    + 'The <strong>verdict pill</strong> reads the pattern and names the strategic posture: <em>Protect the lead</em> (mostly safe wins), <em>Push to win now</em> (many close coinflip losses), <em>Punt and stack</em> (lopsided), <em>Reallocate to what matters</em> (losing the high-leverage cats), <em>Make a targeted move</em> (mixed). '
+    + 'The reliability section only appears once the variance card has loaded.'
+  );
+
+  h += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-bottom:5px">By margin</div>';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">';
   h += bucketCell('Safe wins', safe, '#0F6E56');
   h += bucketCell('On the bubble', bubble, '#854F0B');
   h += bucketCell('Out of reach', reach, '#A32D2D');
   h += '</div>';
+
+  // Reliability section — populated by _h2hPopulateVarianceCard after it runs.
+  // Initially hidden; the variance card fills this placeholder + sets display.
+  h += '<div id="h2h-summary-reliability" style="display:none"></div>';
 
   // What to do — concrete directives derived from the buckets. Only show a
   // line when it applies, so a steady team doesn't get told to punt nothing.
@@ -13024,6 +13040,51 @@ function _h2hPopulateVarianceCard(selectedTeam) {
   html += '</div></div>';
 
   bodyEl.innerHTML = html;
+
+  // Stash the per-cat Read classification + populate the Matchup Summary
+  // card's reliability placeholder (it renders BEFORE this card runs, so it
+  // emits a placeholder we fill in here). Same Read math, just lifted up.
+  try {
+    var readsByCat = {};
+    var buckets = { Locked: [], Stuck: [], Fragile: [], 'Live dog': [] };
+    CATS.forEach(function(c){
+      var r = classifyRead(c);
+      readsByCat[c] = r;
+      if (r && buckets[r.k]) buckets[r.k].push(c);
+    });
+    window._h2hReadByTeam = window._h2hReadByTeam || {};
+    window._h2hReadByTeam[selectedTeam] = { byCat: readsByCat, buckets: buckets };
+
+    var relEl = document.getElementById('h2h-summary-reliability');
+    if (relEl) {
+      var anyPopulated = Object.keys(buckets).some(function(k){ return buckets[k].length > 0; });
+      if (!anyPopulated) {
+        relEl.style.display = 'none';
+      } else {
+        var lines = [
+          { key:'Locked',   icon:'ti-lock',            col:'#0F6E56', label:'Locked in', tail:'strong AND steady. Count on these.' },
+          { key:'Stuck',    icon:'ti-alert-triangle', col:'#A32D2D', label:'Stuck',     tail:'weak AND consistent. Won\u2019t fix itself; targeted move needed.' },
+          { key:'Live dog', icon:'ti-dice',            col:'#854F0B', label:'Live dogs', tail:'weak but volatile. Might steal a week. Don\u2019t over-invest.' },
+          { key:'Fragile',  icon:'ti-help',            col:'#5F5E5A', label:'Fragile',   tail:'strong but volatile. Don\u2019t assume the win.' }
+        ];
+        var relHtml = '';
+        relHtml += '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-bottom:5px">By reliability <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:10px">&middot; week to week</span></div>';
+        relHtml += '<div style="background:var(--color-background-secondary,#f3f1ea);border-radius:8px;padding:11px 14px;margin-bottom:14px">';
+        relHtml += '<div style="display:flex;flex-direction:column;gap:6px;font-size:13px;line-height:1.5">';
+        lines.forEach(function(L){
+          var cats = buckets[L.key];
+          if (!cats.length) return;
+          relHtml += '<div style="display:flex;gap:8px">';
+          relHtml += '<i class="ti '+L.icon+'" style="font-size:14px;color:'+L.col+';margin-top:2px" aria-hidden="true"></i>';
+          relHtml += '<span><strong style="color:'+L.col+'">'+L.label+':</strong> '+cats.join(', ')+' \u2014 '+L.tail+'</span>';
+          relHtml += '</div>';
+        });
+        relHtml += '</div></div>';
+        relEl.innerHTML = relHtml;
+        relEl.style.display = '';
+      }
+    }
+  } catch(e) { if (window._debug) console.warn('[h2h reliability]', e); }
 }
 
 // ── H2H team-specific Matters-vs-noise scatter ────────────────────────────
@@ -17668,12 +17729,11 @@ function buildDiagnosticCard(teamId, teamName, standingsRow, allTeamRows, posDat
   h += '<div style="display:flex;align-items:baseline;gap:6px;margin:6px 0 3px"><span style="font-size:22px;font-weight:500">'+lgPct+'</span><span style="font-size:11px;color:var(--muted)">th pct</span>'+pill(lBucket,_lgC.bg,_lgC.text)+'</div>';
   h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Roster quality across all positions</div>';
   h += gradBar(lgPct,'#E24B4A','#639922',_lgC.text)+'</div>';
-  // ROS% — projected production (NEW)
+  // ROS% — projected production
   if (rosPct != null) {
     var rosBucket = fBkt(rosPct);
     var _roC = pctColor(rosPct);
-    h += '<div style="'+mc+';border:0.5px solid rgba(29,158,117,0.30);position:relative">';
-    h += '<div style="position:absolute;top:-7px;right:8px;font-size:8px;font-weight:500;color:#1e6b3a;background:var(--card);padding:1px 6px;border-radius:8px;border:0.5px solid rgba(29,158,117,0.30);text-transform:uppercase;letter-spacing:0.04em">New</div>';
+    h += '<div style="'+mc+'">';
     h += '<div style="'+lb+'">Projected production (ROS%)</div>';
     h += '<div style="display:flex;align-items:baseline;gap:6px;margin:6px 0 3px"><span style="font-size:22px;font-weight:500">'+rosPct+'</span><span style="font-size:11px;color:var(--muted)">th pct</span>'+pill(rosBucket,_roC.bg,_roC.text)+'</div>';
     h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Rest-of-season SGP vs league</div>';
