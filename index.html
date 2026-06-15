@@ -6663,6 +6663,268 @@ function _rosSugPosMatchesFilter(pos, filter) {
   return parts.indexOf(filter.toUpperCase()) !== -1;
 }
 
+// ── Top Picks for You (Waiver Wire quick-read card) ─────────────────────────
+// Sits above the Trade & Drop Workshop. Surfaces three needs-aware adds, each
+// paired with a recommended drop and projected per-cat rank movement. Reuses
+// the same scoring primitives as _rosBuildSuggestedMovesHtml but weights by
+// need-multiplier so adds that hit your weakest cats sort first (the full
+// suggestions list below is sortable by raw SGP).
+function _rosBuildTopPicksHtml() {
+  if (!_rosSelectedTeam) return '';
+  if (typeof _rosAdBuildLists === 'function') {
+    try { _rosAdBuildLists(); } catch (e) { return ''; }
+  }
+  if (!_rosAdRosterList || !_rosAdRosterList.length) return '';
+
+  var mults = window._rosCatMultipliers || {};
+  var ranks = window._rosCatRanks || {};
+  var mov   = (typeof _rosTradeSugMovability === 'function') ? (_rosTradeSugMovability(_rosSelectedTeam) || {}) : {};
+  var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : { r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191 };
+  var BAT_CATS = ['R','HR','RBI','SB','AVG'];
+  var PIT_CATS = ['W','K','SVH3','ERA','WHIP'];
+
+  function catSGPGain(addP, dropP, cat, isHit) {
+    if (typeof _rosAdCatSGP !== 'function') return 0;
+    var aS = _rosAdCatSGP(addP, cat==='SVH3'?'SV':cat, isHit);
+    var dS = dropP ? _rosAdCatSGP(dropP, cat==='SVH3'?'SV':cat, isHit) : 0;
+    return (aS||0) - (dS||0);
+  }
+
+  // Build droppable roster pool. Same rules as suggested moves: exclude
+  // players without an MLB role; respect protect-top-half toggle.
+  var rosterByPos = { hit: [], pit: [] };
+  _rosAdRosterList.forEach(function(r) {
+    if (!_rosHasMLBRole(r, r.isHit)) return;
+    (r.isHit ? rosterByPos.hit : rosterByPos.pit).push(r);
+  });
+  ['hit','pit'].forEach(function(grp) {
+    rosterByPos[grp].sort(function(a,b){ return (a._rosSGP||a._currSGP||0) - (b._rosSGP||b._currSGP||0); });
+  });
+
+  // Score every FA × eligible-drop pair. Score = sum of per-cat SGP delta
+  // weighted by need-multiplier so weak cats count more.
+  var faList = _rosAdFAList || [];
+  var rosterLookup2 = window._rosRosterLookup || {};
+  function nsn(n){ return (n||'').toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+  var pairs = [];
+  faList.forEach(function(addP) {
+    var isHit = !!addP.isHit;
+    if (!_rosHasMLBRole(addP, isHit)) return;
+    var k = nsn(addP._displayName||'');
+    var rec = rosterLookup2[k];
+    if (rec && rec.teamId === _rosSelectedTeam) return;
+    if (rec && rec.teamId && rec.teamId !== _rosSelectedTeam) return; // FA only for top picks
+    var addSGP = (typeof _rosAdPlayerSGP === 'function') ? _rosAdPlayerSGP(addP, isHit) : (addP._teamSGP||0);
+    if (!isFinite(addSGP)) return;
+    var pool = isHit ? rosterByPos.hit : rosterByPos.pit;
+    pool.forEach(function(dropR) {
+      if (!dropR._fp) return;
+      if (!_rosSugPosOverlap(addP._pos, dropR._pos)) return;
+      var dropKey = (dropR._displayName||'').toLowerCase();
+      var addKey  = (addP._displayName||'').toLowerCase();
+      if (addKey === dropKey) return;
+      var dropSGP = (dropR._rosSGP != null) ? dropR._rosSGP : 0;
+      var pairCats = isHit ? BAT_CATS : PIT_CATS;
+      var catDelta = {};
+      var weightedScore = 0;
+      pairCats.forEach(function(c) {
+        var d = catSGPGain(addP, dropR._fp, c, isHit);
+        catDelta[c] = d;
+        weightedScore += d * (mults[c] || 1);
+      });
+      var rawNet = addSGP - dropSGP;
+      // Drop-pairing rationale tag.
+      var dropTag = '';
+      if (dropR._status === '3' || dropR._fp && dropR._fp.status === '3') dropTag = 'IL';
+      else if (typeof dropR._30dSGP === 'number' && dropR._30dSGP <= -0.5) dropTag = 'slumping';
+      else dropTag = 'lowest-impact';
+      pairs.push({
+        addP:addP, dropR:dropR, dropTag:dropTag,
+        rawNet:rawNet, weightedScore:weightedScore,
+        catDelta:catDelta, isHit:isHit
+      });
+    });
+  });
+
+  // Sort by needs-weighted score (best for THIS roster, not best overall).
+  // Then dedupe by add player so we don't show the same name twice.
+  pairs.sort(function(a,b){ return b.weightedScore - a.weightedScore; });
+  var seenAdd = {};
+  pairs = pairs.filter(function(p){
+    var k = (p.addP._displayName||'').toLowerCase();
+    if (seenAdd[k]) return false;
+    seenAdd[k] = 1;
+    return true;
+  });
+  var top = pairs.slice(0, 3);
+
+  // Determine the team's top-3 weakest cats (worst rank) for the header chip.
+  var allCats = BAT_CATS.concat(PIT_CATS);
+  var rankedByNeed = allCats
+    .map(function(c){ return { c:c, r: (ranks[c]==='-' || ranks[c]==null) ? 0 : ranks[c] }; })
+    .filter(function(o){ return o.r >= 7; })
+    .sort(function(a,b){ return b.r - a.r; });
+  var topNeedsTxt = rankedByNeed.length
+    ? rankedByNeed.slice(0,3).map(function(o){ return o.c; }).join(', ')
+    : '';
+
+  // Header card
+  var hh = '';
+  hh += '<div class="card" style="padding:14px 16px;margin-bottom:14px;border-left:3px solid #185FA5;overflow:visible">';
+  hh += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px;flex-wrap:wrap">';
+  hh += '<div><div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Your top pickups this week</div>';
+  hh += '<div style="font-size:15px;font-weight:500;margin-top:2px">Three moves ranked by what your roster needs</div></div>';
+  if (topNeedsTxt) {
+    hh += '<div style="background:#E6F1FB;color:#0C447C;font-size:11px;font-weight:500;padding:4px 10px;border-radius:8px;white-space:nowrap"><i class="ti ti-target" style="font-size:12px;vertical-align:-2px;margin-right:3px" aria-hidden="true"></i>Targeting '+topNeedsTxt+'</div>';
+  }
+  hh += '</div>';
+
+  // Empty / no-need state — explicit rather than padding with marginal picks.
+  if (!top.length || top[0].weightedScore < 0.05) {
+    hh += '<div style="background:var(--bg);border-radius:8px;padding:14px 16px;font-size:13px;line-height:1.5;color:var(--muted);text-align:center">';
+    hh += '<i class="ti ti-circle-check" style="font-size:18px;color:#3B6D11;display:block;margin-bottom:5px" aria-hidden="true"></i>';
+    hh += '<strong style="color:var(--text)">No urgent pickups this week.</strong> Your roster is in good shape \u2014 check back after the next scoring period.';
+    hh += '</div></div>';
+    return hh;
+  }
+
+  hh += '<div style="font-size:12px;line-height:1.55;color:var(--muted);margin-bottom:12px">Each pickup is paired with the lowest-impact drop on your roster.</div>';
+  hh += '<div style="display:flex;flex-direction:column;gap:10px">';
+
+  function ordR(n){ return n + (n===1?'st':n===2?'nd':n===3?'rd':'th'); }
+  function rankCell(c, sgpD) {
+    var m = mov[c];
+    if (!m || m.rank == null) return '';
+    var rawD = sgpD * (D2[c.toLowerCase()] || 1);
+    var newRank = m.rank, dir = 0;
+    if (sgpD > 0 && m.upGap != null && m.upGap > 0 && Math.abs(rawD) >= m.upGap) {
+      newRank = Math.max(1, m.rank - 1);
+    } else if (sgpD < 0 && m.downBuffer != null && m.downBuffer > 0 && Math.abs(rawD) >= m.downBuffer) {
+      newRank = Math.min(m.n, m.rank + 1);
+    }
+    if (Math.abs(sgpD) >= 0.03) dir = sgpD > 0 ? +1 : -1;
+    var col = sgpD > 0 ? '#0F6E56' : '#A32D2D';
+    var moved = (newRank !== m.rank);
+    var newCol = moved ? col : 'var(--muted)';
+    var arrow = '';
+    if (!moved && dir !== 0) {
+      arrow = ' <i class="ti ti-arrow-narrow-' + (dir > 0 ? 'up' : 'down') + '" style="font-size:10px;color:'+col+';vertical-align:-1px" aria-hidden="true"></i>';
+    }
+    return '<div style="background:var(--card);border-radius:6px;padding:6px 9px">'
+      + '<div style="font-size:9px;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted)">'+c+'</div>'
+      + '<div style="font-size:12px"><span style="color:var(--muted)">'+ordR(m.rank)+'</span> &rarr; <span style="font-weight:500;color:'+newCol+'">'+ordR(newRank)+'</span>'+arrow+'</div>'
+      + '</div>';
+  }
+
+  top.forEach(function(p, idx) {
+    var addP = p.addP, dropR = p.dropR;
+    var isHit = p.isHit;
+    var addName = _loEsc(addP._displayName || addP.name || '');
+    var dropName = _loEsc(dropR._displayName || dropR.name || '');
+    var addPos = _loEsc(addP._pos || '');
+    var addMlb = _loEsc((addP._cs && addP._cs.mlb) || addP._mlb || '');
+
+    // Rank style: top 2 are need-driven, #3 may be depth.
+    var isDepth = (idx === 2 && p.weightedScore < 0.3);
+    var rankBg = isDepth ? '#5F5E5A' : '#3B6D11';
+    var leftBorder = isDepth ? '#854F0B' : '#0F6E56';
+    var roleBg = isHit ? 'rgba(15,110,86,0.10)' : '#FAEEDA';
+    var roleCol = isHit ? '#0F6E56' : '#854F0B';
+
+    // Drop tag pill
+    var tagTxt = p.dropTag === 'IL' ? 'IL \u00b7 inactive'
+               : p.dropTag === 'slumping' ? 'slumping \u00b7 cold last 30d'
+               : 'lowest-impact bench piece';
+
+    // Top 3 helped cats (by weighted contribution) for the rank-movement row.
+    var pairCats = isHit ? BAT_CATS : PIT_CATS;
+    var helped = pairCats
+      .map(function(c){ return { c:c, d:p.catDelta[c], w:(p.catDelta[c] || 0) * (mults[c] || 1) }; })
+      .filter(function(o){ return o.d > 0.02; })
+      .sort(function(a,b){ return b.w - a.w; })
+      .slice(0, 3);
+
+    hh += '<div style="background:var(--bg);border-radius:8px;border-left:2px solid '+leftBorder+';padding:11px 13px">';
+
+    hh += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;flex-wrap:wrap">';
+    hh += '<div style="display:flex;align-items:center;gap:8px">';
+    hh += '<span style="background:'+rankBg+';color:#fff;font-size:11px;font-weight:500;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center">'+(idx+1)+'</span>';
+    hh += '<span style="font-size:14px;font-weight:500">'+addName+'</span>';
+    hh += '<span style="font-size:10px;font-weight:500;padding:2px 7px;border-radius:10px;background:'+roleBg+';color:'+roleCol+'">'+addPos+(addMlb ? ' \u00b7 '+addMlb : '')+'</span>';
+    hh += '</div>';
+    hh += '<button onclick="_rosTopPickStage(\''+(addName.replace(/\u0027/g,"\\\u0027"))+'\',\''+(dropName.replace(/\u0027/g,"\\\u0027"))+'\')" style="padding:3px 10px;font-size:10px;border:0.5px solid #185FA5;background:rgba(24,95,165,0.08);color:#185FA5;border-radius:6px;cursor:pointer;font-family:inherit">Stage move</button>';
+    hh += '</div>';
+
+    // Drop pairing line
+    hh += '<div style="display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:8px;color:var(--muted);flex-wrap:wrap">';
+    hh += '<i class="ti ti-arrow-right" style="font-size:13px;color:var(--muted)" aria-hidden="true"></i>';
+    hh += '<span>Drop <strong style="color:var(--text)">'+dropName+'</strong></span>';
+    hh += '<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(150,150,150,0.12);color:var(--muted)">'+tagTxt+'</span>';
+    hh += '</div>';
+
+    // Rank-movement cells (up to 3 helped cats)
+    if (helped.length) {
+      hh += '<div style="display:grid;grid-template-columns:repeat('+helped.length+',1fr);gap:6px;margin-bottom:7px">';
+      helped.forEach(function(o){ hh += rankCell(o.c, o.d); });
+      hh += '</div>';
+    }
+
+    // Depth caveat for the optional pick
+    if (isDepth) {
+      hh += '<div style="font-size:11px;color:var(--muted);line-height:1.4;margin-bottom:6px;display:flex;gap:6px;background:rgba(133,79,11,0.06);padding:7px 10px;border-radius:6px">';
+      hh += '<i class="ti ti-info-circle" style="font-size:12px;color:#854F0B;margin-top:1px" aria-hidden="true"></i>';
+      hh += '<span><strong style="color:#854F0B">Optional \u2014 depth move.</strong> Your top needs are already covered above; this is a marginal upgrade if you want one.</span>';
+      hh += '</div>';
+    }
+
+    // One-line differentiator (why this one)
+    var why;
+    if (helped.length) {
+      var topCat = helped[0].c;
+      var topRank = ranks[topCat];
+      if (topRank !== '-' && topRank >= 7) {
+        why = 'Best available '+(isHit?'hitter':'pitcher')+' for your weakest cat ('+topCat+', you\u2019re currently '+ordR(topRank)+').';
+      } else {
+        why = 'Highest projected ROS SGP available at this position group.';
+      }
+    } else {
+      why = 'Marginal depth piece \u2014 small upgrade across categories.';
+    }
+    hh += '<div style="font-size:11px;color:var(--muted);line-height:1.4;display:flex;gap:6px">';
+    hh += '<i class="ti ti-bulb" style="font-size:12px;color:'+leftBorder+';margin-top:1px" aria-hidden="true"></i>';
+    hh += '<span>'+_loEsc(why)+'</span>';
+    hh += '</div>';
+
+    hh += '</div>';
+  });
+
+  hh += '</div>';
+
+  // Footer note explaining the ranking philosophy
+  hh += '<div style="margin-top:12px;padding-top:10px;border-top:0.5px solid var(--border);font-size:11px;color:var(--muted);line-height:1.5;display:flex;gap:6px">';
+  hh += '<i class="ti ti-info-circle" style="font-size:13px;margin-top:1px" aria-hidden="true"></i>';
+  hh += '<span>Ranked by impact on your specific roster, not raw player value. A higher-projected player isn\u2019t shown here if you\u2019re already strong in their categories. See the full filterable list below.</span>';
+  hh += '</div>';
+
+  hh += '</div>'; // end card
+  return hh;
+}
+
+// Stage handler — pre-fills the Add/Drop Simulator with the top-pick swap
+// and scrolls to it. The simulator already populates the verification panel
+// when both sides have a value.
+window._rosTopPickStage = function(addName, dropName) {
+  try {
+    var addBox  = document.getElementById('ros-ad-add-input');
+    var dropBox = document.getElementById('ros-ad-drop-input');
+    if (addBox)  { addBox.value = addName;  addBox.dispatchEvent(new Event('change', { bubbles:true })); }
+    if (dropBox) { dropBox.value = dropName; dropBox.dispatchEvent(new Event('change', { bubbles:true })); }
+    var sim = document.getElementById('ros-ad-simulator') || document.getElementById('ros-sug-card');
+    if (sim && sim.scrollIntoView) sim.scrollIntoView({ behavior:'smooth', block:'start' });
+  } catch(e) { if (window._debug) console.warn('[ros top picks] stage failed:', e); }
+};
+
+
 function _rosBuildSuggestedMovesHtml() {
   if (!_rosSelectedTeam) return '';
   // Make sure lists are fresh
@@ -7000,6 +7262,8 @@ window.rosSugSetProtect = function(checked) {
   _rosSugProtect = !!checked;
   var sugDiv = document.getElementById('ros-sug-card');
   if (sugDiv) sugDiv.innerHTML = _rosBuildSuggestedMovesHtml();
+  var tpDiv = document.getElementById('ros-top-picks-card');
+  if (tpDiv) tpDiv.innerHTML = _rosBuildTopPicksHtml();
 };
 window.rosSugHide = function(addEnc, dropEnc) {
   var addKey = decodeURIComponent(addEnc).toLowerCase();
@@ -8366,6 +8630,16 @@ function _rosAdBuildPanelHtml() {
   }
 
   // Waivers tab — Trade & Drop Workshop with simulator
+
+  // ── "Your top pickups this week" quick-read card ─────────────────────────
+  // Sits above the existing Trade & Drop Workshop. Surfaces 3 needs-aware
+  // adds, each paired with a recommended drop and projected per-cat rank
+  // movement. Reuses _rosBuildSuggestedMovesHtml's scoring pipeline (we'd
+  // duplicate it otherwise) by sharing the per-cat catSGPGain helper, but
+  // computes its own pairs to keep the lists separate from the filterable
+  // suggestions list below.
+  h += '<div id="ros-top-picks-card" style="overflow:visible">' + _rosBuildTopPicksHtml() + '</div>';
+
   // ── Combined "Trade & Drop Workshop" card ───────────────────────────────
   // Suggestions list (left, 340px) + Add/Drop Simulator (right, fluid).
   h += '<div class="card" style="padding:14px 16px;margin-bottom:14px;overflow:visible">';
@@ -27911,6 +28185,160 @@ function _tlV2PopulateVerificationCard(tA, sendA, sendB, byKeyA, byKeyB) {
 
   // ── Build HTML ───────────────────────────────────────────────────────────
   var html = '';
+
+  // ── Trade Read (quick-read card) ─────────────────────────────────────────
+  // Plain-English verdict for casual users: did this trade help, and where do
+  // I move in each category? Reuses netPerCat (SGP space) + _rosTradeSugMovability
+  // (per-cat rank + raw-stat gap to next team) to project rank movement.
+  (function buildTradeRead(){
+    var D2 = (typeof SGP_D !== 'undefined') ? SGP_D : {r:65.4,hr:21.2,rbi:54.8,sb:17.0,avg:0.008,w:15.3,k:216.8,svh3:18.5,era:0.106,whip:0.0191};
+    var mov = (typeof _rosTradeSugMovability === 'function') ? (_rosTradeSugMovability(tA) || {}) : {};
+    var LOW = { ERA:1, WHIP:1 }; // lower-better cats
+
+    // Project per-cat new rank: convert SGP delta to raw-stat delta and compare
+    // to the gap above / buffer below. Single-step movement only (a 2-spot
+    // jump from one trade is rare and overstated; we keep this honest).
+    function projectRank(c) {
+      var m = mov[c];
+      if (!m || m.rank == null) return null;
+      var sgpD = netPerCat[c] || 0;
+      var rawD = sgpD * (D2[c.toLowerCase()] || 1); // SGP → raw stat units
+      // For LOWER-better cats, a POSITIVE SGP means the cat improves (ERA goes
+      // DOWN). _rosTradeSugMovability already inverts up/down for those cats,
+      // so up = better-cat-direction regardless. We just use sign of sgpD.
+      var newRank = m.rank;
+      var dir = 0;
+      if (sgpD > 0 && m.upGap != null && m.upGap > 0 && Math.abs(rawD) >= m.upGap) {
+        newRank = Math.max(1, m.rank - 1); dir = +1;
+      } else if (sgpD < 0 && m.downBuffer != null && m.downBuffer > 0 && Math.abs(rawD) >= m.downBuffer) {
+        newRank = Math.min(m.n, m.rank + 1); dir = -1;
+      } else if (Math.abs(sgpD) >= 0.05) {
+        // Direction-only hint: SGP moves meaningfully but doesn't cross the
+        // threshold. Caller renders an arrow next to the rank.
+        dir = sgpD > 0 ? +1 : -1;
+      }
+      return { oldRank: m.rank, newRank: newRank, dir: dir, n: m.n, sgpD: sgpD };
+    }
+
+    // Build helps/costs lists from per-cat SGP, filtering tiny noise.
+    var helps = [], costs = [];
+    ALL_CATS.forEach(function(c){
+      var sgpD = netPerCat[c] || 0;
+      if (Math.abs(sgpD) < 0.05) return;
+      var proj = projectRank(c);
+      if (!proj) return;
+      (sgpD > 0 ? helps : costs).push({ cat: c, proj: proj });
+    });
+
+    // Net standings movement: sum signed rank changes (very rough — better to
+    // use the existing netVerdict already computed). For "projected finish",
+    // we just count crossings: total upward rank flips minus downward flips.
+    var rankFlipsUp = 0, rankFlipsDown = 0, dirOnlyUp = 0, dirOnlyDown = 0;
+    helps.concat(costs).forEach(function(o){
+      if (o.proj.newRank < o.proj.oldRank) rankFlipsUp++;
+      else if (o.proj.newRank > o.proj.oldRank) rankFlipsDown++;
+      else if (o.proj.dir > 0) dirOnlyUp++;
+      else if (o.proj.dir < 0) dirOnlyDown++;
+    });
+    var catsFavoredDelta = rankFlipsUp - rankFlipsDown; // net cats where you rank-improved
+
+    // Verdict logic: cross net SGP with whether top-need improves.
+    // Top need = HOME's worst-ranked cat (highest rank number).
+    var topNeedCat = null, worstRank = 0;
+    ALL_CATS.forEach(function(c){
+      var m = mov[c]; if (!m || m.rank == null) return;
+      if (m.rank > worstRank) { worstRank = m.rank; topNeedCat = c; }
+    });
+    var topNeedHelped = topNeedCat && (netPerCat[topNeedCat] || 0) > 0.05;
+
+    var trVerdict, trPill, trAccent, trBg, trTone;
+    if (netSGP >= 0.5 && topNeedHelped) {
+      trVerdict = 'Good trade for you'; trPill = 'Make this trade';
+      trAccent = '#0F6E56'; trBg = '#EAF3DE'; trTone = '#3B6D11';
+    } else if (netSGP >= 0.5) {
+      trVerdict = 'Decent trade, but it doesn\u2019t address your top need';
+      trPill = 'Mixed';
+      trAccent = '#0C447C'; trBg = '#E6F1FB'; trTone = '#0C447C';
+    } else if (netSGP > -0.5) {
+      trVerdict = 'Roughly a wash'; trPill = 'Roughly even';
+      trAccent = '#5F5E5A'; trBg = 'var(--bg)'; trTone = 'var(--muted)';
+    } else if (netSGP > -2.0) {
+      trVerdict = 'Probably not worth it'; trPill = 'Risky';
+      trAccent = '#854F0B'; trBg = '#FAEEDA'; trTone = '#854F0B';
+    } else {
+      trVerdict = 'Bad trade for you'; trPill = 'Don\u2019t make this trade';
+      trAccent = '#A32D2D'; trBg = '#FCEBEB'; trTone = '#A32D2D';
+    }
+
+    // Plain-English explanation (the "why this works/doesn't" sentence).
+    var helpCats = helps.map(function(o){return o.cat;});
+    var costCats = costs.map(function(o){return o.cat;});
+    var sentence;
+    if (netSGP >= 0.5 && topNeedHelped) {
+      sentence = 'You improve in ' + helpCats.join(', ') + ' (including your top need, <strong>' + topNeedCat + '</strong>) and give up '
+        + (costCats.length ? costCats.join(', ') + ' \u2014 categories where the loss should be manageable.' : 'almost nothing meaningful.');
+    } else if (netSGP >= 0.5) {
+      sentence = 'You gain ' + (helpCats.join(', ') || 'some SGP') + ' overall, but your top need (<strong>' + (topNeedCat||'\u2014') + '</strong>) doesn\u2019t improve. A more targeted move may exist.';
+    } else if (netSGP > -0.5) {
+      sentence = 'The gains and losses roughly balance out. Pass unless you have a non-stats reason (schedule, position depth, etc.).';
+    } else {
+      sentence = 'You lose more SGP than you gain' + (costCats.length ? ', particularly in ' + costCats.join(', ') + '.' : '.') + ' Walk away from this one.';
+    }
+
+    function ordR(n){ return n + (n===1?'st':n===2?'nd':n===3?'rd':'th'); }
+    function rankCellInner(o, isHelp) {
+      var oldR = ordR(o.proj.oldRank);
+      var newR = ordR(o.proj.newRank);
+      var moved = (o.proj.newRank !== o.proj.oldRank);
+      var col = isHelp ? '#0F6E56' : '#A32D2D';
+      var newCol = moved ? col : 'var(--muted)';
+      var arrow = '';
+      if (!moved && o.proj.dir !== 0) {
+        // Direction hint when SGP moves but rank doesn't quite cross.
+        arrow = ' <i class="ti ti-arrow-narrow-' + (o.proj.dir > 0 ? 'up' : 'down') + '" style="font-size:11px;color:'+col+';vertical-align:-1px" aria-hidden="true"></i>';
+      }
+      return '<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:11px;padding:2px 0">'
+        + '<span style="color:'+col+';font-weight:500">'+o.cat+'</span>'
+        + '<span><span style="color:var(--muted)">'+oldR+'</span> &rarr; <span style="font-weight:500;color:'+newCol+'">'+newR+'</span>'+arrow+'</span>'
+        + '</div>';
+    }
+
+    html += '<div style="background:var(--card);border:0.5px solid var(--border);border-left:3px solid '+trAccent+';border-radius:10px;padding:14px 16px;margin-bottom:14px">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px;flex-wrap:wrap">';
+    html += '<div><div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Trade Read</div>';
+    html += '<div style="font-size:17px;font-weight:500;margin-top:2px">'+trVerdict+'</div></div>';
+    html += '<div style="background:'+trBg+';color:'+trTone+';font-size:12px;font-weight:500;padding:5px 12px;border-radius:8px;white-space:nowrap">'+trPill+'</div>';
+    html += '</div>';
+    html += '<div style="font-size:13px;line-height:1.55;margin-bottom:12px">'+sentence+'</div>';
+
+    // Helps / Costs / Net cells
+    var hasHelps = helps.length > 0, hasCosts = costs.length > 0;
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
+    html += '<div style="background:var(--bg);border-radius:8px;padding:9px 11px;min-height:60px">';
+    html += '<div style="font-size:9px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-bottom:5px">Helps</div>';
+    if (hasHelps) helps.forEach(function(o){ html += rankCellInner(o, true); });
+    else html += '<div style="font-size:11px;color:var(--muted);padding:2px 0">No meaningful gains</div>';
+    html += '</div>';
+    html += '<div style="background:var(--bg);border-radius:8px;padding:9px 11px;min-height:60px">';
+    html += '<div style="font-size:9px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-bottom:5px">Costs</div>';
+    if (hasCosts) costs.forEach(function(o){ html += rankCellInner(o, false); });
+    else html += '<div style="font-size:11px;color:var(--muted);padding:2px 0">No meaningful losses</div>';
+    html += '</div>';
+    html += '</div>';
+
+    // Net cell — uses existing verdict context, plus cats-favored delta.
+    var netBg = (netSGP >= 0.5) ? '#EAF3DE' : (netSGP <= -0.5 ? '#FCEBEB' : 'var(--bg)');
+    var netTone = (netSGP >= 0.5) ? '#3B6D11' : (netSGP <= -0.5 ? '#A32D2D' : 'var(--muted)');
+    var favTxt = (catsFavoredDelta > 0 ? '+' : '') + catsFavoredDelta + ' cat' + (Math.abs(catsFavoredDelta)===1?'':'s') + ' you now rank higher in';
+    if (catsFavoredDelta === 0) favTxt = 'No rank flips, but ' + (dirOnlyUp+dirOnlyDown) + ' cats nudge ' + (dirOnlyUp>=dirOnlyDown?'up':'down');
+    html += '<div style="background:'+netBg+';border-radius:8px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">';
+    html += '<span style="font-size:9px;text-transform:uppercase;letter-spacing:0.05em;color:'+netTone+'">Net effect</span>';
+    html += '<span style="font-size:12px;font-weight:500;color:'+netTone+'">'+favTxt+' &middot; Net SGP '+fmtSgn(netSGP)+'</span>';
+    html += '</div>';
+
+    html += '</div>'; // end Trade Read card
+  })();
+
   // "How to read this" expandable info box — describes every column and panel
   // in the Verification card so a first-time reader doesn't have to reverse-
   // engineer the columns.
