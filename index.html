@@ -1462,7 +1462,7 @@ td.neg { color: #c0392b; font-weight: 500; }
               </tr>
               <tr style="border-bottom:1px solid var(--border)">
                 <td style="padding:10px 12px;white-space:nowrap"><span style="display:inline-block;padding:2px 10px;border-radius:8px;font-size:11px;font-weight:700;background:var(--accent-light);color:var(--accent)">fWAR</span></td>
-                <td style="padding:10px 12px;line-height:1.6">The total value a player has produced this season above a replacement-level option, based on your league's scoring categories.</td>
+                <td style="padding:10px 12px;line-height:1.6">Fantasy Wins Above Replacement. Estimates how many extra category-wins this player has added to your team versus what a freely-available waiver pickup at their position would have produced. +10 and above is elite; negative means a free agent would have done better. See the full explanation below.</td>
               </tr>
               <tr>
                 <td style="padding:10px 12px;white-space:nowrap"><span style="display:inline-block;padding:2px 10px;border-radius:8px;font-size:11px;font-weight:700;background:#9b59b622;color:#9b59b6">fWAR %</span></td>
@@ -1476,6 +1476,41 @@ td.neg { color: #c0392b; font-weight: 500; }
         <div class="card-header"><span class="card-title">fWAR - Fantasy Wins Above Replacement</span></div>
         <div class="card-body" style="padding:20px">
           <p style="font-size:13px;line-height:1.7">fWAR estimates how many fantasy wins a player contributes above a freely available replacement-level player at their position. Higher = more valuable. Configure the model on the <strong>Models</strong> page.</p>
+
+          <div style="font-weight:700;font-size:13px;margin:20px 0 10px">Reading the number</div>
+          <p style="font-size:13px;line-height:1.7;margin-bottom:12px">A player&rsquo;s fWAR is the count of <strong>fantasy wins</strong> they have produced over the season so far, relative to what a typical waiver-wire pickup at their position would have produced over the same time. In our 10-team H2H Each Category league, each weekly matchup awards up to 10 category-wins (one per stat category), so one fWAR roughly equals one extra category-win your team has banked because you rostered this player instead of a generic free agent.</p>
+
+          <p style="font-size:13px;line-height:1.7;margin-bottom:12px">Concrete example: a hitter with <strong>+12.28 fWAR</strong> (James Wood at the time of writing) has produced an estimated 12 extra category-wins versus a replacement-level outfielder. Spread across 20 regular-season scoring periods, that&rsquo;s roughly <strong>half a category-win per week</strong> that he&rsquo;s personally adding to your matchup. Multiply across a five-category-contributor profile (R/HR/RBI/SB/AVG) and you can see why elite hitters are the foundation of contending rosters.</p>
+
+          <div style="background:var(--bg);border-radius:8px;padding:14px 16px;margin-bottom:16px">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">Rough scale by player pool</div>
+            <table style="width:100%;font-size:12px;border-collapse:collapse">
+              <thead>
+                <tr style="border-bottom:1px solid var(--border)">
+                  <th class="left" style="padding:6px 10px;font-size:11px;color:var(--muted);font-weight:600">Range</th>
+                  <th class="left" style="padding:6px 10px;font-size:11px;color:var(--muted);font-weight:600">What it means</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 10px;font-weight:600;color:#1e6b3a;white-space:nowrap">+10 and above</td><td style="padding:8px 10px;line-height:1.5">Elite. Top 10 at their position group. Untradeable in a 1-for-1 unless the return is another player at this tier.</td></tr>
+                <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 10px;font-weight:600;color:#4a9a68;white-space:nowrap">+6 to +10</td><td style="padding:8px 10px;line-height:1.5">Strong starter. Reliable contributor across multiple categories. The kind of player you build trades <em>around</em>, not <em>away from</em>.</td></tr>
+                <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 10px;font-weight:600;color:#b7791f;white-space:nowrap">+3 to +6</td><td style="padding:8px 10px;line-height:1.5">Solid roster piece. Adding clear value, but a similar player is probably reachable on waivers or in trade.</td></tr>
+                <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 10px;font-weight:600;color:#5f5e5a;white-space:nowrap">0 to +3</td><td style="padding:8px 10px;line-height:1.5">Roster-level. About what a typical waiver pickup would produce. Easy to swap.</td></tr>
+                <tr><td style="padding:8px 10px;font-weight:600;color:#c0392b;white-space:nowrap">Negative</td><td style="padding:8px 10px;line-height:1.5">Below replacement &mdash; a freely available player would have produced more. Drop candidate.</td></tr>
+              </tbody>
+            </table>
+            <div style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5">Ranges differ by pool: a +6 SP is more impressive than a +6 hitter, because the SP pool is smaller and the SP fWAR distribution runs tighter. Use the <strong>fWAR%</strong> column to read tier within a pool.</div>
+          </div>
+
+          <div style="background:var(--bg);border-radius:8px;padding:14px 16px;margin-bottom:16px">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px">What fWAR is not</div>
+            <ul style="font-size:12px;line-height:1.7;margin:0;padding-left:20px">
+              <li><strong>Not the same as MLB fWAR.</strong> The FanGraphs stat that shares this name includes defense, baserunning, and positional adjustments that don&rsquo;t affect fantasy. This site&rsquo;s fWAR is a fantasy-only metric tuned to our league&rsquo;s scoring categories.</li>
+              <li><strong>Not a projection.</strong> fWAR is the player&rsquo;s contribution <em>to date</em>. The <strong>ROS SGP</strong> column on Player Data is the rest-of-season forecast &mdash; that&rsquo;s where you look for forward-looking value, not fWAR.</li>
+              <li><strong>Not shape-aware.</strong> A +12 fWAR hitter could be five-category balanced (Wood) or HR/RBI-heavy with no speed (Alvarez). fWAR equalizes them as a single ranked number, but the <em>shape</em> matters for roster fit. Check the per-category z-scores on the player&rsquo;s detail row when shape matters.</li>
+              <li><strong>Not playing-time-blind.</strong> A part-time hitter at a .350 average gets less fWAR credit than a full-time hitter at .280 because fWAR scales by playing time relative to the position pool (Step 3 below).</li>
+            </ul>
+          </div>
 
           <div style="font-weight:700;font-size:13px;margin:20px 0 10px">fWAR Calculation Flow</div>
           <div style="display:flex;flex-direction:column;gap:0;margin-bottom:20px">
@@ -6824,6 +6859,21 @@ function _rosBuildTopPicksHtml() {
     var addPos = _loEsc(addP._pos || '');
     var addMlb = _loEsc((addP._cs && addP._cs.mlb) || addP._mlb || '');
 
+    // Headshot URLs — follow the same convention as the suggested-moves list
+    // and the FA list: fall back to a blank circle if the URL is missing.
+    var addHs  = (addP && addP.hs)  || (addP && addP._cs && addP._cs.hs)  || '';
+    var dropHs = (dropR && dropR.hs) || (dropR && dropR._cs && dropR._cs.hs) || '';
+    function avatarBig(hs) {
+      return hs
+        ? '<img src="'+hs+'" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0;background:var(--bg)" onerror="this.style.display=\'none\'">'
+        : '<div style="width:32px;height:32px;border-radius:50%;background:var(--bg);border:0.5px solid var(--border);flex-shrink:0"></div>';
+    }
+    function avatarSm(hs) {
+      return hs
+        ? '<img src="'+hs+'" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0;background:var(--bg);vertical-align:-5px" onerror="this.style.display=\'none\'">'
+        : '<div style="width:20px;height:20px;border-radius:50%;background:var(--bg);border:0.5px solid var(--border);flex-shrink:0;display:inline-block;vertical-align:-5px"></div>';
+    }
+
     // Rank style: top 2 are need-driven, #3 may be depth.
     var isDepth = (idx === 2 && p.weightedScore < 0.3);
     var rankBg = isDepth ? '#5F5E5A' : '#3B6D11';
@@ -6847,18 +6897,20 @@ function _rosBuildTopPicksHtml() {
     hh += '<div style="background:var(--bg);border-radius:8px;border-left:2px solid '+leftBorder+';padding:11px 13px">';
 
     hh += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;flex-wrap:wrap">';
-    hh += '<div style="display:flex;align-items:center;gap:8px">';
-    hh += '<span style="background:'+rankBg+';color:#fff;font-size:11px;font-weight:500;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center">'+(idx+1)+'</span>';
+    hh += '<div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1">';
+    hh += '<span style="background:'+rankBg+';color:#fff;font-size:11px;font-weight:500;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">'+(idx+1)+'</span>';
+    hh += avatarBig(addHs);
+    hh += '<div style="min-width:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
     hh += '<span style="font-size:14px;font-weight:500">'+addName+'</span>';
     hh += '<span style="font-size:10px;font-weight:500;padding:2px 7px;border-radius:10px;background:'+roleBg+';color:'+roleCol+'">'+addPos+(addMlb ? ' \u00b7 '+addMlb : '')+'</span>';
-    hh += '</div>';
-    hh += '<button onclick="_rosTopPickStage(\''+(addName.replace(/\u0027/g,"\\\u0027"))+'\',\''+(dropName.replace(/\u0027/g,"\\\u0027"))+'\')" style="padding:3px 10px;font-size:10px;border:0.5px solid #185FA5;background:rgba(24,95,165,0.08);color:#185FA5;border-radius:6px;cursor:pointer;font-family:inherit">Stage move</button>';
+    hh += '</div></div>';
+    hh += '<button onclick="_rosTopPickStage(\''+(addName.replace(/\u0027/g,"\\\u0027"))+'\',\''+(dropName.replace(/\u0027/g,"\\\u0027"))+'\')" style="padding:3px 10px;font-size:10px;border:0.5px solid #185FA5;background:rgba(24,95,165,0.08);color:#185FA5;border-radius:6px;cursor:pointer;font-family:inherit;flex-shrink:0">Stage move</button>';
     hh += '</div>';
 
     // Drop pairing line
     hh += '<div style="display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:8px;color:var(--muted);flex-wrap:wrap">';
     hh += '<i class="ti ti-arrow-right" style="font-size:13px;color:var(--muted)" aria-hidden="true"></i>';
-    hh += '<span>Drop <strong style="color:var(--text)">'+dropName+'</strong></span>';
+    hh += '<span>Drop ' + avatarSm(dropHs) + ' <strong style="color:var(--text);margin-left:4px">'+dropName+'</strong></span>';
     hh += '<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(150,150,150,0.12);color:var(--muted)">'+tagTxt+'</span>';
     hh += '</div>';
 
@@ -17027,7 +17079,12 @@ function _dashPopulateRecMoves(teamId, teamName) {
     html += '<div style="font-size:11px;color:var(--muted);margin-bottom:9px;line-height:1.4">'+reasonFor(o)+'</div>';
     helpers.forEach(function(h){
       var x = h.x, ft = fmtFeasTag(x);
+      var rmHs = (x.p && x.p.hs) || (x.p && x.p._cs && x.p._cs.hs) || '';
+      var rmAvatar = rmHs
+        ? '<img src="'+rmHs+'" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0;background:var(--bg)" onerror="this.style.display=\'none\'">'
+        : '<div style="width:28px;height:28px;border-radius:50%;background:var(--bg);border:0.5px solid var(--border);flex-shrink:0"></div>';
       html += '<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--bg);border-radius:8px;margin-bottom:5px">';
+      html += rmAvatar;
       html += '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">'+_loEsc(x.name)+'</div>';
       html += '<div style="font-size:10px;color:var(--muted);margin-top:1px">'+_loEsc(x.pos||'')+' \u00b7 '+_loEsc(x.ownerName)+' \u00b7 '+(x.rosSGP>=0?'+':'\u2212')+Math.abs(x.rosSGP).toFixed(2)+' ROS</div></div>';
       html += '<span style="font-size:9px;font-weight:600;padding:2px 8px;border-radius:10px;background:'+ft.bg+';color:'+ft.tx+';white-space:nowrap">'+ft.t+'</span>';
