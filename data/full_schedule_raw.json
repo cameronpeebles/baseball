@@ -8,12 +8,14 @@
       "userInfo": {
         "lName": "",
         "country": "United States",
+        "appAdUserRefreshSeconds": 5.0,
         "showAdFreePurchase": true,
         "timezone": "-0600",
         "appAdPreloadViewports": 99.0,
-        "webAdRefreshInterval": 30,
+        "webAdAutoRefreshSeconds": 30,
         "chatEnabled": true,
         "locationDisplay": "<span title=\"California\">CA</span><span title=\"United States\">, US</span> &nbsp;",
+        "appAdAutoRefreshSeconds": 30,
         "timezoneNoDST": "-0700",
         "fName": "",
         "lookAndFeel": {
@@ -243,7 +245,7 @@
           "Player_profile_iOS_top:IOS": {
             "sizeType": "MAX",
             "refreshInterval": 30,
-            "sizeHeight": 50,
+            "sizeHeight": 100,
             "adFormat": "BANNER",
             "adUnitId": "ca-app-pub-1265055087905438/5298682498"
           },
@@ -306,12 +308,11 @@
           "Players_android_top:ANDROID": {
             "sizeType": "MAX",
             "refreshInterval": 30,
-            "sizeHeight": 50,
+            "sizeHeight": 100,
             "adFormat": "BANNER",
             "adUnitId": "ca-app-pub-1265055087905438/8119531383"
           }
         },
-        "appAdRefreshInterval": 30,
         "timezoneDisplay": "MDT",
         "showEddAlert": false,
         "chatNotificationTypeDefault": "3",
