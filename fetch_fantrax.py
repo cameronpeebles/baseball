@@ -60,13 +60,56 @@ def fetch(msgs, refUrl):
         "v": "180.1.2"
     }
     r = session.post(url, json=body)
-    result = r.json()
+
+    # Guard: HTTP failure (Cloudflare block, 5xx, etc.)
+    if r.status_code != 200:
+        print(f"ERROR: HTTP {r.status_code} from Fantrax")
+        print(f"  URL: {url}")
+        print(f"  Response headers: {dict(r.headers)}")
+        print(f"  Response body (first 500 chars): {r.text[:500]}")
+        raise SystemExit(1)
+
+    # Guard: response wasn't JSON (Cloudflare challenge page, HTML error)
+    try:
+        result = r.json()
+    except ValueError:
+        print(f"ERROR: Fantrax returned non-JSON response")
+        print(f"  URL: {url}")
+        print(f"  Content-Type: {r.headers.get('Content-Type', 'unknown')}")
+        print(f"  Response body (first 500 chars): {r.text[:500]}")
+        raise SystemExit(1)
+
     responses = result.get("responses", [])
     data_responses = responses[1:]
+
+    # Check login response explicitly
+    login_resp = responses[0] if responses else {}
+    login_str = str(login_resp)
+    if ("WARNING_NOT_LOGGED_IN" in login_str
+        or "INVALID_LOGIN" in login_str
+        or "loginFailure" in login_str.lower()):
+        print("ERROR: Login failed. Check FANTRAX_USERNAME and FANTRAX_PASSWORD secrets.")
+        print(f"  Login response: {login_str[:500]}")
+        raise SystemExit(1)
+
+    # Guard: no data responses returned even though login didn't error
+    if not data_responses:
+        print(f"ERROR: Fantrax returned no data responses for {refUrl}")
+        print(f"  Full response ({len(responses)} items): {str(result)[:1000]}")
+        print(f"  Login response: {login_str[:300]}")
+        print(f"  This usually means:")
+        print(f"    1. FX_RM cookie is expired — refresh from browser dev tools")
+        print(f"    2. cf_clearance cookie is expired — same fix")
+        print(f"    3. Fantrax API shape changed — inspect the response above")
+        raise SystemExit(1)
+
+    # Also check downstream responses for auth errors
     for resp in data_responses:
         if "WARNING_NOT_LOGGED_IN" in str(resp):
-            print("ERROR: Not logged in")
-            exit(1)
+            print("ERROR: Downstream call not logged in")
+            print(f"  Response: {str(resp)[:500]}")
+            raise SystemExit(1)
+
     return data_responses
 
 def save(filename, data):
