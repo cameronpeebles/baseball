@@ -57,7 +57,7 @@ def fetch(msgs, refUrl):
         "dt": 1,
         "at": 0,
         "tz": "America/Denver",
-        "v": "180.1.2"
+        "v": "190.0.0"
     }
     r = session.post(url, json=body)
 
