@@ -112,7 +112,7 @@
       "timeframeType": "YEAR_TO_DATE",
       "proj": false,
       "displayedStartDate": 1774411200000,
-      "displayedEndDate": 1784174400000
+      "displayedEndDate": 1784260800000
     },
     "miscData": {
       "displayedMinDate": 1774411200000,
@@ -230,12 +230,12 @@
                 "content": "10"
               },
               {
-                "content": "98.5",
-                "toolTip": "98.5"
+                "content": "102.5",
+                "toolTip": "102.5"
               },
               {
-                "content": "61.5",
-                "toolTip": "61.5"
+                "content": "57.5",
+                "toolTip": "57.5"
               }
             ],
             "fixedCells": [
@@ -327,12 +327,12 @@
                 "content": "8"
               },
               {
-                "content": "94",
-                "toolTip": "94"
+                "content": "90",
+                "toolTip": "90"
               },
               {
-                "content": "66",
-                "toolTip": "66"
+                "content": "70",
+                "toolTip": "70"
               }
             ],
             "fixedCells": [
@@ -375,12 +375,12 @@
                 "content": "7"
               },
               {
-                "content": "93.5",
-                "toolTip": "93.5"
+                "content": "94",
+                "toolTip": "94"
               },
               {
-                "content": "66.5",
-                "toolTip": "66.5"
+                "content": "66",
+                "toolTip": "66"
               }
             ],
             "fixedCells": [
@@ -423,12 +423,12 @@
                 "content": "6"
               },
               {
-                "content": "90.5",
-                "toolTip": "90.5"
+                "content": "90",
+                "toolTip": "90"
               },
               {
-                "content": "69.5",
-                "toolTip": "69.5"
+                "content": "70",
+                "toolTip": "70"
               }
             ],
             "fixedCells": [
@@ -615,12 +615,12 @@
                 "content": "2"
               },
               {
-                "content": "58",
-                "toolTip": "58"
+                "content": "59",
+                "toolTip": "59"
               },
               {
-                "content": "102",
-                "toolTip": "102"
+                "content": "101",
+                "toolTip": "101"
               }
             ],
             "fixedCells": [
@@ -663,12 +663,12 @@
                 "content": "1"
               },
               {
-                "content": "41",
-                "toolTip": "41"
+                "content": "40",
+                "toolTip": "40"
               },
               {
-                "content": "119",
-                "toolTip": "119"
+                "content": "120",
+                "toolTip": "120"
               }
             ],
             "fixedCells": [
@@ -793,21 +793,31 @@
           {
             "cells": [
               {
-                "content": "0"
+                "content": "4"
               },
               {
-                "content": "0"
+                "content": "4"
               },
               {
-                "content": "10"
+                "content": "2"
               },
               {
                 "content": "5"
               },
               {
-                "gainColor": 0,
-                "content": "0",
-                "toolTip": "0"
+                "gainColor": 1,
+                "content": "1",
+                "toolTip": "1"
+              },
+              {
+                "gainColor": 1,
+                "content": "1",
+                "toolTip": "1"
+              },
+              {
+                "gainColor": 1,
+                "content": "1",
+                "toolTip": "1"
               },
               {
                 "gainColor": 0,
@@ -815,9 +825,9 @@
                 "toolTip": "0"
               },
               {
-                "gainColor": 0,
-                "content": "0",
-                "toolTip": "0"
+                "gainColor": 1,
+                "content": ".400",
+                "toolTip": "0.4"
               },
               {
                 "gainColor": 0,
@@ -825,34 +835,24 @@
                 "toolTip": "0"
               },
               {
-                "gainColor": 0,
-                "content": "-",
-                "toolTip": "0"
-              },
-              {
-                "gainColor": 0,
+                "gainColor": -1,
                 "content": "0",
                 "toolTip": "0"
               },
               {
-                "gainColor": 0,
-                "content": "0",
-                "toolTip": "0"
+                "gainColor": -1,
+                "content": "9.00",
+                "toolTip": "9"
               },
               {
-                "gainColor": 0,
-                "content": "-",
-                "toolTip": "0"
+                "gainColor": -1,
+                "content": "1.000",
+                "toolTip": "1"
               },
               {
-                "gainColor": 0,
-                "content": "-",
-                "toolTip": "0"
-              },
-              {
-                "gainColor": 0,
-                "content": "0.0",
-                "toolTip": "0"
+                "gainColor": -1,
+                "content": "0.5",
+                "toolTip": "0.5"
               }
             ],
             "matchupId": "38pp2hphmiytz3cs_huopotx1miytz3cs",
@@ -868,19 +868,29 @@
           {
             "cells": [
               {
-                "content": "0"
+                "content": "4"
               },
               {
-                "content": "0"
+                "content": "4"
               },
               {
-                "content": "10"
+                "content": "2"
               },
               {
                 "content": "5"
               },
               {
-                "gainColor": 0,
+                "gainColor": -1,
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "gainColor": -1,
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "gainColor": -1,
                 "content": "0",
                 "toolTip": "0"
               },
@@ -890,9 +900,9 @@
                 "toolTip": "0"
               },
               {
-                "gainColor": 0,
-                "content": "0",
-                "toolTip": "0"
+                "gainColor": -1,
+                "content": ".250",
+                "toolTip": "0.25"
               },
               {
                 "gainColor": 0,
@@ -900,34 +910,24 @@
                 "toolTip": "0"
               },
               {
-                "gainColor": 0,
-                "content": "-",
+                "gainColor": 1,
+                "content": "1",
+                "toolTip": "1"
+              },
+              {
+                "gainColor": 1,
+                "content": "0.00",
                 "toolTip": "0"
               },
               {
-                "gainColor": 0,
-                "content": "0",
+                "gainColor": 1,
+                "content": "0.000",
                 "toolTip": "0"
               },
               {
-                "gainColor": 0,
-                "content": "0",
-                "toolTip": "0"
-              },
-              {
-                "gainColor": 0,
-                "content": "-",
-                "toolTip": "0"
-              },
-              {
-                "gainColor": 0,
-                "content": "-",
-                "toolTip": "0"
-              },
-              {
-                "gainColor": 0,
-                "content": "0.0",
-                "toolTip": "0"
+                "gainColor": 1,
+                "content": "1.0",
+                "toolTip": "1"
               }
             ],
             "matchupId": "38pp2hphmiytz3cs_huopotx1miytz3cs",
@@ -946,18 +946,13 @@
                 "content": "0"
               },
               {
-                "content": "0"
+                "content": "1"
               },
               {
-                "content": "10"
+                "content": "9"
               },
               {
-                "content": "5"
-              },
-              {
-                "gainColor": 0,
-                "content": "0",
-                "toolTip": "0"
+                "content": "4.5"
               },
               {
                 "gainColor": 0,
@@ -976,7 +971,12 @@
               },
               {
                 "gainColor": 0,
-                "content": "-",
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "gainColor": -1,
+                "content": ".000",
                 "toolTip": "0"
               },
               {
@@ -1019,21 +1019,16 @@
           {
             "cells": [
               {
-                "content": "0"
+                "content": "1"
               },
               {
                 "content": "0"
               },
               {
-                "content": "10"
+                "content": "9"
               },
               {
-                "content": "5"
-              },
-              {
-                "gainColor": 0,
-                "content": "0",
-                "toolTip": "0"
+                "content": "5.5"
               },
               {
                 "gainColor": 0,
@@ -1052,8 +1047,13 @@
               },
               {
                 "gainColor": 0,
-                "content": "-",
+                "content": "0",
                 "toolTip": "0"
+              },
+              {
+                "gainColor": 1,
+                "content": ".333",
+                "toolTip": "0.333333"
               },
               {
                 "gainColor": 0,
@@ -1249,18 +1249,13 @@
                 "content": "0"
               },
               {
-                "content": "0"
+                "content": "2"
               },
               {
-                "content": "10"
+                "content": "8"
               },
               {
-                "content": "5"
-              },
-              {
-                "gainColor": 0,
-                "content": "0",
-                "toolTip": "0"
+                "content": "4"
               },
               {
                 "gainColor": 0,
@@ -1278,7 +1273,12 @@
                 "toolTip": "0"
               },
               {
-                "gainColor": 0,
+                "gainColor": -1,
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "gainColor": -1,
                 "content": "-",
                 "toolTip": "0"
               },
@@ -1322,21 +1322,16 @@
           {
             "cells": [
               {
-                "content": "0"
+                "content": "2"
               },
               {
                 "content": "0"
               },
               {
-                "content": "10"
+                "content": "8"
               },
               {
-                "content": "5"
-              },
-              {
-                "gainColor": 0,
-                "content": "0",
-                "toolTip": "0"
+                "content": "6"
               },
               {
                 "gainColor": 0,
@@ -1354,9 +1349,14 @@
                 "toolTip": "0"
               },
               {
-                "gainColor": 0,
-                "content": "-",
-                "toolTip": "0"
+                "gainColor": 1,
+                "content": "1",
+                "toolTip": "1"
+              },
+              {
+                "gainColor": 1,
+                "content": ".250",
+                "toolTip": "0.25"
               },
               {
                 "gainColor": 0,
@@ -1401,16 +1401,26 @@
                 "content": "0"
               },
               {
-                "content": "0"
+                "content": "8"
               },
               {
-                "content": "10"
+                "content": "2"
               },
               {
-                "content": "5"
+                "content": "1"
               },
               {
-                "gainColor": 0,
+                "gainColor": -1,
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "gainColor": -1,
+                "content": "0",
+                "toolTip": "0"
+              },
+              {
+                "gainColor": -1,
                 "content": "0",
                 "toolTip": "0"
               },
@@ -1420,37 +1430,27 @@
                 "toolTip": "0"
               },
               {
-                "gainColor": 0,
+                "gainColor": -1,
+                "content": ".000",
+                "toolTip": "0"
+              },
+              {
+                "gainColor": -1,
                 "content": "0",
                 "toolTip": "0"
               },
               {
-                "gainColor": 0,
+                "gainColor": -1,
                 "content": "0",
                 "toolTip": "0"
               },
               {
-                "gainColor": 0,
+                "gainColor": -1,
                 "content": "-",
                 "toolTip": "0"
               },
               {
-                "gainColor": 0,
-                "content": "0",
-                "toolTip": "0"
-              },
-              {
-                "gainColor": 0,
-                "content": "0",
-                "toolTip": "0"
-              },
-              {
-                "gainColor": 0,
-                "content": "-",
-                "toolTip": "0"
-              },
-              {
-                "gainColor": 0,
+                "gainColor": -1,
                 "content": "-",
                 "toolTip": "0"
               },
@@ -1473,41 +1473,31 @@
           {
             "cells": [
               {
-                "content": "0"
+                "content": "8"
               },
               {
                 "content": "0"
               },
               {
-                "content": "10"
+                "content": "2"
               },
               {
-                "content": "5"
+                "content": "9"
               },
               {
-                "gainColor": 0,
-                "content": "0",
-                "toolTip": "0"
+                "gainColor": 1,
+                "content": "2",
+                "toolTip": "2"
               },
               {
-                "gainColor": 0,
-                "content": "0",
-                "toolTip": "0"
+                "gainColor": 1,
+                "content": "2",
+                "toolTip": "2"
               },
               {
-                "gainColor": 0,
-                "content": "0",
-                "toolTip": "0"
-              },
-              {
-                "gainColor": 0,
-                "content": "0",
-                "toolTip": "0"
-              },
-              {
-                "gainColor": 0,
-                "content": "-",
-                "toolTip": "0"
+                "gainColor": 1,
+                "content": "3",
+                "toolTip": "3"
               },
               {
                 "gainColor": 0,
@@ -1515,19 +1505,29 @@
                 "toolTip": "0"
               },
               {
-                "gainColor": 0,
-                "content": "0",
+                "gainColor": 1,
+                "content": ".250",
+                "toolTip": "0.25"
+              },
+              {
+                "gainColor": 1,
+                "content": "1",
+                "toolTip": "1"
+              },
+              {
+                "gainColor": 1,
+                "content": "7",
+                "toolTip": "7"
+              },
+              {
+                "gainColor": 1,
+                "content": "0.00",
                 "toolTip": "0"
               },
               {
-                "gainColor": 0,
-                "content": "-",
-                "toolTip": "0"
-              },
-              {
-                "gainColor": 0,
-                "content": "-",
-                "toolTip": "0"
+                "gainColor": 1,
+                "content": "0.529",
+                "toolTip": "0.529412"
               },
               {
                 "gainColor": 0,
