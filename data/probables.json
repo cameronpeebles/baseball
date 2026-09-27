@@ -1,12 +1,12 @@
 {
-  "fetched": "2026-09-27T13:43:59Z",
+  "fetched": "2026-09-27T19:31:47Z",
   "today": "2026-09-27",
   "games": [
     {
       "home": "WSH",
       "away": "NYM",
       "gameTime": "2026-09-27T17:05:00Z",
-      "status": "Preview",
+      "status": "Live",
       "homeSP": {
         "id": 687792,
         "name": "DJ Herz"
@@ -31,11 +31,28 @@
       }
     },
     {
+      "home": "PHI",
+      "away": "TB",
+      "gameTime": "2026-09-27T18:30:00Z",
+      "status": "Live",
+      "homeSP": {
+        "id": 554430,
+        "name": "Zack Wheeler"
+      },
+      "awaySP": {
+        "id": 607259,
+        "name": "Nick Martinez"
+      }
+    },
+    {
       "home": "BOS",
       "away": "CHC",
       "gameTime": "2026-09-27T19:05:00Z",
-      "status": "Preview",
-      "homeSP": null,
+      "status": "Live",
+      "homeSP": {
+        "id": 656557,
+        "name": "Tanner Houck"
+      },
       "awaySP": {
         "id": 684007,
         "name": "Shota Imanaga"
@@ -45,7 +62,7 @@
       "home": "ATH",
       "away": "HOU",
       "gameTime": "2026-09-27T19:05:00Z",
-      "status": "Preview",
+      "status": "Live",
       "homeSP": {
         "id": 686751,
         "name": "Seth Johnson"
@@ -59,32 +76,21 @@
       "home": "SF",
       "away": "LAD",
       "gameTime": "2026-09-27T19:05:00Z",
-      "status": "Preview",
+      "status": "Live",
       "homeSP": {
         "id": 693313,
         "name": "Carson Seymour"
       },
-      "awaySP": null
-    },
-    {
-      "home": "PHI",
-      "away": "TB",
-      "gameTime": "2026-09-27T19:05:00Z",
-      "status": "Preview",
-      "homeSP": {
-        "id": 554430,
-        "name": "Zack Wheeler"
-      },
       "awaySP": {
-        "id": 607259,
-        "name": "Nick Martinez"
+        "id": 676263,
+        "name": "Jack Dreyer"
       }
     },
     {
       "home": "TOR",
       "away": "CIN",
       "gameTime": "2026-09-27T19:07:00Z",
-      "status": "Preview",
+      "status": "Live",
       "homeSP": {
         "id": 453286,
         "name": "Max Scherzer"
@@ -98,7 +104,7 @@
       "home": "KC",
       "away": "CLE",
       "gameTime": "2026-09-27T19:10:00Z",
-      "status": "Preview",
+      "status": "Live",
       "homeSP": {
         "id": 663738,
         "name": "Daniel Lynch IV"
@@ -112,7 +118,7 @@
       "home": "DET",
       "away": "PIT",
       "gameTime": "2026-09-27T19:10:00Z",
-      "status": "Preview",
+      "status": "Live",
       "homeSP": {
         "id": 689981,
         "name": "River Ryan"
@@ -126,7 +132,7 @@
       "home": "SD",
       "away": "AZ",
       "gameTime": "2026-09-27T19:10:00Z",
-      "status": "Preview",
+      "status": "Live",
       "homeSP": {
         "id": 681190,
         "name": "Randy V\u00e1squez"
@@ -140,7 +146,7 @@
       "home": "SEA",
       "away": "LAA",
       "gameTime": "2026-09-27T19:10:00Z",
-      "status": "Preview",
+      "status": "Live",
       "homeSP": {
         "id": 669302,
         "name": "Logan Gilbert"
@@ -154,7 +160,7 @@
       "home": "MIN",
       "away": "TEX",
       "gameTime": "2026-09-27T19:10:00Z",
-      "status": "Preview",
+      "status": "Live",
       "homeSP": {
         "id": 665152,
         "name": "Dean Kremer"
@@ -168,7 +174,7 @@
       "home": "CWS",
       "away": "COL",
       "gameTime": "2026-09-27T19:10:00Z",
-      "status": "Preview",
+      "status": "Live",
       "homeSP": {
         "id": 641743,
         "name": "Anthony Kay"
@@ -182,7 +188,7 @@
       "home": "MIA",
       "away": "ATL",
       "gameTime": "2026-09-27T19:10:00Z",
-      "status": "Preview",
+      "status": "Live",
       "homeSP": {
         "id": 676083,
         "name": "Janson Junk"
@@ -196,7 +202,7 @@
       "home": "MIL",
       "away": "STL",
       "gameTime": "2026-09-27T19:10:00Z",
-      "status": "Preview",
+      "status": "Live",
       "homeSP": {
         "id": 694819,
         "name": "Jacob Misiorowski"
@@ -223,6 +229,13 @@
     "BAL": [
       "2026-09-27"
     ],
+    "PHI": [
+      "2026-09-27"
+    ],
+    "TB": [
+      "2026-09-27",
+      "2026-10-03"
+    ],
     "BOS": [
       "2026-09-27",
       "2026-09-29",
@@ -248,13 +261,6 @@
       "2026-09-27",
       "2026-10-03",
       "2026-10-04"
-    ],
-    "PHI": [
-      "2026-09-27"
-    ],
-    "TB": [
-      "2026-09-27",
-      "2026-10-03"
     ],
     "TOR": [
       "2026-09-27"
@@ -322,12 +328,12 @@
     "STL": [
       "2026-09-27"
     ],
-    "HOU/TEX": [
+    "PHI/ARI": [
       "2026-09-29",
       "2026-09-30",
       "2026-10-01"
     ],
-    "PHI/ARI": [
+    "HOU/TEX": [
       "2026-09-29",
       "2026-09-30",
       "2026-10-01"
