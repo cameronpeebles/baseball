@@ -14,8 +14,7 @@
           "urlName": "pete-crow-armstrong",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs051wv_96_3.png",
           "scorerId": "051wv",
-          "upcomingEventStatusId": "5",
-          "rank": 2,
+          "rank": 1,
           "posIdsNoFlex": [
             "012"
           ],
@@ -24,12 +23,8 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "Not in starting lineup",
-              "typeId": "15"
-            },
-            {
               "tooltip": "Sep 24, 4:37 PM: Crow-Armstrong went 1-for-3 with a...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -45,7 +40,7 @@
         },
         "cells": [
           {
-            "content": "2"
+            "content": "1"
           },
           {
             "content": "MLB?",
@@ -56,46 +51,17 @@
             "content": "24"
           },
           {
-            "content": "CHC 2<br/>@BOS 1",
-            "eventId": "06jyx",
-            "popOver": {
-              "scorer": {
-                "urlName": "tanner-houck",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03djk_96_8.png",
-                "scorerId": "03djk",
-                "upcomingEventStatusId": "5",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "Not in starting lineup",
-                    "typeId": "15"
-                  },
-                  {
-                    "tooltip": "Sep 27, 10:28 AM: The Red Sox reinstated Houck (elbow)...",
-                    "typeId": "14"
-                  },
-                  {
-                    "tooltip": "RHP",
-                    "typeId": "17"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Tanner Houck",
-                "shortName": "T. Houck"
-              },
-              "header": "Probable Starter for Boston:",
-              "content": "<b>W</b>  -  &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 2 &nbsp;<b>K</b>  -  &nbsp;<b>ERA</b> 9.00 &nbsp;<b>WHIP</b> 1.500 &nbsp;"
-            }
+            "content": "CHC 6<br/>@BOS 2 F",
+            "eventId": "06jyx"
           },
           {
             "content": "100"
           },
           {
-            "content": "100%"
+            "content": "-"
           },
           {
-            "content": "0%"
+            "content": "-"
           },
           {
             "content": "626"
@@ -136,11 +102,10 @@
       },
       {
         "scorer": {
-          "teamName": "Washington Nationals",
+          "teamName": "Washington",
           "urlName": "cj-abrams",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04qk8_96_8.png",
           "scorerId": "04qk8",
-          "upcomingEventStatusId": "1",
           "rank": 10,
           "posIdsNoFlex": [
             "003",
@@ -151,12 +116,8 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "Batting Order: 4",
-              "typeId": "24"
-            },
-            {
               "tooltip": "Sep 23, 8:35 AM: Abrams went 2-for-4 with two home runs...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -186,45 +147,20 @@
             "content": "25"
           },
           {
-            "content": "NYM 4<br/>@WSH 4",
-            "eventId": "06j0r",
-            "popOver": {
-              "scorer": {
-                "urlName": "sean-manaea",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02x0f_96_16.png",
-                "scorerId": "02x0f",
-                "upcomingEventStatusId": "1",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "In starting lineup",
-                    "typeId": "12"
-                  },
-                  {
-                    "tooltip": "LHP",
-                    "typeId": "16"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Sean Manaea",
-                "shortName": "S. Manaea"
-              },
-              "header": "Probable Starter for NY Mets:",
-              "content": "<b>W</b> 6 &nbsp;<b>L</b> 7 &nbsp;<b>IP</b> 148.2 &nbsp;<b>K</b> 143 &nbsp;<b>ERA</b> 4.78 &nbsp;<b>WHIP</b> 1.312 &nbsp;"
-            }
+            "content": "NYM 4<br/>@WSH 6 F",
+            "eventId": "06j0r"
           },
           {
-            "content": "91.68"
+            "content": "91.67"
           },
           {
-            "content": "100%"
+            "content": "-"
           },
           {
-            "content": "0%"
+            "content": "-"
           },
           {
-            "content": "577"
+            "content": "579"
           },
           {
             "content": "93"
@@ -242,7 +178,7 @@
             "content": "34"
           },
           {
-            "content": ".262"
+            "content": ".261"
           },
           {
             "content": "152"
@@ -262,12 +198,104 @@
       },
       {
         "scorer": {
-          "teamName": "San Diego Padres",
+          "teamName": "Chicago Sox",
+          "urlName": "miguel-vargas",
+          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04ru7_96_6.png",
+          "scorerId": "04ru7",
+          "rank": 21,
+          "posIdsNoFlex": [
+            "002",
+            "004"
+          ],
+          "defaultPosId": "004",
+          "posShortNames": "1B,3B",
+          "team": false,
+          "icons": [
+            {
+              "tooltip": "Sep 27, 9:47 AM: Vargas is not in the starting lineup...",
+              "typeId": "9"
+            }
+          ],
+          "rookie": false,
+          "minorsEligible": false,
+          "posIds": [
+            "002",
+            "004",
+            "006",
+            "014"
+          ],
+          "teamId": "10060",
+          "name": "Miguel Vargas",
+          "teamShortName": "CHW",
+          "shortName": "M. Vargas"
+        },
+        "multiPositions": "1B,3B",
+        "cells": [
+          {
+            "content": "21"
+          },
+          {
+            "content": "REL",
+            "toolTip": "REL REL",
+            "teamId": "7owlmroxmiytz3cs"
+          },
+          {
+            "content": "26"
+          },
+          {
+            "content": "COL 2<br/>@CHW 4 F",
+            "eventId": "06kbs"
+          },
+          {
+            "content": "87.42"
+          },
+          {
+            "content": "-"
+          },
+          {
+            "content": "-"
+          },
+          {
+            "content": "588"
+          },
+          {
+            "content": "106"
+          },
+          {
+            "content": "147"
+          },
+          {
+            "content": "33"
+          },
+          {
+            "content": "93"
+          },
+          {
+            "content": "22"
+          },
+          {
+            "content": ".250"
+          },
+          {
+            "content": "159"
+          }
+        ],
+        "actions": [
+          {
+            "typeId": "5"
+          },
+          {
+            "typeId": "7"
+          }
+        ]
+      },
+      {
+        "scorer": {
+          "teamName": "San Diego",
           "urlName": "fernando-tatis-jr",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03zbh_96_13.png",
           "scorerId": "03zbh",
-          "upcomingEventStatusId": "5",
-          "rank": 20,
+          "rank": 22,
           "posIdsNoFlex": [
             "003",
             "012"
@@ -277,12 +305,8 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "Not in starting lineup",
-              "typeId": "15"
-            },
-            {
               "tooltip": "Sep 27, 10:34 AM: Tatis is not in the lineup for Sunday's...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -301,7 +325,7 @@
         "multiPositions": "2B,OF",
         "cells": [
           {
-            "content": "20"
+            "content": "22"
           },
           {
             "content": "Team Flu",
@@ -312,42 +336,17 @@
             "content": "27"
           },
           {
-            "content": "ARI 0<br/>@SD 0",
-            "eventId": "06jpu",
-            "popOver": {
-              "scorer": {
-                "urlName": "michael-soroka",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03pjf_96_12.png",
-                "scorerId": "03pjf",
-                "upcomingEventStatusId": "1",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "In starting lineup",
-                    "typeId": "12"
-                  },
-                  {
-                    "tooltip": "RHP",
-                    "typeId": "17"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Michael Soroka",
-                "shortName": "M. Soroka"
-              },
-              "header": "Probable Starter for Arizona:",
-              "content": "<b>W</b> 9 &nbsp;<b>L</b> 5 &nbsp;<b>IP</b> 112.1 &nbsp;<b>K</b> 111 &nbsp;<b>ERA</b> 3.28 &nbsp;<b>WHIP</b> 1.077 &nbsp;"
-            }
+            "content": "ARI 4<br/>@SD 9 F",
+            "eventId": "06jpu"
           },
           {
-            "content": "87.11"
+            "content": "87.08"
           },
           {
-            "content": "100%"
+            "content": "-"
           },
           {
-            "content": "0%"
+            "content": "-"
           },
           {
             "content": "626"
@@ -388,135 +387,11 @@
       },
       {
         "scorer": {
-          "teamName": "Chicago White Sox",
-          "urlName": "miguel-vargas",
-          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04ru7_96_6.png",
-          "scorerId": "04ru7",
-          "upcomingEventStatusId": "5",
-          "rank": 22,
-          "posIdsNoFlex": [
-            "002",
-            "004"
-          ],
-          "defaultPosId": "004",
-          "posShortNames": "1B,3B",
-          "team": false,
-          "icons": [
-            {
-              "tooltip": "Not in starting lineup",
-              "typeId": "15"
-            },
-            {
-              "tooltip": "Sep 27, 9:47 AM: Vargas is not in the starting lineup...",
-              "typeId": "14"
-            }
-          ],
-          "rookie": false,
-          "minorsEligible": false,
-          "posIds": [
-            "002",
-            "004",
-            "006",
-            "014"
-          ],
-          "teamId": "10060",
-          "name": "Miguel Vargas",
-          "teamShortName": "CHW",
-          "shortName": "M. Vargas"
-        },
-        "multiPositions": "1B,3B",
-        "cells": [
-          {
-            "content": "22"
-          },
-          {
-            "content": "REL",
-            "toolTip": "REL REL",
-            "teamId": "7owlmroxmiytz3cs"
-          },
-          {
-            "content": "26"
-          },
-          {
-            "content": "COL 0<br/>@CHW 0",
-            "eventId": "06kbs",
-            "popOver": {
-              "scorer": {
-                "urlName": "kyle-freeland",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03ca3_96_15.png",
-                "scorerId": "03ca3",
-                "upcomingEventStatusId": "1",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "In starting lineup",
-                    "typeId": "12"
-                  },
-                  {
-                    "tooltip": "LHP",
-                    "typeId": "16"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Kyle Freeland",
-                "shortName": "K. Freeland"
-              },
-              "header": "Probable Starter for Colorado:",
-              "content": "<b>W</b> 4 &nbsp;<b>L</b> 11 &nbsp;<b>IP</b> 132.1 &nbsp;<b>K</b> 106 &nbsp;<b>ERA</b> 6.53 &nbsp;<b>WHIP</b> 1.504 &nbsp;"
-            }
-          },
-          {
-            "content": "87.05"
-          },
-          {
-            "content": "97%"
-          },
-          {
-            "content": "0%"
-          },
-          {
-            "content": "588"
-          },
-          {
-            "content": "106"
-          },
-          {
-            "content": "147"
-          },
-          {
-            "content": "33"
-          },
-          {
-            "content": "93"
-          },
-          {
-            "content": "22"
-          },
-          {
-            "content": ".250"
-          },
-          {
-            "content": "159"
-          }
-        ],
-        "actions": [
-          {
-            "typeId": "5"
-          },
-          {
-            "typeId": "7"
-          }
-        ]
-      },
-      {
-        "scorer": {
-          "teamName": "Los Angeles Dodgers",
+          "teamName": "LA Dodgers",
           "urlName": "shohei-ohtani",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02yc4_96_13.png",
           "scorerId": "02yc4",
-          "upcomingEventStatusId": "1",
-          "rank": 24,
+          "rank": 26,
           "posIdsNoFlex": [
             "014",
             "017"
@@ -526,12 +401,8 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "Batting Order: 1",
-              "typeId": "21"
-            },
-            {
               "tooltip": "Sep 23, 4:05 PM: The Dodgers reinstated Ohtani...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -548,7 +419,7 @@
         "multiPositions": "UT,P",
         "cells": [
           {
-            "content": "24"
+            "content": "26"
           },
           {
             "content": "WOO",
@@ -559,55 +430,26 @@
             "content": "32"
           },
           {
-            "content": "LAD 0<br/>@SF 0",
-            "eventId": "06ioq",
-            "popOver": {
-              "scorer": {
-                "urlName": "carson-seymour",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05jqk_96_1.png",
-                "scorerId": "05jqk",
-                "upcomingEventStatusId": "1",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "In starting lineup",
-                    "typeId": "12"
-                  },
-                  {
-                    "tooltip": "Sep 27, 7:58 AM: Seymour is slated to start Sunday's...",
-                    "typeId": "14"
-                  },
-                  {
-                    "tooltip": "RHP",
-                    "typeId": "17"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Carson Seymour",
-                "shortName": "C. Seymour"
-              },
-              "header": "Probable Starter for San Francisco:",
-              "content": "<b>W</b>  -  &nbsp;<b>L</b> 2 &nbsp;<b>IP</b> 31.2 &nbsp;<b>K</b> 23 &nbsp;<b>ERA</b> 4.55 &nbsp;<b>WHIP</b> 1.484 &nbsp;"
-            }
+            "content": "LAD 5<br/>@SF 1 F",
+            "eventId": "06ioq"
           },
           {
-            "content": "86.81"
+            "content": "86.84"
           },
           {
-            "content": "99%"
+            "content": "-"
           },
           {
-            "content": "0%"
+            "content": "-"
           },
           {
-            "content": "521"
+            "content": "523"
           },
           {
             "content": "89"
           },
           {
-            "content": "143"
+            "content": "144"
           },
           {
             "content": "30"
@@ -619,7 +461,7 @@
             "content": "11"
           },
           {
-            "content": ".274"
+            "content": ".275"
           },
           {
             "content": "139"
@@ -639,12 +481,11 @@
       },
       {
         "scorer": {
-          "teamName": "Cincinnati Reds",
+          "teamName": "Cincinnati",
           "urlName": "elly-de-la-cruz",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05udp_96_4.png",
           "scorerId": "05udp",
-          "upcomingEventStatusId": "1",
-          "rank": 30,
+          "rank": 27,
           "posIdsNoFlex": [
             "005"
           ],
@@ -652,10 +493,6 @@
           "posShortNames": "SS",
           "team": false,
           "icons": [
-            {
-              "tooltip": "Batting Order: 2",
-              "typeId": "22"
-            },
             {
               "tooltip": "Sep 25, 8:48 PM: De La Cruz went 1-for-4 with a two-run...",
               "typeId": "9"
@@ -675,7 +512,7 @@
         },
         "cells": [
           {
-            "content": "30"
+            "content": "27"
           },
           {
             "content": "G.O.A.T.",
@@ -686,51 +523,26 @@
             "content": "24"
           },
           {
-            "content": "CIN 0<br/>@TOR 0",
-            "eventId": "06jls",
-            "popOver": {
-              "scorer": {
-                "urlName": "max-scherzer",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs004ee_96_15.png",
-                "scorerId": "004ee",
-                "upcomingEventStatusId": "1",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "In starting lineup",
-                    "typeId": "12"
-                  },
-                  {
-                    "tooltip": "RHP",
-                    "typeId": "17"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Max Scherzer",
-                "shortName": "M. Scherzer"
-              },
-              "header": "Probable Starter for Toronto:",
-              "content": "<b>W</b> 3 &nbsp;<b>L</b> 9 &nbsp;<b>IP</b> 79.2 &nbsp;<b>K</b> 62 &nbsp;<b>ERA</b> 5.99 &nbsp;<b>WHIP</b> 1.343 &nbsp;"
-            }
+            "content": "CIN 1<br/>@TOR 5 F",
+            "eventId": "06jls"
           },
           {
-            "content": "85.72"
+            "content": "86.59"
           },
           {
-            "content": "100%"
+            "content": "-"
           },
           {
-            "content": "0%"
+            "content": "-"
           },
           {
-            "content": "556"
+            "content": "559"
           },
           {
             "content": "99"
           },
           {
-            "content": "157"
+            "content": "158"
           },
           {
             "content": "30"
@@ -742,7 +554,7 @@
             "content": "30"
           },
           {
-            "content": ".282"
+            "content": ".283"
           },
           {
             "content": "143"
@@ -762,12 +574,11 @@
       },
       {
         "scorer": {
-          "teamName": "St. Louis Cardinals",
+          "teamName": "St. Louis",
           "urlName": "jordan-walker",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05gbf_96_4.png",
           "scorerId": "05gbf",
-          "upcomingEventStatusId": "1",
-          "rank": 31,
+          "rank": 30,
           "posIdsNoFlex": [
             "012"
           ],
@@ -776,12 +587,8 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "Batting Order: 1",
-              "typeId": "21"
-            },
-            {
               "tooltip": "Sep 27, 8:40 AM: Walker will make his first career start...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -797,7 +604,7 @@
         },
         "cells": [
           {
-            "content": "31"
+            "content": "30"
           },
           {
             "content": "REL",
@@ -808,49 +615,23 @@
             "content": "24"
           },
           {
-            "content": "STL 0<br/>@MIL 3",
-            "eventId": "06kej",
-            "popOver": {
-              "scorer": {
-                "urlName": "jacob-misiorowski",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs061yu_96_2.png",
-                "scorerId": "061yu",
-                "upcomingEventStatusId": "1",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "In starting lineup",
-                    "typeId": "12"
-                  },
-                  {
-                    "tooltip": "RHP",
-                    "typeId": "17"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Jacob Misiorowski",
-                "shortName": "J. Misiorowski"
-              },
-              "header": "Probable Starter for Milwaukee:",
-              "content": "<b>W</b> 15 &nbsp;<b>L</b> 5 &nbsp;<b>IP</b> 170.1 &nbsp;<b>K</b> 248 &nbsp;<b>ERA</b> 1.85 &nbsp;<b>WHIP</b> 0.798 &nbsp;"
-            }
+            "content": "STL 4<br/>@MIL 6 F",
+            "eventId": "06kej"
           },
           {
-            "content": "85.22"
+            "content": "86.01"
           },
           {
-            "content": "95%"
+            "content": "-"
           },
           {
-            "gainColor": -1,
-            "content": "-1%"
+            "content": "-"
           },
           {
-            "content": "606"
+            "content": "609"
           },
           {
-            "content": "96"
+            "content": "97"
           },
           {
             "content": "164"
@@ -859,13 +640,13 @@
             "content": "29"
           },
           {
-            "content": "101"
+            "content": "102"
           },
           {
             "content": "22"
           },
           {
-            "content": ".271"
+            "content": ".269"
           },
           {
             "content": "158"
@@ -882,12 +663,11 @@
       },
       {
         "scorer": {
-          "teamName": "Seattle Mariners",
+          "teamName": "Seattle",
           "urlName": "randy-arozarena",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs040b5_96_10.png",
           "scorerId": "040b5",
-          "upcomingEventStatusId": "1",
-          "rank": 37,
+          "rank": 34,
           "posIdsNoFlex": [
             "012"
           ],
@@ -896,12 +676,8 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "Batting Order: 2",
-              "typeId": "22"
-            },
-            {
               "tooltip": "Sep 27, 12:26 AM: Arozarena went 2-for-5 with a double, a...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -917,7 +693,7 @@
         },
         "cells": [
           {
-            "content": "37"
+            "content": "34"
           },
           {
             "content": "BATS",
@@ -928,57 +704,32 @@
             "content": "31"
           },
           {
-            "content": "LAA 0<br/>@SEA 0",
-            "eventId": "06k4g",
-            "popOver": {
-              "scorer": {
-                "urlName": "yusei-kikuchi",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04ml0_96_10.png",
-                "scorerId": "04ml0",
-                "upcomingEventStatusId": "1",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "In starting lineup",
-                    "typeId": "12"
-                  },
-                  {
-                    "tooltip": "LHP",
-                    "typeId": "16"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Yusei Kikuchi",
-                "shortName": "Y. Kikuchi"
-              },
-              "header": "Probable Starter for LA Angels:",
-              "content": "<b>W</b> 1 &nbsp;<b>L</b> 6 &nbsp;<b>IP</b> 63.2 &nbsp;<b>K</b> 61 &nbsp;<b>ERA</b> 4.81 &nbsp;<b>WHIP</b> 1.555 &nbsp;"
-            }
+            "content": "LAA 3<br/>@SEA 7 F",
+            "eventId": "06k4g"
           },
           {
-            "content": "83.35"
+            "content": "84.36"
           },
           {
-            "content": "99%"
+            "content": "-"
           },
           {
-            "content": "0%"
+            "content": "-"
           },
           {
-            "content": "570"
+            "content": "572"
           },
           {
-            "content": "112"
+            "content": "113"
           },
           {
-            "content": "160"
+            "content": "161"
           },
           {
             "content": "26"
           },
           {
-            "content": "77"
+            "content": "79"
           },
           {
             "content": "26"
@@ -1004,138 +755,11 @@
       },
       {
         "scorer": {
-          "teamName": "Cincinnati Reds",
-          "urlName": "sal-stewart",
-          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05u9o_96_2.png",
-          "scorerId": "05u9o",
-          "upcomingEventStatusId": "1",
-          "rank": 39,
-          "posIdsNoFlex": [
-            "002",
-            "004"
-          ],
-          "defaultPosId": "002",
-          "posShortNames": "1B,3B",
-          "team": false,
-          "icons": [
-            {
-              "tooltip": "Batting Order: 3",
-              "typeId": "23"
-            },
-            {
-              "tooltip": "Sep 18, 6:11 AM: Stewart went 2-for-4 with a solo home...",
-              "typeId": "8"
-            }
-          ],
-          "rookie": false,
-          "minorsEligible": false,
-          "posIds": [
-            "002",
-            "004",
-            "006",
-            "014"
-          ],
-          "teamId": "10210",
-          "name": "Sal Stewart",
-          "teamShortName": "CIN",
-          "shortName": "S. Stewart"
-        },
-        "multiPositions": "1B,3B",
-        "cells": [
-          {
-            "content": "39"
-          },
-          {
-            "content": "MLB?",
-            "toolTip": "Not Just a MiLB Team",
-            "teamId": "xuv2jl3cmiytz3cs"
-          },
-          {
-            "content": "22"
-          },
-          {
-            "content": "CIN 0<br/>@TOR 0",
-            "eventId": "06jls",
-            "popOver": {
-              "scorer": {
-                "urlName": "max-scherzer",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs004ee_96_15.png",
-                "scorerId": "004ee",
-                "upcomingEventStatusId": "1",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "In starting lineup",
-                    "typeId": "12"
-                  },
-                  {
-                    "tooltip": "RHP",
-                    "typeId": "17"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Max Scherzer",
-                "shortName": "M. Scherzer"
-              },
-              "header": "Probable Starter for Toronto:",
-              "content": "<b>W</b> 3 &nbsp;<b>L</b> 9 &nbsp;<b>IP</b> 79.2 &nbsp;<b>K</b> 62 &nbsp;<b>ERA</b> 5.99 &nbsp;<b>WHIP</b> 1.343 &nbsp;"
-            }
-          },
-          {
-            "content": "82.91"
-          },
-          {
-            "content": "99%"
-          },
-          {
-            "content": "0%"
-          },
-          {
-            "content": "620"
-          },
-          {
-            "content": "87"
-          },
-          {
-            "content": "164"
-          },
-          {
-            "content": "32"
-          },
-          {
-            "content": "111"
-          },
-          {
-            "content": "15"
-          },
-          {
-            "content": ".265"
-          },
-          {
-            "content": "162"
-          }
-        ],
-        "actions": [
-          {
-            "typeId": "4"
-          },
-          {
-            "typeId": "5"
-          },
-          {
-            "typeId": "7"
-          }
-        ]
-      },
-      {
-        "scorer": {
-          "teamName": "Baltimore Orioles",
+          "teamName": "Baltimore",
           "urlName": "pete-alonso",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs041pz_96_12.png",
           "scorerId": "041pz",
-          "upcomingEventStatusId": "1",
-          "rank": 41,
+          "rank": 39,
           "posIdsNoFlex": [
             "002"
           ],
@@ -1143,10 +767,6 @@
           "posShortNames": "1B",
           "team": false,
           "icons": [
-            {
-              "tooltip": "Batting Order: 2",
-              "typeId": "22"
-            },
             {
               "tooltip": "Sep 25, 8:41 PM: Alonso went 4-for-8 with two home runs,...",
               "typeId": "9"
@@ -1166,7 +786,7 @@
         },
         "cells": [
           {
-            "content": "41"
+            "content": "39"
           },
           {
             "content": "G.O.A.T.",
@@ -1177,44 +797,16 @@
             "content": "31"
           },
           {
-            "content": "@NYY<br/>Sun 11:05AM",
-            "eventId": "06jrf",
-            "popOver": {
-              "scorer": {
-                "urlName": "elmer-rodriguez",
-                "scorerId": "05xoo",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "Minor Leagues",
-                    "typeId": "4"
-                  },
-                  {
-                    "tooltip": "Sep 25, 12:12 PM: Yankees manager Aaron Boone said Friday...",
-                    "typeId": "9"
-                  },
-                  {
-                    "tooltip": "RHP",
-                    "typeId": "17"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Elmer Rodriguez",
-                "shortName": "E. Rodriguez"
-              },
-              "header": "Probable Starter for NY Yankees:",
-              "content": "<b>W</b>  -  &nbsp;<b>L</b> 3 &nbsp;<b>IP</b> 26.2 &nbsp;<b>K</b> 21 &nbsp;<b>ERA</b> 5.40 &nbsp;<b>WHIP</b> 1.575 &nbsp;"
-            }
+            "content": ""
           },
           {
-            "content": "82.65"
+            "content": "83"
           },
           {
-            "content": "100%"
+            "content": "-"
           },
           {
-            "content": "0%"
+            "content": "-"
           },
           {
             "content": "602"
@@ -1255,11 +847,193 @@
       },
       {
         "scorer": {
-          "teamName": "San Diego Padres",
+          "teamName": "Cincinnati",
+          "urlName": "sal-stewart",
+          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05u9o_96_2.png",
+          "scorerId": "05u9o",
+          "rank": 40,
+          "posIdsNoFlex": [
+            "002",
+            "004"
+          ],
+          "defaultPosId": "002",
+          "posShortNames": "1B,3B",
+          "team": false,
+          "rookie": false,
+          "minorsEligible": false,
+          "posIds": [
+            "002",
+            "004",
+            "006",
+            "014"
+          ],
+          "teamId": "10210",
+          "name": "Sal Stewart",
+          "teamShortName": "CIN",
+          "shortName": "S. Stewart"
+        },
+        "multiPositions": "1B,3B",
+        "cells": [
+          {
+            "content": "40"
+          },
+          {
+            "content": "MLB?",
+            "toolTip": "Not Just a MiLB Team",
+            "teamId": "xuv2jl3cmiytz3cs"
+          },
+          {
+            "content": "22"
+          },
+          {
+            "content": "CIN 1<br/>@TOR 5 F",
+            "eventId": "06jls"
+          },
+          {
+            "content": "82.95"
+          },
+          {
+            "content": "-"
+          },
+          {
+            "content": "-"
+          },
+          {
+            "content": "623"
+          },
+          {
+            "content": "87"
+          },
+          {
+            "content": "164"
+          },
+          {
+            "content": "32"
+          },
+          {
+            "content": "111"
+          },
+          {
+            "content": "15"
+          },
+          {
+            "content": ".263"
+          },
+          {
+            "content": "162"
+          }
+        ],
+        "actions": [
+          {
+            "typeId": "4"
+          },
+          {
+            "typeId": "5"
+          },
+          {
+            "typeId": "7"
+          }
+        ]
+      },
+      {
+        "scorer": {
+          "teamName": "LA Angels",
+          "urlName": "zach-neto",
+          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05xu5_96_5.png",
+          "scorerId": "05xu5",
+          "rank": 42,
+          "posIdsNoFlex": [
+            "005"
+          ],
+          "defaultPosId": "005",
+          "posShortNames": "SS",
+          "team": false,
+          "icons": [
+            {
+              "tooltip": "Sep 25, 11:58 PM: Neto went 3-for-5 with a solo home run,...",
+              "typeId": "9"
+            }
+          ],
+          "rookie": false,
+          "minorsEligible": false,
+          "posIds": [
+            "005",
+            "007",
+            "014"
+          ],
+          "teamId": "10110",
+          "name": "Zach Neto",
+          "teamShortName": "LAA",
+          "shortName": "Z. Neto"
+        },
+        "cells": [
+          {
+            "content": "42"
+          },
+          {
+            "content": "BUF-FEDS",
+            "toolTip": "Buffalo Blues",
+            "teamId": "2rfp1oakmiytz3cs"
+          },
+          {
+            "content": "25"
+          },
+          {
+            "content": "LAA 3<br/>@SEA 7 F",
+            "eventId": "06k4g"
+          },
+          {
+            "content": "82.52"
+          },
+          {
+            "content": "-"
+          },
+          {
+            "content": "-"
+          },
+          {
+            "content": "619"
+          },
+          {
+            "content": "102"
+          },
+          {
+            "content": "148"
+          },
+          {
+            "content": "27"
+          },
+          {
+            "content": "77"
+          },
+          {
+            "content": "24"
+          },
+          {
+            "content": ".239"
+          },
+          {
+            "content": "157"
+          }
+        ],
+        "actions": [
+          {
+            "typeId": "4"
+          },
+          {
+            "typeId": "6"
+          },
+          {
+            "typeId": "7"
+          }
+        ]
+      },
+      {
+        "scorer": {
+          "teamName": "San Diego",
           "urlName": "jackson-merrill",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05ua7_96_3.png",
           "scorerId": "05ua7",
-          "upcomingEventStatusId": "5",
           "rank": 45,
           "posIdsNoFlex": [
             "012"
@@ -1268,10 +1042,6 @@
           "posShortNames": "OF",
           "team": false,
           "icons": [
-            {
-              "tooltip": "Not in starting lineup",
-              "typeId": "15"
-            },
             {
               "tooltip": "Sep 27, 10:36 AM: Merrill is not in the lineup for...",
               "typeId": "14"
@@ -1301,42 +1071,17 @@
             "content": "23"
           },
           {
-            "content": "ARI 0<br/>@SD 0",
-            "eventId": "06jpu",
-            "popOver": {
-              "scorer": {
-                "urlName": "michael-soroka",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03pjf_96_12.png",
-                "scorerId": "03pjf",
-                "upcomingEventStatusId": "1",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "In starting lineup",
-                    "typeId": "12"
-                  },
-                  {
-                    "tooltip": "RHP",
-                    "typeId": "17"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Michael Soroka",
-                "shortName": "M. Soroka"
-              },
-              "header": "Probable Starter for Arizona:",
-              "content": "<b>W</b> 9 &nbsp;<b>L</b> 5 &nbsp;<b>IP</b> 112.1 &nbsp;<b>K</b> 111 &nbsp;<b>ERA</b> 3.28 &nbsp;<b>WHIP</b> 1.077 &nbsp;"
-            }
+            "content": "ARI 4<br/>@SD 9 F",
+            "eventId": "06jpu"
           },
           {
-            "content": "81.99"
+            "content": "82.22"
           },
           {
-            "content": "99%"
+            "content": "-"
           },
           {
-            "content": "0%"
+            "content": "-"
           },
           {
             "content": "613"
@@ -1377,151 +1122,17 @@
       },
       {
         "scorer": {
-          "teamName": "Los Angeles Angels",
-          "urlName": "zach-neto",
-          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05xu5_96_5.png",
-          "scorerId": "05xu5",
-          "upcomingEventStatusId": "1",
-          "rank": 47,
-          "posIdsNoFlex": [
-            "005"
-          ],
-          "defaultPosId": "005",
-          "posShortNames": "SS",
-          "team": false,
-          "icons": [
-            {
-              "tooltip": "Batting Order: 1",
-              "typeId": "21"
-            },
-            {
-              "tooltip": "Sep 25, 11:58 PM: Neto went 3-for-5 with a solo home run,...",
-              "typeId": "9"
-            }
-          ],
-          "rookie": false,
-          "minorsEligible": false,
-          "posIds": [
-            "005",
-            "007",
-            "014"
-          ],
-          "teamId": "10110",
-          "name": "Zach Neto",
-          "teamShortName": "LAA",
-          "shortName": "Z. Neto"
-        },
-        "cells": [
-          {
-            "content": "47"
-          },
-          {
-            "content": "BUF-FEDS",
-            "toolTip": "Buffalo Blues",
-            "teamId": "2rfp1oakmiytz3cs"
-          },
-          {
-            "content": "25"
-          },
-          {
-            "content": "LAA 0<br/>@SEA 0",
-            "eventId": "06k4g",
-            "popOver": {
-              "scorer": {
-                "urlName": "logan-gilbert",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04n0m_96_9.png",
-                "scorerId": "04n0m",
-                "upcomingEventStatusId": "1",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "In starting lineup",
-                    "typeId": "12"
-                  },
-                  {
-                    "tooltip": "RHP",
-                    "typeId": "17"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Logan Gilbert",
-                "shortName": "L. Gilbert"
-              },
-              "header": "Probable Starter for Seattle:",
-              "content": "<b>W</b> 12 &nbsp;<b>L</b> 11 &nbsp;<b>IP</b> 183 &nbsp;<b>K</b> 200 &nbsp;<b>ERA</b> 3.79 &nbsp;<b>WHIP</b> 1.098 &nbsp;"
-            }
-          },
-          {
-            "content": "81.58"
-          },
-          {
-            "content": "99%"
-          },
-          {
-            "content": "0%"
-          },
-          {
-            "content": "617"
-          },
-          {
-            "content": "101"
-          },
-          {
-            "content": "148"
-          },
-          {
-            "content": "27"
-          },
-          {
-            "content": "77"
-          },
-          {
-            "content": "24"
-          },
-          {
-            "content": ".240"
-          },
-          {
-            "content": "157"
-          }
-        ],
-        "actions": [
-          {
-            "typeId": "4"
-          },
-          {
-            "typeId": "6"
-          },
-          {
-            "typeId": "7"
-          }
-        ]
-      },
-      {
-        "scorer": {
-          "teamName": "Washington Nationals",
+          "teamName": "Washington",
           "urlName": "james-wood",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05rat_96_3.png",
           "scorerId": "05rat",
-          "upcomingEventStatusId": "1",
-          "rank": 52,
+          "rank": 49,
           "posIdsNoFlex": [
             "012"
           ],
           "defaultPosId": "009",
           "posShortNames": "OF",
           "team": false,
-          "icons": [
-            {
-              "tooltip": "Batting Order: 1",
-              "typeId": "21"
-            },
-            {
-              "tooltip": "Sep 15, 3:14 PM: Wood is out of the lineup for Tuesday's...",
-              "typeId": "8"
-            }
-          ],
           "rookie": false,
           "minorsEligible": false,
           "posIds": [
@@ -1535,7 +1146,7 @@
         },
         "cells": [
           {
-            "content": "52"
+            "content": "49"
           },
           {
             "content": "REL",
@@ -1546,48 +1157,23 @@
             "content": "24"
           },
           {
-            "content": "NYM 4<br/>@WSH 4",
-            "eventId": "06j0r",
-            "popOver": {
-              "scorer": {
-                "urlName": "sean-manaea",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02x0f_96_16.png",
-                "scorerId": "02x0f",
-                "upcomingEventStatusId": "1",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "In starting lineup",
-                    "typeId": "12"
-                  },
-                  {
-                    "tooltip": "LHP",
-                    "typeId": "16"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Sean Manaea",
-                "shortName": "S. Manaea"
-              },
-              "header": "Probable Starter for NY Mets:",
-              "content": "<b>W</b> 6 &nbsp;<b>L</b> 7 &nbsp;<b>IP</b> 148.2 &nbsp;<b>K</b> 143 &nbsp;<b>ERA</b> 4.78 &nbsp;<b>WHIP</b> 1.312 &nbsp;"
-            }
+            "content": "NYM 4<br/>@WSH 6 F",
+            "eventId": "06j0r"
           },
           {
-            "content": "80.58"
+            "content": "81.27"
           },
           {
-            "content": "100%"
+            "content": "-"
           },
           {
-            "content": "0%"
+            "content": "-"
           },
           {
             "content": "513"
           },
           {
-            "content": "105"
+            "content": "106"
           },
           {
             "content": "136"
@@ -1619,11 +1205,10 @@
       },
       {
         "scorer": {
-          "teamName": "Tampa Bay Rays",
+          "teamName": "Tampa Bay",
           "urlName": "junior-caminero",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05xch_96_2.png",
           "scorerId": "05xch",
-          "upcomingEventStatusId": "1",
           "rank": 53,
           "posIdsNoFlex": [
             "004"
@@ -1633,12 +1218,8 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "Batting Order: 3",
-              "typeId": "23"
-            },
-            {
               "tooltip": "Sep 27, 6:25 AM: Caminero went 2-for-3 with a home run,...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -1666,49 +1247,20 @@
             "content": "23"
           },
           {
-            "content": "TB 0<br/>@PHI 4",
-            "eventId": "06j1p",
-            "popOver": {
-              "scorer": {
-                "urlName": "zack-wheeler",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs01sb3_96_16.png",
-                "scorerId": "01sb3",
-                "upcomingEventStatusId": "1",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "In starting lineup",
-                    "typeId": "12"
-                  },
-                  {
-                    "tooltip": "Sep 26, 9:32 PM: Wheeler will be the Phillies' starter...",
-                    "typeId": "14"
-                  },
-                  {
-                    "tooltip": "RHP",
-                    "typeId": "17"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Zack Wheeler",
-                "shortName": "Z. Wheeler"
-              },
-              "header": "Probable Starter for Philadelphia:",
-              "content": "<b>W</b> 13 &nbsp;<b>L</b> 5 &nbsp;<b>IP</b> 159 &nbsp;<b>K</b> 191 &nbsp;<b>ERA</b> 3.00 &nbsp;<b>WHIP</b> 1.044 &nbsp;"
-            }
+            "content": "TB 3<br/>@PHI 7 F",
+            "eventId": "06j1p"
           },
           {
-            "content": "80.37"
+            "content": "80.68"
           },
           {
-            "content": "100%"
+            "content": "-"
           },
           {
-            "content": "0%"
+            "content": "-"
           },
           {
-            "content": "615"
+            "content": "616"
           },
           {
             "content": "100"
@@ -1746,12 +1298,104 @@
       },
       {
         "scorer": {
-          "teamName": "Houston Astros",
+          "teamName": "Milwaukee",
+          "urlName": "brice-turang",
+          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04b00_96_7.png",
+          "scorerId": "04b00",
+          "rank": 55,
+          "posIdsNoFlex": [
+            "003"
+          ],
+          "defaultPosId": "003",
+          "posShortNames": "2B",
+          "team": false,
+          "icons": [
+            {
+              "tooltip": "Sep 26, 8:00 PM: Turang went 1-for-3 with a walk and a...",
+              "typeId": "9"
+            }
+          ],
+          "rookie": false,
+          "minorsEligible": false,
+          "posIds": [
+            "003",
+            "007",
+            "014"
+          ],
+          "teamId": "10230",
+          "name": "Brice Turang",
+          "teamShortName": "MIL",
+          "shortName": "B. Turang"
+        },
+        "cells": [
+          {
+            "content": "55"
+          },
+          {
+            "content": "Team Flu",
+            "toolTip": "Team Fluck",
+            "teamId": "huopotx1miytz3cs"
+          },
+          {
+            "content": "26"
+          },
+          {
+            "content": "STL 4<br/>@MIL 6 F",
+            "eventId": "06kej"
+          },
+          {
+            "content": "80.61"
+          },
+          {
+            "content": "-"
+          },
+          {
+            "content": "-"
+          },
+          {
+            "content": "582"
+          },
+          {
+            "content": "102"
+          },
+          {
+            "content": "156"
+          },
+          {
+            "content": "21"
+          },
+          {
+            "content": "100"
+          },
+          {
+            "content": "19"
+          },
+          {
+            "content": ".268"
+          },
+          {
+            "content": "151"
+          }
+        ],
+        "actions": [
+          {
+            "typeId": "4"
+          },
+          {
+            "typeId": "5"
+          },
+          {
+            "typeId": "7"
+          }
+        ]
+      },
+      {
+        "scorer": {
+          "teamName": "Houston",
           "urlName": "yordan-alvarez",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04355_96_10.png",
           "scorerId": "04355",
-          "upcomingEventStatusId": "1",
-          "rank": 55,
+          "rank": 56,
           "posIdsNoFlex": [
             "012"
           ],
@@ -1760,12 +1404,8 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "Batting Order: 2",
-              "typeId": "22"
-            },
-            {
               "tooltip": "Sep 26, 11:39 PM: Alvarez went 2-for-5 with a three-run...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -1781,7 +1421,7 @@
         },
         "cells": [
           {
-            "content": "55"
+            "content": "56"
           },
           {
             "content": "TBS",
@@ -1792,61 +1432,32 @@
             "content": "29"
           },
           {
-            "content": "HOU 0<br/>@ATH 0",
-            "eventId": "06ip9",
-            "popOver": {
-              "scorer": {
-                "urlName": "seth-johnson",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs0511t_96_3.png",
-                "scorerId": "0511t",
-                "upcomingEventStatusId": "1",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "In starting lineup",
-                    "typeId": "12"
-                  },
-                  {
-                    "tooltip": "Sep 27, 8:27 AM: Johnson will serve as the Athletics'...",
-                    "typeId": "14"
-                  },
-                  {
-                    "tooltip": "RHP",
-                    "typeId": "17"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Seth Johnson",
-                "shortName": "S. Johnson"
-              },
-              "header": "Probable Starter for Athletics:",
-              "content": "<b>W</b> 1 &nbsp;<b>L</b>  -  &nbsp;<b>IP</b> 33.1 &nbsp;<b>K</b> 40 &nbsp;<b>ERA</b> 5.94 &nbsp;<b>WHIP</b> 1.650 &nbsp;"
-            }
+            "content": "HOU 9<br/>@ATH 0 F",
+            "eventId": "06ip9"
           },
           {
-            "content": "80.1"
+            "content": "80.61"
           },
           {
-            "content": "100%"
+            "content": "-"
           },
           {
-            "content": "0%"
+            "content": "-"
           },
           {
-            "content": "564"
+            "content": "567"
           },
           {
-            "content": "104"
+            "content": "105"
           },
           {
-            "content": "178"
+            "content": "179"
           },
           {
             "content": "42"
           },
           {
-            "content": "105"
+            "content": "106"
           },
           {
             "content": "1"
@@ -1872,134 +1483,11 @@
       },
       {
         "scorer": {
-          "teamName": "Milwaukee Brewers",
-          "urlName": "brice-turang",
-          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04b00_96_7.png",
-          "scorerId": "04b00",
-          "upcomingEventStatusId": "1",
-          "rank": 56,
-          "posIdsNoFlex": [
-            "003"
-          ],
-          "defaultPosId": "003",
-          "posShortNames": "2B",
-          "team": false,
-          "icons": [
-            {
-              "tooltip": "Batting Order: 4",
-              "typeId": "24"
-            },
-            {
-              "tooltip": "Sep 26, 8:00 PM: Turang went 1-for-3 with a walk and a...",
-              "typeId": "14"
-            }
-          ],
-          "rookie": false,
-          "minorsEligible": false,
-          "posIds": [
-            "003",
-            "007",
-            "014"
-          ],
-          "teamId": "10230",
-          "name": "Brice Turang",
-          "teamShortName": "MIL",
-          "shortName": "B. Turang"
-        },
-        "cells": [
-          {
-            "content": "56"
-          },
-          {
-            "content": "Team Flu",
-            "toolTip": "Team Fluck",
-            "teamId": "huopotx1miytz3cs"
-          },
-          {
-            "content": "26"
-          },
-          {
-            "content": "STL 0<br/>@MIL 3",
-            "eventId": "06kej",
-            "popOver": {
-              "scorer": {
-                "urlName": "andre-pallante",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05133_96_5.png",
-                "scorerId": "05133",
-                "upcomingEventStatusId": "1",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "In starting lineup",
-                    "typeId": "12"
-                  },
-                  {
-                    "tooltip": "RHP",
-                    "typeId": "17"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Andre Pallante",
-                "shortName": "A. Pallante"
-              },
-              "header": "Probable Starter for St. Louis:",
-              "content": "<b>W</b> 12 &nbsp;<b>L</b> 8 &nbsp;<b>IP</b> 158 &nbsp;<b>K</b> 106 &nbsp;<b>ERA</b> 3.76 &nbsp;<b>WHIP</b> 1.272 &nbsp;"
-            }
-          },
-          {
-            "content": "80.07"
-          },
-          {
-            "content": "100%"
-          },
-          {
-            "content": "0%"
-          },
-          {
-            "content": "579"
-          },
-          {
-            "content": "102"
-          },
-          {
-            "content": "156"
-          },
-          {
-            "content": "21"
-          },
-          {
-            "content": "100"
-          },
-          {
-            "content": "19"
-          },
-          {
-            "content": ".269"
-          },
-          {
-            "content": "151"
-          }
-        ],
-        "actions": [
-          {
-            "typeId": "4"
-          },
-          {
-            "typeId": "5"
-          },
-          {
-            "typeId": "7"
-          }
-        ]
-      },
-      {
-        "scorer": {
-          "teamName": "New York Yankees",
+          "teamName": "NY Yankees",
           "urlName": "ben-rice",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05yo5_96_2.png",
           "scorerId": "05yo5",
-          "rank": 61,
+          "rank": 62,
           "posIdsNoFlex": [
             "001",
             "002"
@@ -2010,7 +1498,7 @@
           "icons": [
             {
               "tooltip": "Sep 23, 8:43 PM: Rice went 3-for-4 with a pair of solo...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -2029,7 +1517,7 @@
         "multiPositions": "C,1B",
         "cells": [
           {
-            "content": "61"
+            "content": "62"
           },
           {
             "content": "TBS",
@@ -2040,42 +1528,16 @@
             "content": "27"
           },
           {
-            "content": "BAL<br/>Sun 11:05AM",
-            "eventId": "06jrf",
-            "popOver": {
-              "scorer": {
-                "urlName": "shane-baz",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04cwf_96_7.png",
-                "scorerId": "04cwf",
-                "upcomingEventStatusId": "1",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "In starting lineup",
-                    "typeId": "12"
-                  },
-                  {
-                    "tooltip": "RHP",
-                    "typeId": "17"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Shane Baz",
-                "shortName": "S. Baz"
-              },
-              "header": "Probable Starter for Baltimore:",
-              "content": "<b>W</b> 6 &nbsp;<b>L</b> 15 &nbsp;<b>IP</b> 179.2 &nbsp;<b>K</b> 154 &nbsp;<b>ERA</b> 4.11 &nbsp;<b>WHIP</b> 1.347 &nbsp;"
-            }
+            "content": ""
           },
           {
-            "content": "79.22"
+            "content": "79.33"
           },
           {
-            "content": "100%"
+            "content": "-"
           },
           {
-            "content": "0%"
+            "content": "-"
           },
           {
             "content": "573"
@@ -2116,11 +1578,99 @@
       },
       {
         "scorer": {
-          "teamName": "Atlanta Braves",
+          "teamName": "Milwaukee",
+          "urlName": "jackson-chourio",
+          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05m1e_96_4.png",
+          "scorerId": "05m1e",
+          "rank": 64,
+          "posIdsNoFlex": [
+            "012"
+          ],
+          "defaultPosId": "010",
+          "posShortNames": "OF",
+          "team": false,
+          "icons": [
+            {
+              "tooltip": "Sep 27, 4:11 PM: Chourio went 3-for-4 with two RBI and...",
+              "typeId": "14"
+            }
+          ],
+          "rookie": false,
+          "minorsEligible": false,
+          "posIds": [
+            "012",
+            "014"
+          ],
+          "teamId": "10230",
+          "name": "Jackson Chourio",
+          "teamShortName": "MIL",
+          "shortName": "J. Chourio"
+        },
+        "cells": [
+          {
+            "content": "64"
+          },
+          {
+            "content": "REL",
+            "toolTip": "REL REL",
+            "teamId": "7owlmroxmiytz3cs"
+          },
+          {
+            "content": "22"
+          },
+          {
+            "content": "STL 4<br/>@MIL 6 F",
+            "eventId": "06kej"
+          },
+          {
+            "content": "79.01"
+          },
+          {
+            "content": "-"
+          },
+          {
+            "content": "-"
+          },
+          {
+            "content": "522"
+          },
+          {
+            "content": "96"
+          },
+          {
+            "content": "152"
+          },
+          {
+            "content": "25"
+          },
+          {
+            "content": "75"
+          },
+          {
+            "content": "23"
+          },
+          {
+            "content": ".291"
+          },
+          {
+            "content": "127"
+          }
+        ],
+        "actions": [
+          {
+            "typeId": "5"
+          },
+          {
+            "typeId": "7"
+          }
+        ]
+      },
+      {
+        "scorer": {
+          "teamName": "Atlanta",
           "urlName": "matt-olson",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02mwm_96_15.png",
           "scorerId": "02mwm",
-          "upcomingEventStatusId": "1",
           "rank": 66,
           "posIdsNoFlex": [
             "002"
@@ -2128,16 +1678,6 @@
           "defaultPosId": "002",
           "posShortNames": "1B",
           "team": false,
-          "icons": [
-            {
-              "tooltip": "Batting Order: 3",
-              "typeId": "23"
-            },
-            {
-              "tooltip": "Sep 19, 6:30 AM: Olson went 3-for-5 with a two-run home...",
-              "typeId": "8"
-            }
-          ],
           "rookie": false,
           "minorsEligible": false,
           "posIds": [
@@ -2163,45 +1703,20 @@
             "content": "32"
           },
           {
-            "content": "ATL 0<br/>@MIA 0",
-            "eventId": "06k7i",
-            "popOver": {
-              "scorer": {
-                "urlName": "janson-junk",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04etg_96_4.png",
-                "scorerId": "04etg",
-                "upcomingEventStatusId": "1",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "In starting lineup",
-                    "typeId": "12"
-                  },
-                  {
-                    "tooltip": "RHP",
-                    "typeId": "17"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Janson Junk",
-                "shortName": "J. Junk"
-              },
-              "header": "Probable Starter for Miami:",
-              "content": "<b>W</b> 6 &nbsp;<b>L</b> 9 &nbsp;<b>IP</b> 121 &nbsp;<b>K</b> 87 &nbsp;<b>ERA</b> 4.24 &nbsp;<b>WHIP</b> 1.298 &nbsp;"
-            }
+            "content": "ATL 3<br/>@MIA 5 F",
+            "eventId": "06k7i"
           },
           {
-            "content": "78.5"
+            "content": "78.78"
           },
           {
-            "content": "100%"
+            "content": "-"
           },
           {
-            "content": "0%"
+            "content": "-"
           },
           {
-            "content": "624"
+            "content": "625"
           },
           {
             "content": "99"
@@ -2219,7 +1734,7 @@
             "content": "4"
           },
           {
-            "content": ".252"
+            "content": ".251"
           },
           {
             "content": "162"
@@ -2239,131 +1754,11 @@
       },
       {
         "scorer": {
-          "teamName": "Milwaukee Brewers",
-          "urlName": "jackson-chourio",
-          "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05m1e_96_4.png",
-          "scorerId": "05m1e",
-          "upcomingEventStatusId": "1",
-          "rank": 68,
-          "posIdsNoFlex": [
-            "012"
-          ],
-          "defaultPosId": "010",
-          "posShortNames": "OF",
-          "team": false,
-          "icons": [
-            {
-              "tooltip": "Batting Order: 3",
-              "typeId": "23"
-            },
-            {
-              "tooltip": "Sep 25, 3:55 PM: Chourio isn't in the lineup for...",
-              "typeId": "9"
-            }
-          ],
-          "rookie": false,
-          "minorsEligible": false,
-          "posIds": [
-            "012",
-            "014"
-          ],
-          "teamId": "10230",
-          "name": "Jackson Chourio",
-          "teamShortName": "MIL",
-          "shortName": "J. Chourio"
-        },
-        "cells": [
-          {
-            "content": "68"
-          },
-          {
-            "content": "REL",
-            "toolTip": "REL REL",
-            "teamId": "7owlmroxmiytz3cs"
-          },
-          {
-            "content": "22"
-          },
-          {
-            "content": "STL 0<br/>@MIL 3",
-            "eventId": "06kej",
-            "popOver": {
-              "scorer": {
-                "urlName": "andre-pallante",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05133_96_5.png",
-                "scorerId": "05133",
-                "upcomingEventStatusId": "1",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "In starting lineup",
-                    "typeId": "12"
-                  },
-                  {
-                    "tooltip": "RHP",
-                    "typeId": "17"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Andre Pallante",
-                "shortName": "A. Pallante"
-              },
-              "header": "Probable Starter for St. Louis:",
-              "content": "<b>W</b> 12 &nbsp;<b>L</b> 8 &nbsp;<b>IP</b> 158 &nbsp;<b>K</b> 106 &nbsp;<b>ERA</b> 3.76 &nbsp;<b>WHIP</b> 1.272 &nbsp;"
-            }
-          },
-          {
-            "content": "78.02"
-          },
-          {
-            "content": "99%"
-          },
-          {
-            "content": "0%"
-          },
-          {
-            "content": "519"
-          },
-          {
-            "content": "95"
-          },
-          {
-            "content": "150"
-          },
-          {
-            "content": "25"
-          },
-          {
-            "content": "74"
-          },
-          {
-            "content": "23"
-          },
-          {
-            "content": ".289"
-          },
-          {
-            "content": "127"
-          }
-        ],
-        "actions": [
-          {
-            "typeId": "5"
-          },
-          {
-            "typeId": "7"
-          }
-        ]
-      },
-      {
-        "scorer": {
-          "teamName": "Kansas City Royals",
+          "teamName": "Kansas City",
           "urlName": "bobby-witt-jr",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04lgp_96_6.png",
           "scorerId": "04lgp",
-          "upcomingEventStatusId": "1",
-          "rank": 70,
+          "rank": 69,
           "posIdsNoFlex": [
             "005"
           ],
@@ -2372,12 +1767,8 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "Batting Order: 2",
-              "typeId": "22"
-            },
-            {
               "tooltip": "Sep 26, 8:29 PM: Witt went 2-for-4 with two runs scored...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -2394,7 +1785,7 @@
         },
         "cells": [
           {
-            "content": "70"
+            "content": "69"
           },
           {
             "content": "Coover's",
@@ -2405,49 +1796,20 @@
             "content": "26"
           },
           {
-            "content": "CLE 0<br/>@KC 1",
-            "eventId": "06j9a",
-            "popOver": {
-              "scorer": {
-                "urlName": "parker-messick",
-                "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05tzn_96_2.png",
-                "scorerId": "05tzn",
-                "upcomingEventStatusId": "1",
-                "team": false,
-                "icons": [
-                  {
-                    "tooltip": "In starting lineup",
-                    "typeId": "12"
-                  },
-                  {
-                    "tooltip": "Sep 26, 9:05 PM: Messick will be the Guardians' starter...",
-                    "typeId": "14"
-                  },
-                  {
-                    "tooltip": "LHP",
-                    "typeId": "16"
-                  }
-                ],
-                "rookie": false,
-                "minorsEligible": false,
-                "name": "Parker Messick",
-                "shortName": "P. Messick"
-              },
-              "header": "Probable Starter for Cleveland:",
-              "content": "<b>W</b> 12 &nbsp;<b>L</b> 9 &nbsp;<b>IP</b> 184.1 &nbsp;<b>K</b> 191 &nbsp;<b>ERA</b> 2.59 &nbsp;<b>WHIP</b> 1.052 &nbsp;"
-            }
+            "content": "CLE 2<br/>@KC 3 F",
+            "eventId": "06j9a"
           },
           {
-            "content": "77.7"
+            "content": "77.78"
           },
           {
-            "content": "100%"
+            "content": "-"
           },
           {
-            "content": "0%"
+            "content": "-"
           },
           {
-            "content": "555"
+            "content": "558"
           },
           {
             "content": "94"
@@ -2465,7 +1827,7 @@
             "content": "45"
           },
           {
-            "content": ".283"
+            "content": ".281"
           },
           {
             "content": "143"
@@ -2613,10 +1975,10 @@
         "PLAYER_NEWS_HOT": "News was posted within the past <b>24</b> hours"
       },
       {
-        "PLAYER_NEWS_RECENT": "News was posted within the past <b>7</b> days"
+        "PLAYER_NEWS_RECENT": "News was posted within the past <b>3</b> days"
       },
       {
-        "PLAYER_NEWS": "News was posted within the past <b>30</b> days"
+        "PLAYER_NEWS": "News was posted within the past <b>7</b> days"
       }
     ],
     "statisticsViewTypeIds": [
@@ -2655,10 +2017,6 @@
         {
           "name": "All",
           "id": "ALL"
-        },
-        {
-          "name": "Sun Sep 27",
-          "id": "2026-09-27"
         },
         {
           "name": "Mon Sep 28",
@@ -2775,6 +2133,10 @@
         {
           "name": "Mon Oct 26",
           "id": "2026-10-26"
+        },
+        {
+          "name": "Tue Oct 27",
+          "id": "2026-10-27"
         }
       ],
       "displayedSeasonOrProjections": [
@@ -2784,14 +2146,6 @@
           "name": "Projected - Per Game",
           "shortName": "Proj - Per Game",
           "timeframeTypeCode": "PROJECTED_WEEKLY",
-          "startDate": 1774411200000
-        },
-        {
-          "code": "PROJECTION_0_147_SEASON",
-          "endDate": 1790567999000,
-          "name": "Projected - Season",
-          "shortName": "Proj - Season",
-          "timeframeTypeCode": "PROJECTED_SEASON",
           "startDate": 1774411200000
         },
         {
@@ -3438,14 +2792,6 @@
         "name": "Projected - Per Game",
         "shortName": "Proj - Per Game",
         "timeframeTypeCode": "PROJECTED_WEEKLY",
-        "startDate": 1774411200000
-      },
-      {
-        "code": "PROJECTION_0_147_SEASON",
-        "endDate": 1790567999000,
-        "name": "Projected - Season",
-        "shortName": "Proj - Season",
-        "timeframeTypeCode": "PROJECTED_SEASON",
         "startDate": 1774411200000
       },
       {
@@ -4337,7 +3683,7 @@
       "displayedView": "STATS",
       "displayedStartDate": 1774411200000,
       "displayedScoringCategoryType": "5",
-      "displayedEndDate": 1790481600000,
+      "displayedEndDate": 1790567999000,
       "displayedSeasonOrProjection": {
         "code": "SEASON_147_YEAR_TO_DATE",
         "endDate": 1790567999000,

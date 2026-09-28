@@ -112,7 +112,7 @@
       "timeframeType": "YEAR_TO_DATE",
       "proj": false,
       "displayedStartDate": 1774411200000,
-      "displayedEndDate": 1790481600000
+      "displayedEndDate": 1790567999000
     },
     "miscData": {
       "displayedMinDate": 1774411200000,
@@ -2568,6 +2568,14 @@
           "object1": "FROM_SEASON_START"
         }
       ]
-    }
+    },
+    "leagueNotices": [
+      {
+        "importance": "REGULAR",
+        "dismissible": false,
+        "text": "Your season has ended. The league champion will be determined on <b>Sun Oct 4, 5:39 PM EDT</b>, once stats are finalized.",
+        "essential": false
+      }
+    ]
   }
 }
