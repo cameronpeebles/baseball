@@ -5,7 +5,7 @@
       "totalNumPages": 253,
       "pageNumber": 1,
       "maxResultsPerPage": 20,
-      "totalNumResults": 5053
+      "totalNumResults": 5049
     },
     "statsTable": [
       {
@@ -14,7 +14,7 @@
           "urlName": "pete-crow-armstrong",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs051wv_96_3.png",
           "scorerId": "051wv",
-          "rank": 1,
+          "rank": 2,
           "posIdsNoFlex": [
             "012"
           ],
@@ -24,7 +24,7 @@
           "icons": [
             {
               "tooltip": "Sep 24, 4:37 PM: Crow-Armstrong went 1-for-3 with a...",
-              "typeId": "8"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -40,7 +40,7 @@
         },
         "cells": [
           {
-            "content": "1"
+            "content": "2"
           },
           {
             "content": "MLB?",
@@ -117,7 +117,7 @@
           "icons": [
             {
               "tooltip": "Sep 23, 8:35 AM: Abrams went 2-for-4 with two home runs...",
-              "typeId": "8"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -402,7 +402,7 @@
           "icons": [
             {
               "tooltip": "Sep 23, 4:05 PM: The Dodgers reinstated Ohtani...",
-              "typeId": "8"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -587,8 +587,8 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "Sep 27, 8:40 AM: Walker will make his first career start...",
-              "typeId": "9"
+              "tooltip": "Sep 29, 7:41 AM: Cardinals president of baseball...",
+              "typeId": "14"
             }
           ],
           "rookie": false,
@@ -859,6 +859,12 @@
           "defaultPosId": "002",
           "posShortNames": "1B,3B",
           "team": false,
+          "icons": [
+            {
+              "tooltip": "Sep 18, 6:11 AM: Stewart went 2-for-4 with a solo home...",
+              "typeId": "8"
+            }
+          ],
           "rookie": false,
           "minorsEligible": false,
           "posIds": [
@@ -1044,7 +1050,7 @@
           "icons": [
             {
               "tooltip": "Sep 27, 10:36 AM: Merrill is not in the lineup for...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -1133,6 +1139,12 @@
           "defaultPosId": "009",
           "posShortNames": "OF",
           "team": false,
+          "icons": [
+            {
+              "tooltip": "Sep 15, 3:14 PM: Wood is out of the lineup for Tuesday's...",
+              "typeId": "8"
+            }
+          ],
           "rookie": false,
           "minorsEligible": false,
           "posIds": [
@@ -1498,7 +1510,7 @@
           "icons": [
             {
               "tooltip": "Sep 23, 8:43 PM: Rice went 3-for-4 with a pair of solo...",
-              "typeId": "8"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -1592,7 +1604,7 @@
           "icons": [
             {
               "tooltip": "Sep 27, 4:11 PM: Chourio went 3-for-4 with two RBI and...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -1678,6 +1690,12 @@
           "defaultPosId": "002",
           "posShortNames": "1B",
           "team": false,
+          "icons": [
+            {
+              "tooltip": "Sep 19, 6:30 AM: Olson went 3-for-5 with a two-run home...",
+              "typeId": "8"
+            }
+          ],
           "rookie": false,
           "minorsEligible": false,
           "posIds": [
@@ -1975,10 +1993,10 @@
         "PLAYER_NEWS_HOT": "News was posted within the past <b>24</b> hours"
       },
       {
-        "PLAYER_NEWS_RECENT": "News was posted within the past <b>3</b> days"
+        "PLAYER_NEWS_RECENT": "News was posted within the past <b>7</b> days"
       },
       {
-        "PLAYER_NEWS": "News was posted within the past <b>7</b> days"
+        "PLAYER_NEWS": "News was posted within the past <b>30</b> days"
       }
     ],
     "statisticsViewTypeIds": [
@@ -2017,10 +2035,6 @@
         {
           "name": "All",
           "id": "ALL"
-        },
-        {
-          "name": "Mon Sep 28",
-          "id": "2026-09-28"
         },
         {
           "name": "Tue Sep 29",
@@ -2137,17 +2151,13 @@
         {
           "name": "Tue Oct 27",
           "id": "2026-10-27"
+        },
+        {
+          "name": "Wed Oct 28",
+          "id": "2026-10-28"
         }
       ],
       "displayedSeasonOrProjections": [
-        {
-          "code": "PROJECTION_0_147_EVENT_PROJECTED_WEEKLY",
-          "endDate": 1790567999000,
-          "name": "Projected - Per Game",
-          "shortName": "Proj - Per Game",
-          "timeframeTypeCode": "PROJECTED_WEEKLY",
-          "startDate": 1774411200000
-        },
         {
           "code": "SEASON_147_YEAR_TO_DATE",
           "endDate": 1790567999000,
@@ -2786,14 +2796,6 @@
       ]
     },
     "seasonOrProjections": [
-      {
-        "code": "PROJECTION_0_147_EVENT_PROJECTED_WEEKLY",
-        "endDate": 1790567999000,
-        "name": "Projected - Per Game",
-        "shortName": "Proj - Per Game",
-        "timeframeTypeCode": "PROJECTED_WEEKLY",
-        "startDate": 1774411200000
-      },
       {
         "code": "SEASON_147_YEAR_TO_DATE",
         "endDate": 1790567999000,

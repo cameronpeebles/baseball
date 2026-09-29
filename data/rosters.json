@@ -22,16 +22,7 @@
             }
           ],
           "teamHeadingInfo": {
-            "h2hRecord": {
-              "name": "Record",
-              "shortName": "Rec",
-              "value": "68-120-12"
-            },
-            "rank": {
-              "name": "Rank",
-              "shortName": "Rk",
-              "value": "8th"
-            },
+            "standingsPending": true,
             "owners": {
               "owners": "Owner(s)",
               "shortName": "Own",
@@ -377,7 +368,7 @@
                         "typeId": "1"
                       },
                       {
-                        "tooltip": "Sep 27, 11:31 AM: Phillies interim manager Don Mattingly...",
+                        "tooltip": "Sep 28, 11:59 AM: Phillies interim manager Don Mattingly...",
                         "typeId": "14"
                       },
                       {
@@ -550,6 +541,10 @@
                     "posShortNames": "UT",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 15, 7:43 PM: Schwarber went 1-for-3 with a solo home...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -803,7 +798,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 4:41 PM: Suzuki went 2-for-3 with a solo homer,...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -884,6 +879,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 13, 5:03 PM: Kwan went 3-for-4 with a solo home run,...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -1046,6 +1045,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 19, 12:27 AM: Muncy went 1-for-2 with a solo home run...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -1128,7 +1131,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 25, 1:04 AM: Betts went 3-for-5 with a double, a...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -1386,7 +1389,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 12:28 AM: Langeliers went 3-for-5 with a double,...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -1472,7 +1475,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 8:20 AM: Caballero went 1-for-3 with two stolen...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -1569,7 +1572,7 @@
                       },
                       {
                         "tooltip": "Sep 22, 3:14 PM: The Athletics placed Muncy on the...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -2031,6 +2034,7 @@
                     "urlName": "matthew-boyd",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02n4s_96_14.png",
                     "scorerId": "02n4s",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "017"
@@ -2040,8 +2044,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Sep 24, 4:19 PM: Boyd (10-5) picked up the win after...",
-                        "typeId": "8"
+                        "tooltip": "In starting lineup",
+                        "typeId": "12"
+                      },
+                      {
+                        "tooltip": "Sep 28, 5:36 PM: Boyd has been named the starting...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -2342,6 +2350,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Sep 1, 4:01 PM: Estevez will undergo season-ending...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -2443,7 +2455,7 @@
                       },
                       {
                         "tooltip": "Sep 24, 11:01 AM: Gausman said Thursday that his left...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -2543,6 +2555,10 @@
                       {
                         "tooltip": "Injured List - 15-day IL - Shoulder",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Sep 15, 8:40 AM: Atlanta placed Lopez on the 15-day...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -2741,7 +2757,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 8:15 PM: Pagan allowed one hit and no walks in a...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -2940,12 +2956,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Rest - Out Indefinitely",
-                        "typeId": "30"
-                      },
-                      {
                         "tooltip": "Sep 22, 4:20 PM: Roupp has been shut down for the...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -3143,7 +3155,7 @@
                       },
                       {
                         "tooltip": "Sep 23, 2:41 PM: Santillan will undergo surgery Thursday...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -3243,7 +3255,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 8:43 AM: Senga earned the save after striking...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -3343,7 +3355,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 8:29 PM: Soroka did not factor into the decision...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -3443,7 +3455,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 11:47 PM: Springs allowed three runs on five...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -3839,6 +3851,10 @@
                         "typeId": "4"
                       },
                       {
+                        "tooltip": "Sep 5, 10:40 AM: The Giants optioned Walker to Triple-A...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -3935,7 +3951,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 22, 1:48 PM: The Mets reinstated Williams (shoulder)...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -4174,14 +4190,6 @@
               }
             ],
             "seasonOrProjections": [
-              {
-                "code": "PROJECTION_0_147_EVENT_PROJECTED_WEEKLY",
-                "endDate": 1790567999000,
-                "name": "Projected - Per Game",
-                "shortName": "Proj - Per Game",
-                "timeframeTypeCode": "PROJECTED_WEEKLY",
-                "startDate": 1774411200000
-              },
               {
                 "code": "SEASON_147_YEAR_TO_DATE",
                 "endDate": 1790567999000,
@@ -5085,16 +5093,7 @@
             }
           ],
           "teamHeadingInfo": {
-            "h2hRecord": {
-              "name": "Record",
-              "shortName": "Rec",
-              "value": "64-128-8"
-            },
-            "rank": {
-              "name": "Rank",
-              "shortName": "Rk",
-              "value": "9th"
-            },
+            "standingsPending": true,
             "owners": {
               "owners": "Owner(s)",
               "shortName": "Own",
@@ -5348,7 +5347,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 4:37 PM: Crow-Armstrong went 1-for-3 with a...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -5430,6 +5429,10 @@
                     "posShortNames": "1B,3B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 18, 6:11 AM: Stewart went 2-for-4 with a solo home...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -5600,7 +5603,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 10:36 AM: Merrill is not in the lineup for...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -5681,6 +5684,10 @@
                     "posShortNames": "C",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 20, 3:58 PM: Herrera went 2-for-4 with two solo home...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -5845,7 +5852,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 10:53 AM: Baldwin is not in the lineup for...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -6111,6 +6118,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 9, 5:50 AM: Smith went 1-for-3 with a solo homer...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -6190,6 +6201,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 20, 5:21 AM: DeLauter went 2-for-5 with a three-run...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -6268,6 +6283,10 @@
                     "posShortNames": "2B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 19, 7:26 AM: Bazzana went 1-for-3 with a walk and a...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -6527,6 +6546,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Sep 16, 4:33 PM: Kurtz (thumb) began a hitting...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -6610,7 +6633,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 5:06 PM: Griffin went 2-for-4 with a home run...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -6699,6 +6722,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Sep 12, 11:20 AM: The Pirates placed Valdez on the 10-day...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -6782,6 +6809,10 @@
                       {
                         "tooltip": "Injured List - 60-day IL - Wrist",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Aug 31, 2:15 PM: The Mariners transferred Emerson...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -6955,7 +6986,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 22, 1:12 PM: Ortiz is absent from the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -7218,6 +7249,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 6, 1:06 PM: Veen is out of the lineup for Sunday's...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -7299,6 +7334,10 @@
                       {
                         "tooltip": "Minor Leagues",
                         "typeId": "4"
+                      },
+                      {
+                        "tooltip": "Sep 19, 7:49 AM: Walcott went 2-for-5 with two stolen...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -7680,7 +7719,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 2:05 PM: Baz will not start in Sunday's...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -7777,7 +7816,7 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Sep 26, 8:03 PM: Bibee (7-15) earned the win in...",
+                        "tooltip": "Sep 26, 8:03 PM: Bibee (7-15) earned the victory in...",
                         "typeId": "9"
                       },
                       {
@@ -7875,6 +7914,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 17, 8:46 AM: Bubic allowed one hit and struck out...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
@@ -7977,7 +8020,7 @@
                       },
                       {
                         "tooltip": "Sep 23, 9:51 AM: Burns (groin) worked on adding a sinker...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -8079,6 +8122,10 @@
                         "typeId": "4"
                       },
                       {
+                        "tooltip": "Sep 17, 7:34 AM: Doyle (blister) is listed as Double-A...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
                       }
@@ -8175,7 +8222,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 4:06 PM: Drohan struck out two over 1.2 perfect...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -8275,6 +8322,10 @@
                       {
                         "tooltip": "Injured List - 15-day IL - Groin",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Aug 30, 11:08 AM: Seattle placed Hancock (groin) on the...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -8472,6 +8523,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 12, 10:41 AM: The Rays selected Hopkins' contract...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -8769,7 +8824,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 5:56 PM: Palencia worked around a walk to toss a...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -8869,6 +8924,10 @@
                       {
                         "tooltip": "Injured List - 60-day IL - Elbow",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Sep 15, 10:07 AM: Rodriguez (elbow) will pitch in the...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -9406,14 +9465,6 @@
               }
             ],
             "seasonOrProjections": [
-              {
-                "code": "PROJECTION_0_147_EVENT_PROJECTED_WEEKLY",
-                "endDate": 1790567999000,
-                "name": "Projected - Per Game",
-                "shortName": "Proj - Per Game",
-                "timeframeTypeCode": "PROJECTED_WEEKLY",
-                "startDate": 1774411200000
-              },
               {
                 "code": "SEASON_147_YEAR_TO_DATE",
                 "endDate": 1790567999000,
@@ -10321,16 +10372,7 @@
             }
           ],
           "teamHeadingInfo": {
-            "h2hRecord": {
-              "name": "Record",
-              "shortName": "Rec",
-              "value": "93-95-12"
-            },
-            "rank": {
-              "name": "Rank",
-              "shortName": "Rk",
-              "value": "7th"
-            },
+            "standingsPending": true,
             "owners": {
               "owners": "Owner(s)",
               "shortName": "Own",
@@ -10585,6 +10627,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 19, 8:07 PM: Turner went 2-for-3 with two walks, a...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -10665,6 +10711,10 @@
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 19, 6:30 AM: Olson went 3-for-5 with a two-run home...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -10748,7 +10798,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 9:23 AM: Lile is absent from the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -10830,6 +10880,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 20, 8:16 AM: Abreu is out of the lineup for Boston's...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -10910,7 +10964,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 2:40 PM: Aranda isn't in the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -11165,7 +11219,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 10:45 AM: Ramirez is not in the starting lineup...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Switch Hitter",
@@ -11250,7 +11304,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 4:25 PM: Raleigh went 3-for-5 with one RBI in...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Switch Hitter",
@@ -11331,6 +11385,10 @@
                     "posShortNames": "3B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 17, 7:46 AM: Suarez is absent from the lineup for...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -11499,7 +11557,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 25, 12:33 AM: Gelof went 2-for-3 with a pair of solo...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -11589,7 +11647,11 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Sep 27, 4:34 PM: Seager went 1-for-4 with a two-run home...",
+                        "tooltip": "Elbow - Out Indefinitely",
+                        "typeId": "30"
+                      },
+                      {
+                        "tooltip": "Sep 28, 4:00 PM: Rangers president of baseball...",
                         "typeId": "14"
                       },
                       {
@@ -11681,7 +11743,7 @@
                       },
                       {
                         "tooltip": "Sep 23, 7:20 AM: Red Sox manager Chad Tracy indicated...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -11776,8 +11838,8 @@
                         "typeId": "2"
                       },
                       {
-                        "tooltip": "Sep 23, 5:16 PM: Judge (calf) said Wednesday that he...",
-                        "typeId": "8"
+                        "tooltip": "Sep 29, 8:02 AM: Judge (calf) is not on the Yankees'...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -12114,6 +12176,10 @@
                       {
                         "tooltip": "Minor Leagues",
                         "typeId": "4"
+                      },
+                      {
+                        "tooltip": "Sep 14, 9:38 AM: Willits went 4-for-6 with a double, a...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Switch Hitter",
@@ -12593,7 +12659,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 22, 2:38 PM: Cavalli will not make another start...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -12692,7 +12758,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 8:34 PM: Cole (10-9) earned the win Wednesday...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -12889,7 +12955,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 4:18 PM: Gore did not factor into the decision...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -12989,7 +13055,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 10:19 AM: Harrison struck out a batter and gave...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -13379,6 +13445,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 1, 7:45 AM: Lee gave up one run on two hits while...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
                       }
@@ -13574,7 +13644,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 4:15 PM: Pallante (12-9) allowed six runs on 10...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -13772,6 +13842,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 4, 9:03 AM: Rogers worked a scoreless eighth inning...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -13868,7 +13942,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 7:42 PM: Suarez (8-5) took the loss Thursday...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -14206,14 +14280,6 @@
               }
             ],
             "seasonOrProjections": [
-              {
-                "code": "PROJECTION_0_147_EVENT_PROJECTED_WEEKLY",
-                "endDate": 1790567999000,
-                "name": "Projected - Per Game",
-                "shortName": "Proj - Per Game",
-                "timeframeTypeCode": "PROJECTED_WEEKLY",
-                "startDate": 1774411200000
-              },
               {
                 "code": "SEASON_147_YEAR_TO_DATE",
                 "endDate": 1790567999000,
@@ -15113,16 +15179,7 @@
             }
           ],
           "teamHeadingInfo": {
-            "h2hRecord": {
-              "name": "Record",
-              "shortName": "Rec",
-              "value": "107-87-6"
-            },
-            "rank": {
-              "name": "Rank",
-              "shortName": "Rk",
-              "value": "6th"
-            },
+            "standingsPending": true,
             "owners": {
               "owners": "Owner(s)",
               "shortName": "Own",
@@ -15640,6 +15697,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 19, 6:08 AM: McCarthy went 3-for-5 with a triple,...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -15807,7 +15868,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 11:02 AM: Clemens is not in the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -15898,10 +15959,6 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Thumb - Day-to-Day",
-                        "typeId": "1"
-                      },
-                      {
                         "tooltip": "Sep 26, 10:55 AM: Edwards (thumb) isn't in the lineup for...",
                         "typeId": "9"
                       },
@@ -15989,6 +16046,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 19, 11:42 PM: Marsee went 3-for-4 with a walk and two...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -16069,7 +16130,7 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Sep 27, 11:18 AM: Trout is not in the starting lineup for...",
+                        "tooltip": "Sep 28, 1:09 PM: Angels interim general manager John...",
                         "typeId": "14"
                       },
                       {
@@ -16338,6 +16399,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Aug 30, 11:27 AM: Crawford is absent from the lineup for...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -16499,6 +16564,10 @@
                     "posShortNames": "C",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 18, 1:24 PM: Rutschman is not in the lineup for...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Switch Hitter",
                         "typeId": "18"
@@ -16668,7 +16737,7 @@
                       },
                       {
                         "tooltip": "Sep 27, 11:02 AM: The Red Sox placed Gasper on the 10-day...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Switch Hitter",
@@ -16756,7 +16825,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 10:06 AM: Cox went 0-for-4 with a walk, an RBI...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -16844,7 +16913,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 9:01 AM: Kuroda-Grauer went 0-for-2 in Tuesday's...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -16934,6 +17003,10 @@
                       {
                         "tooltip": "Minor Leagues",
                         "typeId": "4"
+                      },
+                      {
+                        "tooltip": "Sep 16, 8:32 AM: Baez went 3-for-4 with a two-run,...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -17521,12 +17594,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Injured List - 60-day IL - Lat",
-                        "typeId": "2"
-                      },
-                      {
-                        "tooltip": "Sep 23, 3:03 PM: Crochet (lat) is not expected to pitch...",
-                        "typeId": "8"
+                        "tooltip": "Sep 29, 8:30 AM: The Red Sox activated Crochet...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -17626,7 +17695,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 8:25 AM: Duran earned the save in Tuesday's 6-4...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -17725,7 +17794,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 8:14 AM: Fried (5-5) took the loss in the second...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -17922,7 +17991,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 5:15 AM: Hader (4-2) took the loss Wednesday...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -18022,6 +18091,10 @@
                       {
                         "tooltip": "Injured List - 60-day IL - Elbow",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Sep 19, 11:08 AM: President of baseball operations Mike...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -18215,7 +18288,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 7:53 AM: Latz (3-4) took the loss after allowing...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -18314,7 +18387,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 8:02 PM: Mahle took a no-decision Thursday...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -18338,7 +18411,7 @@
                   "posId": "017",
                   "cells": [
                     {
-                      "content": "31"
+                      "content": "32"
                     },
                     {
                       "content": "ATL 3<br/>@MIA 5 F",
@@ -18615,6 +18688,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 8, 11:10 PM: Morejon struck out one in a perfect...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
                       }
@@ -18810,7 +18887,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 4:23 PM: Thornton (5-6) took the loss Thursday...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -18910,6 +18987,10 @@
                       {
                         "tooltip": "Injured List - 15-day IL - Finger",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Sep 18, 6:49 PM: The Giants placed Webb on the 15-day...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -19445,14 +19526,6 @@
               }
             ],
             "seasonOrProjections": [
-              {
-                "code": "PROJECTION_0_147_EVENT_PROJECTED_WEEKLY",
-                "endDate": 1790567999000,
-                "name": "Projected - Per Game",
-                "shortName": "Proj - Per Game",
-                "timeframeTypeCode": "PROJECTED_WEEKLY",
-                "startDate": 1774411200000
-              },
               {
                 "code": "SEASON_147_YEAR_TO_DATE",
                 "endDate": 1790567999000,
@@ -20356,16 +20429,7 @@
             }
           ],
           "teamHeadingInfo": {
-            "h2hRecord": {
-              "name": "Record",
-              "shortName": "Rec",
-              "value": "115-78-7"
-            },
-            "rank": {
-              "name": "Rank",
-              "shortName": "Rk",
-              "value": "2nd"
-            },
+            "standingsPending": true,
             "owners": {
               "owners": "Owner(s)",
               "shortName": "Own",
@@ -20614,6 +20678,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 14, 8:28 PM: Hoerner went 2-for-4 with an RBI and...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -20698,7 +20766,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 5:16 PM: Bregman went 4-for-4 with two home...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -20783,7 +20851,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 8:01 AM: Reynolds is absent from the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Switch Hitter",
@@ -20867,7 +20935,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 3:50 PM: Harper went 1-for-5 with a solo home...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -20954,7 +21022,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 25, 8:50 AM: Happ is not in the lineup for the first...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Switch Hitter",
@@ -21037,7 +21105,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 12:31 AM: Tucker went 2-for-4 with a stolen base...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -21122,6 +21190,10 @@
                     "posShortNames": "1B,2B,3B,SS,OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 13, 6:26 AM: Duran went 1-for-5 with two RBI in...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -21301,7 +21373,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 4:05 PM: The Dodgers reinstated Ohtani...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -21563,7 +21635,7 @@
                       },
                       {
                         "tooltip": "Sep 27, 11:16 AM: Cruz (knee) is absent from the lineup...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -21646,6 +21718,10 @@
                     "posShortNames": "2B,3B,SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 7, 12:00 PM: Hamilton is out of the lineup for...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -21736,6 +21812,10 @@
                       {
                         "tooltip": "Injured List - 60-day IL - Shoulder",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Sep 11, 3:04 PM: Wilson underwent left shoulder labral...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -21914,7 +21994,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 10:43 AM: Smith is absent from the lineup for...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -21998,6 +22078,10 @@
                       {
                         "tooltip": "Injured List - 10-day IL - Hamstring",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Sep 6, 10:30 AM: The Orioles placed Robert on the 10-day...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -22279,7 +22363,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 4:05 PM: The Dodgers reinstated Ohtani...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -22471,8 +22555,8 @@
                         "typeId": "2"
                       },
                       {
-                        "tooltip": "Sep 24, 5:04 PM: The Orioles transferred Bradish (sports...",
-                        "typeId": "8"
+                        "tooltip": "Sep 28, 11:25 AM: Orioles president of baseball...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -22670,7 +22754,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 8:06 AM: Dion (2-2) picked up the win in...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -22772,6 +22856,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Sep 18, 6:39 PM: Fairbanks will undergo surgery to treat...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -22867,6 +22955,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 20, 8:04 AM: Ferrer (4-4) took the loss after...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
@@ -23059,7 +23151,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 4:22 PM: Gilbert walked one over four-plus...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -23159,7 +23251,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 25, 1:02 AM: Glasnow (5-2) allowed three runs on...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -23365,7 +23457,7 @@
                       },
                       {
                         "tooltip": "Sep 24, 4:20 PM: The Angels placed Joyce on the 15-day...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -23668,7 +23760,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 4:46 PM: Montgomery earned the save in Sunday's...",
-                        "typeId": "14"
+                        "typeId": "9"
                       }
                     ],
                     "rookie": false,
@@ -23867,7 +23959,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 8:04 PM: Prielipp didn't factor into the...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -23966,7 +24058,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 2:46 PM: Yankees manager Aaron Boone told...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -24064,7 +24156,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 10:53 AM: Sasaki allowed two hits and struck out...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -24163,7 +24255,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 8:30 PM: Seymour took a no-decision Thursday...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -24361,7 +24453,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 10:03 AM: Atlanta activated Suarez (elbow) from...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -24699,14 +24791,6 @@
               }
             ],
             "seasonOrProjections": [
-              {
-                "code": "PROJECTION_0_147_EVENT_PROJECTED_WEEKLY",
-                "endDate": 1790567999000,
-                "name": "Projected - Per Game",
-                "shortName": "Proj - Per Game",
-                "timeframeTypeCode": "PROJECTED_WEEKLY",
-                "startDate": 1774411200000
-              },
               {
                 "code": "SEASON_147_YEAR_TO_DATE",
                 "endDate": 1790567999000,
@@ -25610,16 +25694,7 @@
             }
           ],
           "teamHeadingInfo": {
-            "h2hRecord": {
-              "name": "Record",
-              "shortName": "Rec",
-              "value": "53-137-10"
-            },
-            "rank": {
-              "name": "Rank",
-              "shortName": "Rk",
-              "value": "10th"
-            },
+            "standingsPending": true,
             "owners": {
               "owners": "Owner(s)",
               "shortName": "Own",
@@ -25958,7 +26033,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 8:43 PM: Rice went 3-for-4 with a pair of solo...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -26218,6 +26293,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Sep 13, 3:23 PM: Devers (abdomen) will undergo...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "On this team's trade block",
                         "typeId": "35"
                       },
@@ -26387,6 +26466,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 19, 7:28 AM: Greene went 1-for-4 with a walk and a...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -26409,7 +26492,7 @@
                   "posId": "012",
                   "cells": [
                     {
-                      "content": "25"
+                      "content": "26"
                     },
                     {
                       "content": "PIT 4<br/>@DET 2 F",
@@ -26467,7 +26550,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 28, 8:36 AM: Butler went 2-for-4 in Sunday's 9-0...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -26637,7 +26720,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 4:27 PM: Lewis went 2-for-4 with a solo home run...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -26728,12 +26811,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Abdomen - Day-to-Day",
-                        "typeId": "1"
-                      },
-                      {
                         "tooltip": "Sep 27, 11:03 AM: Stowers (abdomen) remains out of the...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -26819,6 +26898,10 @@
                     "posShortNames": "1B,3B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 11, 9:37 PM: Mayo went 1-for-5 with a solo home run...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -26996,7 +27079,7 @@
                       },
                       {
                         "tooltip": "Sep 23, 9:37 AM: Holliday will undergo left wrist...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -27084,6 +27167,10 @@
                         "typeId": "4"
                       },
                       {
+                        "tooltip": "Sep 10, 9:13 PM: The Yankees optioned Dominguez to...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Switch Hitter",
                         "typeId": "18"
                       }
@@ -27163,7 +27250,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 8:54 PM: Lombard went 2-for-4 with a home run,...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -27247,6 +27334,10 @@
                       {
                         "tooltip": "Minor Leagues",
                         "typeId": "4"
+                      },
+                      {
+                        "tooltip": "Sep 8, 8:39 PM: De Vries will undergo surgery to repair...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Switch Hitter",
@@ -27698,6 +27789,10 @@
                         "typeId": "4"
                       },
                       {
+                        "tooltip": "Sep 9, 11:30 AM: Arnold has been diagnosed with...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
                       }
@@ -27895,8 +27990,8 @@
                         "typeId": "2"
                       },
                       {
-                        "tooltip": "Sep 25, 2:16 PM: The Diamondbacks placed Burnes on the...",
-                        "typeId": "9"
+                        "tooltip": "Sep 28, 1:18 PM: Burnes said Monday that the right...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -28099,6 +28194,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Sep 28, 12:47 PM: Elder (knee) threw a live batting...",
+                        "typeId": "14"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -28292,6 +28391,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 13, 1:03 PM: Manager Torey Lovullo announced Sunday...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -28392,7 +28495,7 @@
                       },
                       {
                         "tooltip": "Sep 24, 9:09 PM: The Yankees optioned Gil to the...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -28894,7 +28997,7 @@
                       },
                       {
                         "tooltip": "Sep 23, 11:57 PM: Musgrove (elbow) has been regularly...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -29292,7 +29395,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 4:17 PM: Rocker (6-11) earned the win Thursday...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -29479,6 +29582,7 @@
                     "urlName": "cam-schlittler",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05u6q_96_2.png",
                     "scorerId": "05u6q",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "017"
@@ -29488,8 +29592,12 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "In starting lineup",
+                        "typeId": "12"
+                      },
+                      {
                         "tooltip": "Sep 27, 12:11 PM: Schlittler will start against the Red...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -29780,6 +29888,7 @@
                     "urlName": "hagen-smith",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05zd4_96_3.png",
                     "scorerId": "05zd4",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "017"
@@ -29789,8 +29898,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Sep 24, 6:41 AM: Smith (3-3) allowed one earned run on...",
-                        "typeId": "8"
+                        "tooltip": "In starting lineup",
+                        "typeId": "12"
+                      },
+                      {
+                        "tooltip": "Sep 28, 5:30 PM: Smith will start Game 1 of the American...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -30029,14 +30142,6 @@
               }
             ],
             "seasonOrProjections": [
-              {
-                "code": "PROJECTION_0_147_EVENT_PROJECTED_WEEKLY",
-                "endDate": 1790567999000,
-                "name": "Projected - Per Game",
-                "shortName": "Proj - Per Game",
-                "timeframeTypeCode": "PROJECTED_WEEKLY",
-                "startDate": 1774411200000
-              },
               {
                 "code": "SEASON_147_YEAR_TO_DATE",
                 "endDate": 1790567999000,
@@ -30940,16 +31045,7 @@
             }
           ],
           "teamHeadingInfo": {
-            "h2hRecord": {
-              "name": "Record",
-              "shortName": "Rec",
-              "value": "109-82-9"
-            },
-            "rank": {
-              "name": "Rank",
-              "shortName": "Rk",
-              "value": "5th"
-            },
+            "standingsPending": true,
             "owners": {
               "owners": "Owner(s)",
               "shortName": "Own",
@@ -31460,6 +31556,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 20, 8:57 PM: Lee went 3-for-4 with three runs scored...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Switch Hitter",
                         "typeId": "18"
                       }
@@ -31547,6 +31647,10 @@
                     "posShortNames": "3B,SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 19, 7:44 AM: Montgomery went 2-for-4 with a double,...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -31724,6 +31828,10 @@
                     "posShortNames": "SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 8, 6:33 AM: Perdomo went 1-for-4 with a walk, an...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Switch Hitter",
                         "typeId": "18"
@@ -32064,7 +32172,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 4:41 PM: Pages went 1-for-3 with a three-run...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -32147,6 +32255,10 @@
                     "posShortNames": "2B,3B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 5, 1:40 PM: Durbin is not in the Red Sox's starting...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -32317,7 +32429,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 8:08 PM: Hernandez went 2-for-4 with a solo home...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -32401,7 +32513,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 1:30 PM: Yelich is not in the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -32482,6 +32594,10 @@
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 19, 11:21 PM: France went 3-for-5 with a double, one...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -32565,7 +32681,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 2:14 PM: Peters (shoulder) will start in center...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -32834,6 +32950,10 @@
                       {
                         "tooltip": "Injured List - 7-day IL - Concussion",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Sep 3, 5:44 PM: Donovan continues to experience...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -33284,7 +33404,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 8:03 PM: Alcantara picked up the save in...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -33387,7 +33507,7 @@
                       },
                       {
                         "tooltip": "Sep 25, 9:09 AM: The Cubs placed Cabrera on the family...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -33585,7 +33705,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 8:03 PM: Gray (18-5) earned the win Wednesday...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -33683,6 +33803,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 9, 4:50 PM: Holton (2-5) tossed two scoreless...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Left-Handed Pitcher",
                         "typeId": "16"
                       }
@@ -33777,6 +33901,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 19, 8:21 PM: Iglesias struck out one in a clean...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -33874,7 +34002,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 10:23 PM: Lugo allowed four runs on seven hits...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -33973,7 +34101,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 3:35 PM: Martinez (15-6) took the loss Sunday...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -34071,6 +34199,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 20, 8:30 AM: Morillo (5-4) earned the win after...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -34172,7 +34304,7 @@
                       },
                       {
                         "tooltip": "Sep 24, 3:10 PM: Atlanta placed Perez on the 15-day...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -34262,6 +34394,7 @@
                     "urlName": "payton-tolle",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs06gwk_96_2.png",
                     "scorerId": "06gwk",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "017"
@@ -34271,8 +34404,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Sep 23, 8:06 AM: Tolle did not factor into the decision...",
-                        "typeId": "8"
+                        "tooltip": "In starting lineup",
+                        "typeId": "12"
+                      },
+                      {
+                        "tooltip": "Sep 28, 10:54 AM: Red Sox manager Chad Tracy said Monday...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -34371,7 +34508,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 12:03 AM: Urena (9-11) allowed five runs on seven...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -34568,6 +34705,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 15, 8:37 PM: Webb (6-5) took the loss Tuesday...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -34664,7 +34805,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 3:30 PM: Wheeler (14-5) earned the win Sunday...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -34762,6 +34903,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 17, 11:27 PM: Whitlock allowed a walk in a scoreless...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -35097,14 +35242,6 @@
               }
             ],
             "seasonOrProjections": [
-              {
-                "code": "PROJECTION_0_147_EVENT_PROJECTED_WEEKLY",
-                "endDate": 1790567999000,
-                "name": "Projected - Per Game",
-                "shortName": "Proj - Per Game",
-                "timeframeTypeCode": "PROJECTED_WEEKLY",
-                "startDate": 1774411200000
-              },
               {
                 "code": "SEASON_147_YEAR_TO_DATE",
                 "endDate": 1790567999000,
@@ -36008,16 +36145,7 @@
             }
           ],
           "teamHeadingInfo": {
-            "h2hRecord": {
-              "name": "Record",
-              "shortName": "Rec",
-              "value": "115-79-6"
-            },
-            "rank": {
-              "name": "Rank",
-              "shortName": "Rk",
-              "value": "3rd"
-            },
+            "standingsPending": true,
             "owners": {
               "owners": "Owner(s)",
               "shortName": "Own",
@@ -36357,7 +36485,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 5:11 PM: McGonigle went 2-for-3 with a solo home...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -36535,7 +36663,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 4:22 PM: Walker went 2-for-3 with a solo home...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -36620,6 +36748,10 @@
                     "posShortNames": "2B,3B,SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 28, 11:54 AM: Stott went 3-for-3 with two doubles, a...",
+                        "typeId": "14"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -36797,6 +36929,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 11, 12:01 AM: Garcia went 1-for-5 with a two-run home...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -36971,7 +37107,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 3:47 PM: Pasquantino went 2-for-4 with a pair of...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -37055,6 +37191,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 20, 8:17 AM: Langford went 1-for-2 with two walks,...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -37135,7 +37275,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 7:09 AM: Moniak went 1-for-3 with a solo home...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -37219,6 +37359,10 @@
                       {
                         "tooltip": "Injured List - 10-day IL - Hip",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Sep 11, 2:59 PM: Buxton will undergo season-ending...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "On this team's trade block",
@@ -37311,7 +37455,7 @@
                       },
                       {
                         "tooltip": "Sep 23, 10:19 AM: The Orioles placed Basallo (concussion)...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -37492,6 +37636,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 12, 1:45 PM: Genao isn't in the lineup for...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Switch Hitter",
                         "typeId": "18"
                       }
@@ -37583,6 +37731,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Sep 18, 1:55 PM: The Cardinals placed Baez on the 10-day...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -37664,7 +37816,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 11:00 AM: Jenkins is absent from the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -37751,7 +37903,7 @@
                       },
                       {
                         "tooltip": "Sep 23, 4:11 PM: The Dodgers optioned De Paula to...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -38120,7 +38272,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 25, 12:14 AM: Abreu allowed a hit and a walk over 1.1...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -38220,6 +38372,10 @@
                       {
                         "tooltip": "Injured List - 15-day IL - Arm",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Sep 18, 2:46 PM: Ashcraft (arm) played catch Friday but...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -38419,6 +38575,10 @@
                       {
                         "tooltip": "Injured List - 15-day IL - Forearm",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Sep 18, 8:48 PM: Cleavinger (forearm) is expected to...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -38721,7 +38881,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 7:57 PM: Griffin (15-6) took the loss against...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -38924,7 +39084,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 4:52 PM: Jones did not factor into the decision...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -39014,6 +39174,7 @@
                     "urlName": "michael-king",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs041wv_96_9.png",
                     "scorerId": "041wv",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "017"
@@ -39023,8 +39184,12 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "In starting lineup",
+                        "typeId": "12"
+                      },
+                      {
                         "tooltip": "Sep 22, 11:49 PM: King (12-10) took the loss Tuesday,...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -39113,6 +39278,7 @@
                     "urlName": "jesus-luzardo",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs041r1_96_9.png",
                     "scorerId": "041r1",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "017"
@@ -39122,8 +39288,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Sep 27, 10:15 AM: The Phillies activated Luzardo...",
-                        "typeId": "9"
+                        "tooltip": "In starting lineup",
+                        "typeId": "12"
+                      },
+                      {
+                        "tooltip": "Sep 28, 12:05 PM: Phillies interim manager Don Mattingly...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "On this team's trade block",
@@ -39230,7 +39400,7 @@
                       },
                       {
                         "tooltip": "Sep 23, 5:02 PM: Manager Kevin Cash said Wednesday that...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "On this team's trade block",
@@ -39334,7 +39504,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 4:03 PM: Misiorowski (16-5) allowed two hits and...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -39433,6 +39603,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 20, 3:52 PM: O'Brien threw a clean ninth inning to...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -39529,7 +39703,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 25, 12:53 AM: Pivetta allowed four hits, a walk and a...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "On this team's trade block",
@@ -39632,7 +39806,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 7:54 AM: Rasmussen (16-5) picked up the win in...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -39731,7 +39905,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 12:16 AM: Ray allowed one run on seven hits and a...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -39830,7 +40004,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 5:00 PM: Ryan (0-1) took the loss against the...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -39934,7 +40108,7 @@
                       },
                       {
                         "tooltip": "Sep 24, 1:37 PM: The Yankees placed Schmidt on the...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -40379,14 +40553,6 @@
               }
             ],
             "seasonOrProjections": [
-              {
-                "code": "PROJECTION_0_147_EVENT_PROJECTED_WEEKLY",
-                "endDate": 1790567999000,
-                "name": "Projected - Per Game",
-                "shortName": "Proj - Per Game",
-                "timeframeTypeCode": "PROJECTED_WEEKLY",
-                "startDate": 1774411200000
-              },
               {
                 "code": "SEASON_147_YEAR_TO_DATE",
                 "endDate": 1790567999000,
@@ -41294,16 +41460,7 @@
             }
           ],
           "teamHeadingInfo": {
-            "h2hRecord": {
-              "name": "Record",
-              "shortName": "Rec",
-              "value": "123-68-9"
-            },
-            "rank": {
-              "name": "Rank",
-              "shortName": "Rk",
-              "value": "1st"
-            },
+            "standingsPending": true,
             "owners": {
               "owners": "Owner(s)",
               "shortName": "Own",
@@ -41638,7 +41795,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 25, 12:49 AM: Rodriguez went 2-for-4 with a two-run...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -41721,7 +41878,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 10:49 AM: Harris is not in the lineup for...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -41804,7 +41961,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 11:20 AM: Lowe is not in the lineup for Sunday's...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -41890,7 +42047,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 8:35 AM: Abrams went 2-for-4 with two home runs...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -41976,6 +42133,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 20, 9:15 AM: Riley is out of the lineup for Sunday's...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -42056,6 +42217,10 @@
                     "posShortNames": "2B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 16, 5:40 AM: Marte went 2-for-6 with two doubles and...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Switch Hitter",
                         "typeId": "18"
@@ -42224,7 +42389,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 7:57 AM: Duran went 2-for-3 with a stolen base...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -42311,7 +42476,7 @@
                       },
                       {
                         "tooltip": "Sep 27, 12:25 PM: Moreno (hamstring) has been removed...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -42481,6 +42646,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 16, 9:07 PM: Ewing went 2-for-4 with two singles and...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -42561,7 +42730,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 28, 5:16 AM: Lindor went 2-for-4 with a solo home...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Switch Hitter",
@@ -42646,7 +42815,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 10:47 AM: Acuna is not in the lineup for Sunday's...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -42822,7 +42991,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 1:53 PM: Jones isn't in the lineup for...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -42993,6 +43162,10 @@
                       {
                         "tooltip": "Minor Leagues",
                         "typeId": "4"
+                      },
+                      {
+                        "tooltip": "Sep 29, 7:56 AM: Rodriguez has worked out at third base...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -43273,7 +43446,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 11:19 AM: Bednar earned the save in Game 1 of...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -43369,6 +43542,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 18, 3:18 PM: The Dodgers activated Diaz (neck) from...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -43566,7 +43743,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 8:14 PM: Henderson (11-3) earned the win...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -43665,7 +43842,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 22, 9:54 PM: Imanaga allowed just one run on four...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -43765,7 +43942,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 12:54 AM: Kirby allowed four runs on six hits and...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -43867,6 +44044,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Sep 19, 5:44 PM: Angels manager Kurt Suzuki said...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -43962,6 +44143,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 12, 5:31 AM: Martinez struck out three over a...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -44059,7 +44244,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 7:42 AM: McLean (12-10) earned the win Wednesday...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -44158,7 +44343,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 3:51 PM: Messick allowed a run on six hits and a...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -44261,6 +44446,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Sep 15, 11:22 AM: Marlins manager Clayton McCullough...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -44358,7 +44547,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 25, 12:57 AM: Miller allowed a run on one hit and...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -44456,8 +44645,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Sep 24, 7:07 PM: Painter did not factor into the...",
-                        "typeId": "8"
+                        "tooltip": "Sep 28, 12:16 PM: Phillies interim manager Don Mattingly...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -44546,6 +44735,7 @@
                     "urlName": "chris-sale",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs01uca_96_17.png",
                     "scorerId": "01uca",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "017"
@@ -44555,8 +44745,12 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "In starting lineup",
+                        "typeId": "12"
+                      },
+                      {
                         "tooltip": "Sep 23, 8:22 PM: Sale took a no-decision Wednesday...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -44659,7 +44853,7 @@
                       },
                       {
                         "tooltip": "Sep 22, 1:51 PM: The Mets placed Scott on the 15-day...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -44757,6 +44951,10 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 19, 5:50 PM: Taylor allowed one hit and no walks in...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -45052,7 +45250,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 25, 12:47 AM: Woo (12-10) allowed five runs (four...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -45151,7 +45349,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 12:28 AM: Yamamoto (14-9) allowed four runs (two...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -45390,14 +45588,6 @@
               }
             ],
             "seasonOrProjections": [
-              {
-                "code": "PROJECTION_0_147_EVENT_PROJECTED_WEEKLY",
-                "endDate": 1790567999000,
-                "name": "Projected - Per Game",
-                "shortName": "Proj - Per Game",
-                "timeframeTypeCode": "PROJECTED_WEEKLY",
-                "startDate": 1774411200000
-              },
               {
                 "code": "SEASON_147_YEAR_TO_DATE",
                 "endDate": 1790567999000,
@@ -46297,16 +46487,7 @@
             }
           ],
           "teamHeadingInfo": {
-            "h2hRecord": {
-              "name": "Record",
-              "shortName": "Rec",
-              "value": "110-83-7"
-            },
-            "rank": {
-              "name": "Rank",
-              "shortName": "Rk",
-              "value": "4th"
-            },
+            "standingsPending": true,
             "owners": {
               "owners": "Owner(s)",
               "shortName": "Own",
@@ -46563,7 +46744,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 11:08 AM: Lopez is not in the lineup for Sunday's...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -46649,6 +46830,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 10, 7:35 AM: Albies is not in the lineup for...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Switch Hitter",
                         "typeId": "18"
                       }
@@ -46731,7 +46916,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 10:49 AM: Diaz is not in the starting lineup for...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -46815,8 +47000,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Sep 27, 8:40 AM: Walker will make his first career start...",
-                        "typeId": "9"
+                        "tooltip": "Sep 29, 7:41 AM: Cardinals president of baseball...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -46987,7 +47172,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 7:46 AM: Carroll went 1-for-4 with a triple and...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -47153,7 +47338,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 10:56 AM: Dingler is not in the starting lineup...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -47236,7 +47421,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 4:11 PM: Chourio went 3-for-4 with two RBI and...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -47318,6 +47503,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Sep 15, 3:14 PM: Wood is out of the lineup for Tuesday's...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Bats Left",
                         "typeId": "16"
                       }
@@ -47397,6 +47586,10 @@
                     "posShortNames": "1B,OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Sep 17, 9:11 AM: Bauers is not in the lineup for...",
+                        "typeId": "8"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -47748,6 +47941,10 @@
                       {
                         "tooltip": "Injured List - 60-day IL - Knee",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Sep 16, 4:36 PM: Rooker (knee) was cleared to begin a...",
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -48128,7 +48325,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 22, 11:28 PM: Bradley (12-6) allowed one run on three...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -48230,6 +48427,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Sep 3, 2:37 PM: Brown (neck) has been ruled out for the...",
+                        "typeId": "8"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -48327,7 +48528,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 8:07 PM: Chapman (lat) struck out the side in...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -48425,8 +48626,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Sep 22, 2:15 PM: Flaherty (forearm) will be activated...",
-                        "typeId": "8"
+                        "tooltip": "Sep 29, 8:12 AM: Flaherty (forearm) was reinstated from...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -48723,7 +48924,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 27, 4:29 PM: Lambert did not factor into the...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -48923,7 +49124,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 8:24 PM: Megill earned the save in Wednesday's...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -49022,7 +49223,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 4:35 PM: Rodriguez (16-7) earned the win...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -49319,7 +49520,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 3:51 PM: Skenes did not factor into the decision...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -49517,7 +49718,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 24, 7:52 PM: Smith struck out the side to earn the...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -49715,7 +49916,7 @@
                     "icons": [
                       {
                         "tooltip": "Sep 23, 6:45 PM: Valdez (10-12) gave up two runs on four...",
-                        "typeId": "8"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -49954,14 +50155,6 @@
               }
             ],
             "seasonOrProjections": [
-              {
-                "code": "PROJECTION_0_147_EVENT_PROJECTED_WEEKLY",
-                "endDate": 1790567999000,
-                "name": "Projected - Per Game",
-                "shortName": "Proj - Per Game",
-                "timeframeTypeCode": "PROJECTED_WEEKLY",
-                "startDate": 1774411200000
-              },
               {
                 "code": "SEASON_147_YEAR_TO_DATE",
                 "endDate": 1790567999000,
