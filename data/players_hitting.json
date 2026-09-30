@@ -24,7 +24,7 @@
           "icons": [
             {
               "tooltip": "Sep 24, 4:37 PM: Crow-Armstrong went 1-for-3 with a...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -117,7 +117,7 @@
           "icons": [
             {
               "tooltip": "Sep 23, 8:35 AM: Abrams went 2-for-4 with two home runs...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -213,7 +213,7 @@
           "icons": [
             {
               "tooltip": "Sep 27, 9:47 AM: Vargas is not in the starting lineup...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -306,7 +306,7 @@
           "icons": [
             {
               "tooltip": "Sep 27, 10:34 AM: Tatis is not in the lineup for Sunday's...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -402,7 +402,7 @@
           "icons": [
             {
               "tooltip": "Sep 23, 4:05 PM: The Dodgers reinstated Ohtani...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -495,7 +495,7 @@
           "icons": [
             {
               "tooltip": "Sep 25, 8:48 PM: De La Cruz went 1-for-4 with a two-run...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -588,7 +588,7 @@
           "icons": [
             {
               "tooltip": "Sep 29, 7:41 AM: Cardinals president of baseball...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -677,7 +677,7 @@
           "icons": [
             {
               "tooltip": "Sep 27, 12:26 AM: Arozarena went 2-for-5 with a double, a...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -769,7 +769,7 @@
           "icons": [
             {
               "tooltip": "Sep 25, 8:41 PM: Alonso went 4-for-8 with two home runs,...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -957,7 +957,7 @@
           "icons": [
             {
               "tooltip": "Sep 25, 11:58 PM: Neto went 3-for-5 with a solo home run,...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -1050,7 +1050,7 @@
           "icons": [
             {
               "tooltip": "Sep 27, 10:36 AM: Merrill is not in the lineup for...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -1231,7 +1231,7 @@
           "icons": [
             {
               "tooltip": "Sep 27, 6:25 AM: Caminero went 2-for-3 with a home run,...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -1324,7 +1324,7 @@
           "icons": [
             {
               "tooltip": "Sep 26, 8:00 PM: Turang went 1-for-3 with a walk and a...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -1417,7 +1417,7 @@
           "icons": [
             {
               "tooltip": "Sep 26, 11:39 PM: Alvarez went 2-for-5 with a three-run...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -1510,7 +1510,7 @@
           "icons": [
             {
               "tooltip": "Sep 23, 8:43 PM: Rice went 3-for-4 with a pair of solo...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -1604,7 +1604,7 @@
           "icons": [
             {
               "tooltip": "Sep 27, 4:11 PM: Chourio went 3-for-4 with two RBI and...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -1683,6 +1683,7 @@
           "urlName": "matt-olson",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02mwm_96_15.png",
           "scorerId": "02mwm",
+          "upcomingEventStatusId": "1",
           "rank": 66,
           "posIdsNoFlex": [
             "002"
@@ -1691,6 +1692,10 @@
           "posShortNames": "1B",
           "team": false,
           "icons": [
+            {
+              "tooltip": "Batting Order: 4",
+              "typeId": "24"
+            },
             {
               "tooltip": "Sep 19, 6:30 AM: Olson went 3-for-5 with a two-run home...",
               "typeId": "8"
@@ -1786,7 +1791,7 @@
           "icons": [
             {
               "tooltip": "Sep 26, 8:29 PM: Witt went 2-for-4 with two runs scored...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -1990,10 +1995,10 @@
     ],
     "playerNewsIconRecencyLegend": [
       {
-        "PLAYER_NEWS_HOT": "News was posted within the past <b>24</b> hours"
+        "PLAYER_NEWS_HOT": "News was posted within the past <b>12</b> hours"
       },
       {
-        "PLAYER_NEWS_RECENT": "News was posted within the past <b>7</b> days"
+        "PLAYER_NEWS_RECENT": "News was posted within the past <b>47</b> hours"
       },
       {
         "PLAYER_NEWS": "News was posted within the past <b>30</b> days"
@@ -2035,10 +2040,6 @@
         {
           "name": "All",
           "id": "ALL"
-        },
-        {
-          "name": "Tue Sep 29",
-          "id": "2026-09-29"
         },
         {
           "name": "Wed Sep 30",
@@ -2155,6 +2156,10 @@
         {
           "name": "Wed Oct 28",
           "id": "2026-10-28"
+        },
+        {
+          "name": "Thu Oct 29",
+          "id": "2026-10-29"
         }
       ],
       "displayedSeasonOrProjections": [
@@ -2488,6 +2493,22 @@
           "shortName": "2007 Reg - Dates",
           "timeframeTypeCode": "BY_DATE",
           "startDate": 1175400000000
+        },
+        {
+          "code": "SEASON_148_YEAR_TO_DATE",
+          "endDate": 1793505599000,
+          "name": "2026 Playoffs - YTD",
+          "shortName": "2026 Plyff - YTD",
+          "timeframeTypeCode": "YEAR_TO_DATE",
+          "startDate": 1790654400000
+        },
+        {
+          "code": "SEASON_148_BY_DATE",
+          "endDate": 1793505599000,
+          "name": "2026 Playoffs - Dates",
+          "shortName": "2026 Plyff - Dates",
+          "timeframeTypeCode": "BY_DATE",
+          "startDate": 1790654400000
         },
         {
           "code": "SEASON_146_YEAR_TO_DATE",
@@ -3126,6 +3147,22 @@
         "shortName": "2007 Reg - Dates",
         "timeframeTypeCode": "BY_DATE",
         "startDate": 1175400000000
+      },
+      {
+        "code": "SEASON_148_YEAR_TO_DATE",
+        "endDate": 1793505599000,
+        "name": "2026 Playoffs - YTD",
+        "shortName": "2026 Plyff - YTD",
+        "timeframeTypeCode": "YEAR_TO_DATE",
+        "startDate": 1790654400000
+      },
+      {
+        "code": "SEASON_148_BY_DATE",
+        "endDate": 1793505599000,
+        "name": "2026 Playoffs - Dates",
+        "shortName": "2026 Plyff - Dates",
+        "timeframeTypeCode": "BY_DATE",
+        "startDate": 1790654400000
       },
       {
         "code": "SEASON_146_YEAR_TO_DATE",
