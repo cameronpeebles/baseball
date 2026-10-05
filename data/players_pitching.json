@@ -23,8 +23,8 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "Sep 25, 12:57 AM: Miller allowed a run on one hit and...",
-              "typeId": "8"
+              "tooltip": "Oct 4, 11:56 PM: Miller was charged with the loss and a...",
+              "typeId": "14"
             }
           ],
           "rookie": false,
@@ -133,7 +133,7 @@
           "icons": [
             {
               "tooltip": "Sep 27, 4:03 PM: Misiorowski (16-5) allowed two hits and...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -449,6 +449,7 @@
           "urlName": "cam-schlittler",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05u6q_96_2.png",
           "scorerId": "05u6q",
+          "upcomingEventStatusId": "1",
           "rank": 6,
           "posIdsNoFlex": [
             "017"
@@ -457,6 +458,10 @@
           "posShortNames": "SP",
           "team": false,
           "icons": [
+            {
+              "tooltip": "In starting lineup",
+              "typeId": "12"
+            },
             {
               "tooltip": "Sep 30, 10:41 AM: Schlittler earned the win in Game 1 of...",
               "typeId": "9"
@@ -666,7 +671,6 @@
           "urlName": "chris-sale",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs01uca_96_17.png",
           "scorerId": "01uca",
-          "upcomingEventStatusId": "1",
           "rank": 8,
           "posIdsNoFlex": [
             "017"
@@ -676,12 +680,8 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "In starting lineup",
-              "typeId": "12"
-            },
-            {
-              "tooltip": "Oct 2, 11:08 AM: Atlanta manager Walt Weiss said Friday...",
-              "typeId": "9"
+              "tooltip": "Oct 4, 12:50 PM: Sale is expected to start Game 3 of the...",
+              "typeId": "14"
             }
           ],
           "rookie": false,
@@ -1552,7 +1552,7 @@
           "icons": [
             {
               "tooltip": "Sep 27, 3:30 PM: Wheeler (14-5) earned the win Sunday...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -1772,7 +1772,7 @@
           "icons": [
             {
               "tooltip": "Sep 27, 4:46 PM: Montgomery earned the save in Sunday's...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -1988,7 +1988,7 @@
           "icons": [
             {
               "tooltip": "Sep 27, 3:51 PM: Messick allowed a run on six hits and a...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -2370,10 +2370,6 @@
           "id": "ALL"
         },
         {
-          "name": "Sun Oct 4",
-          "id": "2026-10-04"
-        },
-        {
           "name": "Mon Oct 5",
           "id": "2026-10-05"
         },
@@ -2488,6 +2484,10 @@
         {
           "name": "Mon Nov 2",
           "id": "2026-11-02"
+        },
+        {
+          "name": "Tue Nov 3",
+          "id": "2026-11-03"
         }
       ],
       "displayedSeasonOrProjections": [
