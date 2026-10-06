@@ -24,7 +24,7 @@
           "icons": [
             {
               "tooltip": "Oct 4, 11:56 PM: Miller was charged with the loss and a...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -449,7 +449,6 @@
           "urlName": "cam-schlittler",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05u6q_96_2.png",
           "scorerId": "05u6q",
-          "upcomingEventStatusId": "1",
           "rank": 6,
           "posIdsNoFlex": [
             "017"
@@ -459,12 +458,8 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "In starting lineup",
-              "typeId": "12"
-            },
-            {
-              "tooltip": "Sep 30, 10:41 AM: Schlittler earned the win in Game 1 of...",
-              "typeId": "9"
+              "tooltip": "Oct 5, 10:12 PM: Schlittler took the loss in Game 2 of...",
+              "typeId": "14"
             }
           ],
           "rookie": false,
@@ -671,6 +666,7 @@
           "urlName": "chris-sale",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs01uca_96_17.png",
           "scorerId": "01uca",
+          "upcomingEventStatusId": "1",
           "rank": 8,
           "posIdsNoFlex": [
             "017"
@@ -680,8 +676,12 @@
           "team": false,
           "icons": [
             {
+              "tooltip": "In starting lineup",
+              "typeId": "12"
+            },
+            {
               "tooltip": "Oct 4, 12:50 PM: Sale is expected to start Game 3 of the...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -780,6 +780,7 @@
           "urlName": "yoshinobu-yamamoto",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05r8n_96_3.png",
           "scorerId": "05r8n",
+          "upcomingEventStatusId": "1",
           "rank": 9,
           "posIdsNoFlex": [
             "017"
@@ -788,6 +789,10 @@
           "posShortNames": "SP",
           "team": false,
           "icons": [
+            {
+              "tooltip": "In starting lineup",
+              "typeId": "12"
+            },
             {
               "tooltip": "Sep 24, 12:28 AM: Yamamoto (14-9) allowed four runs (two...",
               "typeId": "8"
@@ -1006,8 +1011,8 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "Sep 25, 8:09 PM: Baker collected the save in Friday's...",
-              "typeId": "8"
+              "tooltip": "Oct 5, 10:36 PM: Baker earned the save by retiring all...",
+              "typeId": "14"
             }
           ],
           "rookie": false,
@@ -2370,10 +2375,6 @@
           "id": "ALL"
         },
         {
-          "name": "Mon Oct 5",
-          "id": "2026-10-05"
-        },
-        {
           "name": "Tue Oct 6",
           "id": "2026-10-06"
         },
@@ -2488,6 +2489,10 @@
         {
           "name": "Tue Nov 3",
           "id": "2026-11-03"
+        },
+        {
+          "name": "Wed Nov 4",
+          "id": "2026-11-04"
         }
       ],
       "displayedSeasonOrProjections": [
