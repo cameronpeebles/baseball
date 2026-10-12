@@ -354,7 +354,7 @@
                       "002",
                       "003"
                     ],
-                    "defaultPosId": "002",
+                    "defaultPosId": "003",
                     "posShortNames": "1B,2B",
                     "team": false,
                     "icons": [
@@ -439,6 +439,7 @@
                     "urlName": "brice-turang",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04b00_96_7.png",
                     "scorerId": "04b00",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "003"
@@ -447,6 +448,10 @@
                     "posShortNames": "2B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
                       {
                         "tooltip": "Sep 26, 8:00 PM: Turang went 1-for-3 with a walk and a...",
                         "typeId": "8"
@@ -693,6 +698,7 @@
                     "urlName": "freddie-freeman",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs01cgo_96_16.png",
                     "scorerId": "01cgo",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002"
@@ -701,6 +707,10 @@
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 2",
+                        "typeId": "22"
+                      },
                       {
                         "tooltip": "Sep 26, 11:20 AM: Freeman isn't in the lineup for...",
                         "typeId": "8"
@@ -783,7 +793,7 @@
                       "012",
                       "014"
                     ],
-                    "defaultPosId": "013",
+                    "defaultPosId": "011",
                     "posShortNames": "OF,UT",
                     "team": false,
                     "icons": [
@@ -1027,6 +1037,7 @@
                     "urlName": "max-muncy",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02mzg_96_13.png",
                     "scorerId": "02mzg",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "004"
@@ -1035,6 +1046,10 @@
                     "posShortNames": "3B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 6",
+                        "typeId": "26"
+                      },
                       {
                         "tooltip": "Oct 6, 12:57 PM: Muncy is absent from the lineup Tuesday...",
                         "typeId": "9"
@@ -1112,6 +1127,7 @@
                     "urlName": "mookie-betts",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02btf_96_16.png",
                     "scorerId": "02btf",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "005"
@@ -1120,6 +1136,10 @@
                     "posShortNames": "SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 1",
+                        "typeId": "21"
+                      },
                       {
                         "tooltip": "Sep 25, 1:04 AM: Betts went 3-for-5 with a double, a...",
                         "typeId": "8"
@@ -1202,7 +1222,7 @@
                       "003",
                       "005"
                     ],
-                    "defaultPosId": "003",
+                    "defaultPosId": "005",
                     "posShortNames": "2B,SS",
                     "team": false,
                     "icons": [
@@ -3535,6 +3555,10 @@
                         "typeId": "2"
                       },
                       {
+                        "tooltip": "Oct 11, 12:55 PM: Atlanta general manager Alex...",
+                        "typeId": "14"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -3656,7 +3680,7 @@
                   "posId": "017",
                   "cells": [
                     {
-                      "content": "36"
+                      "content": "37"
                     },
                     {
                       "content": "COL 2<br/>@CHW 4 F",
@@ -5741,7 +5765,7 @@
                     "posIdsNoFlex": [
                       "012"
                     ],
-                    "defaultPosId": "010",
+                    "defaultPosId": "011",
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
@@ -5908,7 +5932,7 @@
                       "003",
                       "005"
                     ],
-                    "defaultPosId": "005",
+                    "defaultPosId": "003",
                     "posShortNames": "2B,SS",
                     "team": false,
                     "icons": [
@@ -6170,7 +6194,7 @@
                     "posIdsNoFlex": [
                       "012"
                     ],
-                    "defaultPosId": "010",
+                    "defaultPosId": "011",
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
@@ -6696,10 +6720,6 @@
                         "typeId": "2"
                       },
                       {
-                        "tooltip": "Sep 12, 11:20 AM: The Pirates placed Valdez on the 10-day...",
-                        "typeId": "8"
-                      },
-                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -7038,7 +7058,7 @@
                       "004",
                       "012"
                     ],
-                    "defaultPosId": "004",
+                    "defaultPosId": "010",
                     "posShortNames": "3B,OF",
                     "team": false,
                     "icons": [
@@ -8182,8 +8202,8 @@
                     "posIdsNoFlex": [
                       "017"
                     ],
-                    "defaultPosId": "015",
-                    "posShortNames": "SP",
+                    "defaultPosId": "016",
+                    "posShortNames": "RP",
                     "team": false,
                     "icons": [
                       {
@@ -8486,8 +8506,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Sep 12, 10:41 AM: The Rays selected Hopkins' contract...",
-                        "typeId": "8"
+                        "tooltip": "Oct 12, 8:58 AM: Hopkins has been included on the Rays'...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -10762,7 +10782,7 @@
                     "posIdsNoFlex": [
                       "012"
                     ],
-                    "defaultPosId": "011",
+                    "defaultPosId": "009",
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
@@ -11096,7 +11116,7 @@
                     "posIdsNoFlex": [
                       "012"
                     ],
-                    "defaultPosId": "010",
+                    "defaultPosId": "009",
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
@@ -11185,7 +11205,7 @@
                     "icons": [
                       {
                         "tooltip": "Oct 11, 7:41 AM: Ramirez went 1-for-3 with a two-run...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Switch Hitter",
@@ -11436,7 +11456,7 @@
                     "posIdsNoFlex": [
                       "012"
                     ],
-                    "defaultPosId": "011",
+                    "defaultPosId": "009",
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
@@ -11521,7 +11541,7 @@
                       "004",
                       "012"
                     ],
-                    "defaultPosId": "003",
+                    "defaultPosId": "004",
                     "posShortNames": "2B,3B,OF",
                     "team": false,
                     "icons": [
@@ -11703,7 +11723,7 @@
                       "003",
                       "004"
                     ],
-                    "defaultPosId": "002",
+                    "defaultPosId": "004",
                     "posShortNames": "1B,2B,3B",
                     "team": false,
                     "icons": [
@@ -11882,7 +11902,7 @@
                     "posIdsNoFlex": [
                       "012"
                     ],
-                    "defaultPosId": "011",
+                    "defaultPosId": "009",
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
@@ -11892,7 +11912,7 @@
                       },
                       {
                         "tooltip": "Oct 5, 9:25 AM: Red Sox chief baseball officer Craig...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -12530,7 +12550,7 @@
                     "icons": [
                       {
                         "tooltip": "Oct 11, 8:24 AM: Burke was charged with the loss in Game...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -15396,7 +15416,7 @@
                       "004",
                       "005"
                     ],
-                    "defaultPosId": "005",
+                    "defaultPosId": "004",
                     "posShortNames": "3B,SS",
                     "team": false,
                     "icons": [
@@ -15746,8 +15766,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Sep 27, 9:41 AM: Guerrero is not in the starting lineup...",
-                        "typeId": "8"
+                        "tooltip": "Oct 11, 9:44 AM: Guerrero has undergone laser-eye...",
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -15828,7 +15848,7 @@
                       "003",
                       "012"
                     ],
-                    "defaultPosId": "002",
+                    "defaultPosId": "003",
                     "posShortNames": "1B,2B,OF",
                     "team": false,
                     "icons": [
@@ -16095,7 +16115,7 @@
                       "012",
                       "014"
                     ],
-                    "defaultPosId": "013",
+                    "defaultPosId": "010",
                     "posShortNames": "OF,UT",
                     "team": false,
                     "icons": [
@@ -16181,7 +16201,7 @@
                       "005",
                       "012"
                     ],
-                    "defaultPosId": "003",
+                    "defaultPosId": "009",
                     "posShortNames": "2B,3B,SS,OF",
                     "team": false,
                     "icons": [
@@ -16443,7 +16463,7 @@
                     "posIdsNoFlex": [
                       "012"
                     ],
-                    "defaultPosId": "011",
+                    "defaultPosId": "010",
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
@@ -16609,7 +16629,7 @@
                     "posIdsNoFlex": [
                       "012"
                     ],
-                    "defaultPosId": "010",
+                    "defaultPosId": "011",
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
@@ -16873,7 +16893,7 @@
                       "004",
                       "005"
                     ],
-                    "defaultPosId": "005",
+                    "defaultPosId": "004",
                     "posShortNames": "3B,SS",
                     "team": false,
                     "icons": [
@@ -17561,7 +17581,7 @@
                     "icons": [
                       {
                         "tooltip": "Oct 5, 10:12 AM: Red Sox chief baseball officer Craig...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -17857,8 +17877,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Oct 8, 9:29 AM: Gasser didn't factor into the decision...",
-                        "typeId": "9"
+                        "tooltip": "Oct 12, 10:46 AM: Gasser will start Game 3 of the NLCS...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -18153,8 +18173,8 @@
                     "posIdsNoFlex": [
                       "017"
                     ],
-                    "defaultPosId": "015",
-                    "posShortNames": "SP",
+                    "defaultPosId": "016",
+                    "posShortNames": "RP",
                     "team": false,
                     "icons": [
                       {
@@ -18545,8 +18565,8 @@
                     "posIdsNoFlex": [
                       "017"
                     ],
-                    "defaultPosId": "016",
-                    "posShortNames": "RP",
+                    "defaultPosId": "015",
+                    "posShortNames": "SP",
                     "team": false,
                     "icons": [
                       {
@@ -18851,8 +18871,8 @@
                     "posIdsNoFlex": [
                       "017"
                     ],
-                    "defaultPosId": "015",
-                    "posShortNames": "SP",
+                    "defaultPosId": "016",
+                    "posShortNames": "RP",
                     "team": false,
                     "icons": [
                       {
@@ -19152,13 +19172,13 @@
                     "posIdsNoFlex": [
                       "017"
                     ],
-                    "defaultPosId": "016",
-                    "posShortNames": "RP",
+                    "defaultPosId": "015",
+                    "posShortNames": "SP",
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Sep 27, 8:09 AM: Wrobleski has made his last two...",
-                        "typeId": "8"
+                        "tooltip": "Oct 11, 11:06 AM: The Dodgers added Wrobleski to their...",
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -20819,7 +20839,7 @@
                     "posIdsNoFlex": [
                       "012"
                     ],
-                    "defaultPosId": "011",
+                    "defaultPosId": "009",
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
@@ -21069,6 +21089,7 @@
                     "urlName": "kyle-tucker",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03pir_96_12.png",
                     "scorerId": "03pir",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -21077,6 +21098,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 8",
+                        "typeId": "28"
+                      },
                       {
                         "tooltip": "Sep 24, 12:31 AM: Tucker went 2-for-4 with a stolen base...",
                         "typeId": "8"
@@ -21336,6 +21361,7 @@
                     "urlName": "shohei-ohtani",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02yc4_96_13.png",
                     "scorerId": "02yc4",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "014",
@@ -21345,6 +21371,10 @@
                     "posShortNames": "UT,SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
                       {
                         "tooltip": "Oct 6, 12:55 PM: Ohtani will start at designated hitter...",
                         "typeId": "9"
@@ -21682,16 +21712,25 @@
                     "urlName": "david-hamilton",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs0515v_96_3.png",
                     "scorerId": "0515v",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "003",
                       "004",
                       "005"
                     ],
-                    "defaultPosId": "003",
+                    "defaultPosId": "004",
                     "posShortNames": "2B,3B,SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 9",
+                        "typeId": "29"
+                      },
+                      {
+                        "tooltip": "Oct 12, 11:26 AM: Hamilton will start at third base and...",
+                        "typeId": "14"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -21784,10 +21823,6 @@
                         "typeId": "2"
                       },
                       {
-                        "tooltip": "Sep 11, 3:04 PM: Wilson underwent left shoulder labral...",
-                        "typeId": "8"
-                      },
-                      {
                         "tooltip": "Bats Right",
                         "typeId": "17"
                       }
@@ -21861,6 +21896,7 @@
                     "urlName": "andrew-vaughn",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04si2_96_9.png",
                     "scorerId": "04si2",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002",
@@ -21870,6 +21906,10 @@
                     "posShortNames": "1B,3B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
                       {
                         "tooltip": "Oct 3, 2:30 PM: Vaughn isn't in the lineup Saturday for...",
                         "typeId": "8"
@@ -21949,6 +21989,7 @@
                     "urlName": "will-smith",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs042sz_96_10.png",
                     "scorerId": "042sz",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "001"
@@ -21957,6 +21998,10 @@
                     "posShortNames": "C",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 5",
+                        "typeId": "25"
+                      },
                       {
                         "tooltip": "Sep 27, 10:43 AM: Smith is absent from the lineup for...",
                         "typeId": "8"
@@ -22313,6 +22358,7 @@
                     "urlName": "shohei-ohtani",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs02yc4_96_13.png",
                     "scorerId": "02yc4",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "014",
@@ -22322,6 +22368,10 @@
                     "posShortNames": "UT,SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
                       {
                         "tooltip": "Oct 6, 12:55 PM: Ohtani will start at designated hitter...",
                         "typeId": "9"
@@ -22709,8 +22759,8 @@
                     "posIdsNoFlex": [
                       "017"
                     ],
-                    "defaultPosId": "016",
-                    "posShortNames": "RP",
+                    "defaultPosId": "015",
+                    "posShortNames": "SP",
                     "team": false,
                     "icons": [
                       {
@@ -23016,6 +23066,10 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Oct 11, 12:14 PM: General manager Alex Anthopoulos said...",
+                        "typeId": "14"
+                      },
+                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -23305,8 +23359,8 @@
                     "posIdsNoFlex": [
                       "017"
                     ],
-                    "defaultPosId": "016",
-                    "posShortNames": "RP",
+                    "defaultPosId": "015",
+                    "posShortNames": "SP",
                     "team": false,
                     "icons": [
                       {
@@ -26240,7 +26294,7 @@
                     "posIdsNoFlex": [
                       "002"
                     ],
-                    "defaultPosId": "013",
+                    "defaultPosId": "002",
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
@@ -26670,7 +26724,7 @@
                       "003",
                       "004"
                     ],
-                    "defaultPosId": "004",
+                    "defaultPosId": "002",
                     "posShortNames": "1B,2B,3B",
                     "team": false,
                     "icons": [
@@ -26762,7 +26816,7 @@
                       "002",
                       "012"
                     ],
-                    "defaultPosId": "009",
+                    "defaultPosId": "002",
                     "posShortNames": "1B,OF",
                     "team": false,
                     "icons": [
@@ -26850,14 +26904,10 @@
                       "002",
                       "004"
                     ],
-                    "defaultPosId": "002",
+                    "defaultPosId": "004",
                     "posShortNames": "1B,3B",
                     "team": false,
                     "icons": [
-                      {
-                        "tooltip": "Sep 11, 9:37 PM: Mayo went 1-for-5 with a solo home run...",
-                        "typeId": "8"
-                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -27114,7 +27164,7 @@
                     "posIdsNoFlex": [
                       "012"
                     ],
-                    "defaultPosId": "009",
+                    "defaultPosId": "011",
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
@@ -28838,7 +28888,7 @@
                     "icons": [
                       {
                         "tooltip": "Oct 4, 11:16 AM: Brewers manager Pat Murphy announced...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -29631,6 +29681,10 @@
                       {
                         "tooltip": "Injured List - 60-day IL - Elbow",
                         "typeId": "2"
+                      },
+                      {
+                        "tooltip": "Oct 11, 1:36 PM: GM Alex Anthopoulos said Sunday that...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -31404,7 +31458,7 @@
                     "posIdsNoFlex": [
                       "012"
                     ],
-                    "defaultPosId": "009",
+                    "defaultPosId": "011",
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
@@ -31489,7 +31543,7 @@
                       "004",
                       "005"
                     ],
-                    "defaultPosId": "005",
+                    "defaultPosId": "004",
                     "posShortNames": "2B,3B,SS",
                     "team": false,
                     "icons": [
@@ -31671,7 +31725,7 @@
                       "003",
                       "005"
                     ],
-                    "defaultPosId": "005",
+                    "defaultPosId": "003",
                     "posShortNames": "2B,SS",
                     "team": false,
                     "icons": [
@@ -32092,6 +32146,7 @@
                     "urlName": "andy-pages",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04ru5_96_8.png",
                     "scorerId": "04ru5",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -32100,6 +32155,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 7",
+                        "typeId": "27"
+                      },
                       {
                         "tooltip": "Sep 27, 4:41 PM: Pages went 1-for-3 with a three-run...",
                         "typeId": "8"
@@ -32190,7 +32249,7 @@
                         "typeId": "30"
                       },
                       {
-                        "tooltip": "Oct 5, 9:38 AM: Red Sox chief baseball officer Craig...",
+                        "tooltip": "Oct 11, 9:12 AM: The Red Sox announced Sunday that...",
                         "typeId": "9"
                       },
                       {
@@ -32436,6 +32495,7 @@
                     "urlName": "christian-yelich",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs025dn_96_14.png",
                     "scorerId": "025dn",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012",
@@ -32446,8 +32506,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Sep 24, 1:30 PM: Yelich is not in the lineup for...",
-                        "typeId": "8"
+                        "tooltip": "Batting Order: 5",
+                        "typeId": "25"
+                      },
+                      {
+                        "tooltip": "Oct 11, 2:37 PM: Yelich is out of the lineup for Game 1...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -32609,7 +32673,7 @@
                     "posIdsNoFlex": [
                       "012"
                     ],
-                    "defaultPosId": "009",
+                    "defaultPosId": "010",
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
@@ -32695,7 +32759,7 @@
                       "004",
                       "012"
                     ],
-                    "defaultPosId": "003",
+                    "defaultPosId": "009",
                     "posShortNames": "1B,2B,3B,OF",
                     "team": false,
                     "icons": [
@@ -32877,7 +32941,7 @@
                       "004",
                       "012"
                     ],
-                    "defaultPosId": "003",
+                    "defaultPosId": "004",
                     "posShortNames": "2B,3B,OF",
                     "team": false,
                     "icons": [
@@ -34320,8 +34384,8 @@
                     "posIdsNoFlex": [
                       "017"
                     ],
-                    "defaultPosId": "016",
-                    "posShortNames": "RP",
+                    "defaultPosId": "015",
+                    "posShortNames": "SP",
                     "team": false,
                     "icons": [
                       {
@@ -36849,7 +36913,7 @@
                       "002",
                       "003"
                     ],
-                    "defaultPosId": "003",
+                    "defaultPosId": "002",
                     "posShortNames": "1B,2B",
                     "team": false,
                     "icons": [
@@ -37190,7 +37254,7 @@
                     "posIdsNoFlex": [
                       "012"
                     ],
-                    "defaultPosId": "011",
+                    "defaultPosId": "009",
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
@@ -37453,6 +37517,7 @@
                     "urlName": "tommy-edman",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs041sq_96_12.png",
                     "scorerId": "041sq",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "003",
@@ -37464,8 +37529,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Oct 7, 12:42 PM: Edman is not in the lineup Wednesday...",
-                        "typeId": "9"
+                        "tooltip": "Batting Order: 9",
+                        "typeId": "29"
+                      },
+                      {
+                        "tooltip": "Oct 11, 2:14 PM: Edman is out of the lineup for Game 1...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Switch Hitter",
@@ -37552,7 +37621,7 @@
                       "004",
                       "005"
                     ],
-                    "defaultPosId": "005",
+                    "defaultPosId": "003",
                     "posShortNames": "2B,3B,SS",
                     "team": false,
                     "icons": [
@@ -37643,7 +37712,7 @@
                     "posIdsNoFlex": [
                       "012"
                     ],
-                    "defaultPosId": "011",
+                    "defaultPosId": "009",
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
@@ -37814,6 +37883,7 @@
                     "urlName": "josue-de-paula",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs061zv_96_1.png",
                     "scorerId": "061zv",
+                    "upcomingEventStatusId": "5",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
@@ -37822,6 +37892,10 @@
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Not in starting lineup",
+                        "typeId": "15"
+                      },
                       {
                         "tooltip": "Oct 3, 12:05 PM: De Paula is listed on the Dodgers'...",
                         "typeId": "8"
@@ -38286,8 +38360,8 @@
                     "posIdsNoFlex": [
                       "017"
                     ],
-                    "defaultPosId": "016",
-                    "posShortNames": "RP",
+                    "defaultPosId": "015",
+                    "posShortNames": "SP",
                     "team": false,
                     "icons": [
                       {
@@ -38494,8 +38568,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Oct 2, 12:00 PM: Rays manager Kevin Cash said Friday...",
-                        "typeId": "8"
+                        "tooltip": "Oct 12, 8:47 AM: Cleavinger will not be on the Rays'...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -38589,8 +38663,8 @@
                     "posIdsNoFlex": [
                       "017"
                     ],
-                    "defaultPosId": "016",
-                    "posShortNames": "RP",
+                    "defaultPosId": "015",
+                    "posShortNames": "SP",
                     "team": false,
                     "icons": [
                       {
@@ -38788,6 +38862,7 @@
                     "urlName": "foster-griffin",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03caf_96_6.png",
                     "scorerId": "03caf",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "017"
@@ -38797,8 +38872,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Oct 7, 9:28 PM: Griffin earned the win in Game 3 of the...",
-                        "typeId": "9"
+                        "tooltip": "In starting lineup",
+                        "typeId": "12"
+                      },
+                      {
+                        "tooltip": "Oct 11, 4:53 PM: Griffin will start Game 1 of the ALCS...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -39306,8 +39385,8 @@
                         "typeId": "30"
                       },
                       {
-                        "tooltip": "Sep 23, 5:02 PM: Manager Kevin Cash said Wednesday that...",
-                        "typeId": "8"
+                        "tooltip": "Oct 11, 11:45 AM: McClanahan (forearm) won't be available...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "On this team's trade block",
@@ -39401,7 +39480,6 @@
                     "urlName": "jacob-misiorowski",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs061yu_96_2.png",
                     "scorerId": "061yu",
-                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "017"
@@ -39411,12 +39489,8 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "In starting lineup",
-                        "typeId": "12"
-                      },
-                      {
                         "tooltip": "Oct 10, 12:38 PM: Misiorowski will start Game 1 of the...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -39615,7 +39689,7 @@
                     "icons": [
                       {
                         "tooltip": "Oct 4, 11:34 AM: Pivetta is scheduled to start Game 3 of...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "On this team's trade block",
@@ -39708,6 +39782,7 @@
                     "urlName": "drew-rasmussen",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04eee_96_9.png",
                     "scorerId": "04eee",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "017"
@@ -39717,8 +39792,12 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Sep 23, 7:54 AM: Rasmussen (16-5) picked up the win in...",
-                        "typeId": "8"
+                        "tooltip": "In starting lineup",
+                        "typeId": "12"
+                      },
+                      {
+                        "tooltip": "Oct 11, 11:49 AM: The Rays named Rasmussen as their...",
+                        "typeId": "14"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -40119,7 +40198,7 @@
                     "icons": [
                       {
                         "tooltip": "Oct 5, 12:45 AM: Snell didn't factor in the decision in...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "On this team's trade block",
@@ -41790,7 +41869,7 @@
                     "icons": [
                       {
                         "tooltip": "Oct 5, 12:39 AM: Harris went 3-for-5 with a double, a...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -43641,6 +43720,7 @@
                     "urlName": "logan-henderson",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05uo2_96_2.png",
                     "scorerId": "05uo2",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "017"
@@ -43650,8 +43730,12 @@
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "In starting lineup",
+                        "typeId": "12"
+                      },
+                      {
                         "tooltip": "Oct 5, 12:25 AM: Henderson didn't factor in the decision...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -44051,10 +44135,6 @@
                     "posShortNames": "RP",
                     "team": false,
                     "icons": [
-                      {
-                        "tooltip": "Sep 12, 5:31 AM: Martinez struck out three over a...",
-                        "typeId": "8"
-                      },
                       {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
@@ -45054,7 +45134,7 @@
                     "icons": [
                       {
                         "tooltip": "Oct 11, 8:06 AM: Williams earned the win in Game 5 of...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -45242,6 +45322,7 @@
                     "urlName": "yoshinobu-yamamoto",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05r8n_96_3.png",
                     "scorerId": "05r8n",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "017"
@@ -45250,6 +45331,10 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "In starting lineup",
+                        "typeId": "12"
+                      },
                       {
                         "tooltip": "Oct 6, 11:15 PM: Yamamoto earned the win in Game 3 of...",
                         "typeId": "9"
@@ -47148,6 +47233,7 @@
                     "urlName": "william-contreras",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs03yrz_96_10.png",
                     "scorerId": "03yrz",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "001"
@@ -47156,6 +47242,10 @@
                     "posShortNames": "C",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 3",
+                        "typeId": "23"
+                      },
                       {
                         "tooltip": "Oct 6, 11:53 PM: Contreras went 3-for-4 with a walk, a...",
                         "typeId": "9"
@@ -47314,17 +47404,22 @@
                     "urlName": "jackson-chourio",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05m1e_96_4.png",
                     "scorerId": "05m1e",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "012"
                     ],
-                    "defaultPosId": "010",
+                    "defaultPosId": "009",
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
                       {
+                        "tooltip": "Batting Order: 1",
+                        "typeId": "21"
+                      },
+                      {
                         "tooltip": "Oct 4, 11:46 PM: Chourio went 1-for-4 with two RBI in...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -47401,7 +47496,7 @@
                     "posIdsNoFlex": [
                       "012"
                     ],
-                    "defaultPosId": "009",
+                    "defaultPosId": "011",
                     "posShortNames": "OF",
                     "team": false,
                     "icons": [
@@ -47480,15 +47575,20 @@
                     "urlName": "jake-bauers",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs0316v_96_13.png",
                     "scorerId": "0316v",
+                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "002",
                       "012"
                     ],
-                    "defaultPosId": "009",
+                    "defaultPosId": "002",
                     "posShortNames": "1B,OF",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Batting Order: 4",
+                        "typeId": "24"
+                      },
                       {
                         "tooltip": "Sep 17, 9:11 AM: Bauers is not in the lineup for...",
                         "typeId": "8"
@@ -47662,13 +47762,13 @@
                       "003",
                       "012"
                     ],
-                    "defaultPosId": "010",
+                    "defaultPosId": "009",
                     "posShortNames": "2B,OF",
                     "team": false,
                     "icons": [
                       {
                         "tooltip": "Oct 10, 2:32 PM: Martinez isn't in the lineup for Game 5...",
-                        "typeId": "14"
+                        "typeId": "9"
                       },
                       {
                         "tooltip": "Switch Hitter",
@@ -48321,8 +48421,8 @@
                     "posIdsNoFlex": [
                       "017"
                     ],
-                    "defaultPosId": "015",
-                    "posShortNames": "SP",
+                    "defaultPosId": "016",
+                    "posShortNames": "RP",
                     "team": false,
                     "icons": [
                       {
@@ -48427,7 +48527,7 @@
                     "icons": [
                       {
                         "tooltip": "Oct 4, 3:09 PM: Chapman passed a physical examination...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -49508,7 +49608,6 @@
                     "urlName": "tarik-skubal",
                     "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04ptt_96_10.png",
                     "scorerId": "04ptt",
-                    "upcomingEventStatusId": "1",
                     "disableLineupChange": true,
                     "posIdsNoFlex": [
                       "017"
@@ -49517,10 +49616,6 @@
                     "posShortNames": "SP",
                     "team": false,
                     "icons": [
-                      {
-                        "tooltip": "In starting lineup",
-                        "typeId": "12"
-                      },
                       {
                         "tooltip": "Oct 9, 5:39 PM: Skubal will start Game 1 of the NLCS...",
                         "typeId": "9"
