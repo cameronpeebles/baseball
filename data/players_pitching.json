@@ -459,7 +459,7 @@
           "icons": [
             {
               "tooltip": "Oct 5, 10:12 PM: Schlittler took the loss in Game 2 of...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -557,7 +557,6 @@
           "urlName": "drew-rasmussen",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04eee_96_9.png",
           "scorerId": "04eee",
-          "upcomingEventStatusId": "1",
           "rank": 7,
           "posIdsNoFlex": [
             "017"
@@ -567,12 +566,8 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "In starting lineup",
-              "typeId": "12"
-            },
-            {
               "tooltip": "Oct 11, 11:49 AM: The Rays named Rasmussen as their...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -780,7 +775,6 @@
           "urlName": "yoshinobu-yamamoto",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05r8n_96_3.png",
           "scorerId": "05r8n",
-          "upcomingEventStatusId": "1",
           "rank": 9,
           "posIdsNoFlex": [
             "017"
@@ -790,12 +784,8 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "In starting lineup",
-              "typeId": "12"
-            },
-            {
-              "tooltip": "Oct 6, 11:15 PM: Yamamoto earned the win in Game 3 of...",
-              "typeId": "9"
+              "tooltip": "Oct 13, 9:20 AM: Yamamoto didn't factor into the...",
+              "typeId": "14"
             }
           ],
           "rookie": false,
@@ -1451,8 +1441,8 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "Sep 30, 11:15 PM: Gray was charged with the loss in Game...",
-              "typeId": "8"
+              "tooltip": "Oct 12, 3:26 PM: Gray said recently that he plans to...",
+              "typeId": "14"
             }
           ],
           "rookie": false,
@@ -1987,6 +1977,7 @@
           "urlName": "parker-messick",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs05tzn_96_2.png",
           "scorerId": "05tzn",
+          "upcomingEventStatusId": "1",
           "rank": 22,
           "posIdsNoFlex": [
             "017"
@@ -1995,6 +1986,10 @@
           "posShortNames": "SP",
           "team": false,
           "icons": [
+            {
+              "tooltip": "In starting lineup",
+              "typeId": "12"
+            },
             {
               "tooltip": "Sep 27, 3:51 PM: Messick allowed a run on six hits and a...",
               "typeId": "8"
@@ -2379,10 +2374,6 @@
           "id": "ALL"
         },
         {
-          "name": "Mon Oct 12",
-          "id": "2026-10-12"
-        },
-        {
           "name": "Tue Oct 13",
           "id": "2026-10-13"
         },
@@ -2497,6 +2488,10 @@
         {
           "name": "Tue Nov 10",
           "id": "2026-11-10"
+        },
+        {
+          "name": "Wed Nov 11",
+          "id": "2026-11-11"
         }
       ],
       "displayedSeasonOrProjections": [
