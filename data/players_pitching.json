@@ -123,6 +123,7 @@
           "urlName": "jacob-misiorowski",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs061yu_96_2.png",
           "scorerId": "061yu",
+          "upcomingEventStatusId": "1",
           "rank": 3,
           "posIdsNoFlex": [
             "017"
@@ -131,6 +132,10 @@
           "posShortNames": "SP",
           "team": false,
           "icons": [
+            {
+              "tooltip": "In starting lineup",
+              "typeId": "12"
+            },
             {
               "tooltip": "Oct 10, 12:38 PM: Misiorowski will start Game 1 of the...",
               "typeId": "8"
@@ -243,7 +248,7 @@
           "icons": [
             {
               "tooltip": "Oct 15, 4:45 PM: Smith struck out two over 1.1 perfect...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -2365,10 +2370,6 @@
           "id": "ALL"
         },
         {
-          "name": "Thu Oct 22",
-          "id": "2026-10-22"
-        },
-        {
           "name": "Fri Oct 23",
           "id": "2026-10-23"
         },
@@ -2483,6 +2484,10 @@
         {
           "name": "Fri Nov 20",
           "id": "2026-11-20"
+        },
+        {
+          "name": "Sat Nov 21",
+          "id": "2026-11-21"
         }
       ],
       "displayedSeasonOrProjections": [
