@@ -123,7 +123,6 @@
           "urlName": "jacob-misiorowski",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs061yu_96_2.png",
           "scorerId": "061yu",
-          "upcomingEventStatusId": "1",
           "rank": 3,
           "posIdsNoFlex": [
             "017"
@@ -133,12 +132,8 @@
           "team": false,
           "icons": [
             {
-              "tooltip": "In starting lineup",
-              "typeId": "12"
-            },
-            {
-              "tooltip": "Oct 10, 12:38 PM: Misiorowski will start Game 1 of the...",
-              "typeId": "8"
+              "tooltip": "Oct 23, 10:39 PM: Misiorowski earned the win in Game 1 of...",
+              "typeId": "14"
             }
           ],
           "rookie": false,
@@ -562,6 +557,7 @@
           "urlName": "drew-rasmussen",
           "headshotUrl": "https://fantraximg.com/si/headshots/MLB/hs04eee_96_9.png",
           "scorerId": "04eee",
+          "upcomingEventStatusId": "1",
           "rank": 7,
           "posIdsNoFlex": [
             "017"
@@ -570,6 +566,10 @@
           "posShortNames": "SP",
           "team": false,
           "icons": [
+            {
+              "tooltip": "In starting lineup",
+              "typeId": "12"
+            },
             {
               "tooltip": "Oct 18, 11:29 PM: Rasmussen earned the win in Game 5 of...",
               "typeId": "9"
@@ -896,12 +896,6 @@
           "defaultPosId": "016",
           "posShortNames": "RP",
           "team": false,
-          "icons": [
-            {
-              "tooltip": "Sep 23, 11:19 AM: Bednar earned the save in Game 1 of...",
-              "typeId": "8"
-            }
-          ],
           "rookie": false,
           "minorsEligible": false,
           "posIds": [
@@ -2095,16 +2089,6 @@
           "defaultPosId": "015",
           "posShortNames": "SP",
           "team": false,
-          "icons": [
-            {
-              "tooltip": "Injured List - 15-day IL - Groin - Expected return Feb 1",
-              "typeId": "2"
-            },
-            {
-              "tooltip": "Sep 23, 9:51 AM: Burns (groin) worked on adding a sinker...",
-              "typeId": "8"
-            }
-          ],
           "rookie": false,
           "minorsEligible": false,
           "posIds": [
@@ -2370,10 +2354,6 @@
           "id": "ALL"
         },
         {
-          "name": "Fri Oct 23",
-          "id": "2026-10-23"
-        },
-        {
           "name": "Sat Oct 24",
           "id": "2026-10-24"
         },
@@ -2488,6 +2468,10 @@
         {
           "name": "Sat Nov 21",
           "id": "2026-11-21"
+        },
+        {
+          "name": "Sun Nov 22",
+          "id": "2026-11-22"
         }
       ],
       "displayedSeasonOrProjections": [
