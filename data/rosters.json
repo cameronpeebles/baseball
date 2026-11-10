@@ -112,6 +112,87 @@
             "autoSubOrderMax": 13,
             "showActivateUnscheduleButton": true
           },
+          "labels": {
+            "teamRoster.label.ineligibleStatuses": "Players at Ineligible Statuses",
+            "alert.title.error": "Error",
+            "words.scoringCategory": "Scoring Category",
+            "teamRoster.label.enableMultiTeamTrade": "Enable multi-team trade",
+            "word.Position": "Position",
+            "word.Change": "Change",
+            "words.NumberOfDaysWithParam.plural": "{0} days",
+            "tableHeader.capHitPenalties.salaryAmount": "Salary Amount",
+            "word.Print": "Print",
+            "type.statisticsTimeframeType.goBackNumDays.shortName": "Days Back",
+            "word.Year": "Year",
+            "teamRoster.message.startActiveNotApplied": "Start Active was not applied",
+            "word.Retry": "Retry",
+            "words.PlayerTryAgain": "Please try again.",
+            "word.Description": "Description",
+            "teamRoster.message.changesSaved": "Changes successfully saved",
+            "type.subscriptionPeriodType.days.plural": "Days",
+            "teamRoster.label.startActiveCustomDays": "Custom number of days from today",
+            "word.To": "To",
+            "teamRoster.label.crossLeagueTrades": "Cross-League Trades",
+            "teamRoster.label.loadFailed": "The roster could not be loaded",
+            "teamRoster.message.refreshToSeeSaved": "Please refresh the page to see what was saved.",
+            "words.endingSeason": "Ending Season",
+            "leagueCreation.tab.Matchups": "Matchups",
+            "teamRoster.message.finalizeChanges": "Finalize all roster changes",
+            "teamRoster.label.moreFilters": "More filters",
+            "teamRoster.message.changeNotConfirmed": "Your change hasn't been confirmed yet",
+            "teamRoster.label.noOtherPositions": "No other positions",
+            "teamRoster.message.playerOrderUpdated": "Player order updated successful",
+            "teamRoster.label.statusSummary": "Status Summary",
+            "teamRoster.label.rosterAlerts": "Roster Alerts",
+            "teamRoster.label.numberOfDays": "Number of days",
+            "teamRosterLineupChangeSystem.easyClick.name": "Easy Click",
+            "teamRoster.message.noLineupChangesMade": "No lineups changes were made",
+            "word.Trade": "Trade",
+            "button.submit": "Submit",
+            "word.Display": "Display",
+            "teamRoster.alert.unsavedChanges": "You need to click the <b>Submit</b> button at the bottom right of the screen or your changes will not be saved. Are you sure you want to leave this page?",
+            "teamRoster.label.tradeTutorial": "Trade Tutorial",
+            "teamRoster.message.noSpotToMoveTo": "No spot available to move the player to",
+            "teamRoster.movePlayer.header.shortName": "Move",
+            "mobileApp.menu.transactions.pending.trades.name": "Pending Trades",
+            "teamRoster.label.startActiveTooltip": "Start Active - Swap out players in active slots who are not scheduled to play with those from the bench (or injury slot if not injured) who are.",
+            "teamRoster.message.optimizedMovesNotApplied": "Some optimized moves could not be applied",
+            "teamRoster.label.pitchView": "Pitch view",
+            "button.refresh": "Refresh",
+            "word.Stats": "Stats",
+            "teamRoster.label.moveTo": "Move to",
+            "teamRoster.label.tradeAlerts": "Trade Alerts",
+            "teamRoster.label.ineligiblePositionsStatuses": "Players at Ineligible Positions/Statuses",
+            "word.Status": "Status",
+            "teamRoster.label.lineupChangeSystem": "Lineup change system",
+            "teamRoster.label.opponents": "Opponent(s)",
+            "words.startPeriod": "Start Period",
+            "teamRosterLineupChangeSystem.classic.name": "Classic",
+            "teamRoster.message.noLineupChangesToOptimize": "No lineup changes to optimize",
+            "teamRoster.label.downloadCsv": "Download CSV",
+            "teamRoster.message.reloadAndTryAgain": "Reload the page and try again.",
+            "teamRoster.label.changeTo": "Change to",
+            "leagueHomeViewPaneType.pendingTransactions.name": "Pending Transactions",
+            "word.From": "From",
+            "teamRoster.label.tutorials": "Team Roster Tutorials",
+            "teamRoster.message.rosterChangedWhileWorking": "The roster changed while it was being worked out.",
+            "word.Today": "Today",
+            "teamRoster.label.noMorePicksLeft": "No more picks left",
+            "teamRoster.label.downloadAllCsv": "Download all as CSV",
+            "teamRoster.label.startActivePlayers": "Start Active Players",
+            "teamRoster.label.disableMultiTeamTrade": "Disable multi-team trade",
+            "word.Picks": "Picks",
+            "teamRoster.label.multiTeamTrade": "Multi-team trade",
+            "teamRoster.label.startActiveRestOfPeriod": "Rest of scoring period",
+            "userCustomScoringCategoryScreenType.teamRoster.name": "Team Roster",
+            "teamRoster.label.statsType": "Stats Type",
+            "word.Period": "Period",
+            "word.Warning": "Warning",
+            "word.Player": "Player",
+            "word.Reset": "Reset",
+            "title.page.confirmation": "Confirmation",
+            "teamRoster.label.myTeamSettings": "My Team Settings"
+          },
           "myTeamIds": [
             "7owlmroxmiytz3cs"
           ],
@@ -773,7 +854,7 @@
                     "icons": [
                       {
                         "tooltip": "Nov 2, 4:35 PM: The Cubs extended Suzuki a one-year,...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -4937,23 +5018,28 @@
                 "draftPickList": [
                   {
                     "round": 1,
-                    "origOwnerTeamId": "huopotx1miytz3cs"
+                    "origOwnerTeamId": "huopotx1miytz3cs",
+                    "text": "Round 1 (Team Fluck)"
                   },
                   {
                     "round": 2,
-                    "origOwnerTeamId": "huopotx1miytz3cs"
+                    "origOwnerTeamId": "huopotx1miytz3cs",
+                    "text": "Round 2 (Team Fluck)"
                   },
                   {
                     "round": 3,
-                    "origOwnerTeamId": "huopotx1miytz3cs"
+                    "origOwnerTeamId": "huopotx1miytz3cs",
+                    "text": "Round 3 (Team Fluck)"
                   },
                   {
                     "round": 4,
-                    "origOwnerTeamId": "huopotx1miytz3cs"
+                    "origOwnerTeamId": "huopotx1miytz3cs",
+                    "text": "Round 4 (Team Fluck)"
                   },
                   {
                     "round": 5,
-                    "origOwnerTeamId": "huopotx1miytz3cs"
+                    "origOwnerTeamId": "huopotx1miytz3cs",
+                    "text": "Round 5 (Team Fluck)"
                   }
                 ],
                 "actions": [
@@ -5081,6 +5167,87 @@
             "alwaysShowPositionIds": [],
             "autoSubOrderMax": 13,
             "showActivateUnscheduleButton": true
+          },
+          "labels": {
+            "teamRoster.label.ineligibleStatuses": "Players at Ineligible Statuses",
+            "alert.title.error": "Error",
+            "words.scoringCategory": "Scoring Category",
+            "teamRoster.label.enableMultiTeamTrade": "Enable multi-team trade",
+            "word.Position": "Position",
+            "word.Change": "Change",
+            "words.NumberOfDaysWithParam.plural": "{0} days",
+            "tableHeader.capHitPenalties.salaryAmount": "Salary Amount",
+            "word.Print": "Print",
+            "type.statisticsTimeframeType.goBackNumDays.shortName": "Days Back",
+            "word.Year": "Year",
+            "teamRoster.message.startActiveNotApplied": "Start Active was not applied",
+            "word.Retry": "Retry",
+            "words.PlayerTryAgain": "Please try again.",
+            "word.Description": "Description",
+            "teamRoster.message.changesSaved": "Changes successfully saved",
+            "type.subscriptionPeriodType.days.plural": "Days",
+            "teamRoster.label.startActiveCustomDays": "Custom number of days from today",
+            "word.To": "To",
+            "teamRoster.label.crossLeagueTrades": "Cross-League Trades",
+            "teamRoster.label.loadFailed": "The roster could not be loaded",
+            "teamRoster.message.refreshToSeeSaved": "Please refresh the page to see what was saved.",
+            "words.endingSeason": "Ending Season",
+            "leagueCreation.tab.Matchups": "Matchups",
+            "teamRoster.message.finalizeChanges": "Finalize all roster changes",
+            "teamRoster.label.moreFilters": "More filters",
+            "teamRoster.message.changeNotConfirmed": "Your change hasn't been confirmed yet",
+            "teamRoster.label.noOtherPositions": "No other positions",
+            "teamRoster.message.playerOrderUpdated": "Player order updated successful",
+            "teamRoster.label.statusSummary": "Status Summary",
+            "teamRoster.label.rosterAlerts": "Roster Alerts",
+            "teamRoster.label.numberOfDays": "Number of days",
+            "teamRosterLineupChangeSystem.easyClick.name": "Easy Click",
+            "teamRoster.message.noLineupChangesMade": "No lineups changes were made",
+            "word.Trade": "Trade",
+            "button.submit": "Submit",
+            "word.Display": "Display",
+            "teamRoster.alert.unsavedChanges": "You need to click the <b>Submit</b> button at the bottom right of the screen or your changes will not be saved. Are you sure you want to leave this page?",
+            "teamRoster.label.tradeTutorial": "Trade Tutorial",
+            "teamRoster.message.noSpotToMoveTo": "No spot available to move the player to",
+            "teamRoster.movePlayer.header.shortName": "Move",
+            "mobileApp.menu.transactions.pending.trades.name": "Pending Trades",
+            "teamRoster.label.startActiveTooltip": "Start Active - Swap out players in active slots who are not scheduled to play with those from the bench (or injury slot if not injured) who are.",
+            "teamRoster.message.optimizedMovesNotApplied": "Some optimized moves could not be applied",
+            "teamRoster.label.pitchView": "Pitch view",
+            "button.refresh": "Refresh",
+            "word.Stats": "Stats",
+            "teamRoster.label.moveTo": "Move to",
+            "teamRoster.label.tradeAlerts": "Trade Alerts",
+            "teamRoster.label.ineligiblePositionsStatuses": "Players at Ineligible Positions/Statuses",
+            "word.Status": "Status",
+            "teamRoster.label.lineupChangeSystem": "Lineup change system",
+            "teamRoster.label.opponents": "Opponent(s)",
+            "words.startPeriod": "Start Period",
+            "teamRosterLineupChangeSystem.classic.name": "Classic",
+            "teamRoster.message.noLineupChangesToOptimize": "No lineup changes to optimize",
+            "teamRoster.label.downloadCsv": "Download CSV",
+            "teamRoster.message.reloadAndTryAgain": "Reload the page and try again.",
+            "teamRoster.label.changeTo": "Change to",
+            "leagueHomeViewPaneType.pendingTransactions.name": "Pending Transactions",
+            "word.From": "From",
+            "teamRoster.label.tutorials": "Team Roster Tutorials",
+            "teamRoster.message.rosterChangedWhileWorking": "The roster changed while it was being worked out.",
+            "word.Today": "Today",
+            "teamRoster.label.noMorePicksLeft": "No more picks left",
+            "teamRoster.label.downloadAllCsv": "Download all as CSV",
+            "teamRoster.label.startActivePlayers": "Start Active Players",
+            "teamRoster.label.disableMultiTeamTrade": "Disable multi-team trade",
+            "word.Picks": "Picks",
+            "teamRoster.label.multiTeamTrade": "Multi-team trade",
+            "teamRoster.label.startActiveRestOfPeriod": "Rest of scoring period",
+            "userCustomScoringCategoryScreenType.teamRoster.name": "Team Roster",
+            "teamRoster.label.statsType": "Stats Type",
+            "word.Period": "Period",
+            "word.Warning": "Warning",
+            "word.Player": "Player",
+            "word.Reset": "Reset",
+            "title.page.confirmation": "Confirmation",
+            "teamRoster.label.myTeamSettings": "My Team Settings"
           },
           "myTeamIds": [
             "7owlmroxmiytz3cs"
@@ -5319,6 +5486,10 @@
                     "posShortNames": "1B,3B",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Nov 9, 6:09 PM: Stewart was named the 2026 National...",
+                        "typeId": "14"
+                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -10067,27 +10238,33 @@
                 "draftPickList": [
                   {
                     "round": 1,
-                    "origOwnerTeamId": "xuv2jl3cmiytz3cs"
+                    "origOwnerTeamId": "xuv2jl3cmiytz3cs",
+                    "text": "Round 1 (Not Just a MiLB Team)"
                   },
                   {
                     "round": 1,
-                    "origOwnerTeamId": "t3dy3k9imiytz3cs"
+                    "origOwnerTeamId": "t3dy3k9imiytz3cs",
+                    "text": "Round 1 (William Street Wendy)"
                   },
                   {
                     "round": 2,
-                    "origOwnerTeamId": "xuv2jl3cmiytz3cs"
+                    "origOwnerTeamId": "xuv2jl3cmiytz3cs",
+                    "text": "Round 2 (Not Just a MiLB Team)"
                   },
                   {
                     "round": 3,
-                    "origOwnerTeamId": "xuv2jl3cmiytz3cs"
+                    "origOwnerTeamId": "xuv2jl3cmiytz3cs",
+                    "text": "Round 3 (Not Just a MiLB Team)"
                   },
                   {
                     "round": 4,
-                    "origOwnerTeamId": "xuv2jl3cmiytz3cs"
+                    "origOwnerTeamId": "xuv2jl3cmiytz3cs",
+                    "text": "Round 4 (Not Just a MiLB Team)"
                   },
                   {
                     "round": 5,
-                    "origOwnerTeamId": "xuv2jl3cmiytz3cs"
+                    "origOwnerTeamId": "xuv2jl3cmiytz3cs",
+                    "text": "Round 5 (Not Just a MiLB Team)"
                   }
                 ],
                 "actions": [
@@ -10217,6 +10394,87 @@
             "alwaysShowPositionIds": [],
             "autoSubOrderMax": 13,
             "showActivateUnscheduleButton": true
+          },
+          "labels": {
+            "teamRoster.label.ineligibleStatuses": "Players at Ineligible Statuses",
+            "alert.title.error": "Error",
+            "words.scoringCategory": "Scoring Category",
+            "teamRoster.label.enableMultiTeamTrade": "Enable multi-team trade",
+            "word.Position": "Position",
+            "word.Change": "Change",
+            "words.NumberOfDaysWithParam.plural": "{0} days",
+            "tableHeader.capHitPenalties.salaryAmount": "Salary Amount",
+            "word.Print": "Print",
+            "type.statisticsTimeframeType.goBackNumDays.shortName": "Days Back",
+            "word.Year": "Year",
+            "teamRoster.message.startActiveNotApplied": "Start Active was not applied",
+            "word.Retry": "Retry",
+            "words.PlayerTryAgain": "Please try again.",
+            "word.Description": "Description",
+            "teamRoster.message.changesSaved": "Changes successfully saved",
+            "type.subscriptionPeriodType.days.plural": "Days",
+            "teamRoster.label.startActiveCustomDays": "Custom number of days from today",
+            "word.To": "To",
+            "teamRoster.label.crossLeagueTrades": "Cross-League Trades",
+            "teamRoster.label.loadFailed": "The roster could not be loaded",
+            "teamRoster.message.refreshToSeeSaved": "Please refresh the page to see what was saved.",
+            "words.endingSeason": "Ending Season",
+            "leagueCreation.tab.Matchups": "Matchups",
+            "teamRoster.message.finalizeChanges": "Finalize all roster changes",
+            "teamRoster.label.moreFilters": "More filters",
+            "teamRoster.message.changeNotConfirmed": "Your change hasn't been confirmed yet",
+            "teamRoster.label.noOtherPositions": "No other positions",
+            "teamRoster.message.playerOrderUpdated": "Player order updated successful",
+            "teamRoster.label.statusSummary": "Status Summary",
+            "teamRoster.label.rosterAlerts": "Roster Alerts",
+            "teamRoster.label.numberOfDays": "Number of days",
+            "teamRosterLineupChangeSystem.easyClick.name": "Easy Click",
+            "teamRoster.message.noLineupChangesMade": "No lineups changes were made",
+            "word.Trade": "Trade",
+            "button.submit": "Submit",
+            "word.Display": "Display",
+            "teamRoster.alert.unsavedChanges": "You need to click the <b>Submit</b> button at the bottom right of the screen or your changes will not be saved. Are you sure you want to leave this page?",
+            "teamRoster.label.tradeTutorial": "Trade Tutorial",
+            "teamRoster.message.noSpotToMoveTo": "No spot available to move the player to",
+            "teamRoster.movePlayer.header.shortName": "Move",
+            "mobileApp.menu.transactions.pending.trades.name": "Pending Trades",
+            "teamRoster.label.startActiveTooltip": "Start Active - Swap out players in active slots who are not scheduled to play with those from the bench (or injury slot if not injured) who are.",
+            "teamRoster.message.optimizedMovesNotApplied": "Some optimized moves could not be applied",
+            "teamRoster.label.pitchView": "Pitch view",
+            "button.refresh": "Refresh",
+            "word.Stats": "Stats",
+            "teamRoster.label.moveTo": "Move to",
+            "teamRoster.label.tradeAlerts": "Trade Alerts",
+            "teamRoster.label.ineligiblePositionsStatuses": "Players at Ineligible Positions/Statuses",
+            "word.Status": "Status",
+            "teamRoster.label.lineupChangeSystem": "Lineup change system",
+            "teamRoster.label.opponents": "Opponent(s)",
+            "words.startPeriod": "Start Period",
+            "teamRosterLineupChangeSystem.classic.name": "Classic",
+            "teamRoster.message.noLineupChangesToOptimize": "No lineup changes to optimize",
+            "teamRoster.label.downloadCsv": "Download CSV",
+            "teamRoster.message.reloadAndTryAgain": "Reload the page and try again.",
+            "teamRoster.label.changeTo": "Change to",
+            "leagueHomeViewPaneType.pendingTransactions.name": "Pending Transactions",
+            "word.From": "From",
+            "teamRoster.label.tutorials": "Team Roster Tutorials",
+            "teamRoster.message.rosterChangedWhileWorking": "The roster changed while it was being worked out.",
+            "word.Today": "Today",
+            "teamRoster.label.noMorePicksLeft": "No more picks left",
+            "teamRoster.label.downloadAllCsv": "Download all as CSV",
+            "teamRoster.label.startActivePlayers": "Start Active Players",
+            "teamRoster.label.disableMultiTeamTrade": "Disable multi-team trade",
+            "word.Picks": "Picks",
+            "teamRoster.label.multiTeamTrade": "Multi-team trade",
+            "teamRoster.label.startActiveRestOfPeriod": "Rest of scoring period",
+            "userCustomScoringCategoryScreenType.teamRoster.name": "Team Roster",
+            "teamRoster.label.statsType": "Stats Type",
+            "word.Period": "Period",
+            "word.Warning": "Warning",
+            "word.Player": "Player",
+            "word.Reset": "Reset",
+            "title.page.confirmation": "Confirmation",
+            "teamRoster.label.myTeamSettings": "My Team Settings"
           },
           "myTeamIds": [
             "7owlmroxmiytz3cs"
@@ -10786,7 +11044,7 @@
                     "icons": [
                       {
                         "tooltip": "Nov 2, 6:22 PM: The Mariners extended Arozarena a...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -10950,10 +11208,6 @@
                     "posShortNames": "3B",
                     "team": false,
                     "icons": [
-                      {
-                        "tooltip": "Oct 11, 7:41 AM: Ramirez went 1-for-3 with a two-run...",
-                        "typeId": "8"
-                      },
                       {
                         "tooltip": "Switch Hitter",
                         "typeId": "18"
@@ -12260,10 +12514,6 @@
                     "team": false,
                     "icons": [
                       {
-                        "tooltip": "Oct 11, 8:24 AM: Burke was charged with the loss in Game...",
-                        "typeId": "8"
-                      },
-                      {
                         "tooltip": "Right-Handed Pitcher",
                         "typeId": "17"
                       }
@@ -13028,7 +13278,7 @@
                     "icons": [
                       {
                         "tooltip": "Nov 2, 4:54 PM: The Tigers declined Jansen's $12...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -14798,19 +15048,23 @@
                 "draftPickList": [
                   {
                     "round": 1,
-                    "origOwnerTeamId": "38pp2hphmiytz3cs"
+                    "origOwnerTeamId": "38pp2hphmiytz3cs",
+                    "text": "Round 1 (Little Elm Big Bats)"
                   },
                   {
                     "round": 2,
-                    "origOwnerTeamId": "38pp2hphmiytz3cs"
+                    "origOwnerTeamId": "38pp2hphmiytz3cs",
+                    "text": "Round 2 (Little Elm Big Bats)"
                   },
                   {
                     "round": 4,
-                    "origOwnerTeamId": "38pp2hphmiytz3cs"
+                    "origOwnerTeamId": "38pp2hphmiytz3cs",
+                    "text": "Round 4 (Little Elm Big Bats)"
                   },
                   {
                     "round": 5,
-                    "origOwnerTeamId": "38pp2hphmiytz3cs"
+                    "origOwnerTeamId": "38pp2hphmiytz3cs",
+                    "text": "Round 5 (Little Elm Big Bats)"
                   }
                 ],
                 "actions": [
@@ -14940,6 +15194,87 @@
             "alwaysShowPositionIds": [],
             "autoSubOrderMax": 13,
             "showActivateUnscheduleButton": true
+          },
+          "labels": {
+            "teamRoster.label.ineligibleStatuses": "Players at Ineligible Statuses",
+            "alert.title.error": "Error",
+            "words.scoringCategory": "Scoring Category",
+            "teamRoster.label.enableMultiTeamTrade": "Enable multi-team trade",
+            "word.Position": "Position",
+            "word.Change": "Change",
+            "words.NumberOfDaysWithParam.plural": "{0} days",
+            "tableHeader.capHitPenalties.salaryAmount": "Salary Amount",
+            "word.Print": "Print",
+            "type.statisticsTimeframeType.goBackNumDays.shortName": "Days Back",
+            "word.Year": "Year",
+            "teamRoster.message.startActiveNotApplied": "Start Active was not applied",
+            "word.Retry": "Retry",
+            "words.PlayerTryAgain": "Please try again.",
+            "word.Description": "Description",
+            "teamRoster.message.changesSaved": "Changes successfully saved",
+            "type.subscriptionPeriodType.days.plural": "Days",
+            "teamRoster.label.startActiveCustomDays": "Custom number of days from today",
+            "word.To": "To",
+            "teamRoster.label.crossLeagueTrades": "Cross-League Trades",
+            "teamRoster.label.loadFailed": "The roster could not be loaded",
+            "teamRoster.message.refreshToSeeSaved": "Please refresh the page to see what was saved.",
+            "words.endingSeason": "Ending Season",
+            "leagueCreation.tab.Matchups": "Matchups",
+            "teamRoster.message.finalizeChanges": "Finalize all roster changes",
+            "teamRoster.label.moreFilters": "More filters",
+            "teamRoster.message.changeNotConfirmed": "Your change hasn't been confirmed yet",
+            "teamRoster.label.noOtherPositions": "No other positions",
+            "teamRoster.message.playerOrderUpdated": "Player order updated successful",
+            "teamRoster.label.statusSummary": "Status Summary",
+            "teamRoster.label.rosterAlerts": "Roster Alerts",
+            "teamRoster.label.numberOfDays": "Number of days",
+            "teamRosterLineupChangeSystem.easyClick.name": "Easy Click",
+            "teamRoster.message.noLineupChangesMade": "No lineups changes were made",
+            "word.Trade": "Trade",
+            "button.submit": "Submit",
+            "word.Display": "Display",
+            "teamRoster.alert.unsavedChanges": "You need to click the <b>Submit</b> button at the bottom right of the screen or your changes will not be saved. Are you sure you want to leave this page?",
+            "teamRoster.label.tradeTutorial": "Trade Tutorial",
+            "teamRoster.message.noSpotToMoveTo": "No spot available to move the player to",
+            "teamRoster.movePlayer.header.shortName": "Move",
+            "mobileApp.menu.transactions.pending.trades.name": "Pending Trades",
+            "teamRoster.label.startActiveTooltip": "Start Active - Swap out players in active slots who are not scheduled to play with those from the bench (or injury slot if not injured) who are.",
+            "teamRoster.message.optimizedMovesNotApplied": "Some optimized moves could not be applied",
+            "teamRoster.label.pitchView": "Pitch view",
+            "button.refresh": "Refresh",
+            "word.Stats": "Stats",
+            "teamRoster.label.moveTo": "Move to",
+            "teamRoster.label.tradeAlerts": "Trade Alerts",
+            "teamRoster.label.ineligiblePositionsStatuses": "Players at Ineligible Positions/Statuses",
+            "word.Status": "Status",
+            "teamRoster.label.lineupChangeSystem": "Lineup change system",
+            "teamRoster.label.opponents": "Opponent(s)",
+            "words.startPeriod": "Start Period",
+            "teamRosterLineupChangeSystem.classic.name": "Classic",
+            "teamRoster.message.noLineupChangesToOptimize": "No lineup changes to optimize",
+            "teamRoster.label.downloadCsv": "Download CSV",
+            "teamRoster.message.reloadAndTryAgain": "Reload the page and try again.",
+            "teamRoster.label.changeTo": "Change to",
+            "leagueHomeViewPaneType.pendingTransactions.name": "Pending Transactions",
+            "word.From": "From",
+            "teamRoster.label.tutorials": "Team Roster Tutorials",
+            "teamRoster.message.rosterChangedWhileWorking": "The roster changed while it was being worked out.",
+            "word.Today": "Today",
+            "teamRoster.label.noMorePicksLeft": "No more picks left",
+            "teamRoster.label.downloadAllCsv": "Download all as CSV",
+            "teamRoster.label.startActivePlayers": "Start Active Players",
+            "teamRoster.label.disableMultiTeamTrade": "Disable multi-team trade",
+            "word.Picks": "Picks",
+            "teamRoster.label.multiTeamTrade": "Multi-team trade",
+            "teamRoster.label.startActiveRestOfPeriod": "Rest of scoring period",
+            "userCustomScoringCategoryScreenType.teamRoster.name": "Team Roster",
+            "teamRoster.label.statsType": "Stats Type",
+            "word.Period": "Period",
+            "word.Warning": "Warning",
+            "word.Player": "Player",
+            "word.Reset": "Reset",
+            "title.page.confirmation": "Confirmation",
+            "teamRoster.label.myTeamSettings": "My Team Settings"
           },
           "myTeamIds": [
             "7owlmroxmiytz3cs"
@@ -15432,10 +15767,6 @@
                     "posShortNames": "1B",
                     "team": false,
                     "icons": [
-                      {
-                        "tooltip": "Oct 11, 9:44 AM: Guerrero has undergone laser-eye...",
-                        "typeId": "8"
-                      },
                       {
                         "tooltip": "Bats Right",
                         "typeId": "17"
@@ -18254,7 +18585,7 @@
                     "icons": [
                       {
                         "tooltip": "Nov 2, 4:31 PM: The Padres extended Morejon a one-year,...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -19928,23 +20259,28 @@
                 "draftPickList": [
                   {
                     "round": 2,
-                    "origOwnerTeamId": "t3dy3k9imiytz3cs"
+                    "origOwnerTeamId": "t3dy3k9imiytz3cs",
+                    "text": "Round 2 (William Street Wendy)"
                   },
                   {
                     "round": 3,
-                    "origOwnerTeamId": "t3dy3k9imiytz3cs"
+                    "origOwnerTeamId": "t3dy3k9imiytz3cs",
+                    "text": "Round 3 (William Street Wendy)"
                   },
                   {
                     "round": 3,
-                    "origOwnerTeamId": "38pp2hphmiytz3cs"
+                    "origOwnerTeamId": "38pp2hphmiytz3cs",
+                    "text": "Round 3 (Little Elm Big Bats)"
                   },
                   {
                     "round": 4,
-                    "origOwnerTeamId": "t3dy3k9imiytz3cs"
+                    "origOwnerTeamId": "t3dy3k9imiytz3cs",
+                    "text": "Round 4 (William Street Wendy)"
                   },
                   {
                     "round": 5,
-                    "origOwnerTeamId": "t3dy3k9imiytz3cs"
+                    "origOwnerTeamId": "t3dy3k9imiytz3cs",
+                    "text": "Round 5 (William Street Wendy)"
                   }
                 ],
                 "actions": [
@@ -20072,6 +20408,87 @@
             "alwaysShowPositionIds": [],
             "autoSubOrderMax": 13,
             "showActivateUnscheduleButton": true
+          },
+          "labels": {
+            "teamRoster.label.ineligibleStatuses": "Players at Ineligible Statuses",
+            "alert.title.error": "Error",
+            "words.scoringCategory": "Scoring Category",
+            "teamRoster.label.enableMultiTeamTrade": "Enable multi-team trade",
+            "word.Position": "Position",
+            "word.Change": "Change",
+            "words.NumberOfDaysWithParam.plural": "{0} days",
+            "tableHeader.capHitPenalties.salaryAmount": "Salary Amount",
+            "word.Print": "Print",
+            "type.statisticsTimeframeType.goBackNumDays.shortName": "Days Back",
+            "word.Year": "Year",
+            "teamRoster.message.startActiveNotApplied": "Start Active was not applied",
+            "word.Retry": "Retry",
+            "words.PlayerTryAgain": "Please try again.",
+            "word.Description": "Description",
+            "teamRoster.message.changesSaved": "Changes successfully saved",
+            "type.subscriptionPeriodType.days.plural": "Days",
+            "teamRoster.label.startActiveCustomDays": "Custom number of days from today",
+            "word.To": "To",
+            "teamRoster.label.crossLeagueTrades": "Cross-League Trades",
+            "teamRoster.label.loadFailed": "The roster could not be loaded",
+            "teamRoster.message.refreshToSeeSaved": "Please refresh the page to see what was saved.",
+            "words.endingSeason": "Ending Season",
+            "leagueCreation.tab.Matchups": "Matchups",
+            "teamRoster.message.finalizeChanges": "Finalize all roster changes",
+            "teamRoster.label.moreFilters": "More filters",
+            "teamRoster.message.changeNotConfirmed": "Your change hasn't been confirmed yet",
+            "teamRoster.label.noOtherPositions": "No other positions",
+            "teamRoster.message.playerOrderUpdated": "Player order updated successful",
+            "teamRoster.label.statusSummary": "Status Summary",
+            "teamRoster.label.rosterAlerts": "Roster Alerts",
+            "teamRoster.label.numberOfDays": "Number of days",
+            "teamRosterLineupChangeSystem.easyClick.name": "Easy Click",
+            "teamRoster.message.noLineupChangesMade": "No lineups changes were made",
+            "word.Trade": "Trade",
+            "button.submit": "Submit",
+            "word.Display": "Display",
+            "teamRoster.alert.unsavedChanges": "You need to click the <b>Submit</b> button at the bottom right of the screen or your changes will not be saved. Are you sure you want to leave this page?",
+            "teamRoster.label.tradeTutorial": "Trade Tutorial",
+            "teamRoster.message.noSpotToMoveTo": "No spot available to move the player to",
+            "teamRoster.movePlayer.header.shortName": "Move",
+            "mobileApp.menu.transactions.pending.trades.name": "Pending Trades",
+            "teamRoster.label.startActiveTooltip": "Start Active - Swap out players in active slots who are not scheduled to play with those from the bench (or injury slot if not injured) who are.",
+            "teamRoster.message.optimizedMovesNotApplied": "Some optimized moves could not be applied",
+            "teamRoster.label.pitchView": "Pitch view",
+            "button.refresh": "Refresh",
+            "word.Stats": "Stats",
+            "teamRoster.label.moveTo": "Move to",
+            "teamRoster.label.tradeAlerts": "Trade Alerts",
+            "teamRoster.label.ineligiblePositionsStatuses": "Players at Ineligible Positions/Statuses",
+            "word.Status": "Status",
+            "teamRoster.label.lineupChangeSystem": "Lineup change system",
+            "teamRoster.label.opponents": "Opponent(s)",
+            "words.startPeriod": "Start Period",
+            "teamRosterLineupChangeSystem.classic.name": "Classic",
+            "teamRoster.message.noLineupChangesToOptimize": "No lineup changes to optimize",
+            "teamRoster.label.downloadCsv": "Download CSV",
+            "teamRoster.message.reloadAndTryAgain": "Reload the page and try again.",
+            "teamRoster.label.changeTo": "Change to",
+            "leagueHomeViewPaneType.pendingTransactions.name": "Pending Transactions",
+            "word.From": "From",
+            "teamRoster.label.tutorials": "Team Roster Tutorials",
+            "teamRoster.message.rosterChangedWhileWorking": "The roster changed while it was being worked out.",
+            "word.Today": "Today",
+            "teamRoster.label.noMorePicksLeft": "No more picks left",
+            "teamRoster.label.downloadAllCsv": "Download all as CSV",
+            "teamRoster.label.startActivePlayers": "Start Active Players",
+            "teamRoster.label.disableMultiTeamTrade": "Disable multi-team trade",
+            "word.Picks": "Picks",
+            "teamRoster.label.multiTeamTrade": "Multi-team trade",
+            "teamRoster.label.startActiveRestOfPeriod": "Rest of scoring period",
+            "userCustomScoringCategoryScreenType.teamRoster.name": "Team Roster",
+            "teamRoster.label.statsType": "Stats Type",
+            "word.Period": "Period",
+            "word.Warning": "Warning",
+            "word.Player": "Player",
+            "word.Reset": "Reset",
+            "title.page.confirmation": "Confirmation",
+            "teamRoster.label.myTeamSettings": "My Team Settings"
           },
           "myTeamIds": [
             "7owlmroxmiytz3cs"
@@ -25053,23 +25470,28 @@
                 "draftPickList": [
                   {
                     "round": 1,
-                    "origOwnerTeamId": "r7wbtddcmiytz3cs"
+                    "origOwnerTeamId": "r7wbtddcmiytz3cs",
+                    "text": "Round 1 (The Ronnie Woo-Woos)"
                   },
                   {
                     "round": 2,
-                    "origOwnerTeamId": "r7wbtddcmiytz3cs"
+                    "origOwnerTeamId": "r7wbtddcmiytz3cs",
+                    "text": "Round 2 (The Ronnie Woo-Woos)"
                   },
                   {
                     "round": 4,
-                    "origOwnerTeamId": "r7wbtddcmiytz3cs"
+                    "origOwnerTeamId": "r7wbtddcmiytz3cs",
+                    "text": "Round 4 (The Ronnie Woo-Woos)"
                   },
                   {
                     "round": 4,
-                    "origOwnerTeamId": "2rfp1oakmiytz3cs"
+                    "origOwnerTeamId": "2rfp1oakmiytz3cs",
+                    "text": "Round 4 (Buffalo Blues)"
                   },
                   {
                     "round": 5,
-                    "origOwnerTeamId": "r7wbtddcmiytz3cs"
+                    "origOwnerTeamId": "r7wbtddcmiytz3cs",
+                    "text": "Round 5 (The Ronnie Woo-Woos)"
                   }
                 ],
                 "actions": [
@@ -25197,6 +25619,87 @@
             "alwaysShowPositionIds": [],
             "autoSubOrderMax": 13,
             "showActivateUnscheduleButton": true
+          },
+          "labels": {
+            "teamRoster.label.ineligibleStatuses": "Players at Ineligible Statuses",
+            "alert.title.error": "Error",
+            "words.scoringCategory": "Scoring Category",
+            "teamRoster.label.enableMultiTeamTrade": "Enable multi-team trade",
+            "word.Position": "Position",
+            "word.Change": "Change",
+            "words.NumberOfDaysWithParam.plural": "{0} days",
+            "tableHeader.capHitPenalties.salaryAmount": "Salary Amount",
+            "word.Print": "Print",
+            "type.statisticsTimeframeType.goBackNumDays.shortName": "Days Back",
+            "word.Year": "Year",
+            "teamRoster.message.startActiveNotApplied": "Start Active was not applied",
+            "word.Retry": "Retry",
+            "words.PlayerTryAgain": "Please try again.",
+            "word.Description": "Description",
+            "teamRoster.message.changesSaved": "Changes successfully saved",
+            "type.subscriptionPeriodType.days.plural": "Days",
+            "teamRoster.label.startActiveCustomDays": "Custom number of days from today",
+            "word.To": "To",
+            "teamRoster.label.crossLeagueTrades": "Cross-League Trades",
+            "teamRoster.label.loadFailed": "The roster could not be loaded",
+            "teamRoster.message.refreshToSeeSaved": "Please refresh the page to see what was saved.",
+            "words.endingSeason": "Ending Season",
+            "leagueCreation.tab.Matchups": "Matchups",
+            "teamRoster.message.finalizeChanges": "Finalize all roster changes",
+            "teamRoster.label.moreFilters": "More filters",
+            "teamRoster.message.changeNotConfirmed": "Your change hasn't been confirmed yet",
+            "teamRoster.label.noOtherPositions": "No other positions",
+            "teamRoster.message.playerOrderUpdated": "Player order updated successful",
+            "teamRoster.label.statusSummary": "Status Summary",
+            "teamRoster.label.rosterAlerts": "Roster Alerts",
+            "teamRoster.label.numberOfDays": "Number of days",
+            "teamRosterLineupChangeSystem.easyClick.name": "Easy Click",
+            "teamRoster.message.noLineupChangesMade": "No lineups changes were made",
+            "word.Trade": "Trade",
+            "button.submit": "Submit",
+            "word.Display": "Display",
+            "teamRoster.alert.unsavedChanges": "You need to click the <b>Submit</b> button at the bottom right of the screen or your changes will not be saved. Are you sure you want to leave this page?",
+            "teamRoster.label.tradeTutorial": "Trade Tutorial",
+            "teamRoster.message.noSpotToMoveTo": "No spot available to move the player to",
+            "teamRoster.movePlayer.header.shortName": "Move",
+            "mobileApp.menu.transactions.pending.trades.name": "Pending Trades",
+            "teamRoster.label.startActiveTooltip": "Start Active - Swap out players in active slots who are not scheduled to play with those from the bench (or injury slot if not injured) who are.",
+            "teamRoster.message.optimizedMovesNotApplied": "Some optimized moves could not be applied",
+            "teamRoster.label.pitchView": "Pitch view",
+            "button.refresh": "Refresh",
+            "word.Stats": "Stats",
+            "teamRoster.label.moveTo": "Move to",
+            "teamRoster.label.tradeAlerts": "Trade Alerts",
+            "teamRoster.label.ineligiblePositionsStatuses": "Players at Ineligible Positions/Statuses",
+            "word.Status": "Status",
+            "teamRoster.label.lineupChangeSystem": "Lineup change system",
+            "teamRoster.label.opponents": "Opponent(s)",
+            "words.startPeriod": "Start Period",
+            "teamRosterLineupChangeSystem.classic.name": "Classic",
+            "teamRoster.message.noLineupChangesToOptimize": "No lineup changes to optimize",
+            "teamRoster.label.downloadCsv": "Download CSV",
+            "teamRoster.message.reloadAndTryAgain": "Reload the page and try again.",
+            "teamRoster.label.changeTo": "Change to",
+            "leagueHomeViewPaneType.pendingTransactions.name": "Pending Transactions",
+            "word.From": "From",
+            "teamRoster.label.tutorials": "Team Roster Tutorials",
+            "teamRoster.message.rosterChangedWhileWorking": "The roster changed while it was being worked out.",
+            "word.Today": "Today",
+            "teamRoster.label.noMorePicksLeft": "No more picks left",
+            "teamRoster.label.downloadAllCsv": "Download all as CSV",
+            "teamRoster.label.startActivePlayers": "Start Active Players",
+            "teamRoster.label.disableMultiTeamTrade": "Disable multi-team trade",
+            "word.Picks": "Picks",
+            "teamRoster.label.multiTeamTrade": "Multi-team trade",
+            "teamRoster.label.startActiveRestOfPeriod": "Rest of scoring period",
+            "userCustomScoringCategoryScreenType.teamRoster.name": "Team Roster",
+            "teamRoster.label.statsType": "Stats Type",
+            "word.Period": "Period",
+            "word.Warning": "Warning",
+            "word.Player": "Player",
+            "word.Reset": "Reset",
+            "title.page.confirmation": "Confirmation",
+            "teamRoster.label.myTeamSettings": "My Team Settings"
           },
           "myTeamIds": [
             "7owlmroxmiytz3cs"
@@ -25600,7 +26103,7 @@
                     "icons": [
                       {
                         "tooltip": "Nov 2, 6:12 PM: The Astros exercised Paredes' $13.35...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -28784,7 +29287,7 @@
                     "icons": [
                       {
                         "tooltip": "Nov 2, 6:03 PM: The Orioles extended Rogers a one-year,...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Left-Handed Pitcher",
@@ -30275,23 +30778,28 @@
                 "draftPickList": [
                   {
                     "round": 1,
-                    "origOwnerTeamId": "aax8gerpmiytz3cs"
+                    "origOwnerTeamId": "aax8gerpmiytz3cs",
+                    "text": "Round 1 (Chew-Bock-a)"
                   },
                   {
                     "round": 2,
-                    "origOwnerTeamId": "aax8gerpmiytz3cs"
+                    "origOwnerTeamId": "aax8gerpmiytz3cs",
+                    "text": "Round 2 (Chew-Bock-a)"
                   },
                   {
                     "round": 3,
-                    "origOwnerTeamId": "aax8gerpmiytz3cs"
+                    "origOwnerTeamId": "aax8gerpmiytz3cs",
+                    "text": "Round 3 (Chew-Bock-a)"
                   },
                   {
                     "round": 4,
-                    "origOwnerTeamId": "aax8gerpmiytz3cs"
+                    "origOwnerTeamId": "aax8gerpmiytz3cs",
+                    "text": "Round 4 (Chew-Bock-a)"
                   },
                   {
                     "round": 5,
-                    "origOwnerTeamId": "aax8gerpmiytz3cs"
+                    "origOwnerTeamId": "aax8gerpmiytz3cs",
+                    "text": "Round 5 (Chew-Bock-a)"
                   }
                 ],
                 "actions": [
@@ -30419,6 +30927,87 @@
             "alwaysShowPositionIds": [],
             "autoSubOrderMax": 13,
             "showActivateUnscheduleButton": true
+          },
+          "labels": {
+            "teamRoster.label.ineligibleStatuses": "Players at Ineligible Statuses",
+            "alert.title.error": "Error",
+            "words.scoringCategory": "Scoring Category",
+            "teamRoster.label.enableMultiTeamTrade": "Enable multi-team trade",
+            "word.Position": "Position",
+            "word.Change": "Change",
+            "words.NumberOfDaysWithParam.plural": "{0} days",
+            "tableHeader.capHitPenalties.salaryAmount": "Salary Amount",
+            "word.Print": "Print",
+            "type.statisticsTimeframeType.goBackNumDays.shortName": "Days Back",
+            "word.Year": "Year",
+            "teamRoster.message.startActiveNotApplied": "Start Active was not applied",
+            "word.Retry": "Retry",
+            "words.PlayerTryAgain": "Please try again.",
+            "word.Description": "Description",
+            "teamRoster.message.changesSaved": "Changes successfully saved",
+            "type.subscriptionPeriodType.days.plural": "Days",
+            "teamRoster.label.startActiveCustomDays": "Custom number of days from today",
+            "word.To": "To",
+            "teamRoster.label.crossLeagueTrades": "Cross-League Trades",
+            "teamRoster.label.loadFailed": "The roster could not be loaded",
+            "teamRoster.message.refreshToSeeSaved": "Please refresh the page to see what was saved.",
+            "words.endingSeason": "Ending Season",
+            "leagueCreation.tab.Matchups": "Matchups",
+            "teamRoster.message.finalizeChanges": "Finalize all roster changes",
+            "teamRoster.label.moreFilters": "More filters",
+            "teamRoster.message.changeNotConfirmed": "Your change hasn't been confirmed yet",
+            "teamRoster.label.noOtherPositions": "No other positions",
+            "teamRoster.message.playerOrderUpdated": "Player order updated successful",
+            "teamRoster.label.statusSummary": "Status Summary",
+            "teamRoster.label.rosterAlerts": "Roster Alerts",
+            "teamRoster.label.numberOfDays": "Number of days",
+            "teamRosterLineupChangeSystem.easyClick.name": "Easy Click",
+            "teamRoster.message.noLineupChangesMade": "No lineups changes were made",
+            "word.Trade": "Trade",
+            "button.submit": "Submit",
+            "word.Display": "Display",
+            "teamRoster.alert.unsavedChanges": "You need to click the <b>Submit</b> button at the bottom right of the screen or your changes will not be saved. Are you sure you want to leave this page?",
+            "teamRoster.label.tradeTutorial": "Trade Tutorial",
+            "teamRoster.message.noSpotToMoveTo": "No spot available to move the player to",
+            "teamRoster.movePlayer.header.shortName": "Move",
+            "mobileApp.menu.transactions.pending.trades.name": "Pending Trades",
+            "teamRoster.label.startActiveTooltip": "Start Active - Swap out players in active slots who are not scheduled to play with those from the bench (or injury slot if not injured) who are.",
+            "teamRoster.message.optimizedMovesNotApplied": "Some optimized moves could not be applied",
+            "teamRoster.label.pitchView": "Pitch view",
+            "button.refresh": "Refresh",
+            "word.Stats": "Stats",
+            "teamRoster.label.moveTo": "Move to",
+            "teamRoster.label.tradeAlerts": "Trade Alerts",
+            "teamRoster.label.ineligiblePositionsStatuses": "Players at Ineligible Positions/Statuses",
+            "word.Status": "Status",
+            "teamRoster.label.lineupChangeSystem": "Lineup change system",
+            "teamRoster.label.opponents": "Opponent(s)",
+            "words.startPeriod": "Start Period",
+            "teamRosterLineupChangeSystem.classic.name": "Classic",
+            "teamRoster.message.noLineupChangesToOptimize": "No lineup changes to optimize",
+            "teamRoster.label.downloadCsv": "Download CSV",
+            "teamRoster.message.reloadAndTryAgain": "Reload the page and try again.",
+            "teamRoster.label.changeTo": "Change to",
+            "leagueHomeViewPaneType.pendingTransactions.name": "Pending Transactions",
+            "word.From": "From",
+            "teamRoster.label.tutorials": "Team Roster Tutorials",
+            "teamRoster.message.rosterChangedWhileWorking": "The roster changed while it was being worked out.",
+            "word.Today": "Today",
+            "teamRoster.label.noMorePicksLeft": "No more picks left",
+            "teamRoster.label.downloadAllCsv": "Download all as CSV",
+            "teamRoster.label.startActivePlayers": "Start Active Players",
+            "teamRoster.label.disableMultiTeamTrade": "Disable multi-team trade",
+            "word.Picks": "Picks",
+            "teamRoster.label.multiTeamTrade": "Multi-team trade",
+            "teamRoster.label.startActiveRestOfPeriod": "Rest of scoring period",
+            "userCustomScoringCategoryScreenType.teamRoster.name": "Team Roster",
+            "teamRoster.label.statsType": "Stats Type",
+            "word.Period": "Period",
+            "word.Warning": "Warning",
+            "word.Player": "Player",
+            "word.Reset": "Reset",
+            "title.page.confirmation": "Confirmation",
+            "teamRoster.label.myTeamSettings": "My Team Settings"
           },
           "myTeamIds": [
             "7owlmroxmiytz3cs"
@@ -33868,7 +34457,7 @@
                     "icons": [
                       {
                         "tooltip": "Nov 2, 12:18 PM: The Cubs re-signed Webb to a one-year,...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -35257,23 +35846,28 @@
                 "draftPickList": [
                   {
                     "round": 1,
-                    "origOwnerTeamId": "e3fi1sgxmiytz3cs"
+                    "origOwnerTeamId": "e3fi1sgxmiytz3cs",
+                    "text": "Round 1 (Coover's Corner)"
                   },
                   {
                     "round": 2,
-                    "origOwnerTeamId": "e3fi1sgxmiytz3cs"
+                    "origOwnerTeamId": "e3fi1sgxmiytz3cs",
+                    "text": "Round 2 (Coover's Corner)"
                   },
                   {
                     "round": 3,
-                    "origOwnerTeamId": "e3fi1sgxmiytz3cs"
+                    "origOwnerTeamId": "e3fi1sgxmiytz3cs",
+                    "text": "Round 3 (Coover's Corner)"
                   },
                   {
                     "round": 4,
-                    "origOwnerTeamId": "e3fi1sgxmiytz3cs"
+                    "origOwnerTeamId": "e3fi1sgxmiytz3cs",
+                    "text": "Round 4 (Coover's Corner)"
                   },
                   {
                     "round": 5,
-                    "origOwnerTeamId": "e3fi1sgxmiytz3cs"
+                    "origOwnerTeamId": "e3fi1sgxmiytz3cs",
+                    "text": "Round 5 (Coover's Corner)"
                   }
                 ],
                 "actions": [
@@ -35401,6 +35995,87 @@
             "alwaysShowPositionIds": [],
             "autoSubOrderMax": 13,
             "showActivateUnscheduleButton": true
+          },
+          "labels": {
+            "teamRoster.label.ineligibleStatuses": "Players at Ineligible Statuses",
+            "alert.title.error": "Error",
+            "words.scoringCategory": "Scoring Category",
+            "teamRoster.label.enableMultiTeamTrade": "Enable multi-team trade",
+            "word.Position": "Position",
+            "word.Change": "Change",
+            "words.NumberOfDaysWithParam.plural": "{0} days",
+            "tableHeader.capHitPenalties.salaryAmount": "Salary Amount",
+            "word.Print": "Print",
+            "type.statisticsTimeframeType.goBackNumDays.shortName": "Days Back",
+            "word.Year": "Year",
+            "teamRoster.message.startActiveNotApplied": "Start Active was not applied",
+            "word.Retry": "Retry",
+            "words.PlayerTryAgain": "Please try again.",
+            "word.Description": "Description",
+            "teamRoster.message.changesSaved": "Changes successfully saved",
+            "type.subscriptionPeriodType.days.plural": "Days",
+            "teamRoster.label.startActiveCustomDays": "Custom number of days from today",
+            "word.To": "To",
+            "teamRoster.label.crossLeagueTrades": "Cross-League Trades",
+            "teamRoster.label.loadFailed": "The roster could not be loaded",
+            "teamRoster.message.refreshToSeeSaved": "Please refresh the page to see what was saved.",
+            "words.endingSeason": "Ending Season",
+            "leagueCreation.tab.Matchups": "Matchups",
+            "teamRoster.message.finalizeChanges": "Finalize all roster changes",
+            "teamRoster.label.moreFilters": "More filters",
+            "teamRoster.message.changeNotConfirmed": "Your change hasn't been confirmed yet",
+            "teamRoster.label.noOtherPositions": "No other positions",
+            "teamRoster.message.playerOrderUpdated": "Player order updated successful",
+            "teamRoster.label.statusSummary": "Status Summary",
+            "teamRoster.label.rosterAlerts": "Roster Alerts",
+            "teamRoster.label.numberOfDays": "Number of days",
+            "teamRosterLineupChangeSystem.easyClick.name": "Easy Click",
+            "teamRoster.message.noLineupChangesMade": "No lineups changes were made",
+            "word.Trade": "Trade",
+            "button.submit": "Submit",
+            "word.Display": "Display",
+            "teamRoster.alert.unsavedChanges": "You need to click the <b>Submit</b> button at the bottom right of the screen or your changes will not be saved. Are you sure you want to leave this page?",
+            "teamRoster.label.tradeTutorial": "Trade Tutorial",
+            "teamRoster.message.noSpotToMoveTo": "No spot available to move the player to",
+            "teamRoster.movePlayer.header.shortName": "Move",
+            "mobileApp.menu.transactions.pending.trades.name": "Pending Trades",
+            "teamRoster.label.startActiveTooltip": "Start Active - Swap out players in active slots who are not scheduled to play with those from the bench (or injury slot if not injured) who are.",
+            "teamRoster.message.optimizedMovesNotApplied": "Some optimized moves could not be applied",
+            "teamRoster.label.pitchView": "Pitch view",
+            "button.refresh": "Refresh",
+            "word.Stats": "Stats",
+            "teamRoster.label.moveTo": "Move to",
+            "teamRoster.label.tradeAlerts": "Trade Alerts",
+            "teamRoster.label.ineligiblePositionsStatuses": "Players at Ineligible Positions/Statuses",
+            "word.Status": "Status",
+            "teamRoster.label.lineupChangeSystem": "Lineup change system",
+            "teamRoster.label.opponents": "Opponent(s)",
+            "words.startPeriod": "Start Period",
+            "teamRosterLineupChangeSystem.classic.name": "Classic",
+            "teamRoster.message.noLineupChangesToOptimize": "No lineup changes to optimize",
+            "teamRoster.label.downloadCsv": "Download CSV",
+            "teamRoster.message.reloadAndTryAgain": "Reload the page and try again.",
+            "teamRoster.label.changeTo": "Change to",
+            "leagueHomeViewPaneType.pendingTransactions.name": "Pending Transactions",
+            "word.From": "From",
+            "teamRoster.label.tutorials": "Team Roster Tutorials",
+            "teamRoster.message.rosterChangedWhileWorking": "The roster changed while it was being worked out.",
+            "word.Today": "Today",
+            "teamRoster.label.noMorePicksLeft": "No more picks left",
+            "teamRoster.label.downloadAllCsv": "Download all as CSV",
+            "teamRoster.label.startActivePlayers": "Start Active Players",
+            "teamRoster.label.disableMultiTeamTrade": "Disable multi-team trade",
+            "word.Picks": "Picks",
+            "teamRoster.label.multiTeamTrade": "Multi-team trade",
+            "teamRoster.label.startActiveRestOfPeriod": "Rest of scoring period",
+            "userCustomScoringCategoryScreenType.teamRoster.name": "Team Roster",
+            "teamRoster.label.statsType": "Stats Type",
+            "word.Period": "Period",
+            "word.Warning": "Warning",
+            "word.Player": "Player",
+            "word.Reset": "Reset",
+            "title.page.confirmation": "Confirmation",
+            "teamRoster.label.myTeamSettings": "My Team Settings"
           },
           "myTeamIds": [
             "7owlmroxmiytz3cs"
@@ -35641,6 +36316,10 @@
                     "posShortNames": "3B,SS",
                     "team": false,
                     "icons": [
+                      {
+                        "tooltip": "Nov 9, 5:59 PM: McGonigle was named the 2026 American...",
+                        "typeId": "14"
+                      },
                       {
                         "tooltip": "Bats Left",
                         "typeId": "16"
@@ -40418,27 +41097,33 @@
                 "draftPickList": [
                   {
                     "round": 1,
-                    "origOwnerTeamId": "2rfp1oakmiytz3cs"
+                    "origOwnerTeamId": "2rfp1oakmiytz3cs",
+                    "text": "Round 1 (Buffalo Blues)"
                   },
                   {
                     "round": 1,
-                    "origOwnerTeamId": "corx71vmmiytz3cs"
+                    "origOwnerTeamId": "corx71vmmiytz3cs",
+                    "text": "Round 1 (PowerCraig5000)"
                   },
                   {
                     "round": 2,
-                    "origOwnerTeamId": "2rfp1oakmiytz3cs"
+                    "origOwnerTeamId": "2rfp1oakmiytz3cs",
+                    "text": "Round 2 (Buffalo Blues)"
                   },
                   {
                     "round": 3,
-                    "origOwnerTeamId": "2rfp1oakmiytz3cs"
+                    "origOwnerTeamId": "2rfp1oakmiytz3cs",
+                    "text": "Round 3 (Buffalo Blues)"
                   },
                   {
                     "round": 3,
-                    "origOwnerTeamId": "r7wbtddcmiytz3cs"
+                    "origOwnerTeamId": "r7wbtddcmiytz3cs",
+                    "text": "Round 3 (The Ronnie Woo-Woos)"
                   },
                   {
                     "round": 5,
-                    "origOwnerTeamId": "2rfp1oakmiytz3cs"
+                    "origOwnerTeamId": "2rfp1oakmiytz3cs",
+                    "text": "Round 5 (Buffalo Blues)"
                   }
                 ],
                 "actions": [
@@ -40568,6 +41253,87 @@
             "alwaysShowPositionIds": [],
             "autoSubOrderMax": 13,
             "showActivateUnscheduleButton": true
+          },
+          "labels": {
+            "teamRoster.label.ineligibleStatuses": "Players at Ineligible Statuses",
+            "alert.title.error": "Error",
+            "words.scoringCategory": "Scoring Category",
+            "teamRoster.label.enableMultiTeamTrade": "Enable multi-team trade",
+            "word.Position": "Position",
+            "word.Change": "Change",
+            "words.NumberOfDaysWithParam.plural": "{0} days",
+            "tableHeader.capHitPenalties.salaryAmount": "Salary Amount",
+            "word.Print": "Print",
+            "type.statisticsTimeframeType.goBackNumDays.shortName": "Days Back",
+            "word.Year": "Year",
+            "teamRoster.message.startActiveNotApplied": "Start Active was not applied",
+            "word.Retry": "Retry",
+            "words.PlayerTryAgain": "Please try again.",
+            "word.Description": "Description",
+            "teamRoster.message.changesSaved": "Changes successfully saved",
+            "type.subscriptionPeriodType.days.plural": "Days",
+            "teamRoster.label.startActiveCustomDays": "Custom number of days from today",
+            "word.To": "To",
+            "teamRoster.label.crossLeagueTrades": "Cross-League Trades",
+            "teamRoster.label.loadFailed": "The roster could not be loaded",
+            "teamRoster.message.refreshToSeeSaved": "Please refresh the page to see what was saved.",
+            "words.endingSeason": "Ending Season",
+            "leagueCreation.tab.Matchups": "Matchups",
+            "teamRoster.message.finalizeChanges": "Finalize all roster changes",
+            "teamRoster.label.moreFilters": "More filters",
+            "teamRoster.message.changeNotConfirmed": "Your change hasn't been confirmed yet",
+            "teamRoster.label.noOtherPositions": "No other positions",
+            "teamRoster.message.playerOrderUpdated": "Player order updated successful",
+            "teamRoster.label.statusSummary": "Status Summary",
+            "teamRoster.label.rosterAlerts": "Roster Alerts",
+            "teamRoster.label.numberOfDays": "Number of days",
+            "teamRosterLineupChangeSystem.easyClick.name": "Easy Click",
+            "teamRoster.message.noLineupChangesMade": "No lineups changes were made",
+            "word.Trade": "Trade",
+            "button.submit": "Submit",
+            "word.Display": "Display",
+            "teamRoster.alert.unsavedChanges": "You need to click the <b>Submit</b> button at the bottom right of the screen or your changes will not be saved. Are you sure you want to leave this page?",
+            "teamRoster.label.tradeTutorial": "Trade Tutorial",
+            "teamRoster.message.noSpotToMoveTo": "No spot available to move the player to",
+            "teamRoster.movePlayer.header.shortName": "Move",
+            "mobileApp.menu.transactions.pending.trades.name": "Pending Trades",
+            "teamRoster.label.startActiveTooltip": "Start Active - Swap out players in active slots who are not scheduled to play with those from the bench (or injury slot if not injured) who are.",
+            "teamRoster.message.optimizedMovesNotApplied": "Some optimized moves could not be applied",
+            "teamRoster.label.pitchView": "Pitch view",
+            "button.refresh": "Refresh",
+            "word.Stats": "Stats",
+            "teamRoster.label.moveTo": "Move to",
+            "teamRoster.label.tradeAlerts": "Trade Alerts",
+            "teamRoster.label.ineligiblePositionsStatuses": "Players at Ineligible Positions/Statuses",
+            "word.Status": "Status",
+            "teamRoster.label.lineupChangeSystem": "Lineup change system",
+            "teamRoster.label.opponents": "Opponent(s)",
+            "words.startPeriod": "Start Period",
+            "teamRosterLineupChangeSystem.classic.name": "Classic",
+            "teamRoster.message.noLineupChangesToOptimize": "No lineup changes to optimize",
+            "teamRoster.label.downloadCsv": "Download CSV",
+            "teamRoster.message.reloadAndTryAgain": "Reload the page and try again.",
+            "teamRoster.label.changeTo": "Change to",
+            "leagueHomeViewPaneType.pendingTransactions.name": "Pending Transactions",
+            "word.From": "From",
+            "teamRoster.label.tutorials": "Team Roster Tutorials",
+            "teamRoster.message.rosterChangedWhileWorking": "The roster changed while it was being worked out.",
+            "word.Today": "Today",
+            "teamRoster.label.noMorePicksLeft": "No more picks left",
+            "teamRoster.label.downloadAllCsv": "Download all as CSV",
+            "teamRoster.label.startActivePlayers": "Start Active Players",
+            "teamRoster.label.disableMultiTeamTrade": "Disable multi-team trade",
+            "word.Picks": "Picks",
+            "teamRoster.label.multiTeamTrade": "Multi-team trade",
+            "teamRoster.label.startActiveRestOfPeriod": "Rest of scoring period",
+            "userCustomScoringCategoryScreenType.teamRoster.name": "Team Roster",
+            "teamRoster.label.statsType": "Stats Type",
+            "word.Period": "Period",
+            "word.Warning": "Warning",
+            "word.Player": "Player",
+            "word.Reset": "Reset",
+            "title.page.confirmation": "Confirmation",
+            "teamRoster.label.myTeamSettings": "My Team Settings"
           },
           "myTeamIds": [
             "7owlmroxmiytz3cs"
@@ -40961,7 +41727,7 @@
                     "icons": [
                       {
                         "tooltip": "Nov 2, 1:42 PM: The Pirates extended Lowe a one-year,...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -42398,7 +43164,7 @@
                     "icons": [
                       {
                         "tooltip": "Nov 2, 5:58 PM: The Yankees extended Bednar a one-year,...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Right-Handed Pitcher",
@@ -45328,19 +46094,23 @@
                 "draftPickList": [
                   {
                     "round": 2,
-                    "origOwnerTeamId": "corx71vmmiytz3cs"
+                    "origOwnerTeamId": "corx71vmmiytz3cs",
+                    "text": "Round 2 (PowerCraig5000)"
                   },
                   {
                     "round": 3,
-                    "origOwnerTeamId": "corx71vmmiytz3cs"
+                    "origOwnerTeamId": "corx71vmmiytz3cs",
+                    "text": "Round 3 (PowerCraig5000)"
                   },
                   {
                     "round": 4,
-                    "origOwnerTeamId": "corx71vmmiytz3cs"
+                    "origOwnerTeamId": "corx71vmmiytz3cs",
+                    "text": "Round 4 (PowerCraig5000)"
                   },
                   {
                     "round": 5,
-                    "origOwnerTeamId": "corx71vmmiytz3cs"
+                    "origOwnerTeamId": "corx71vmmiytz3cs",
+                    "text": "Round 5 (PowerCraig5000)"
                   }
                 ],
                 "actions": [
@@ -45470,6 +46240,87 @@
             "alwaysShowPositionIds": [],
             "autoSubOrderMax": 13,
             "showActivateUnscheduleButton": true
+          },
+          "labels": {
+            "teamRoster.label.ineligibleStatuses": "Players at Ineligible Statuses",
+            "alert.title.error": "Error",
+            "words.scoringCategory": "Scoring Category",
+            "teamRoster.label.enableMultiTeamTrade": "Enable multi-team trade",
+            "word.Position": "Position",
+            "word.Change": "Change",
+            "words.NumberOfDaysWithParam.plural": "{0} days",
+            "tableHeader.capHitPenalties.salaryAmount": "Salary Amount",
+            "word.Print": "Print",
+            "type.statisticsTimeframeType.goBackNumDays.shortName": "Days Back",
+            "word.Year": "Year",
+            "teamRoster.message.startActiveNotApplied": "Start Active was not applied",
+            "word.Retry": "Retry",
+            "words.PlayerTryAgain": "Please try again.",
+            "word.Description": "Description",
+            "teamRoster.message.changesSaved": "Changes successfully saved",
+            "type.subscriptionPeriodType.days.plural": "Days",
+            "teamRoster.label.startActiveCustomDays": "Custom number of days from today",
+            "word.To": "To",
+            "teamRoster.label.crossLeagueTrades": "Cross-League Trades",
+            "teamRoster.label.loadFailed": "The roster could not be loaded",
+            "teamRoster.message.refreshToSeeSaved": "Please refresh the page to see what was saved.",
+            "words.endingSeason": "Ending Season",
+            "leagueCreation.tab.Matchups": "Matchups",
+            "teamRoster.message.finalizeChanges": "Finalize all roster changes",
+            "teamRoster.label.moreFilters": "More filters",
+            "teamRoster.message.changeNotConfirmed": "Your change hasn't been confirmed yet",
+            "teamRoster.label.noOtherPositions": "No other positions",
+            "teamRoster.message.playerOrderUpdated": "Player order updated successful",
+            "teamRoster.label.statusSummary": "Status Summary",
+            "teamRoster.label.rosterAlerts": "Roster Alerts",
+            "teamRoster.label.numberOfDays": "Number of days",
+            "teamRosterLineupChangeSystem.easyClick.name": "Easy Click",
+            "teamRoster.message.noLineupChangesMade": "No lineups changes were made",
+            "word.Trade": "Trade",
+            "button.submit": "Submit",
+            "word.Display": "Display",
+            "teamRoster.alert.unsavedChanges": "You need to click the <b>Submit</b> button at the bottom right of the screen or your changes will not be saved. Are you sure you want to leave this page?",
+            "teamRoster.label.tradeTutorial": "Trade Tutorial",
+            "teamRoster.message.noSpotToMoveTo": "No spot available to move the player to",
+            "teamRoster.movePlayer.header.shortName": "Move",
+            "mobileApp.menu.transactions.pending.trades.name": "Pending Trades",
+            "teamRoster.label.startActiveTooltip": "Start Active - Swap out players in active slots who are not scheduled to play with those from the bench (or injury slot if not injured) who are.",
+            "teamRoster.message.optimizedMovesNotApplied": "Some optimized moves could not be applied",
+            "teamRoster.label.pitchView": "Pitch view",
+            "button.refresh": "Refresh",
+            "word.Stats": "Stats",
+            "teamRoster.label.moveTo": "Move to",
+            "teamRoster.label.tradeAlerts": "Trade Alerts",
+            "teamRoster.label.ineligiblePositionsStatuses": "Players at Ineligible Positions/Statuses",
+            "word.Status": "Status",
+            "teamRoster.label.lineupChangeSystem": "Lineup change system",
+            "teamRoster.label.opponents": "Opponent(s)",
+            "words.startPeriod": "Start Period",
+            "teamRosterLineupChangeSystem.classic.name": "Classic",
+            "teamRoster.message.noLineupChangesToOptimize": "No lineup changes to optimize",
+            "teamRoster.label.downloadCsv": "Download CSV",
+            "teamRoster.message.reloadAndTryAgain": "Reload the page and try again.",
+            "teamRoster.label.changeTo": "Change to",
+            "leagueHomeViewPaneType.pendingTransactions.name": "Pending Transactions",
+            "word.From": "From",
+            "teamRoster.label.tutorials": "Team Roster Tutorials",
+            "teamRoster.message.rosterChangedWhileWorking": "The roster changed while it was being worked out.",
+            "word.Today": "Today",
+            "teamRoster.label.noMorePicksLeft": "No more picks left",
+            "teamRoster.label.downloadAllCsv": "Download all as CSV",
+            "teamRoster.label.startActivePlayers": "Start Active Players",
+            "teamRoster.label.disableMultiTeamTrade": "Disable multi-team trade",
+            "word.Picks": "Picks",
+            "teamRoster.label.multiTeamTrade": "Multi-team trade",
+            "teamRoster.label.startActiveRestOfPeriod": "Rest of scoring period",
+            "userCustomScoringCategoryScreenType.teamRoster.name": "Team Roster",
+            "teamRoster.label.statsType": "Stats Type",
+            "word.Period": "Period",
+            "word.Warning": "Warning",
+            "word.Player": "Player",
+            "word.Reset": "Reset",
+            "title.page.confirmation": "Confirmation",
+            "teamRoster.label.myTeamSettings": "My Team Settings"
           },
           "myTeamIds": [
             "7owlmroxmiytz3cs"
@@ -46134,7 +46985,7 @@
                     "icons": [
                       {
                         "tooltip": "Nov 2, 4:42 PM: The Brewers exercised Contreras' $15.5...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Right",
@@ -46459,7 +47310,7 @@
                     "icons": [
                       {
                         "tooltip": "Nov 2, 4:25 PM: The Brewers extended Bauers a one-year,...",
-                        "typeId": "9"
+                        "typeId": "8"
                       },
                       {
                         "tooltip": "Bats Left",
@@ -49823,23 +50674,28 @@
                 "draftPickList": [
                   {
                     "round": 1,
-                    "origOwnerTeamId": "7owlmroxmiytz3cs"
+                    "origOwnerTeamId": "7owlmroxmiytz3cs",
+                    "text": "Round 1 (REL REL)"
                   },
                   {
                     "round": 2,
-                    "origOwnerTeamId": "7owlmroxmiytz3cs"
+                    "origOwnerTeamId": "7owlmroxmiytz3cs",
+                    "text": "Round 2 (REL REL)"
                   },
                   {
                     "round": 3,
-                    "origOwnerTeamId": "7owlmroxmiytz3cs"
+                    "origOwnerTeamId": "7owlmroxmiytz3cs",
+                    "text": "Round 3 (REL REL)"
                   },
                   {
                     "round": 4,
-                    "origOwnerTeamId": "7owlmroxmiytz3cs"
+                    "origOwnerTeamId": "7owlmroxmiytz3cs",
+                    "text": "Round 4 (REL REL)"
                   },
                   {
                     "round": 5,
-                    "origOwnerTeamId": "7owlmroxmiytz3cs"
+                    "origOwnerTeamId": "7owlmroxmiytz3cs",
+                    "text": "Round 5 (REL REL)"
                   }
                 ],
                 "actions": [
