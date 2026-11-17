@@ -79,16 +79,6 @@
     },
     "tableList": [
       {
-        "tableType": "SECTION_HEADING",
-        "caption": "Standings By Category - Hitting",
-        "rows": []
-      },
-      {
-        "tableType": "SECTION_HEADING",
-        "caption": "Standings By Category - Pitching",
-        "rows": []
-      },
-      {
         "fixedRows": true,
         "tableType": "Rotisserie",
         "fixedHeader": {
@@ -2883,6 +2873,11 @@
         ]
       },
       {
+        "tableType": "SECTION_HEADING",
+        "caption": "Standings By Category - Hitting",
+        "rows": []
+      },
+      {
         "tableType": "Rotisserie3",
         "caption": "Runs Scored",
         "header": {
@@ -4061,6 +4056,11 @@
             ]
           }
         ]
+      },
+      {
+        "tableType": "SECTION_HEADING",
+        "caption": "Standings By Category - Pitching",
+        "rows": []
       },
       {
         "tableType": "Rotisserie3",
