@@ -5,7 +5,7 @@
       "totalNumPages": 279,
       "pageNumber": 1,
       "maxResultsPerPage": 20,
-      "totalNumResults": 5568
+      "totalNumResults": 5569
     },
     "statsTable": [
       {
@@ -1390,7 +1390,7 @@
           "icons": [
             {
               "tooltip": "Nov 18, 1:47 PM: The Twins signed Gray to a two-year,...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -2284,10 +2284,6 @@
           "id": "ALL"
         },
         {
-          "name": "Thu Nov 19",
-          "id": "2026-11-19"
-        },
-        {
           "name": "Fri Nov 20",
           "id": "2026-11-20"
         },
@@ -2402,6 +2398,10 @@
         {
           "name": "Fri Dec 18",
           "id": "2026-12-18"
+        },
+        {
+          "name": "Sat Dec 19",
+          "id": "2026-12-19"
         }
       ],
       "displayedSeasonOrProjections": [
@@ -3986,6 +3986,7 @@
     "labels": {
       "tab.Schedule": "Schedule",
       "words.scoringCategory": "Scoring Category",
+      "fantasyAdvisor.label.suggestPickups": "Suggest Pickups",
       "playersStatistics.label.fromStartOfSeason": "From Start of Season",
       "word.Name": "Name",
       "playersStatistics.label.datePlaying": "Date Playing",
@@ -3993,6 +3994,7 @@
       "word.From": "From",
       "type.statisticsTimeframeType.goBackNumDays.shortName": "Days Back",
       "word.Division": "Division",
+      "fantasy.menu.assistantGm.name": "Assistant GM",
       "text.transactions.youHavePendingTransactions": "Pending Transactions",
       "word.Stats": "Stats",
       "playersStatistics.label.playersTutorials": "Players Tutorials",

@@ -5,7 +5,7 @@
       "totalNumPages": 253,
       "pageNumber": 1,
       "maxResultsPerPage": 20,
-      "totalNumResults": 5048
+      "totalNumResults": 5049
     },
     "statsTable": [
       {
@@ -24,7 +24,7 @@
           "icons": [
             {
               "tooltip": "Nov 18, 10:44 AM: Crow-Armstrong was named National...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -477,7 +477,7 @@
           "icons": [
             {
               "tooltip": "Nov 18, 10:35 AM: De La Cruz was named the National...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -1106,7 +1106,7 @@
           "icons": [
             {
               "tooltip": "Nov 18, 10:55 AM: Wood was named the National League...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -1381,7 +1381,7 @@
           "icons": [
             {
               "tooltip": "Nov 12, 5:45 PM: Alvarez was unanimously named the 2026...",
-              "typeId": "9"
+              "typeId": "8"
             }
           ],
           "rookie": false,
@@ -1562,7 +1562,7 @@
           "icons": [
             {
               "tooltip": "Nov 18, 11:00 AM: Chourio was named the National League...",
-              "typeId": "14"
+              "typeId": "9"
             }
           ],
           "rookie": false,
@@ -1996,10 +1996,6 @@
           "id": "ALL"
         },
         {
-          "name": "Thu Nov 19",
-          "id": "2026-11-19"
-        },
-        {
           "name": "Fri Nov 20",
           "id": "2026-11-20"
         },
@@ -2114,6 +2110,10 @@
         {
           "name": "Fri Dec 18",
           "id": "2026-12-18"
+        },
+        {
+          "name": "Sat Dec 19",
+          "id": "2026-12-19"
         }
       ],
       "displayedSeasonOrProjections": [
@@ -3632,6 +3632,7 @@
     "labels": {
       "tab.Schedule": "Schedule",
       "words.scoringCategory": "Scoring Category",
+      "fantasyAdvisor.label.suggestPickups": "Suggest Pickups",
       "playersStatistics.label.fromStartOfSeason": "From Start of Season",
       "word.Name": "Name",
       "playersStatistics.label.datePlaying": "Date Playing",
@@ -3639,6 +3640,7 @@
       "word.From": "From",
       "type.statisticsTimeframeType.goBackNumDays.shortName": "Days Back",
       "word.Division": "Division",
+      "fantasy.menu.assistantGm.name": "Assistant GM",
       "text.transactions.youHavePendingTransactions": "Pending Transactions",
       "word.Stats": "Stats",
       "playersStatistics.label.playersTutorials": "Players Tutorials",
